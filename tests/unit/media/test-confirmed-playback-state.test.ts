@@ -49,6 +49,10 @@ afterAll(() => {
 });
 
 const { useVideoStore } = await import("../../../src/stores/useVideoStore");
+const {
+  applyPlayStateAfterViewResume,
+  resolvePlayStateAfterViewResume,
+} = await import("../../../src/shared/media/confirmedPlayback");
 
 describe("confirmed media playback state", () => {
   beforeEach(() => {
@@ -89,5 +93,111 @@ describe("confirmed media playback state", () => {
 
     expect(useVideoStore.getState().playbackRequested).toBe(false);
     expect(useVideoStore.getState().isPlaying).toBe(false);
+  });
+});
+
+describe("resolvePlayStateAfterViewResume", () => {
+  test("confirms playing when the live YouTube player is playing", () => {
+    expect(
+      resolvePlayStateAfterViewResume({
+        playerState: 1,
+        playbackRequested: false,
+      })
+    ).toEqual({ isPlaying: true, playbackRequested: true });
+  });
+
+  test("confirms playing while the player is buffering", () => {
+    expect(
+      resolvePlayStateAfterViewResume({
+        playerState: 3,
+        playbackRequested: false,
+      })
+    ).toEqual({ isPlaying: true, playbackRequested: true });
+  });
+
+  test("keeps a pending play request confirmed when onPlay will not re-fire", () => {
+    // Cover Flow selecting the current track calls setIsPlaying(true) →
+    // requestPlayback() (isPlaying=false, playbackRequested=true) while
+    // the engine is already running, so YouTube skips a new onPlay.
+    expect(
+      resolvePlayStateAfterViewResume({
+        playerState: undefined,
+        playbackRequested: true,
+      })
+    ).toEqual({ isPlaying: true, playbackRequested: true });
+  });
+
+  test("stays paused when audio is not requested and the player is paused", () => {
+    expect(
+      resolvePlayStateAfterViewResume({
+        playerState: 2,
+        playbackRequested: false,
+      })
+    ).toEqual({ isPlaying: false, playbackRequested: false });
+  });
+
+  test("stays paused when the player state is unknown and nothing is requested", () => {
+    expect(
+      resolvePlayStateAfterViewResume({
+        playerState: -1,
+        playbackRequested: false,
+      })
+    ).toEqual({ isPlaying: false, playbackRequested: false });
+  });
+});
+
+describe("applyPlayStateAfterViewResume", () => {
+  test("confirms a pending request without issuing another play request", () => {
+    const setIsPlaying = () => {
+      throw new Error("should not re-request play");
+    };
+    let confirmed = false;
+
+    const next = applyPlayStateAfterViewResume(
+      { isPlaying: false, playbackRequested: true },
+      1,
+      {
+        setIsPlaying,
+        confirmPlayback: () => {
+          confirmed = true;
+        },
+      }
+    );
+
+    expect(next).toEqual({ isPlaying: true, playbackRequested: true });
+    expect(confirmed).toBe(true);
+  });
+
+  test("re-requests play when the live player is running but the store was stopped", () => {
+    const calls: Array<boolean | "confirm"> = [];
+
+    applyPlayStateAfterViewResume(
+      { isPlaying: false, playbackRequested: false },
+      1,
+      {
+        setIsPlaying: (playing) => {
+          calls.push(playing);
+        },
+        confirmPlayback: () => {
+          calls.push("confirm");
+        },
+      }
+    );
+
+    expect(calls).toEqual([true, "confirm"]);
+  });
+
+  test("is a no-op when UI already matches a paused player", () => {
+    const setIsPlaying = () => {
+      throw new Error("should not change play state");
+    };
+
+    const next = applyPlayStateAfterViewResume(
+      { isPlaying: false, playbackRequested: false },
+      2,
+      { setIsPlaying, confirmPlayback: () => {} }
+    );
+
+    expect(next).toEqual({ isPlaying: false, playbackRequested: false });
   });
 });
