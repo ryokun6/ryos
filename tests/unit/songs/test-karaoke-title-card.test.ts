@@ -141,6 +141,17 @@ describe("karaoke title card timing", () => {
     ).toBe(true);
   });
 
+  test("resyncs karaoke play-state UI when leaving cover flow", () => {
+    const logicSource = readSource("src/apps/karaoke/hooks/useKaraokeLogic.ts");
+
+    expect(logicSource.includes("applyPlayStateAfterViewResume")).toBe(true);
+    expect(logicSource.includes("prevCoverFlowOpenRef")).toBe(true);
+    expect(logicSource.includes("getPlayerState")).toBe(true);
+    expect(
+      logicSource.includes("isCurrentTrack = trackId === playback.currentSongId")
+    ).toBe(true);
+  });
+
   test("keeps title-card marquee bleed tight to the visible title lane", () => {
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.paddingLeft).toBe("0.35em");
     expect(TITLE_CARD_TITLE_SHADOW_BLEED_STYLE.marginLeft).toBe("-0.35em");

@@ -39,6 +39,7 @@ import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavi
 import { useTrackSwitchGuard } from "@/shared/media/useTrackSwitchGuard";
 import { useActiveMediaPlayer } from "@/shared/media/useActiveMediaPlayer";
 import { useLyricOffsetTrackChange } from "@/shared/media/useLyricOffsetTrackChange";
+import { applyPlayStateAfterViewResume } from "@/shared/media/confirmedPlayback";
 import { createClientLogger } from "@/utils/logger";
 
 // User-agent sniffing is constant for the document lifetime, so compute once
@@ -1555,9 +1556,18 @@ export function useKaraokeLogic({
         setIsCoverFlowOpen(false);
         return;
       }
-      startTrackSwitch();
-      setCurrentSongId(trackId);
-      setIsPlaying(true);
+      const playback = useKaraokeStore.getState();
+      const isCurrentTrack = trackId === playback.currentSongId;
+      // Re-requesting play on the already-playing current track clears
+      // confirmed `isPlaying` via requestPlayback() and YouTube will not
+      // re-emit onPlay, so the toolbar would stay paused. Just dismiss.
+      if (!isCurrentTrack) {
+        startTrackSwitch();
+        setCurrentSongId(trackId);
+        setIsPlaying(true);
+      } else if (!playback.playbackRequested) {
+        setIsPlaying(true);
+      }
       setIsCoverFlowOpen(false);
     },
     [
@@ -1612,6 +1622,36 @@ export function useKaraokeLogic({
   const handleCoverFlowRotation = useCallback(() => {
     // Optional: play click sound or vibrate here if desired
   }, []);
+
+  const prevCoverFlowOpenRef = useRef(isCoverFlowOpen);
+  useEffect(() => {
+    const wasOpen = prevCoverFlowOpenRef.current;
+    prevCoverFlowOpenRef.current = isCoverFlowOpen;
+    if (!wasOpen || isCoverFlowOpen || listenRemoteOnly) return;
+
+    const internal = getActivePlayer()?.getInternalPlayer?.() as
+      | { getPlayerState?: () => number }
+      | undefined;
+    const playerState =
+      typeof internal?.getPlayerState === "function"
+        ? internal.getPlayerState()
+        : undefined;
+    const playback = useKaraokeStore.getState();
+    applyPlayStateAfterViewResume(
+      {
+        isPlaying: playback.isPlaying,
+        playbackRequested: playback.playbackRequested,
+      },
+      playerState,
+      { setIsPlaying, confirmPlayback }
+    );
+  }, [
+    confirmPlayback,
+    getActivePlayer,
+    isCoverFlowOpen,
+    listenRemoteOnly,
+    setIsPlaying,
+  ]);
 
   // Keyboard controls
   useEffect(() => {
