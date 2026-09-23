@@ -6,6 +6,13 @@ import {
   isInterludePlaceholderLine,
   type InterludePlaceholderLine,
 } from "@/utils/karaokeInterludeDisplay";
+import { isMobileSafari } from "@/utils/device";
+import {
+  getSafeAnimatePresenceMode,
+  getSafeLayoutProp,
+  sanitizeMotionVariantMap,
+  sanitizeMotionVisuals,
+} from "@/utils/motionSafe";
 import { ANIMATION_CONFIG } from "./constants";
 import { getVariants } from "./animationVariants";
 import { getLyricsTextAlign } from "./lyricsAlignmentUtils";
@@ -48,8 +55,15 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
     glowShadowHighlight,
   } = vm;
 
+  // Karaoke (and the desktop lyrics wallpaper) mount this immediately.
+  // Motion 13 WAAPI + popLayout / layout / filter / textShadow can throw on
+  // iOS Safari and take down Desktop when the wallpaper path is involved.
+  const isIosSafari = isMobileSafari();
+  const presenceMode = getSafeAnimatePresenceMode("popLayout", isIosSafari);
+  const layoutProp = getSafeLayoutProp("position", isIosSafari);
+
   return (
-    <AnimatePresence mode="popLayout">
+    <AnimatePresence mode={presenceMode}>
       {visibleLines.map((line, index) => {
         const isInterludePlaceholder = isInterludePlaceholderLine(line);
         const lineForContent: LyricLine = isInterludePlaceholder
@@ -133,24 +147,30 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
             ? currentTimeMs
             : undefined;
 
-        const variants = getVariants(
-          position,
-          alignment === LyricsAlignment.Alternating,
-          isCurrent,
-          hasWordTimings,
-          isOldSchoolKaraoke
+        const variants = sanitizeMotionVariantMap(
+          getVariants(
+            position,
+            alignment === LyricsAlignment.Alternating,
+            isCurrent,
+            hasWordTimings,
+            isOldSchoolKaraoke
+          ),
+          isIosSafari
         );
-        const dynamicTransition = {
-          ...ANIMATION_CONFIG.spring,
-          opacity: hasWordTimings
-            ? { duration: 0.15 }
-            : ANIMATION_CONFIG.fade,
-          textShadow: hasWordTimings
-            ? { duration: 0.15 }
-            : ANIMATION_CONFIG.fade,
-          filter: ANIMATION_CONFIG.fade,
-          duration: 0.15,
-        };
+        const dynamicTransition = sanitizeMotionVisuals(
+          {
+            ...ANIMATION_CONFIG.spring,
+            opacity: hasWordTimings
+              ? { duration: 0.15 }
+              : ANIMATION_CONFIG.fade,
+            textShadow: hasWordTimings
+              ? { duration: 0.15 }
+              : ANIMATION_CONFIG.fade,
+            filter: ANIMATION_CONFIG.fade,
+            duration: 0.15,
+          },
+          isIosSafari
+        );
         const hasAlternatingLeftInset =
           alignment === LyricsAlignment.Alternating &&
           index === 0 &&
@@ -163,7 +183,7 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
         return (
           <motion.div
             key={line.startTimeMs}
-            layout="position"
+            layout={layoutProp}
             initial="initial"
             animate="animate"
             exit="exit"

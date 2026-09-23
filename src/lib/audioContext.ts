@@ -78,6 +78,35 @@ export const getAudioContext = (): AudioContext => {
 };
 
 /**
+ * True when the context can create Web Audio nodes. The dummy `{ state:
+ * "closed" }` object returned when AudioContext construction fails has no
+ * `createGain` / `destination` — callers must not assume those exist.
+ */
+export const canCreateAudioNodes = (
+  ctx: AudioContext | null | undefined,
+): ctx is AudioContext => {
+  return Boolean(
+    ctx &&
+      ctx.state !== "closed" &&
+      typeof ctx.createGain === "function" &&
+      ctx.destination,
+  );
+};
+
+/** Create a gain node, or null when the context is dummy / closed / broken. */
+export const tryCreateGainNode = (ctx: AudioContext): GainNode | null => {
+  if (!canCreateAudioNodes(ctx)) {
+    return null;
+  }
+  try {
+    return ctx.createGain();
+  } catch (err) {
+    console.error("[AudioContext] createGain failed:", err);
+    return null;
+  }
+};
+
+/**
  * Safari-specific: wait for the AudioContext state to actually change after resume().
  * Safari sometimes has a delay between the resume() promise resolving and the state updating.
  */

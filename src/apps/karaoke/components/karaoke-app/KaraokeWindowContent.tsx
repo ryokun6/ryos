@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Suspense, useEffect, useState } from "react";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/ipod-app/ipodLazyImports";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
@@ -211,6 +212,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
         </div>
       )}
 
+      <IsolatingErrorBoundary fallback={null}>
       <KaraokeVisualLayers
         effectiveDisplayMode={effectiveDisplayMode}
         visualBackgroundActive={visualBackgroundActive}
@@ -274,6 +276,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
           t={t}
         />
       </KaraokeLyricsPlaybackProvider>
+      </IsolatingErrorBoundary>
 
       {/* CoverFlow overlay - full height, below notitlebar (z-50); lazy-loaded */}
       {tracks.length > 0 && hasOpenedCoverFlow && (

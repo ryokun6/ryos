@@ -4,6 +4,7 @@ import {
   getAudioContext,
   onContextChange,
   resumeAudioContext,
+  tryCreateGainNode,
 } from "@/lib/audioContext";
 import { abortableFetch } from "@/utils/abortableFetch";
 import {
@@ -116,19 +117,24 @@ export function useSound(soundPath: string, volume: number = 0.3) {
   const uiVolume = useAudioSettingsStore((s) => s.uiVolume);
   const masterVolume = useAudioSettingsStore((s) => s.masterVolume);
 
-  // Create gain node only once on mount
+  // Create gain node only once on mount. A dummy/closed AudioContext (iOS
+  // Safari when construction fails) has no createGain — throwing here from a
+  // CrashDialog would escalate an app crash into a Desktop crash.
   useEffect(() => {
     const instanceSources = instanceSourcesRef.current;
-    // Create gain node for volume control
-    gainNodeRef.current = getAudioContext().createGain();
-    gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
-
-    // Connect to destination
-    gainNodeRef.current.connect(getAudioContext().destination);
+    const gainNode = tryCreateGainNode(getAudioContext());
+    if (gainNode) {
+      gainNode.gain.value = volume * uiVolume * masterVolume;
+      gainNodeRef.current = gainNode;
+    }
 
     return () => {
       if (gainNodeRef.current) {
-        gainNodeRef.current.disconnect();
+        try {
+          gainNodeRef.current.disconnect();
+        } catch {
+          // Dummy or already-disconnected nodes can throw.
+        }
       }
       // Stop all instance sources on cleanup
       stopAndReleaseOwnedSoundSources(instanceSources);
@@ -172,9 +178,12 @@ export function useSound(soundPath: string, volume: number = 0.3) {
             console.error("Error disconnecting gain node");
           }
         }
-        gainNodeRef.current = getAudioContext().createGain();
-        gainNodeRef.current.gain.value = volume * uiVolume * masterVolume;
-        gainNodeRef.current.connect(getAudioContext().destination);
+        const recreated = tryCreateGainNode(getAudioContext());
+        if (!recreated) {
+          return null;
+        }
+        recreated.gain.value = volume * uiVolume * masterVolume;
+        gainNodeRef.current = recreated;
       }
 
       // If too many concurrent sources are active, skip to avoid audio congestion

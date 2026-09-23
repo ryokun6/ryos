@@ -1,4 +1,5 @@
 import { FullScreenPortal } from "@/apps/ipod/components/FullScreenPortal";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
 import {
   selectEffectiveIpodVolume,
@@ -169,6 +170,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
               </div>
             </div>
 
+            <IsolatingErrorBoundary fallback={null}>
             <KaraokeVisualLayers
               effectiveDisplayMode={effectiveDisplayMode}
               visualBackgroundActive={visualBackgroundActive}
@@ -223,6 +225,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
               onSwipeUp={handleFullscreenLyricsSwipeUp}
               onSwipeDown={handleFullscreenLyricsSwipeDown}
             />
+            </IsolatingErrorBoundary>
           </div>
         </div>
       )}

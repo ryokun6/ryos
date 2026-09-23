@@ -1,6 +1,8 @@
 import { memo, useMemo } from "react";
 import { motion } from "motion/react";
 import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
+import { isMobileSafari } from "@/utils/device";
+import { getSafeLayoutProp } from "@/utils/motionSafe";
 import { normalizeCoverColor } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {
@@ -146,7 +148,7 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
       transition={{ duration: 0.28 }}
     >
       <motion.div
-        layout="position"
+        layout={getSafeLayoutProp("position", isMobileSafari())}
         transition={TITLE_CARD_MOVEMENT_TRANSITION}
         className="w-full max-w-none flex items-center justify-start"
         style={titleCardContentStyle}
