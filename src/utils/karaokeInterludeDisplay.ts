@@ -118,23 +118,53 @@ function hasLongIntro(lines: LyricLine[], currentTimeMs: number): boolean {
   return firstLineStartMs >= LONG_INTERLUDE_THRESHOLD_MS && currentTimeMs < firstLineStartMs;
 }
 
+function hasLongInterludeGap(currentLine: LyricLine, nextLine: LyricLine): boolean {
+  const silentGapMs = getLineStartMs(nextLine) - getLineEndMs(currentLine);
+  return silentGapMs >= LONG_INTERLUDE_THRESHOLD_MS;
+}
+
 function hasLongInterlude(
   currentLine: LyricLine,
   nextLine: LyricLine,
   currentTimeMs: number
 ): boolean {
-  const currentLineEndMs = getLineEndMs(currentLine);
-  const nextLineStartMs = getLineStartMs(nextLine);
-  const silentGapMs = nextLineStartMs - currentLineEndMs;
-
-  if (silentGapMs < LONG_INTERLUDE_THRESHOLD_MS) {
+  if (!hasLongInterludeGap(currentLine, nextLine)) {
     return false;
   }
 
+  const currentLineEndMs = getLineEndMs(currentLine);
+  const nextLineStartMs = getLineStartMs(nextLine);
   return (
     currentTimeMs >= currentLineEndMs + INTERLUDE_PLACEHOLDER_DELAY_MS &&
     currentTimeMs < nextLineStartMs
   );
+}
+
+/**
+ * True when playback just stepped from a finished line into the next one across a long gap.
+ * Alternating rows must follow immediately; the usual transition delay would put the finished
+ * lyric back on screen for a frame after the delay dots end.
+ */
+export function didAdvancePastLongInterlude(
+  allLines: LyricLine[],
+  previousCurrentIndex: number,
+  currentIndex: number
+): boolean {
+  if (
+    previousCurrentIndex < 0 ||
+    currentIndex < 0 ||
+    currentIndex !== previousCurrentIndex + 1
+  ) {
+    return false;
+  }
+
+  const previousLine = allLines[previousCurrentIndex];
+  const currentLine = allLines[currentIndex];
+  if (!previousLine || !currentLine) {
+    return false;
+  }
+
+  return hasLongInterludeGap(previousLine, currentLine);
 }
 
 export function isInterludePlaceholderLine(
