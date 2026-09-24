@@ -1,8 +1,8 @@
 import { memo, useMemo } from "react";
 import { motion } from "motion/react";
 import { useCoverGlowColor } from "@/hooks/useCoverGlowColor";
-import { isMobileSafari } from "@/utils/device";
-import { getSafeLayoutProp } from "@/utils/motionSafe";
+import { isIosWebKit } from "@/utils/device";
+import { getSafeLayoutProp, shouldUseStaticLyricsRenderer } from "@/utils/motionSafe";
 import { normalizeCoverColor } from "@/apps/ipod/components/lyrics-display/colorUtils";
 import { ScrollingText } from "@/apps/ipod/components/screen";
 import {
@@ -137,10 +137,92 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
     return values;
   }, [album, artist]);
 
+  const isIosWebKitDevice = isIosWebKit();
+  const useStaticCard = shouldUseStaticLyricsRenderer(isIosWebKitDevice);
+  const outerClassName = `absolute inset-0 z-40 pointer-events-none flex items-end justify-center pr-8 text-left text-white select-none ${bottomPaddingClass}`;
+  const innerClassName = "w-full max-w-none flex items-center justify-start";
+  const titleCardBody = (
+    <>
+      {coverUrl && (
+        <div className="relative shrink-0" style={coverImageStyle}>
+          {onOpenCoverFlow && (
+            <button
+              type="button"
+              aria-label={coverFlowLabel}
+              title={coverFlowLabel}
+              className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenCoverFlow();
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+            />
+          )}
+          <div
+            className="absolute inset-0 overflow-hidden"
+            style={TITLE_CARD_COVER_SLEEVE_STYLE}
+          >
+            <img
+              src={coverUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+          </div>
+          <div
+            className="absolute top-full left-0 w-full pointer-events-none"
+            style={TITLE_CARD_COVER_REFLECTION_WRAPPER_STYLE}
+          >
+            <img
+              src={coverUrl}
+              alt=""
+              className="w-full h-auto"
+              style={TITLE_CARD_COVER_REFLECTION_STYLE}
+              draggable={false}
+            />
+          </div>
+        </div>
+      )}
+      <div className="min-w-0 flex-1 text-left overflow-visible">
+        <ScrollingText
+          text={title}
+          align="left"
+          fadeEdges
+          isPlaying={isPlaying}
+          scrollStartDelaySec={1}
+          className={`${titleTextSizeClass} ${fontClassName} w-full max-w-full`}
+          style={regularTextStyle}
+        />
+        {metadataLines.map((metadataLine) => (
+          <div
+            key={metadataLine}
+            className={`text-white ${secondaryTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
+            style={TITLE_CARD_SECONDARY_TEXT_STYLE}
+          >
+            {metadataLine}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+
+  if (useStaticCard) {
+    return (
+      <div key="karaoke-title-card" className={outerClassName} style={titleCardOuterStyle}>
+        <div className={innerClassName} style={titleCardContentStyle}>
+          {titleCardBody}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       key="karaoke-title-card"
-      className={`absolute inset-0 z-40 pointer-events-none flex items-end justify-center pr-8 text-left text-white select-none ${bottomPaddingClass}`}
+      className={outerClassName}
       style={titleCardOuterStyle}
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
@@ -148,74 +230,12 @@ export const KaraokeTitleCard = memo(function KaraokeTitleCard({
       transition={{ duration: 0.28 }}
     >
       <motion.div
-        layout={getSafeLayoutProp("position", isMobileSafari())}
+        layout={getSafeLayoutProp("position", isIosWebKitDevice)}
         transition={TITLE_CARD_MOVEMENT_TRANSITION}
-        className="w-full max-w-none flex items-center justify-start"
+        className={innerClassName}
         style={titleCardContentStyle}
       >
-        {coverUrl && (
-          <div className="relative shrink-0" style={coverImageStyle}>
-            {onOpenCoverFlow && (
-              <button
-                type="button"
-                aria-label={coverFlowLabel}
-                title={coverFlowLabel}
-                className="absolute inset-0 z-10 p-0 border-0 bg-transparent cursor-pointer pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenCoverFlow();
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                onMouseUp={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                onTouchEnd={(e) => e.stopPropagation()}
-              />
-            )}
-            <div
-              className="absolute inset-0 overflow-hidden"
-              style={TITLE_CARD_COVER_SLEEVE_STYLE}
-            >
-              <img
-                src={coverUrl}
-                alt=""
-                className="w-full h-full object-cover"
-                draggable={false}
-              />
-            </div>
-            <div
-              className="absolute top-full left-0 w-full pointer-events-none"
-              style={TITLE_CARD_COVER_REFLECTION_WRAPPER_STYLE}
-            >
-              <img
-                src={coverUrl}
-                alt=""
-                className="w-full h-auto"
-                style={TITLE_CARD_COVER_REFLECTION_STYLE}
-                draggable={false}
-              />
-            </div>
-          </div>
-        )}
-        <div className="min-w-0 flex-1 text-left overflow-visible">
-          <ScrollingText
-            text={title}
-            align="left"
-            fadeEdges
-            isPlaying={isPlaying}
-            scrollStartDelaySec={1}
-            className={`${titleTextSizeClass} ${fontClassName} w-full max-w-full`}
-            style={regularTextStyle}
-          />
-          {metadataLines.map((metadataLine) => (
-            <div
-              key={metadataLine}
-              className={`text-white ${secondaryTextSizeClass} ${fontClassName} whitespace-pre-wrap break-words`}
-              style={TITLE_CARD_SECONDARY_TEXT_STYLE}
-            >
-              {metadataLine}
-            </div>
-          ))}
-        </div>
+        {titleCardBody}
       </motion.div>
     </motion.div>
   );

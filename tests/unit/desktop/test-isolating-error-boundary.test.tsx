@@ -69,14 +69,24 @@ describe("IsolatingErrorBoundary", () => {
     expect(source.match(/<IsolatingErrorBoundary/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
   });
 
-  test("Karaoke window and fullscreen isolate lyrics/visual throws", () => {
+  test("Karaoke window and fullscreen isolate lyrics/visual/YouTube throws", () => {
     const windowSource = readSource(
       "src/apps/karaoke/components/karaoke-app/KaraokeWindowContent.tsx",
     );
     const fullscreenSource = readSource(
       "src/apps/karaoke/components/karaoke-app/KaraokeFullscreenView.tsx",
     );
+    const youtubeSource = readSource("src/components/shared/YouTubePlayer.tsx");
     expect(windowSource).toContain("IsolatingErrorBoundary");
+    expect(windowSource.match(/IsolatingErrorBoundary/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(fullscreenSource).toContain("IsolatingErrorBoundary");
+    expect(youtubeSource).toContain("IsolatingErrorBoundary");
+  });
+
+  test("iOS crash fallbacks skip Dialog and useSound", () => {
+    const source = readSource("src/components/errors/ErrorBoundaries.tsx");
+    expect(source).toContain("isIosWebKit");
+    expect(source).toContain("never mount Dialog/useSound");
+    expect(source).toMatch(/if \(isIosWebKit\(\)\) \{\s*return staticFallback;/);
   });
 });

@@ -1,14 +1,14 @@
 /**
- * iOS Safari / mobile WebKit Motion 13 WAAPI workarounds.
+ * iOS / mobile WebKit Motion 13 WAAPI workarounds.
  *
- * Motion 13 drives layout (`popLayout`, `layout="position"`) and visual
- * properties (`filter`, `textShadow`) through the Web Animations API.
- * iOS Safari's WAAPI implementation can throw when those features run
- * together — notably in LyricsDisplay, which Karaoke mounts immediately
- * (and which the desktop lyrics wallpaper also mounts outside AppErrorBoundary).
+ * Motion 13 (bumped from 12.x on this branch) drives layout (`popLayout`,
+ * `layout="position"`) and visual properties (`filter`, `textShadow`) through
+ * the Web Animations API. iOS WebKit can throw on those features — in lyrics,
+ * dock icon presence, window chrome, and wallpaper layers.
  *
- * Keep desktop / non-iOS Motion unchanged. Callers pass a boolean so tests
- * can exercise both branches without stubbing navigator.
+ * Callers pass a boolean so tests can exercise both branches without stubbing
+ * navigator. Prefer `isIosWebKit()` (all iPhone/iPad browsers) over the
+ * narrower `isMobileSafari()`.
  */
 
 export type AnimatePresenceMode = "sync" | "wait" | "popLayout";
@@ -87,4 +87,13 @@ export function sanitizeMotionVariantMap<
     next[key] = sanitizeMotionVisuals(variants[key], true);
   }
   return next;
+}
+
+/**
+ * Motion 13 can still throw on iOS even after stripping filter/textShadow
+ * (opacity/scale/y still go through WAAPI). Lyrics should render as static
+ * DOM on iOS WebKit.
+ */
+export function shouldUseStaticLyricsRenderer(isIosWebKitDevice: boolean): boolean {
+  return isIosWebKitDevice;
 }

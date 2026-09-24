@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useNowPlayingCover } from "@/hooks/useNowPlayingCover";
 import { usePublishNowPlayingCover } from "@/stores/useNowPlayingCoverBridge";
-import { isMobileSafari } from "@/utils/device";
+import { isIosWebKit } from "@/utils/device";
 import { getSafeAnimatePresenceMode } from "@/utils/motionSafe";
 
 export function CoverWallpaperLayer() {
@@ -11,7 +11,7 @@ export function CoverWallpaperLayer() {
 
   return (
     <div className="absolute inset-0 w-full h-full z-[-10] overflow-hidden bg-neutral-950">
-      <AnimatePresence mode={getSafeAnimatePresenceMode("popLayout", isMobileSafari())}>
+      <AnimatePresence mode={getSafeAnimatePresenceMode("popLayout", isIosWebKit())}>
         {coverUrl ? (
           <motion.div
             key={coverUrl}

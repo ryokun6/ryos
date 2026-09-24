@@ -49,7 +49,7 @@ describe("motionSafe iOS Safari WAAPI guards", () => {
     expect(isUnsafeMotionVisualKey("opacity")).toBe(false);
   });
 
-  test("lyrics lines and title card use the iOS-safe Motion helpers", () => {
+  test("lyrics lines skip Motion entirely on iOS WebKit", () => {
     const lyrics = readSource(
       "src/apps/ipod/components/lyrics-display/LyricsDisplayLines.tsx",
     );
@@ -60,26 +60,40 @@ describe("motionSafe iOS Safari WAAPI guards", () => {
       "src/apps/ipod/components/lyrics-display/LyricsDisplay.tsx",
     );
 
-    expect(lyrics).toContain("getSafeAnimatePresenceMode");
-    expect(lyrics).toContain("getSafeLayoutProp");
-    expect(lyrics).toContain("sanitizeMotionVariantMap");
-    expect(lyrics).toContain("sanitizeMotionVisuals");
+    expect(lyrics).toContain("isIosWebKit");
+    expect(lyrics).toContain("shouldUseStaticLyricsRenderer");
+    expect(lyrics).toContain("useStaticLyrics");
     expect(lyrics).not.toMatch(/mode="popLayout"/);
     expect(lyrics).not.toMatch(/layout="position"/);
-    expect(titleCard).toContain("getSafeLayoutProp");
+    expect(lyrics).not.toContain("isMobileSafari");
+    expect(titleCard).toContain("shouldUseStaticLyricsRenderer");
     expect(titleCard).not.toMatch(/layout="position"/);
     expect(lyricsDisplay).toContain("IsolatingErrorBoundary");
   });
 
-  test("desktop lyrics/cover wallpapers isolate Motion throws from Desktop", () => {
+  test("desktop chrome and wallpaper isolate Motion throws from Desktop", () => {
     const wallpaper = readSource(
       "src/components/layout/desktop/DesktopDynamicWallpaper.tsx",
     );
     const cover = readSource(
       "src/components/layout/desktop/DesktopCoverWallpaperLayer.tsx",
     );
+    const dock = readSource("src/components/layout/dock/MacDock.tsx");
+    const taskbar = readSource(
+      "src/components/layout/menu-bar/WindowsTaskbar.tsx",
+    );
+    const appManager = readSource(
+      "src/apps/base/app-manager/AppManagerView.tsx",
+    );
     expect(wallpaper).toContain("IsolatingErrorBoundary");
     expect(wallpaper.match(/IsolatingErrorBoundary/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
     expect(cover).toContain("getSafeAnimatePresenceMode");
+    expect(cover).toContain("isIosWebKit");
+    expect(dock).toContain("getSafeAnimatePresenceMode");
+    expect(dock).not.toMatch(/mode="popLayout"/);
+    expect(taskbar).toContain("getSafeAnimatePresenceMode");
+    expect(appManager).toContain("<Dock />");
+    expect(appManager).toMatch(/<IsolatingErrorBoundary[\s\S]*<Dock/);
+    expect(appManager).toMatch(/<IsolatingErrorBoundary[\s\S]*<Desktop/);
   });
 });

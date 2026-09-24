@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactPlayerImport from "react-player";
 import type ReactPlayerType from "react-player";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { createClientLogger } from "@/utils/logger";
 
 // react-player 2 is CJS with an `__esModule`/`default` exports object. Vite's
@@ -114,6 +115,7 @@ export const YouTubePlayer = function YouTubePlayer(
   ]);
 
   return (
+    <IsolatingErrorBoundary fallback={null}>
     <ReactPlayer
       ref={setPlayerRef}
       url={url}
@@ -172,5 +174,6 @@ export const YouTubePlayer = function YouTubePlayer(
       }}
       {...props}
     />
+    </IsolatingErrorBoundary>
   );
 };

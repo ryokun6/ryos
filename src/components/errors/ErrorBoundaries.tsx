@@ -17,6 +17,7 @@ import {
   RYOS_ERROR_BOUNDARY_TEST_EVENT,
   type RuntimeCrashTestDetail,
 } from "@/utils/errorReporting";
+import { isIosWebKit } from "@/utils/device";
 
 type CrashDialogScope = "app" | "desktop";
 
@@ -407,17 +408,21 @@ export function AppErrorBoundary({
         const primaryActionLabel = t("common.errorBoundaries.relaunch", {
           defaultValue: "Relaunch",
         });
+        const staticFallback = (
+          <StaticCrashFallback
+            heading={heading}
+            description={description}
+            primaryActionLabel={primaryActionLabel}
+            onPrimaryAction={onRelaunch}
+          />
+        );
+        // iOS WebKit: never mount Dialog/useSound in a crash fallback.
+        // CrashDialog itself can throw and escalate into DesktopErrorBoundary.
+        if (isIosWebKit()) {
+          return staticFallback;
+        }
         return (
-          <IsolatingErrorBoundary
-            fallback={
-              <StaticCrashFallback
-                heading={heading}
-                description={description}
-                primaryActionLabel={primaryActionLabel}
-                onPrimaryAction={onRelaunch}
-              />
-            }
-          >
+          <IsolatingErrorBoundary fallback={staticFallback}>
             <CrashDialog
               scope="app"
               titleBarLabel={appName}
@@ -473,17 +478,19 @@ export function DesktopErrorBoundary({
           defaultValue: "Reload Desktop",
         });
         const reloadDesktop = () => window.location.reload();
+        const staticFallback = (
+          <StaticCrashFallback
+            heading={heading}
+            description={description}
+            primaryActionLabel={primaryActionLabel}
+            onPrimaryAction={reloadDesktop}
+          />
+        );
+        if (isIosWebKit()) {
+          return staticFallback;
+        }
         return (
-          <IsolatingErrorBoundary
-            fallback={
-              <StaticCrashFallback
-                heading={heading}
-                description={description}
-                primaryActionLabel={primaryActionLabel}
-                onPrimaryAction={reloadDesktop}
-              />
-            }
-          >
+          <IsolatingErrorBoundary fallback={staticFallback}>
             <CrashDialog
               scope="desktop"
               titleBarLabel="ryOS"

@@ -164,6 +164,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
       {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
       {/* When display mode is not Video, the player is hidden visually but still plays audio */}
       {currentTrack ? (
+        <IsolatingErrorBoundary fallback={null}>
         <div
           className="absolute inset-0 overflow-hidden"
           style={
@@ -202,6 +203,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
             />
           </div>
         </div>
+        </IsolatingErrorBoundary>
       ) : showEmptyLibrary ? (
         <div className="absolute inset-0 z-[1]">
           <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />

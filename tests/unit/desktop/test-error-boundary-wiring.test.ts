@@ -59,11 +59,12 @@ describe("Error Boundary Wiring Tests", () => {
       const source = readSource("src/components/errors/ErrorBoundaries.tsx");
       expect(source).toContain("IsolatingErrorBoundary");
       expect(source).toContain("StaticCrashFallback");
+      expect(source).toContain("isIosWebKit");
       expect(source).toMatch(
-        /fallback=\{\(error\) => \{[\s\S]*<IsolatingErrorBoundary[\s\S]*<CrashDialog[\s\S]*scope="app"/,
+        /if \(isIosWebKit\(\)\) \{\s*return staticFallback;[\s\S]*<CrashDialog[\s\S]*scope="app"/,
       );
       expect(source).toMatch(
-        /fallback=\{\(error\) => \{[\s\S]*<IsolatingErrorBoundary[\s\S]*<CrashDialog[\s\S]*scope="desktop"/,
+        /if \(isIosWebKit\(\)\) \{\s*return staticFallback;[\s\S]*<CrashDialog[\s\S]*scope="desktop"/,
       );
     });
 
