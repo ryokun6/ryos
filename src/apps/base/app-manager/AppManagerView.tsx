@@ -11,7 +11,7 @@ import { requestCloseWindow } from "@/utils/windowUtils";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import { useAssistantStore } from "@/stores/useAssistantStore";
-import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
+import { AppErrorBoundary, IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { isTextEditInitialData } from "@/types/appInitialData";
@@ -61,8 +61,14 @@ export function AppManagerView({
   const assistantEnabled = useAssistantStore((state) => state.enabled);
   return (
     <>
-      {showDesktopMenuBar && <MenuBar />}
-      <Dock />
+      {showDesktopMenuBar && (
+        <IsolatingErrorBoundary fallback={null}>
+          <MenuBar />
+        </IsolatingErrorBoundary>
+      )}
+      <IsolatingErrorBoundary fallback={null}>
+        <Dock />
+      </IsolatingErrorBoundary>
       {openInstanceIds.map((instanceId) => (
         <ManagedAppInstance
           key={instanceId}
@@ -79,12 +85,14 @@ export function AppManagerView({
         />
       ))}
 
-      <Desktop
-        apps={apps}
-        toggleApp={(appId, initialData, launchOrigin) => {
-          launchApp(appId, initialData, undefined, false, launchOrigin);
-        }}
-      />
+      <IsolatingErrorBoundary fallback={null}>
+        <Desktop
+          apps={apps}
+          toggleApp={(appId, initialData, launchOrigin) => {
+            launchApp(appId, initialData, undefined, false, launchOrigin);
+          }}
+        />
+      </IsolatingErrorBoundary>
 
       <SpotlightSearch />
 

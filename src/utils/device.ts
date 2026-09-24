@@ -43,3 +43,32 @@ export function isMobileSafari(): boolean {
     !/CriOS|FxiOS|EdgiOS/.test(userAgent)
   );
 }
+
+export type IosWebKitDetectInput = {
+  userAgent?: string;
+  maxTouchPoints?: number;
+};
+
+/**
+ * Fail-safe detector for iPhone / iPad / iPod WebKit, including Chrome/Firefox/
+ * Edge on iOS (CriOS/FxiOS/EdgiOS) and iPadOS 13+ desktop-mode UAs
+ * (`Macintosh` + multi-touch). Used to disable Motion 13 WAAPI paths that can
+ * take down the Desktop error boundary.
+ */
+export function isIosWebKit(input?: IosWebKitDetectInput): boolean {
+  const userAgent =
+    input?.userAgent ??
+    (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  if (!userAgent) return false;
+
+  const maxTouchPoints =
+    input?.maxTouchPoints ??
+    (typeof navigator !== "undefined" ? navigator.maxTouchPoints : 0);
+
+  const isIphoneOrIpod = /iP(hone|od)/.test(userAgent);
+  const isIpad =
+    /iPad/.test(userAgent) ||
+    (/Macintosh/.test(userAgent) && maxTouchPoints > 1);
+
+  return (isIphoneOrIpod || isIpad) && /AppleWebKit/i.test(userAgent);
+}

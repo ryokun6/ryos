@@ -59,6 +59,49 @@ export function getRuntimeErrorReporter(): RuntimeErrorReporter | null {
   return null;
 }
 
+export const CRASH_USER_AGENT_MAX_LENGTH = 180;
+
+export function truncateCrashUserAgent(
+  userAgent: string,
+  maxLength = CRASH_USER_AGENT_MAX_LENGTH,
+): string {
+  if (userAgent.length <= maxLength) {
+    return userAgent;
+  }
+  return `${userAgent.slice(0, maxLength)}…`;
+}
+
+export function formatCrashDiagnosticDump(input: {
+  error: Error;
+  componentStack?: string | null;
+  appId?: string | null;
+  appName?: string | null;
+  userAgent?: string | null;
+  timestamp?: string;
+  boundary?: string | null;
+}): string {
+  const timestamp = input.timestamp ?? new Date().toISOString();
+  const rawUa =
+    input.userAgent ??
+    (typeof navigator !== "undefined" ? navigator.userAgent : "");
+  const userAgent = rawUa ? truncateCrashUserAgent(rawUa) : "";
+  const lines = [
+    input.boundary ? `boundary: ${input.boundary}` : null,
+    `${input.error.name}: ${input.error.message || "Unknown error"}`,
+    input.appId ? `appId: ${input.appId}` : null,
+    input.appName ? `appName: ${input.appName}` : null,
+    `time: ${timestamp}`,
+    userAgent ? `ua: ${userAgent}` : null,
+    "",
+    "stack:",
+    input.error.stack?.trim() || "(none)",
+    "",
+    "componentStack:",
+    input.componentStack?.trim() || "(none)",
+  ];
+  return lines.filter((line): line is string => line !== null).join("\n");
+}
+
 export function reportRuntimeCrash(
   error: Error,
   context: RuntimeCrashContext,
@@ -83,11 +126,16 @@ export function reportRuntimeCrash(
     theme: report.theme,
   };
 
-  console.error("[ryOS] Runtime crash caught by error boundary", {
-    ...analyticsPayload,
-    componentStack: report.componentStack,
+  const diagnosticDump = formatCrashDiagnosticDump({
     error,
+    componentStack: report.componentStack,
+    appId: report.appId,
+    appName: report.appName,
+    userAgent: report.userAgent,
+    timestamp: report.timestamp,
+    boundary: report.boundary,
   });
+  console.error(`[ryOS] Runtime crash caught by error boundary\n${diagnosticDump}`);
 
   try {
     track(

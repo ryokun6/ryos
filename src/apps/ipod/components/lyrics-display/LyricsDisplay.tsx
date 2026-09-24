@@ -1,10 +1,19 @@
 import { useTranslation } from "react-i18next";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import type { LyricsDisplayProps } from "./types";
 import { ErrorState, LoadingState } from "./LoadingErrorStates";
 import { useLyricsDisplayController } from "./useLyricsDisplayController";
 import { LyricsDisplayLines } from "./LyricsDisplayLines";
 
 export function LyricsDisplay(props: LyricsDisplayProps) {
+  return (
+    <IsolatingErrorBoundary fallback={null}>
+      <LyricsDisplayInner {...props} />
+    </IsolatingErrorBoundary>
+  );
+}
+
+function LyricsDisplayInner(props: LyricsDisplayProps) {
   const { t } = useTranslation();
   const vm = useLyricsDisplayController(props);
 

@@ -74,6 +74,7 @@ export function KaraokeVisualLayers({
           coverUrl &&
           (effectiveDisplayMode === DisplayMode.Cover || !isPlaying) && (
           <motion.div
+            key={coverUrl}
             className={coverOverlayClassName}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

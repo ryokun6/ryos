@@ -55,6 +55,21 @@ describe("Error Boundary Wiring Tests", () => {
       expect(source).toContain("RYOS_ERROR_BOUNDARY_TEST_EVENT");
     });
 
+    test("isolates CrashDialog so a fallback throw cannot escalate to Desktop", async () => {
+      const source = readSource("src/components/errors/ErrorBoundaries.tsx");
+      expect(source).toContain("IsolatingErrorBoundary");
+      expect(source).toContain("StaticCrashFallback");
+      expect(source).toContain("isIosWebKit");
+      expect(source).toContain("error={error}");
+      expect(source).toContain("componentStack={componentStack}");
+      expect(source).toMatch(
+        /if \(isIosWebKit\(\)\) \{\s*return staticFallback;[\s\S]*<CrashDialog[\s\S]*scope="app"/,
+      );
+      expect(source).toMatch(
+        /if \(isIosWebKit\(\)\) \{\s*return staticFallback;[\s\S]*<CrashDialog[\s\S]*scope="desktop"/,
+      );
+    });
+
     test("supports optional external error reporter registration", async () => {
       const source = readSource("src/utils/errorReporting.ts");
       expect(source).toContain("setRuntimeErrorReporter");

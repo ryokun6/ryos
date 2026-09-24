@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import {
   getDayNightGradientCss,
   getWeatherGradientCss,
@@ -97,16 +98,20 @@ export function DesktopDynamicWallpaper() {
   }
   if (isCoverWallpaper(currentWallpaper)) {
     return (
-      <Suspense fallback={<DarkWallpaperFallback />}>
-        <CoverWallpaperLayer />
-      </Suspense>
+      <IsolatingErrorBoundary fallback={<DarkWallpaperFallback />}>
+        <Suspense fallback={<DarkWallpaperFallback />}>
+          <CoverWallpaperLayer />
+        </Suspense>
+      </IsolatingErrorBoundary>
     );
   }
   if (isLyricsWallpaper(currentWallpaper)) {
     return (
-      <Suspense fallback={<DarkWallpaperFallback />}>
-        <LyricsWallpaperLayer />
-      </Suspense>
+      <IsolatingErrorBoundary fallback={<DarkWallpaperFallback />}>
+        <Suspense fallback={<DarkWallpaperFallback />}>
+          <LyricsWallpaperLayer />
+        </Suspense>
+      </IsolatingErrorBoundary>
     );
   }
   return null;

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { Suspense, useEffect, useState } from "react";
+import { IsolatingErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/ipod-app/ipodLazyImports";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
@@ -163,6 +164,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
       {/* Video Player - container clips YouTube UI by extending height and using negative margin */}
       {/* When display mode is not Video, the player is hidden visually but still plays audio */}
       {currentTrack ? (
+        <IsolatingErrorBoundary fallback={null}>
         <div
           className="absolute inset-0 overflow-hidden"
           style={
@@ -201,6 +203,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
             />
           </div>
         </div>
+        </IsolatingErrorBoundary>
       ) : showEmptyLibrary ? (
         <div className="absolute inset-0 z-[1]">
           <KaraokeLibraryEmptyState onAddSongs={handleAddSong} />
@@ -211,6 +214,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
         </div>
       )}
 
+      <IsolatingErrorBoundary fallback={null}>
       <KaraokeVisualLayers
         effectiveDisplayMode={effectiveDisplayMode}
         visualBackgroundActive={visualBackgroundActive}
@@ -274,6 +278,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
           t={t}
         />
       </KaraokeLyricsPlaybackProvider>
+      </IsolatingErrorBoundary>
 
       {/* CoverFlow overlay - full height, below notitlebar (z-50); lazy-loaded */}
       {tracks.length > 0 && hasOpenedCoverFlow && (

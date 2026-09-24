@@ -15,19 +15,22 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
   reportRuntimeCrash,
   RYOS_ERROR_BOUNDARY_TEST_EVENT,
+  truncateCrashUserAgent,
   type RuntimeCrashTestDetail,
 } from "@/utils/errorReporting";
+import { isIosWebKit } from "@/utils/device";
 
 type CrashDialogScope = "app" | "desktop";
 
 interface ErrorBoundaryBaseProps {
   children: React.ReactNode;
-  fallback: (error: Error) => React.ReactNode;
+  fallback: (error: Error, componentStack: string | null) => React.ReactNode;
   onError?: (error: Error, info: React.ErrorInfo) => void;
 }
 
 interface ErrorBoundaryBaseState {
   error: Error | null;
+  componentStack: string | null;
 }
 
 interface CrashDialogProps {
@@ -56,25 +59,33 @@ export interface DesktopErrorBoundaryProps {
   children: React.ReactNode;
 }
 
+export interface IsolatingErrorBoundaryProps {
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onError?: (error: Error, info: React.ErrorInfo) => void;
+}
+
 class ErrorBoundaryBase extends React.Component<
   ErrorBoundaryBaseProps,
   ErrorBoundaryBaseState
 > {
   state: ErrorBoundaryBaseState = {
     error: null,
+    componentStack: null,
   };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryBaseState {
-    return { error };
+    return { error, componentStack: null };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo): void {
+    this.setState({ componentStack: info.componentStack ?? null });
     this.props.onError?.(error, info);
   }
 
   render(): React.ReactNode {
     if (this.state.error) {
-      return this.props.fallback(this.state.error);
+      return this.props.fallback(this.state.error, this.state.componentStack);
     }
 
     return this.props.children;
@@ -134,6 +145,112 @@ function BoundaryTestCrash({
   }
 
   return null;
+}
+
+/**
+ * Catches render/lifecycle throws without using CrashDialog / Dialog / useSound.
+ * Used around lyrics, wallpaper, and the crash-dialog fallback so a secondary
+ * throw cannot escalate into DesktopErrorBoundary.
+ */
+export function IsolatingErrorBoundary({
+  children,
+  fallback = null,
+  onError,
+}: IsolatingErrorBoundaryProps) {
+  return (
+    <ErrorBoundaryBase
+      fallback={() => fallback}
+      onError={onError}
+    >
+      {children}
+    </ErrorBoundaryBase>
+  );
+}
+
+export function StaticCrashFallback({
+  heading,
+  description,
+  primaryActionLabel,
+  onPrimaryAction,
+  error,
+  componentStack,
+  appId,
+  appName,
+  timestamp,
+  userAgent,
+}: {
+  heading: string;
+  description: string;
+  primaryActionLabel: string;
+  onPrimaryAction: () => void;
+  error: Error;
+  componentStack?: string | null;
+  appId?: string;
+  appName?: string;
+  timestamp?: string;
+  userAgent?: string;
+}) {
+  const resolvedTimestamp = timestamp ?? new Date().toISOString();
+  const resolvedUserAgent = truncateCrashUserAgent(
+    userAgent ??
+      (typeof navigator !== "undefined" ? navigator.userAgent : ""),
+  );
+  const errorLabel = `${error.name}: ${error.message || "Unknown error"}`;
+  const stack = error.stack?.trim() || "";
+  const resolvedComponentStack = componentStack?.trim() || "";
+
+  return (
+    <div
+      role="alertdialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/25 p-3"
+    >
+      <div className="flex max-h-[90dvh] w-full max-w-[420px] flex-col overflow-hidden rounded bg-white p-4 text-black shadow">
+        <p className="shrink-0 text-[13px] font-semibold">{heading}</p>
+        <p className="mt-1.5 shrink-0 text-[13px] leading-[1.45]">{description}</p>
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <p className="select-text text-[12px] font-semibold leading-[1.4] [-webkit-user-select:text]">
+            {errorLabel}
+          </p>
+          {appId ? (
+            <p className="mt-1 select-text text-[11px] text-black/70 [-webkit-user-select:text]">
+              appId: {appId}
+              {appName ? ` (${appName})` : ""}
+            </p>
+          ) : null}
+          <p className="mt-1 select-text break-all text-[11px] text-black/70 [-webkit-user-select:text]">
+            {resolvedTimestamp}
+            {resolvedUserAgent ? ` · ${resolvedUserAgent}` : ""}
+          </p>
+          {stack ? (
+            <>
+              <p className="mt-2 text-[11px] font-semibold">stack</p>
+              <pre className="mt-1 max-h-[28vh] overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-[1.4] select-text [-webkit-user-select:text]">
+                {stack}
+              </pre>
+            </>
+          ) : null}
+          {resolvedComponentStack ? (
+            <>
+              <p className="mt-2 text-[11px] font-semibold">componentStack</p>
+              <pre className="mt-1 max-h-[22vh] overflow-auto whitespace-pre-wrap break-words font-mono text-[10px] leading-[1.4] select-text [-webkit-user-select:text]">
+                {resolvedComponentStack}
+              </pre>
+            </>
+          ) : null}
+        </div>
+        <div className="flex shrink-0 justify-end pt-3">
+          <button
+            type="button"
+            onClick={onPrimaryAction}
+            className="rounded border border-black/20 bg-neutral-100 px-3 py-1 text-[13px]"
+          >
+            {primaryActionLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CrashDialog({
@@ -335,29 +452,53 @@ export function AppErrorBoundary({
 
   return (
     <ErrorBoundaryBase
-      fallback={(error) => (
-        <CrashDialog
-          scope="app"
-          titleBarLabel={appName}
-          heading={t("common.errorBoundaries.appHeading", {
-            appName,
-            defaultValue: "{{appName}} quit unexpectedly.",
-          })}
-          description={t("common.errorBoundaries.appDescription", {
-            defaultValue:
-              "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
-          })}
-          primaryActionLabel={t("common.errorBoundaries.relaunch", {
-            defaultValue: "Relaunch",
-          })}
-          onPrimaryAction={onRelaunch}
-          secondaryActionLabel={t("common.dock.quit", {
-            defaultValue: "Quit",
-          })}
-          onSecondaryAction={onQuit}
-          error={error}
-        />
-      )}
+      fallback={(error, componentStack) => {
+        const heading = t("common.errorBoundaries.appHeading", {
+          appName,
+          defaultValue: "{{appName}} quit unexpectedly.",
+        });
+        const description = t("common.errorBoundaries.appDescription", {
+          defaultValue:
+            "Relaunch it to open a fresh window, or quit this crashed window. Other open apps will keep running.",
+        });
+        const primaryActionLabel = t("common.errorBoundaries.relaunch", {
+          defaultValue: "Relaunch",
+        });
+        const staticFallback = (
+          <StaticCrashFallback
+            heading={heading}
+            description={description}
+            primaryActionLabel={primaryActionLabel}
+            onPrimaryAction={onRelaunch}
+            error={error}
+            componentStack={componentStack}
+            appId={appId}
+            appName={appName}
+          />
+        );
+        // iOS WebKit: never mount Dialog/useSound in a crash fallback.
+        // CrashDialog itself can throw and escalate into DesktopErrorBoundary.
+        if (isIosWebKit()) {
+          return staticFallback;
+        }
+        return (
+          <IsolatingErrorBoundary fallback={staticFallback}>
+            <CrashDialog
+              scope="app"
+              titleBarLabel={appName}
+              heading={heading}
+              description={description}
+              primaryActionLabel={primaryActionLabel}
+              onPrimaryAction={onRelaunch}
+              secondaryActionLabel={t("common.dock.quit", {
+                defaultValue: "Quit",
+              })}
+              onSecondaryAction={onQuit}
+              error={error}
+            />
+          </IsolatingErrorBoundary>
+        );
+      }}
       onError={(error, info) => {
         onCrash?.();
         reportRuntimeCrash(error, {
@@ -385,24 +526,45 @@ export function DesktopErrorBoundary({
 
   return (
     <ErrorBoundaryBase
-      fallback={(error) => (
-        <CrashDialog
-          scope="desktop"
-          titleBarLabel="ryOS"
-          heading={t("common.errorBoundaries.desktopHeading", {
-            defaultValue: "Desktop quit unexpectedly.",
-          })}
-          description={t("common.errorBoundaries.desktopDescription", {
-            defaultValue:
-              "Reload ryOS to restore the Dock, Desktop, and menu bar.",
-          })}
-          primaryActionLabel={t("common.errorBoundaries.reloadDesktop", {
-            defaultValue: "Reload Desktop",
-          })}
-          onPrimaryAction={() => window.location.reload()}
-          error={error}
-        />
-      )}
+      fallback={(error, componentStack) => {
+        const heading = t("common.errorBoundaries.desktopHeading", {
+          defaultValue: "Desktop quit unexpectedly.",
+        });
+        const description = t("common.errorBoundaries.desktopDescription", {
+          defaultValue:
+            "Reload ryOS to restore the Dock, Desktop, and menu bar.",
+        });
+        const primaryActionLabel = t("common.errorBoundaries.reloadDesktop", {
+          defaultValue: "Reload Desktop",
+        });
+        const reloadDesktop = () => window.location.reload();
+        const staticFallback = (
+          <StaticCrashFallback
+            heading={heading}
+            description={description}
+            primaryActionLabel={primaryActionLabel}
+            onPrimaryAction={reloadDesktop}
+            error={error}
+            componentStack={componentStack}
+          />
+        );
+        if (isIosWebKit()) {
+          return staticFallback;
+        }
+        return (
+          <IsolatingErrorBoundary fallback={staticFallback}>
+            <CrashDialog
+              scope="desktop"
+              titleBarLabel="ryOS"
+              heading={heading}
+              description={description}
+              primaryActionLabel={primaryActionLabel}
+              onPrimaryAction={reloadDesktop}
+              error={error}
+            />
+          </IsolatingErrorBoundary>
+        );
+      }}
       onError={(error, info) => {
         reportRuntimeCrash(error, {
           scope: "desktop",
