@@ -21,8 +21,6 @@ import type { LaunchOriginRect } from "@/stores/useAppStore";
 import { RightClickMenu } from "@/components/ui/right-click-menu";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup, useMotionValue } from "motion/react";
-import { isIosWebKit } from "@/utils/device";
-import { getSafeAnimatePresenceMode } from "@/utils/motionSafe";
 import { useShallow } from "zustand/react/shallow";
 import {
   isClientYInBottomZone,
@@ -863,10 +861,7 @@ export function MacDock() {
           onDrop={handleDockDrop}
         >
           <LayoutGroup>
-            <AnimatePresence
-              mode={getSafeAnimatePresenceMode("popLayout", isIosWebKit())}
-              initial={false}
-            >
+            <AnimatePresence mode="popLayout" initial={false}>
               {renderDockPinnedItems({
                 pinnedItems: sanitizedPinnedItems,
                 externalDragIndex,

@@ -146,7 +146,7 @@
     "jose": "^6.2.12",
     "jsbarcode": "^3.12.3",
     "leo-profanity": "^1.9.0",
-    "motion": "^13.2.0",
+    "motion": "^12.43.0",
     "openai": "^7.15.0",
     "opencc-js": "^1.4.2",
     "pako": "^3.0.2",

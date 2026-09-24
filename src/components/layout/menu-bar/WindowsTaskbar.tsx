@@ -6,8 +6,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CaretUp } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "motion/react";
-import { isIosWebKit } from "@/utils/device";
-import { getSafeAnimatePresenceMode } from "@/utils/motionSafe";
 import type { AnyApp } from "@/apps/base/types";
 import { getAppIconPath } from "@/config/appRegistry";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
@@ -87,7 +85,7 @@ export function WindowsTaskbar({
             ref={runningAreaRef}
             className="flex-1 flex items-center gap-0.5 px-2 overflow-hidden h-full"
           >
-            <AnimatePresence mode={getSafeAnimatePresenceMode("popLayout", isIosWebKit())}>
+            <AnimatePresence mode="popLayout">
             {(() => {
               const idsToRender =
                 visibleTaskbarIds.length > 0 || overflowTaskbarIds.length > 0

@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import { isIosWebKit, isMobileSafari } from "../../../src/utils/device";
-import { shouldUseStaticLyricsRenderer } from "../../../src/utils/motionSafe";
 
 describe("isIosWebKit fail-safe detection", () => {
   test("matches iPhone Safari", () => {
@@ -54,11 +53,6 @@ describe("isIosWebKit fail-safe detection", () => {
           "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36",
       }),
     ).toBe(false);
-  });
-
-  test("static lyrics renderer is used for every iOS WebKit UA", () => {
-    expect(shouldUseStaticLyricsRenderer(true)).toBe(true);
-    expect(shouldUseStaticLyricsRenderer(false)).toBe(false);
   });
 
   test("isMobileSafari remains the narrow Safari-only helper", () => {
