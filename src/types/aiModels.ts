@@ -8,6 +8,7 @@ export {
   canAccessAiModel,
   getSelectableAiModels,
   isRyoAdminUsername,
+  isSupportedAiModel,
   resolveClientAiModel,
 } from "@/shared/aiModels";
 export type {

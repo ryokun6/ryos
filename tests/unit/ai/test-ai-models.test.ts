@@ -38,6 +38,13 @@ describe("AI model registry", () => {
     expect(isRestrictedAiModel("opus-5.5")).toBe(true);
     expect(isRestrictedAiModel("gpt-6")).toBe(false);
   });
+
+  test("does not throw on persisted or unknown model ids", () => {
+    expect(isRestrictedAiModel("gpt-4o")).toBe(false);
+    expect(canAccessAiModel("gpt-4o")).toBe(false);
+    expect(canAccessAiModel(undefined)).toBe(false);
+    expect(resolveClientAiModel("gpt-4o", { username: "ryo", debugMode: true })).toBeNull();
+  });
 });
 
 describe("opus-5.5 access control", () => {

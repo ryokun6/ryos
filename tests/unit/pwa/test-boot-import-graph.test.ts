@@ -95,4 +95,13 @@ describe("boot import graph", () => {
     expect(chain).not.toBeNull();
     expect(chain![0]).toBe("src/main.tsx");
   });
+
+  test("vite does not force AI SDK packages into a shared manual chunk", async () => {
+    // Putting `ai` / `@ai-sdk/react` in manualChunks lets Rolldown colocate
+    // React into that chunk, which then modulepreloads at boot and can
+    // black-screen the #000 html/body if the chunk fails to evaluate.
+    const config = await Bun.file("vite.config.ts").text();
+    expect(config).not.toMatch(/["']@ai-sdk\/react["']\s*:\s*["']ai-sdk["']/);
+    expect(config).not.toMatch(/\bai:\s*["']ai-sdk["']/);
+  });
 });

@@ -86,14 +86,24 @@ export function isRyoAdminUsername(
   return username?.toLowerCase() === RYO_ADMIN_USERNAME;
 }
 
-export function isRestrictedAiModel(model: SupportedModel): boolean {
+export function isSupportedAiModel(
+  model: string | null | undefined
+): model is SupportedModel {
+  return !!model && SUPPORTED_AI_MODELS.includes(model as SupportedModel);
+}
+
+export function isRestrictedAiModel(
+  model: string | null | undefined
+): boolean {
+  if (!isSupportedAiModel(model)) return false;
   return AI_MODELS[model].access === "ryo-debug";
 }
 
 export function canAccessAiModel(
-  model: SupportedModel,
+  model: string | null | undefined,
   options: { username?: string | null; debugMode?: boolean } = {}
 ): boolean {
+  if (!isSupportedAiModel(model)) return false;
   if (!isRestrictedAiModel(model)) return true;
   return isRyoAdminUsername(options.username) && options.debugMode === true;
 }
@@ -112,10 +122,10 @@ export function normalizeAiModelId(model: string): string {
 }
 
 export function resolveClientAiModel(
-  selected: SupportedModel | null | undefined,
+  selected: string | null | undefined,
   options: { username?: string | null; debugMode?: boolean } = {}
 ): SupportedModel | null {
-  if (!selected) return null;
+  if (!isSupportedAiModel(selected)) return null;
   return canAccessAiModel(selected, options) ? selected : null;
 }
 

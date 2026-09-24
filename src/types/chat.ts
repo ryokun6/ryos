@@ -1,4 +1,4 @@
-import { type UIMessage } from "@ai-sdk/react";
+import type { UIMessage } from "@ai-sdk/react";
 export type {
   ChatMessage,
   ChatRoom,
