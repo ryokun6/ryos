@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import {
   getDayNightGradientCss,
   getWeatherGradientCss,
@@ -8,6 +8,7 @@ import {
   isWeatherWallpaper,
 } from "@/utils/dynamicWallpaper";
 import { useWallpaper } from "@/hooks/useWallpaper";
+import { safeLazy } from "@/utils/safeLazy";
 
 /** Recompute the day/night gradient roughly once a minute. */
 const GRADIENT_REFRESH_MS = 60 * 1000;
@@ -21,20 +22,26 @@ const GRADIENT_REFRESH_MS = 60 * 1000;
 //   - cover   → the iPod/Karaoke store stack
 // While a lazy chunk loads, a lightweight CSS-only fallback renders so the
 // desktop background never flashes.
-const WeatherGradientLayer = lazy(() =>
-  import("./DesktopWeatherWallpaperLayer").then((m) => ({
-    default: m.WeatherGradientLayer,
-  }))
+const WeatherGradientLayer = safeLazy(
+  () =>
+    import("./DesktopWeatherWallpaperLayer").then((m) => ({
+      default: m.WeatherGradientLayer,
+    })),
+  { name: "WeatherGradientLayer" }
 );
-const LyricsWallpaperLayer = lazy(() =>
-  import("./DesktopLyricsWallpaperLayer").then((m) => ({
-    default: m.LyricsWallpaperLayer,
-  }))
+const LyricsWallpaperLayer = safeLazy(
+  () =>
+    import("./DesktopLyricsWallpaperLayer").then((m) => ({
+      default: m.LyricsWallpaperLayer,
+    })),
+  { name: "LyricsWallpaperLayer" }
 );
-const CoverWallpaperLayer = lazy(() =>
-  import("./DesktopCoverWallpaperLayer").then((m) => ({
-    default: m.CoverWallpaperLayer,
-  }))
+const CoverWallpaperLayer = safeLazy(
+  () =>
+    import("./DesktopCoverWallpaperLayer").then((m) => ({
+      default: m.CoverWallpaperLayer,
+    })),
+  { name: "CoverWallpaperLayer" }
 );
 
 function DayNightGradientLayer() {

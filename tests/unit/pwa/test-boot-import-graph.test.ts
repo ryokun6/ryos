@@ -76,6 +76,11 @@ const FORBIDDEN_BOOT_MODULES: Array<{ target: string; reason: string }> = [
     target: "utils/pwaRegistration",
     reason: "service-worker registration is deferred until idle",
   },
+  {
+    target: "assistant/AssistantOverlay",
+    reason:
+      "pulls @ai-sdk/react — a failed lazy import was taking down DesktopErrorBoundary",
+  },
 ];
 
 describe("boot import graph", () => {
