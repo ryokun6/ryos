@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { findStaticImportChain } from "../../../scripts/trace-import-chain";
+import { readFileSync } from "node:fs";
+import {
+  collectStaticImportGraph,
+  findStaticImportChain,
+} from "../../../scripts/trace-import-chain";
 
 /**
  * Boot-bundle guard: heavy modules must never be statically reachable from the
@@ -103,5 +107,24 @@ describe("boot import graph", () => {
     const config = await Bun.file("vite.config.ts").text();
     expect(config).not.toMatch(/["']@ai-sdk\/react["']\s*:\s*["']ai-sdk["']/);
     expect(config).not.toMatch(/\bai:\s*["']ai-sdk["']/);
+  });
+
+  test("boot-reachable source files must not runtime-import AI SDK packages", () => {
+    // A runtime `from "ai"` / `@ai-sdk/*` on the static boot graph pulls the
+    // SDK (and, after the 7.0.113 bump, MCP-app code) into the entry evaluate
+    // path. html/body are #000, so a throw there is a black screen.
+    const bootFiles = collectStaticImportGraph();
+    expect(bootFiles.length).toBeGreaterThan(20);
+    expect(bootFiles).toContain("src/main.tsx");
+
+    // Ban both `import { X } from "ai"` and `import { type X } from "ai"`.
+    // `import type` is erased and is the only allowed form on the boot graph.
+    const runtimeAiImport =
+      /(?:^|\n)\s*import\s+(?!type\b)[^"'()]*?from\s*["'](ai|@ai-sdk\/[^"']+)["']/;
+    const offenders = bootFiles.filter((file) => {
+      if (!file.match(/\.(ts|tsx|js|jsx)$/)) return false;
+      return runtimeAiImport.test(readFileSync(file, "utf-8"));
+    });
+    expect(offenders).toEqual([]);
   });
 });

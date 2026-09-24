@@ -88,6 +88,29 @@ export function findStaticImportChain(
   return null;
 }
 
+/**
+ * All source files statically reachable from `entry` (inclusive).
+ * Used by boot-graph tests to forbid runtime imports of heavy packages.
+ */
+export function collectStaticImportGraph(
+  entry: string = path.join(SRC, "main.tsx")
+): string[] {
+  const entryAbs = path.resolve(ROOT, entry);
+  const seen = new Set<string>();
+  const queue = [entryAbs];
+  seen.add(entryAbs);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const dep of getImports(cur)) {
+      if (!seen.has(dep)) {
+        seen.add(dep);
+        queue.push(dep);
+      }
+    }
+  }
+  return [...seen].map((file) => path.relative(ROOT, file)).toSorted();
+}
+
 if (import.meta.main) {
   const target = process.argv[2];
   if (!target) {
