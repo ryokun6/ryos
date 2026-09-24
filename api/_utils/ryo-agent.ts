@@ -7,7 +7,7 @@ import {
   type ToolSet,
   type TimeoutConfiguration,
 } from "ai";
-import { getModelReasoning } from "./_aiModels.js";
+import { getModelReasoning, modelSupportsTemperature } from "./_aiModels.js";
 import { addCacheControlToMessages } from "./ai-prompt-cache.js";
 import type {
   PreparedRyoConversation,
@@ -202,7 +202,7 @@ export function createRyoToolLoopAgent({
     tools: resolvedTools,
     // Static system prompt only — never mutate this for per-request state.
     instructions: prepared.instructions,
-    temperature,
+    ...(modelSupportsTemperature(prepared.modelId) ? { temperature } : {}),
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: isStepCount(agentPreset.stopAfterSteps),
     timeout: RYO_AGENT_TIMEOUTS[preset],

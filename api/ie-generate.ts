@@ -10,6 +10,7 @@ import {
   DEFAULT_MODEL,
   getModelInstance,
   getModelReasoning,
+  modelSupportsTemperature,
   isRestrictedAiModel,
   normalizeAiModelId,
   parseRequestDebugMode,
@@ -350,7 +351,7 @@ export default apiHandler<IEGenerateRequestBody>(
         };
       },
       // We assume prompt/messages already include necessary system/user details
-      temperature: 0.7,
+      ...(modelSupportsTemperature(model) ? { temperature: 0.7 } : {}),
       maxOutputTokens: 4000,
       timeout: {
         totalMs: 90_000,

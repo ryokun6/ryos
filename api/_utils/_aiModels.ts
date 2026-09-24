@@ -87,6 +87,11 @@ export function getModelReasoning(
   return MODEL_REASONING_BY_MODEL[model];
 }
 
+/** GPT-6 Astra rejects custom temperature / top_p. */
+export function modelSupportsTemperature(model: SupportedModel): boolean {
+  return model !== "gpt-6";
+}
+
 export function getTelegramModel(
   log: (...args: unknown[]) => void,
   env: NodeJS.ProcessEnv = process.env
