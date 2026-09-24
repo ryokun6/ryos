@@ -16,11 +16,10 @@ describe("model reasoning options", () => {
   test("omits temperature for gpt-6", () => {
     expect(modelSupportsTemperature("gpt-6")).toBe(false);
     expect(modelSupportsTemperature("gpt-5.5")).toBe(true);
-    expect(modelSupportsTemperature("sonnet-4.6")).toBe(true);
+    expect(modelSupportsTemperature("opus-5.5")).toBe(true);
   });
 
-  test("leaves non-OpenAI models on provider default", () => {
-    expect(getModelReasoning("sonnet-4.6")).toBeUndefined();
-    expect(getModelReasoning("gemini-3-flash")).toBeUndefined();
+  test("leaves opus on the provider reasoning default", () => {
+    expect(getModelReasoning("opus-5.5")).toBeUndefined();
   });
 });

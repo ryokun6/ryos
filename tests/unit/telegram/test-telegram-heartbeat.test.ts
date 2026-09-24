@@ -544,11 +544,11 @@ describe("telegram heartbeat helpers", () => {
     expect(prepared.volatileStatePrompt).toContain("(Asia/Tokyo)");
   });
 
-  test("heartbeat conversations enable Google search grounding on gemini flash", async () => {
+  test("heartbeat conversations enable OpenAI web search on gpt-6", async () => {
     const prepared = await prepareRyoConversationModelInput({
       channel: "telegram",
       username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
-      model: "gemini-3-flash",
+      model: "gpt-6",
       messages: [
         {
           id: "heartbeat-2",
@@ -563,8 +563,8 @@ describe("telegram heartbeat helpers", () => {
       ],
     });
 
-    expect("google_search" in prepared.tools).toBe(true);
-    expect("web_search" in prepared.tools).toBe(false);
+    expect("web_search" in prepared.tools).toBe(true);
+    expect("google_search" in prepared.tools).toBe(false);
   });
 
   test("detects morning briefing window in the configured timezone", () => {

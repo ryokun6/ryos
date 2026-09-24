@@ -1,15 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { APPLET_IMAGE_PROVIDER_OPTIONS } from "../../../api/applet-ai.js";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
-describe("applet ai Gemini image config", () => {
-  test("caps generated applet images at 1K", () => {
-    expect(APPLET_IMAGE_PROVIDER_OPTIONS).toEqual({
-      google: {
-        responseModalities: ["IMAGE", "TEXT"],
-        imageConfig: {
-          imageSize: "1K",
-        },
-      },
-    });
+describe("applet ai model config", () => {
+  test("text and image generation use the default model", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "api/applet-ai.ts"),
+      "utf-8"
+    );
+
+    expect(source).toContain("getModelInstance(DEFAULT_MODEL)");
+    expect(source).toContain("uploadProviderFileForModel");
+    expect(source).not.toMatch(/gemini/i);
+    expect(source).not.toContain("@ai-sdk/google");
   });
 });

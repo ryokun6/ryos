@@ -222,6 +222,5 @@ When running via `scripts/api-standalone-server.ts`:
 
 | Provider | Models |
 |----------|--------|
-| OpenAI | gpt-6 (gpt-6-astra), gpt-5.5, tts-1, whisper-1 |
-| Anthropic | sonnet-4.6 |
-| Google | gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview |
+| OpenAI | gpt-6 (gpt-6-astra, default), gpt-5.5 (ryo + debug), tts-1, whisper-1 |
+| Anthropic | opus-5.5 (claude-opus-5-5, ryo + debug) |

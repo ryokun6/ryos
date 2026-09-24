@@ -1,11 +1,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { uploadFile, type ProviderReference } from "ai";
 import { AI_MODELS, type SupportedModel } from "./_aiModels.js";
-
-/** Cap Google Files API PROCESSING polls so we fall back to inline data quickly. */
-export const GOOGLE_FILES_POLL_TIMEOUT_MS = 30_000;
 
 function getFilesApiForModel(modelId: SupportedModel) {
   switch (AI_MODELS[modelId].provider) {
@@ -13,8 +9,6 @@ function getFilesApiForModel(modelId: SupportedModel) {
       return openai.files();
     case "Anthropic":
       return anthropic.files();
-    case "Google":
-      return google.files();
     default:
       return null;
   }
@@ -63,10 +57,6 @@ export async function uploadProviderFileForModel({
       data,
       mediaType,
       ...(filename ? { filename } : {}),
-      // Google polls PROCESSING up to 5m by default; keep chat/telegram snappy.
-      providerOptions: {
-        google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
-      },
     });
     return {
       providerReference: result.providerReference,

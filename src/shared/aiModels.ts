@@ -11,16 +11,6 @@ export type AiModelAccess = "public" | "ryo-debug";
 export const RYO_ADMIN_USERNAME = "ryo";
 
 export const AI_MODELS = {
-  "sonnet-4.6": {
-    name: "sonnet-4.6",
-    provider: "Anthropic",
-    access: "public",
-  },
-  "opus-5.5": {
-    name: "opus-5.5",
-    provider: "Anthropic",
-    access: "ryo-debug",
-  },
   "gpt-6": {
     name: "gpt-6",
     provider: "OpenAI",
@@ -29,17 +19,12 @@ export const AI_MODELS = {
   "gpt-5.5": {
     name: "gpt-5.5",
     provider: "OpenAI",
-    access: "public",
+    access: "ryo-debug",
   },
-  "gemini-3-flash": {
-    name: "gemini-3-flash",
-    provider: "Google",
-    access: "public",
-  },
-  "gemini-3.1-pro-preview": {
-    name: "gemini-3.1-pro-preview",
-    provider: "Google",
-    access: "public",
+  "opus-5.5": {
+    name: "opus-5.5",
+    provider: "Anthropic",
+    access: "ryo-debug",
   },
 } as const;
 
@@ -71,11 +56,10 @@ export const DEFAULT_AI_MODEL: SupportedModel = "gpt-6";
 /**
  * Product / API aliases → registry ids.
  * Friendly labels stay gpt-6 / opus-5.5; providers use gpt-6-astra /
- * claude-opus-5-5.
+ * claude-opus-5-5. Removed ids (Gemini, Sonnet) are not aliased — requests
+ * for them are unsupported and the client falls back to the default.
  */
 export const AI_MODEL_ALIASES: Record<string, SupportedModel> = {
-  "claude-sonnet": "sonnet-4.6",
-  "claude-sonnet-4-6": "sonnet-4.6",
   "claude-opus-5-5": "opus-5.5",
   "gpt-6-astra": "gpt-6",
 };
