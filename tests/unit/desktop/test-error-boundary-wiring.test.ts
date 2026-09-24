@@ -60,6 +60,8 @@ describe("Error Boundary Wiring Tests", () => {
       expect(source).toContain("IsolatingErrorBoundary");
       expect(source).toContain("StaticCrashFallback");
       expect(source).toContain("isIosWebKit");
+      expect(source).toContain("error={error}");
+      expect(source).toContain("componentStack={componentStack}");
       expect(source).toMatch(
         /if \(isIosWebKit\(\)\) \{\s*return staticFallback;[\s\S]*<CrashDialog[\s\S]*scope="app"/,
       );
