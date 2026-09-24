@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useCallback, useEffect } from "react";
+import { memo, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
@@ -10,7 +10,7 @@ import type { AppId } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
 import { AppSwitcher } from "@/components/layout/AppSwitcher";
-import { useAssistantStore } from "@/stores/useAssistantStore";
+import { DeferredAssistantOverlay } from "@/components/assistant/DeferredAssistantOverlay";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -31,15 +31,6 @@ import { createClientLogger } from "@/utils/logger";
 
 const appManagerViewLog = createClientLogger("AppManagerView");
 
-// Code-split: the assistant overlay pulls the AI chat pipeline and the full
-// client-side tool dispatcher, so it must never be statically reachable from
-// the boot bundle. It only loads once the user has summoned the assistant.
-const AssistantOverlay = lazy(() =>
-  import("@/components/assistant/AssistantOverlay").then((m) => ({
-    default: m.AssistantOverlay,
-  }))
-);
-
 export function AppManagerView({
   apps,
   openInstanceIds,
@@ -58,7 +49,6 @@ export function AppManagerView({
   navigateToNextInstance,
   navigateToPreviousInstance,
 }: AppManagerViewModel) {
-  const assistantEnabled = useAssistantStore((state) => state.enabled);
   return (
     <>
       {showDesktopMenuBar && <MenuBar />}
@@ -98,11 +88,7 @@ export function AppManagerView({
         apps={switcherApps}
         selectedIndex={switcherIndex}
       />
-      {assistantEnabled && (
-        <Suspense fallback={null}>
-          <AssistantOverlay />
-        </Suspense>
-      )}
+      <DeferredAssistantOverlay />
       <DesktopCornerMask />
     </>
   );

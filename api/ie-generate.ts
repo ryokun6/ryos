@@ -7,10 +7,16 @@ import {
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import {
-  SupportedModel,
   DEFAULT_MODEL,
   getModelInstance,
   getModelReasoning,
+  modelSupportsTemperature,
+  isRestrictedAiModel,
+  normalizeAiModelId,
+  parseRequestDebugMode,
+  resolveRequestedAiModel,
+  SUPPORTED_AI_MODELS,
+  type SupportedModel,
 } from "./_utils/_aiModels.js";
 import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
 import { normalizeUrlForCacheKey } from "./_utils/_url.js";
@@ -20,8 +26,8 @@ import {
   RYO_PERSONA_INSTRUCTIONS,
   IE_HTML_GENERATION_INSTRUCTIONS,
   } from "./_utils/_aiPrompts.js";
-import { SUPPORTED_AI_MODELS } from "./_utils/_aiModels.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { resolveRequestAuth } from "./_utils/request-auth.js";
 
 // ============================================================================
 // Constants and Types
@@ -39,7 +45,8 @@ interface IEGenerateRequestBody {
   url?: string;
   year?: string;
   messages?: IncomingUIMessage[];
-  model?: SupportedModel;
+  model?: string;
+  debugMode?: boolean;
 }
 
 // --- Utility Functions ----------------------------------------------------
@@ -258,7 +265,7 @@ export default apiHandler<IEGenerateRequestBody>(
     // Removed cache read to avoid duplicate generation; cache handled through iframe-check AI mode
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
-    const model = queryModel || bodyModel || DEFAULT_MODEL;
+    const requestedModel = queryModel || bodyModel || DEFAULT_MODEL;
 
     if (!Array.isArray(incomingMessages)) {
       logger.warn("Invalid messages format");
@@ -266,13 +273,36 @@ export default apiHandler<IEGenerateRequestBody>(
       return res.status(400).send("Invalid messages format");
     }
 
-    if (model !== null && !SUPPORTED_AI_MODELS.includes(model)) {
-      logger.warn("Unsupported model", { model });
-      logger.response(400, Date.now() - startTime);
-      return res.status(400).send(`Unsupported model: ${model}`);
+    const debugMode = parseRequestDebugMode(req, bodyData);
+    let username: string | null = null;
+    const previewId = normalizeAiModelId(String(requestedModel || DEFAULT_MODEL));
+    if (
+      SUPPORTED_AI_MODELS.includes(previewId as SupportedModel) &&
+      isRestrictedAiModel(previewId as SupportedModel)
+    ) {
+      const auth = await resolveRequestAuth(req, redis);
+      username = auth.user?.username ?? null;
     }
+    const resolvedModel = resolveRequestedAiModel(requestedModel, {
+      username,
+      debugMode,
+    });
+    if (!resolvedModel.ok) {
+      if (resolvedModel.error === "not_allowed") {
+        logger.warn("Restricted model", { model: resolvedModel.requested });
+        logger.response(403, Date.now() - startTime);
+        return res.status(403).json({
+          error: "model_not_allowed",
+          model: resolvedModel.requested,
+        });
+      }
+      logger.warn("Unsupported model", { model: resolvedModel.requested });
+      logger.response(400, Date.now() - startTime);
+      return res.status(400).send(`Unsupported model: ${resolvedModel.requested}`);
+    }
+    const model = resolvedModel.model;
 
-    const selectedModel = getModelInstance(model as SupportedModel);
+    const selectedModel = getModelInstance(model);
 
     // Generate dynamic portion of the system prompt, passing the rawUrl
     const systemPrompt = getDynamicSystemPrompt(effectiveYear, rawUrl ?? null);
@@ -321,7 +351,7 @@ export default apiHandler<IEGenerateRequestBody>(
         };
       },
       // We assume prompt/messages already include necessary system/user details
-      temperature: 0.7,
+      ...(modelSupportsTemperature(model) ? { temperature: 0.7 } : {}),
       maxOutputTokens: 4000,
       timeout: {
         totalMs: 90_000,

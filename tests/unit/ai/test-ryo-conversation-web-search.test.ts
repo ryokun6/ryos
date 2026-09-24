@@ -22,7 +22,7 @@ const baseSystemState: RyoConversationSystemState = {
 
 async function prepareConversation(options: {
   channel: "chat" | "telegram";
-  model: "gpt-5.5" | "sonnet-4.6" | "gemini-3-flash";
+  model: "gpt-6" | "gpt-5.5" | "sonnet-4.6" | "gemini-3-flash";
   username?: string | null;
   systemState?: RyoConversationSystemState;
 }) {
@@ -48,6 +48,18 @@ function hasGoogleSearchTool(
 }
 
 describe("prepareRyoConversationModelInput web search gating", () => {
+  test("adds web_search for authenticated chat on gpt-6", async () => {
+    const prepared = await prepareConversation({
+      channel: "chat",
+      model: "gpt-6",
+      username: "ryo",
+      systemState: baseSystemState,
+    });
+
+    expect(hasWebSearchTool(prepared.tools)).toBe(true);
+    expect(prepared.tools.web_search.id).toBe("openai.web_search");
+  });
+
   test("adds web_search for authenticated chat on gpt-5.5", async () => {
     const prepared = await prepareConversation({
       channel: "chat",

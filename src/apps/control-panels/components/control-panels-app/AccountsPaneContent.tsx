@@ -441,7 +441,12 @@ export function AccountsPaneContent({
                       description={t("apps.control-panels.aiModelDescription")}
                     >
                       <Select
-                        value={aiModel || "__null__"}
+                        value={
+                          aiModel &&
+                          AI_MODELS.some((model) => model.id === aiModel)
+                            ? aiModel
+                            : "__null__"
+                        }
                         onValueChange={(value) =>
                           setAiModel(value === "__null__" ? null : (value as AIModel))
                         }

@@ -133,7 +133,10 @@ function collectPrecacheExclusionsPlugin() {
  * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
  * - media-player: shared by iPod and Videos apps
  * - hangul: Korean romanization, only needed for lyrics
- * - ai-sdk: deferred until Chats/IE opens
+ * - Do NOT put `ai` / `@ai-sdk/react` in a manual chunk. Rolldown colocates
+ *   React (+ jsx-runtime) into that chunk, then the entry / zustand / dock
+ *   import React from it. The AI SDK then modulepreloads at boot; a parse or
+ *   TDZ failure in that chunk blacks the page (html/body are `#000`).
  * - tiptap: rich text editor, deferred until TextEdit opens. @tiptap/pm is
  *   excluded because it only exports subpaths and has no main entry point.
  * - three: 3D rendering, deferred until shader wallpapers / Synth need it
@@ -158,11 +161,6 @@ const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
   "audio-buffer-utils": "audio",
   "react-player": "media-player",
   "hangul-romanization": "hangul",
-  ai: "ai-sdk",
-  "@ai-sdk/anthropic": "ai-sdk",
-  "@ai-sdk/google": "ai-sdk",
-  "@ai-sdk/openai": "ai-sdk",
-  "@ai-sdk/react": "ai-sdk",
   "@tiptap/core": "tiptap",
   "@tiptap/react": "tiptap",
   "@tiptap/starter-kit": "tiptap",

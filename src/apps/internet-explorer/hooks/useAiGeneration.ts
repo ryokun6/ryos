@@ -8,6 +8,7 @@ import {
   LocationOption,
 } from "@/stores/useInternetExplorerStore";
 import { useAppStore } from "@/stores/useAppStore";
+import { getAiModelRequestFields } from "@/lib/aiModelRequest";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import i18n from "@/lib/i18n";
 import { getApiUrl } from "@/utils/platform";
@@ -213,9 +214,7 @@ export function useAiGeneration({
     () =>
       new DefaultChatTransport({
         api: getApiUrl("/api/ie-generate"),
-        body: {
-          model: aiModel,
-        },
+        body: getAiModelRequestFields(aiModel),
       }),
     [aiModel]
   );

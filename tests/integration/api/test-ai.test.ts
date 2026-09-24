@@ -68,6 +68,25 @@ async function testChatInvalidModel(): Promise<void> {
   expect([400, 429]).toContain(res.status);
 }
 
+async function testChatRestrictedOpusModel(): Promise<void> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messages: [{ role: "user", content: "Hello" }],
+      model: "opus-5.5",
+      debugMode: true,
+    }),
+  });
+  // Rate limiting is checked before model access, so may get 429 first
+  expect([403, 429]).toContain(res.status);
+  if (res.status === 403) {
+    const data = (await res.json()) as { error?: string; model?: string };
+    expect(data.error).toBe("model_not_allowed");
+    expect(data.model).toBe("opus-5.5");
+  }
+}
+
 async function testChatInvalidJson(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/chat`, {
     method: "POST",
@@ -343,6 +362,26 @@ async function testIeGenerateInvalidModel(): Promise<void> {
   expect([400, 429]).toContain(res.status);
 }
 
+async function testIeGenerateRestrictedOpusModel(): Promise<void> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: "example.com",
+      year: "1999",
+      messages: [{ role: "user", content: "Generate" }],
+      model: "opus-5.5",
+      debugMode: true,
+    }),
+  });
+  expect([403, 429]).toContain(res.status);
+  if (res.status === 403) {
+    const data = (await res.json()) as { error?: string; model?: string };
+    expect(data.error).toBe("model_not_allowed");
+    expect(data.model).toBe("opus-5.5");
+  }
+}
+
 async function testIeGenerateInvalidJson(): Promise<void> {
   const res = await fetchWithOrigin(`${BASE_URL}/api/ie-generate`, {
     method: "POST",
@@ -526,6 +565,9 @@ describe("Ai", () => {
     test("Invalid model", async () => {
       await testChatInvalidModel();
     });
+    test("opus-5.5 is blocked without Ryo debug auth", async () => {
+      await testChatRestrictedOpusModel();
+    });
     test("Invalid JSON", async () => {
       await testChatInvalidJson();
     });
@@ -621,6 +663,9 @@ describe("Ai", () => {
     });
     test("Invalid model", async () => {
       await testIeGenerateInvalidModel();
+    });
+    test("opus-5.5 is blocked without Ryo debug auth", async () => {
+      await testIeGenerateRestrictedOpusModel();
     });
     test("Invalid JSON", async () => {
       await testIeGenerateInvalidJson();

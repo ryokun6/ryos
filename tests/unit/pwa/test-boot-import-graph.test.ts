@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { findStaticImportChain } from "../../../scripts/trace-import-chain";
+import { readFileSync } from "node:fs";
+import {
+  collectStaticImportGraph,
+  findStaticImportChain,
+} from "../../../scripts/trace-import-chain";
 
 /**
  * Boot-bundle guard: heavy modules must never be statically reachable from the
@@ -72,6 +76,11 @@ const FORBIDDEN_BOOT_MODULES: Array<{ target: string; reason: string }> = [
     target: "utils/pwaRegistration",
     reason: "service-worker registration is deferred until idle",
   },
+  {
+    target: "assistant/AssistantOverlay",
+    reason:
+      "pulls @ai-sdk/react — a failed lazy import was taking down DesktopErrorBoundary",
+  },
 ];
 
 describe("boot import graph", () => {
@@ -94,5 +103,33 @@ describe("boot import graph", () => {
     const chain = findStaticImportChain("src/App.tsx");
     expect(chain).not.toBeNull();
     expect(chain![0]).toBe("src/main.tsx");
+  });
+
+  test("vite does not force AI SDK packages into a shared manual chunk", async () => {
+    // Putting `ai` / `@ai-sdk/react` in manualChunks lets Rolldown colocate
+    // React into that chunk, which then modulepreloads at boot and can
+    // black-screen the #000 html/body if the chunk fails to evaluate.
+    const config = await Bun.file("vite.config.ts").text();
+    expect(config).not.toMatch(/["']@ai-sdk\/react["']\s*:\s*["']ai-sdk["']/);
+    expect(config).not.toMatch(/\bai:\s*["']ai-sdk["']/);
+  });
+
+  test("boot-reachable source files must not runtime-import AI SDK packages", () => {
+    // A runtime `from "ai"` / `@ai-sdk/*` on the static boot graph pulls the
+    // SDK (and, after the 7.0.113 bump, MCP-app code) into the entry evaluate
+    // path. html/body are #000, so a throw there is a black screen.
+    const bootFiles = collectStaticImportGraph();
+    expect(bootFiles.length).toBeGreaterThan(20);
+    expect(bootFiles).toContain("src/main.tsx");
+
+    // Ban both `import { X } from "ai"` and `import { type X } from "ai"`.
+    // `import type` is erased and is the only allowed form on the boot graph.
+    const runtimeAiImport =
+      /(?:^|\n)\s*import\s+(?!type\b)[^"'()]*?from\s*["'](ai|@ai-sdk\/[^"']+)["']/;
+    const offenders = bootFiles.filter((file) => {
+      if (!file.match(/\.(ts|tsx|js|jsx)$/)) return false;
+      return runtimeAiImport.test(readFileSync(file, "utf-8"));
+    });
+    expect(offenders).toEqual([]);
   });
 });

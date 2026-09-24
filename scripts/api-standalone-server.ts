@@ -179,6 +179,31 @@ class BunResponseShim extends EventEmitter {
     return this;
   }
 
+  /**
+   * Node 19.7+ ServerResponse.setHeaders. AI SDK 7.0.109+ writeToServerResponse
+   * calls this with a Headers object when piping UI/text streams.
+   */
+  setHeaders(
+    headers: Headers | Map<string, HeaderValue> | Record<string, HeaderValue>
+  ): this {
+    if (headers instanceof Headers) {
+      headers.forEach((value, key) => {
+        this.setHeader(key, value);
+      });
+      return this;
+    }
+    if (headers instanceof Map) {
+      for (const [key, value] of headers) {
+        this.setHeader(key, value);
+      }
+      return this;
+    }
+    for (const [key, value] of Object.entries(headers)) {
+      this.setHeader(key, value);
+    }
+    return this;
+  }
+
   getHeader(name: string): string | string[] | undefined {
     return this.headerStore.get(name.toLowerCase());
   }

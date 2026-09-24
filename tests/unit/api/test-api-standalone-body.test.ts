@@ -90,3 +90,11 @@ describe("standalone API request body limits", () => {
     ).toHaveLength(0);
   });
 });
+
+describe("standalone response shim", () => {
+  test("implements setHeaders for AI SDK 7 stream piping", async () => {
+    const src = await Bun.file("scripts/api-standalone-server.ts").text();
+    expect(src).toContain("setHeaders(");
+    expect(src).toContain("headers instanceof Headers");
+  });
+});

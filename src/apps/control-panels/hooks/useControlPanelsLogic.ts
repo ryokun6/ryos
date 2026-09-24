@@ -23,7 +23,7 @@ import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore
 import { DEFAULT_WALLPAPER_PATH } from "@/stores/useDisplaySettingsStore";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
-import { AI_MODEL_METADATA } from "@/types/aiModels";
+import { canAccessAiModel, getSelectableAiModels } from "@/types/aiModels";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -172,7 +172,6 @@ Object.entries(PHOTO_WALLPAPERS).forEach(([category, photos]) => {
 });
 
 // Use shared AI model metadata
-const AI_MODELS = AI_MODEL_METADATA;
 
 function upgradeLegacyBackupStoreValue(
   backupVersion: number,
@@ -650,6 +649,18 @@ export function useControlPanelsLogic({
     username,
     isAuthenticated,
   });
+
+  const AI_MODELS = getSelectableAiModels({ username, debugMode });
+  const handleSetDebugMode = (enabled: boolean) => {
+    setDebugMode(enabled);
+    if (
+      !enabled &&
+      aiModel &&
+      !canAccessAiModel(aiModel, { username, debugMode: false })
+    ) {
+      setAiModel(null);
+    }
+  };
 
   // ====================================================================
   // Cloud Sync state
@@ -1269,7 +1280,7 @@ export function useControlPanelsLogic({
     aiModel,
     setAiModel,
     debugMode,
-    setDebugMode,
+    setDebugMode: handleSetDebugMode,
     showResizers,
     setShowResizers,
     shaderEffectEnabled,

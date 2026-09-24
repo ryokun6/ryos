@@ -36,6 +36,24 @@ describe("deferred authenticated background services", () => {
     expect(wrapper).not.toContain("setTimeout");
   });
 
+  test("isolates the assistant overlay from DesktopErrorBoundary", () => {
+    const view = readFileSync(
+      path.join(ROOT, "src/apps/base/app-manager/AppManagerView.tsx"),
+      "utf8"
+    );
+    expect(view).toContain("<DeferredAssistantOverlay />");
+    expect(view).not.toContain('import("@/components/assistant/AssistantOverlay")');
+    expect(view).not.toContain("lazy(() =>");
+
+    const deferred = readFileSync(
+      path.join(ROOT, "src/components/assistant/DeferredAssistantOverlay.tsx"),
+      "utf8"
+    );
+    expect(deferred).toContain("safeLazy");
+    expect(deferred).toContain("AssistantOverlayBoundary");
+    expect(deferred).toContain('import("./AssistantOverlay")');
+  });
+
   test("loads idle-only warmers through dynamic imports", () => {
     const mainSource = readFileSync(
       path.join(ROOT, "src/main.tsx"),

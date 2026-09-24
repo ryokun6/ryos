@@ -7,7 +7,7 @@ import {
   type ToolSet,
   type TimeoutConfiguration,
 } from "ai";
-import { getModelReasoning } from "./_aiModels.js";
+import { getModelReasoning, modelSupportsTemperature } from "./_aiModels.js";
 import { addCacheControlToMessages } from "./ai-prompt-cache.js";
 import type {
   PreparedRyoConversation,
@@ -184,9 +184,11 @@ export function createRyoToolLoopAgent({
 > {
   const agentPreset = RYO_AGENT_PRESETS[preset];
   const reasoning = getModelReasoning(prepared.modelId);
-  const headers = prepared.modelId.startsWith("sonnet")
-    ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
-    : undefined;
+  const headers =
+    prepared.modelId.startsWith("sonnet") ||
+    prepared.modelId.startsWith("opus")
+      ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
+      : undefined;
   const resolvedTools = tools ?? prepared.tools;
   const dynamicContextMessages = prepared.dynamicContextMessages;
   const resolvedToolsContext = toolsContext ?? prepared.toolsContext;
@@ -200,7 +202,7 @@ export function createRyoToolLoopAgent({
     tools: resolvedTools,
     // Static system prompt only — never mutate this for per-request state.
     instructions: prepared.instructions,
-    temperature,
+    ...(modelSupportsTemperature(prepared.modelId) ? { temperature } : {}),
     maxOutputTokens: agentPreset.maxOutputTokens,
     stopWhen: isStepCount(agentPreset.stopAfterSteps),
     timeout: RYO_AGENT_TIMEOUTS[preset],
