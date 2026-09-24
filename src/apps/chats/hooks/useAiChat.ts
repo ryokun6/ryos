@@ -40,6 +40,7 @@ import {
   uploadAIConversationImage,
 } from "@/api/aiConversations";
 import { useServerAIConversation } from "@/hooks/useServerAIConversation";
+import { getAiModelRequestFields } from "@/lib/aiModelRequest";
 
 
 // Helper to check if chats app is currently in the foreground
@@ -107,9 +108,11 @@ function buildChatRequestBody(
   systemState = getSystemState(),
   model = useAppStore.getState().aiModel
 ) {
+  const { model: resolvedModel, debugMode } = getAiModelRequestFields(model);
   return {
     systemState,
-    model,
+    model: resolvedModel,
+    debugMode,
   };
 }
 

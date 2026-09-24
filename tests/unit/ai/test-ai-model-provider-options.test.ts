@@ -6,6 +6,10 @@ describe("model reasoning options", () => {
     expect(getModelReasoning("gpt-5.5")).toBe("none");
   });
 
+  test("uses low reasoning for gpt-6", () => {
+    expect(getModelReasoning("gpt-6")).toBe("low");
+  });
+
   test("leaves non-OpenAI models on provider default", () => {
     expect(getModelReasoning("sonnet-4.6")).toBeUndefined();
     expect(getModelReasoning("gemini-3-flash")).toBeUndefined();

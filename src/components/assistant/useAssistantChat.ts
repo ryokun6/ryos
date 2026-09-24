@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Chat, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { AIChatMessage } from "@/types/chat";
-import { useAppStore } from "@/stores/useAppStore";
+import { getAiModelRequestFields } from "@/lib/aiModelRequest";
 import {
   useChatsStore,
   useChatsStoreShallow,
@@ -56,7 +56,7 @@ function buildAssistantRequestBody() {
   const customInstructions = assistant.customInstructions.trim();
   return {
     systemState: getSystemState(),
-    model: useAppStore.getState().aiModel,
+    ...getAiModelRequestFields(),
     persona: "assistant",
     assistantName: getAssistantCharacterName(
       getAssistantCharacter(assistant.characterId)

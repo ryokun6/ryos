@@ -5,9 +5,14 @@ export {
   SUPPORTED_AI_MODELS,
   AI_MODEL_METADATA,
   DEFAULT_AI_MODEL,
+  canAccessAiModel,
+  getSelectableAiModels,
+  isRyoAdminUsername,
+  resolveClientAiModel,
 } from "@/shared/aiModels";
 export type {
   AIModel,
   SupportedModel,
   AIModelInfo,
+  AiModelAccess,
 } from "@/shared/aiModels";

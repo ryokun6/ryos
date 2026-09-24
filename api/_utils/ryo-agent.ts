@@ -184,9 +184,11 @@ export function createRyoToolLoopAgent({
 > {
   const agentPreset = RYO_AGENT_PRESETS[preset];
   const reasoning = getModelReasoning(prepared.modelId);
-  const headers = prepared.modelId.startsWith("sonnet")
-    ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
-    : undefined;
+  const headers =
+    prepared.modelId.startsWith("sonnet") ||
+    prepared.modelId.startsWith("opus")
+      ? { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" }
+      : undefined;
   const resolvedTools = tools ?? prepared.tools;
   const dynamicContextMessages = prepared.dynamicContextMessages;
   const resolvedToolsContext = toolsContext ?? prepared.toolsContext;

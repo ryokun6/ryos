@@ -104,7 +104,7 @@ const sampleConversationHistory = [
 ];
 
 describe("telegram heartbeat helpers", () => {
-  test("defaults heartbeat conversations to gpt-5.5 when TELEGRAM_BOT_MODEL is unset", () => {
+  test("defaults heartbeat conversations to gpt-6 when TELEGRAM_BOT_MODEL is unset", () => {
     const logMessages: string[] = [];
 
     const model = getTelegramModel(
@@ -113,11 +113,11 @@ describe("telegram heartbeat helpers", () => {
     );
 
     expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
-    expect(model).toBe("gpt-5.5");
+    expect(model).toBe("gpt-6");
     expect(logMessages).toHaveLength(0);
   });
 
-  test("falls back heartbeat conversations to gpt-5.5 for unsupported TELEGRAM_BOT_MODEL", () => {
+  test("falls back heartbeat conversations to gpt-6 for unsupported TELEGRAM_BOT_MODEL", () => {
     const logMessages: string[] = [];
 
     const model = getTelegramModel(
@@ -127,7 +127,7 @@ describe("telegram heartbeat helpers", () => {
 
     expect(model).toBe(TELEGRAM_DEFAULT_MODEL);
     expect(logMessages).toEqual([
-      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-5.5',
+      'Unsupported TELEGRAM_BOT_MODEL "not-a-real-model", falling back to gpt-6',
     ]);
   });
 

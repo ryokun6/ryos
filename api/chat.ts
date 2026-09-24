@@ -7,7 +7,8 @@ import {
 import { waitUntil } from "./_utils/_background.js";
 import {
   DEFAULT_MODEL,
-  SUPPORTED_AI_MODELS,
+  parseRequestDebugMode,
+  resolveRequestedAiModel,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import {
@@ -52,13 +53,6 @@ import { broadcastAIConversationUpdate } from "./ai/conversations/_helpers/realt
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
 type SystemState = RyoConversationSystemState;
 
-const CHAT_MODEL_ALIASES: Record<string, SupportedModel> = {
-  "claude-sonnet": "sonnet-4.6",
-};
-
-function normalizeChatModel(model: string): string {
-  return CHAT_MODEL_ALIASES[model] ?? model;
-}
 
 type ConversationContextParseResult =
   | { ok: true; value: AIConversationRequestContext | null }
@@ -147,6 +141,7 @@ export default apiHandler<{
   message?: unknown;
   systemState?: SystemState;
   model?: string;
+  debugMode?: boolean;
   persona?: string;
   assistantName?: string;
   assistantResponseStyle?: string;
@@ -179,6 +174,7 @@ export default apiHandler<{
       messages,
       systemState: incomingSystemState, // still passed for dynamic prompt generation but NOT for auth
       model: bodyModel = DEFAULT_MODEL,
+      debugMode: bodyDebugMode,
       persona,
       assistantName,
       assistantResponseStyle,
@@ -191,6 +187,7 @@ export default apiHandler<{
       messages?: unknown[];
       systemState?: SystemState;
       model?: string;
+      debugMode?: boolean;
       persona?: string;
       assistantName?: string;
       assistantResponseStyle?: string;
@@ -207,7 +204,7 @@ export default apiHandler<{
       persona === "assistant" ? "assistant" : "chat";
 
     // Use query parameter if available, otherwise use body parameter, otherwise use default
-    const model = normalizeChatModel(queryModel || bodyModel || DEFAULT_MODEL);
+    const requestedModel = queryModel || bodyModel || DEFAULT_MODEL;
     const normalizedTrigger =
       trigger === "regenerate-message"
         ? "regenerate-message"
@@ -337,16 +334,35 @@ export default apiHandler<{
       );
     }
 
-    log(
-      `Using model: ${model || DEFAULT_MODEL} (${
-        queryModel ? "from query" : model ? "from body" : "using default"
-      })`
-    );
-    if (model !== null && !SUPPORTED_AI_MODELS.includes(model as SupportedModel)) {
-      logError(`400 Error: Unsupported model - ${model}`);
-      res.status(400).send(`Unsupported model: ${model}`);
+    const debugMode = parseRequestDebugMode(req, {
+      debugMode: bodyDebugMode,
+    });
+    const resolvedModel = resolveRequestedAiModel(requestedModel, {
+      username,
+      debugMode,
+    });
+    if (!resolvedModel.ok) {
+      if (resolvedModel.error === "not_allowed") {
+        logError(
+          `403 Error: Restricted model - ${resolvedModel.requested}`
+        );
+        logger.response(403, Date.now() - startTime);
+        res.status(403).json({
+          error: "model_not_allowed",
+          model: resolvedModel.requested,
+        });
+        return;
+      }
+      logError(`400 Error: Unsupported model - ${resolvedModel.requested}`);
+      res.status(400).send(`Unsupported model: ${resolvedModel.requested}`);
       return;
     }
+    const model = resolvedModel.model;
+    log(
+      `Using model: ${model} (${
+        queryModel ? "from query" : bodyModel ? "from body" : "using default"
+      }${debugMode ? ", debug" : ""})`
+    );
 
     const conversationOperationId =
       parsedConversationContext.value?.operationId ?? crypto.randomUUID();
@@ -538,7 +554,7 @@ export default apiHandler<{
       messages: modelConversationMessages,
       systemState,
       username: isAuthenticated ? username : null,
-      model: model as SupportedModel,
+      model,
       redis: isAuthenticated ? redis : undefined,
       log,
       logError,
