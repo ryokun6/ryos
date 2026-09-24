@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { LyricsAlignment } from "@/types/lyrics";
 import type { LyricLine } from "@/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
+  didAdvancePastLongInterlude,
+  getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
 } from "@/utils/karaokeInterludeDisplay";
 import {
@@ -29,14 +31,29 @@ export function useLyricsVisibleLines({
   );
 
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
+  const prevCurrentLineRef = useRef(actualCurrentLine);
 
-  useEffect(() => {
+  // Layout effect so the row swap lands before paint. A passive effect would
+  // paint one frame of the pre-gap pair (finished lyric back in the second slot)
+  // after delay dots end.
+  useLayoutEffect(() => {
+    const previousIndex = prevCurrentLineRef.current;
+    prevCurrentLineRef.current = actualCurrentLine;
+
     if (alignment !== LyricsAlignment.Alternating) return;
 
     const linesChanged = prevLinesRef.current !== displayOriginalLines;
     prevLinesRef.current = displayOriginalLines;
 
-    if (linesChanged || actualCurrentLine < 0 || !visible) {
+    const exitedLongInterlude =
+      !linesChanged &&
+      didAdvancePastLongInterlude(
+        displayOriginalLines,
+        previousIndex,
+        actualCurrentLine
+      );
+
+    if (linesChanged || actualCurrentLine < 0 || !visible || exitedLongInterlude) {
       setAltLines(
         computeAlternatingVisibleLines(displayOriginalLines, actualCurrentLine)
       );
@@ -139,6 +156,27 @@ export function useLyricsVisibleLines({
     ]
   );
 
+  const gapInterludeLead = useMemo(
+    () =>
+      alignment === LyricsAlignment.Alternating &&
+      showInterludeEllipsis &&
+      actualCurrentLine >= 0
+        ? getGapInterludeInlineLead(
+            displayOriginalLines,
+            actualCurrentLine,
+            currentTimeMs,
+            showInterludeEllipsis
+          )
+        : null,
+    [
+      alignment,
+      showInterludeEllipsis,
+      actualCurrentLine,
+      displayOriginalLines,
+      currentTimeMs,
+    ]
+  );
+
   const currentAnchorIdx =
     actualCurrentLine >= 0 && actualCurrentLine < displayOriginalLines.length
       ? actualCurrentLine
@@ -147,6 +185,7 @@ export function useLyricsVisibleLines({
   return {
     visibleLines,
     introInterludeLead,
+    gapInterludeLead,
     currentAnchorIdx,
   };
 }
