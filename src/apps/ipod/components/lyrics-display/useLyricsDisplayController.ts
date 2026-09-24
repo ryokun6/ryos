@@ -31,6 +31,7 @@ export type LyricsDisplayViewModel = {
   translationByIndex: string[];
   visibleLines: VisibleLyricLine[];
   introInterludeLead: InterludePlaceholderLine | null;
+  gapInterludeLead: InterludePlaceholderLine | null;
   currentAnchorIdx: number;
   currentTimeMs: number | undefined;
   isOldSchoolKaraoke: boolean;
@@ -122,7 +123,7 @@ export function useLyricsDisplayController(
     onCoverColorResolved
   );
 
-  const { visibleLines, introInterludeLead, currentAnchorIdx } =
+  const { visibleLines, introInterludeLead, gapInterludeLead, currentAnchorIdx } =
     useLyricsVisibleLines({
       alignment,
       displayOriginalLines,
@@ -152,6 +153,7 @@ export function useLyricsDisplayController(
     translationByIndex,
     visibleLines,
     introInterludeLead,
+    gapInterludeLead,
     currentAnchorIdx,
     currentTimeMs,
     furiganaMap,

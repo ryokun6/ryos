@@ -3,6 +3,7 @@ import { LyricsAlignment } from "@/types/lyrics";
 import type { LyricLine } from "@/types/lyrics";
 import {
   applyKaraokeInterludeEllipsis,
+  getGapInterludeInlineLead,
   getIntroInterludeInlineLead,
 } from "@/utils/karaokeInterludeDisplay";
 import {
@@ -139,6 +140,27 @@ export function useLyricsVisibleLines({
     ]
   );
 
+  const gapInterludeLead = useMemo(
+    () =>
+      alignment === LyricsAlignment.Alternating &&
+      showInterludeEllipsis &&
+      actualCurrentLine >= 0
+        ? getGapInterludeInlineLead(
+            displayOriginalLines,
+            actualCurrentLine,
+            currentTimeMs,
+            showInterludeEllipsis
+          )
+        : null,
+    [
+      alignment,
+      showInterludeEllipsis,
+      actualCurrentLine,
+      displayOriginalLines,
+      currentTimeMs,
+    ]
+  );
+
   const currentAnchorIdx =
     actualCurrentLine >= 0 && actualCurrentLine < displayOriginalLines.length
       ? actualCurrentLine
@@ -147,6 +169,7 @@ export function useLyricsVisibleLines({
   return {
     visibleLines,
     introInterludeLead,
+    gapInterludeLead,
     currentAnchorIdx,
   };
 }

@@ -27,6 +27,7 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
     translationMap,
     translationByIndex,
     introInterludeLead,
+    gapInterludeLead,
     currentTimeMs,
     isOldSchoolKaraoke,
     isGradientStyle,
@@ -104,15 +105,21 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
           line.startTimeMs === displayOriginalLines[0]?.startTimeMs &&
           actualCurrentLine < 0
             ? introInterludeLead
-            : prevVisible &&
-                isInterludePlaceholderLine(prevVisible) &&
-                prevVisible.dotsInlineWithNext
-              ? prevVisible
-              : nextVisible &&
-                  isInterludePlaceholderLine(nextVisible) &&
-                  nextVisible.dotsInlineWithNext
-                ? nextVisible
-                : undefined;
+            : gapInterludeLead &&
+                !isInterludePlaceholder &&
+                actualCurrentLine >= 0 &&
+                line.startTimeMs ===
+                  displayOriginalLines[actualCurrentLine + 1]?.startTimeMs
+              ? gapInterludeLead
+              : prevVisible &&
+                  isInterludePlaceholderLine(prevVisible) &&
+                  prevVisible.dotsInlineWithNext
+                ? prevVisible
+                : nextVisible &&
+                    isInterludePlaceholderLine(nextVisible) &&
+                    nextVisible.dotsInlineWithNext
+                  ? nextVisible
+                  : undefined;
 
         const interludeInlineDotsLine =
           interludeLeadForRow && currentTimeMs !== undefined
@@ -209,10 +216,9 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
                 isInterludePlaceholder && isInterludePlaceholderLine(line)
                   ? {
                       countdownStartMs: line.countdownStartMs,
-                      anchorLine:
-                        actualCurrentLine < 0
-                          ? null
-                          : displayOriginalLines[line.anchorLineIndex] ?? null,
+                      // Never keep the completed lyric as a ghost above delay dots.
+                      // Upcoming text is a separate visible row (or inline on the next line).
+                      anchorLine: null,
                     }
                   : undefined
               }
