@@ -209,8 +209,6 @@ export function MapsAppComponent({
                   !!workPlace &&
                   workPlace.id === selectedPlace.id
                 }
-                savedHomePlace={homePlace}
-                savedWorkPlace={workPlace}
                 onSetHome={(p: SavedPlace) => {
                   track(MAPS_ANALYTICS.HOME_WORK_SET, {
                     appId: "maps",
@@ -226,6 +224,20 @@ export function MapsAppComponent({
                     category: p.category || "unknown",
                   });
                   setWorkPlace(p);
+                }}
+                onUnsetHome={() => {
+                  track(MAPS_ANALYTICS.HOME_WORK_UNSET, {
+                    appId: "maps",
+                    kind: "home",
+                  });
+                  setHomePlace(null);
+                }}
+                onUnsetWork={() => {
+                  track(MAPS_ANALYTICS.HOME_WORK_UNSET, {
+                    appId: "maps",
+                    kind: "work",
+                  });
+                  setWorkPlace(null);
                 }}
                 onToggleFavorite={handleToggleFavorite}
                 onDirections={handleOpenPlaceDirections}

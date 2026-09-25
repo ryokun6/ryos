@@ -3363,6 +3363,8 @@
         "removeFavorite": "从个人收藏中移除",
         "setHome": "设为家",
         "setWork": "设为工作地点",
+        "unsetHome": "取消家",
+        "unsetWork": "取消工作地点",
         "work": "工作",
         "moreActions": "更多"
       },

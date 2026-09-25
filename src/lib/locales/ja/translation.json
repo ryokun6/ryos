@@ -3363,6 +3363,8 @@
         "removeFavorite": "よく使う項目から削除",
         "setHome": "自宅に設定",
         "setWork": "勤務先に設定",
+        "unsetHome": "自宅を解除",
+        "unsetWork": "勤務先を解除",
         "work": "勤務先",
         "moreActions": "その他"
       },
