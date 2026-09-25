@@ -9,12 +9,14 @@
 
 /** Shared cluster bucket for ryOS Home / Work / Favorites / search pins. */
 export const RYOS_MAP_PLACES_CLUSTER_ID = "ryos.maps.places";
+/** Separate bucket so YouBike pins don't merge into saved-place clusters. */
+export const RYOS_MAP_YOUBIKE_CLUSTER_ID = "ryos.maps.youbike";
 
 /**
  * When `max(latitudeDelta, longitudeDelta)` exceeds this value (~11 km at the
  * equator), treat the map as zoomed out past city level and allow clustering.
- * Boot default (0.12°) and regional search bias (≤0.5°) sit above this; focus
- * framing (0.012°) stays below.
+ * Boot default Taipei (0.12°) and regional search bias (≤0.5°) sit above this;
+ * focus framing (0.012°) stays below.
  */
 export const CITY_LEVEL_MAX_SPAN_DEG = 0.1;
 
@@ -28,10 +30,11 @@ export function shouldClusterMarkersForRegion(region: unknown): boolean {
   return Math.max(lat, lng) > CITY_LEVEL_MAX_SPAN_DEG;
 }
 
-export function clusteringIdentifierForRegion(region: unknown): string | null {
-  return shouldClusterMarkersForRegion(region)
-    ? RYOS_MAP_PLACES_CLUSTER_ID
-    : null;
+export function clusteringIdentifierForRegion(
+  region: unknown,
+  clusterId: string = RYOS_MAP_PLACES_CLUSTER_ID
+): string | null {
+  return shouldClusterMarkersForRegion(region) ? clusterId : null;
 }
 
 export function withMapPlaceClustering<T extends Record<string, unknown>>(

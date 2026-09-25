@@ -3322,7 +3322,7 @@
       "description": "Ищите места в Apple Maps",
       "help": {
         "directions": {
-          "description": "В карточке места откройте автомобильный маршрут в Apple Maps — откроется в новой вкладке, ryOS остаётся открытой (маршрут внутри карты пока недоступен).",
+          "description": "С карточки места откройте маршрут на автомобиле в Apple Картах или спланируйте поездку на YouBike на Тайване с пешими и велосипедными участками на карте.",
           "title": "Маршрут"
         },
         "dropPins": {
@@ -3334,7 +3334,7 @@
           "title": "Найти меня"
         },
         "mapTypes": {
-          "description": "Переключайтесь между стандартной, гибридной, спутниковой и приглушенной стандартной картами в меню «Вид»",
+          "description": "Переключайте тип карты в меню «Вид» и включайте или выключайте слой станций YouBike для Тайваня.",
           "title": "Типы карт"
         },
         "poweredByApple": {
@@ -3355,7 +3355,8 @@
         "locateMe": "Найти меня",
         "mutedStandard": "Упрощенный стандарт",
         "satellite": "Спутник",
-        "standard": "Стандарт"
+        "standard": "Стандарт",
+        "youbike": "YouBike"
       },
       "name": "Карты",
       "noResults": "Нет результатов",
@@ -3371,7 +3372,8 @@
         "removeFavorite": "Удалить из избранного",
         "setHome": "Сделать домом",
         "setWork": "Сделать работой",
-        "work": "Работа"
+        "work": "Работа",
+        "moreActions": "Ещё"
       },
       "places": {
         "allEmpty": "Найдите место и воспользуйтесь действиями в карточке, чтобы сохранить его как дом, работу или добавить в избранное.",
@@ -3420,6 +3422,7 @@
         "theater": "Театр",
         "university": "Университет",
         "winery": "Винодельня",
+        "youbike": "YouBike",
         "zoo": "Зоопарк"
       },
       "searchButton": "Поиск",
@@ -3433,7 +3436,70 @@
         "missingToken": "Apple Maps еще не настроены. Попросите разработчика добавить учетные данные MapKit.",
         "tokenHint": "Сервер автоматически подписывает краткосрочные токены MapKit после настройки учетных данных."
       },
-      "title": "Карты"
+      "title": "Карты",
+      "youbike": {
+        "availability": "{{bikes}} велосипедов · {{docks}} стоек",
+        "clearRoute": "Очистить маршрут YouBike",
+        "directions": "YouBike",
+        "directionsTitle": "Маршруты YouBike",
+        "distanceKilometers": "{{distance}} км",
+        "distanceMeters": "{{distance}} м",
+        "done": "Готово",
+        "errors": {
+          "destination_not_in_taiwan": "Маршруты YouBike доступны на Тайване.",
+          "no_destination_station": "Поблизости от пункта назначения нет станций YouBike.",
+          "no_distinct_stations": "Для поездки на YouBike нужны две разные станции.",
+          "no_origin": "Включите «Найти меня» или укажите домашний адрес на Тайване, чтобы начать поездку на YouBike.",
+          "no_origin_station": "Поблизости от начальной точки нет станций YouBike.",
+          "route_failed": "Не удалось построить маршрут YouBike."
+        },
+        "hideSteps": "Скрыть этапы",
+        "inactive": "Станция закрыта",
+        "legBike": "На велосипеде до {{station}}",
+        "legMeta": "{{minutes}} мин · {{distance}}",
+        "legWalk": "Пешком до {{place}}",
+        "maneuver": {
+          "arrive": "Прибытие",
+          "continue": "Продолжайте движение {{direction}}",
+          "continuePlain": "Продолжайте движение",
+          "depart": "Направляйтесь {{direction}}",
+          "departPlain": "Направляйтесь",
+          "direction": {
+            "east": "на восток",
+            "left": "налево",
+            "north": "на север",
+            "northeast": "на северо-восток",
+            "northwest": "на северо-запад",
+            "right": "направо",
+            "sharpLeft": "резко налево",
+            "sharpRight": "резко направо",
+            "slightLeft": "плавно налево",
+            "slightRight": "плавно направо",
+            "south": "на юг",
+            "southeast": "на юго-восток",
+            "southwest": "юго-запад",
+            "straight": "прямо",
+            "uturn": "разворот",
+            "west": "запад"
+          },
+          "fork": "Держитесь {{direction}}",
+          "forkPlain": "Развилка",
+          "merge": "Слияние {{direction}}",
+          "mergePlain": "Слияние",
+          "roundabout": "Круговое движение",
+          "turn": "Поверните {{direction}}",
+          "turnPlain": "Поворот"
+        },
+        "routeRegionLabel": "Маршруты YouBike",
+        "routeSummary": "{{minutes}} мин · {{distance}}",
+        "routeTitle": "Маршруты YouBike",
+        "routing": "Поиск поездки YouBike…",
+        "showSteps": "Шаги",
+        "stepAria": "Шаг {{index}}: {{label}}",
+        "stepsRegionLabel": "Пошаговые инструкции",
+        "warningNoBikes": "На ближайшей станции отправления сейчас может не быть велосипедов.",
+        "warningNoDocks": "На ближайшей станции прибытия сейчас может не быть свободных мест."
+      }
     },
     "minesweeper": {
       "description": "Классическая головоломка",

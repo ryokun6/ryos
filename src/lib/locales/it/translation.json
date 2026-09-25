@@ -3316,7 +3316,7 @@
       "description": "Trova luoghi con Mappe Apple",
       "help": {
         "directions": {
-          "description": "Dalla scheda luogo, apri le indicazioni stradali in Mappe di Apple: si apre in una nuova scheda così ryOS resta aperto (itinerario nella mappa non ancora disponibile).",
+          "description": "Dalla scheda di un luogo, apri le indicazioni in auto in Apple Maps oppure pianifica un viaggio YouBike a Taiwan con tratte a piedi e in bici sulla mappa.",
           "title": "Indicazioni"
         },
         "dropPins": {
@@ -3328,7 +3328,7 @@
           "title": "Localizzami"
         },
         "mapTypes": {
-          "description": "Passa tra Standard, Ibrida, Satellitare e Standard attenuata dal menu Vista",
+          "description": "Cambia il tipo di mappa dal menu Vista e attiva o disattiva il livello delle stazioni YouBike per Taiwan.",
           "title": "Tipi di mappa"
         },
         "poweredByApple": {
@@ -3349,7 +3349,8 @@
         "locateMe": "La mia posizione",
         "mutedStandard": "Standard attenuata",
         "satellite": "Satellite",
-        "standard": "Standard"
+        "standard": "Standard",
+        "youbike": "YouBike"
       },
       "name": "Mappe",
       "noResults": "Nessun risultato",
@@ -3365,7 +3366,8 @@
         "removeFavorite": "Rimuovi dai preferiti",
         "setHome": "Imposta come Casa",
         "setWork": "Imposta come Lavoro",
-        "work": "Lavoro"
+        "work": "Lavoro",
+        "moreActions": "Altro"
       },
       "places": {
         "allEmpty": "Cerca un luogo e usa le azioni della scheda per salvarlo come Casa, Lavoro o Preferito.",
@@ -3414,6 +3416,7 @@
         "theater": "Teatro",
         "university": "Università",
         "winery": "Cantina",
+        "youbike": "YouBike",
         "zoo": "Zoo"
       },
       "searchButton": "Cerca",
@@ -3427,7 +3430,70 @@
         "missingToken": "Apple Maps non è ancora configurato. Chiedi allo sviluppatore di aggiungere le credenziali MapKit.",
         "tokenHint": "Il server firma automaticamente i token MapKit a breve durata una volta configurate le credenziali."
       },
-      "title": "Mappe"
+      "title": "Mappe",
+      "youbike": {
+        "availability": "{{bikes}} bici · {{docks}} postazioni",
+        "clearRoute": "Cancella itinerario YouBike",
+        "directions": "YouBike",
+        "directionsTitle": "Indicazioni tramite YouBike",
+        "distanceKilometers": "{{distance}} km",
+        "distanceMeters": "{{distance}} m",
+        "done": "Fine",
+        "errors": {
+          "destination_not_in_taiwan": "Le indicazioni YouBike sono disponibili a Taiwan.",
+          "no_destination_station": "Nessuna stazione YouBike è sufficientemente vicina alla destinazione.",
+          "no_distinct_stations": "Sono necessarie due stazioni diverse per un tragitto YouBike.",
+          "no_origin": "Attiva Localizzami o imposta Casa a Taiwan per iniziare un tragitto YouBike.",
+          "no_origin_station": "Nessuna stazione YouBike è sufficientemente vicina al punto di partenza.",
+          "route_failed": "Impossibile pianificare un tragitto YouBike al momento."
+        },
+        "hideSteps": "Nascondi passi",
+        "inactive": "Stazione chiusa",
+        "legBike": "In bici verso {{station}}",
+        "legMeta": "{{minutes}} min · {{distance}}",
+        "legWalk": "A piedi verso {{place}}",
+        "maneuver": {
+          "arrive": "Arrivo",
+          "continue": "Continua {{direction}}",
+          "continuePlain": "Continua",
+          "depart": "Vai verso {{direction}}",
+          "departPlain": "Parti",
+          "direction": {
+            "east": "est",
+            "left": "a sinistra",
+            "north": "nord",
+            "northeast": "nord-est",
+            "northwest": "nord-ovest",
+            "right": "a destra",
+            "sharpLeft": "stretto a sinistra",
+            "sharpRight": "stretto a destra",
+            "slightLeft": "leggermente a sinistra",
+            "slightRight": "leggermente a destra",
+            "south": "sud",
+            "southeast": "sud-est",
+            "southwest": "sud-ovest",
+            "straight": "dritto",
+            "uturn": "inversione a U",
+            "west": "ovest"
+          },
+          "fork": "Tieni la {{direction}}",
+          "forkPlain": "Bivio",
+          "merge": "Immettiti {{direction}}",
+          "mergePlain": "Immissione",
+          "roundabout": "Rotonda",
+          "turn": "Gira {{direction}}",
+          "turnPlain": "Svolta"
+        },
+        "routeRegionLabel": "Indicazioni YouBike",
+        "routeSummary": "{{minutes}} min · {{distance}}",
+        "routeTitle": "Indicazioni YouBike",
+        "routing": "Ricerca di un itinerario YouBike…",
+        "showSteps": "Passi",
+        "stepAria": "Passo {{index}}: {{label}}",
+        "stepsRegionLabel": "Indicazioni passo passo",
+        "warningNoBikes": "La stazione di partenza più vicina potrebbe non avere bici al momento.",
+        "warningNoDocks": "La stazione di arrivo più vicina potrebbe non avere postazioni libere al momento."
+      }
     },
     "minesweeper": {
       "description": "Classico rompicapo",

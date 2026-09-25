@@ -14,6 +14,8 @@ interface MapsMenuBarProps {
   onLocateMe: () => void;
   mapType: MapsMapType;
   onSetMapType: (type: MapsMapType) => void;
+  youbikeOverlayEnabled: boolean;
+  onSetYoubikeOverlayEnabled: (enabled: boolean) => void;
   canUseMap: boolean;
 }
 
@@ -31,6 +33,8 @@ export function MapsMenuBar({
   onLocateMe,
   mapType,
   onSetMapType,
+  youbikeOverlayEnabled,
+  onSetYoubikeOverlayEnabled,
   canUseMap,
 }: MapsMenuBarProps) {
   const { t } = useTranslation();
@@ -66,12 +70,21 @@ export function MapsMenuBar({
     {
       label: t("common.menu.view"),
       // Checkbox items (not a radio group) to match the original rendering.
-      items: MAP_TYPES.map(({ type, labelKey }) => ({
-        type: "checkbox" as const,
-        label: t(labelKey),
-        checked: mapType === type,
-        onChange: () => onSetMapType(type),
-      })),
+      items: [
+        ...MAP_TYPES.map(({ type, labelKey }) => ({
+          type: "checkbox" as const,
+          label: t(labelKey),
+          checked: mapType === type,
+          onChange: () => onSetMapType(type),
+        })),
+        { type: "separator" as const },
+        {
+          type: "checkbox" as const,
+          label: t("apps.maps.menu.youbike", { defaultValue: "YouBike" }),
+          checked: youbikeOverlayEnabled,
+          onChange: (checked: boolean) => onSetYoubikeOverlayEnabled(checked),
+        },
+      ],
     },
   ];
 

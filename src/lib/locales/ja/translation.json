@@ -3313,7 +3313,7 @@
       "description": "Apple マップで場所を検索",
       "help": {
         "directions": {
-          "description": "場所カードから Apple マップで車のルートを開きます。新しいタブで開くため ryOS はそのままです（地図内のルートは未対応）。",
+          "description": "場所カードから Apple マップで車のルートを開くか、台湾で YouBike の行程を計画して、徒歩と自転車の区間を地図上に表示します。",
           "title": "経路"
         },
         "dropPins": {
@@ -3325,7 +3325,7 @@
           "title": "現在地を表示"
         },
         "mapTypes": {
-          "description": "「表示」メニューから、標準、ハイブリッド、航空写真、落ち着いた配色（標準）を切り替えます",
+          "description": "「表示」メニューから地図の種類を切り替え、台湾の YouBike ステーションオーバーレイをオン／オフできます。",
           "title": "マップの種類"
         },
         "poweredByApple": {
@@ -3346,7 +3346,8 @@
         "locateMe": "現在地を表示",
         "mutedStandard": "落ち着いた配色（標準）",
         "satellite": "航空写真",
-        "standard": "標準"
+        "standard": "標準",
+        "youbike": "YouBike"
       },
       "name": "マップ",
       "noResults": "結果なし",
@@ -3362,7 +3363,8 @@
         "removeFavorite": "よく使う項目から削除",
         "setHome": "自宅に設定",
         "setWork": "勤務先に設定",
-        "work": "勤務先"
+        "work": "勤務先",
+        "moreActions": "その他"
       },
       "places": {
         "allEmpty": "場所を検索し、カードのアクションを使用して自宅、勤務先、またはよく使う項目として保存します。",
@@ -3411,6 +3413,7 @@
         "theater": "劇場",
         "university": "大学",
         "winery": "ワイナリー",
+        "youbike": "YouBike",
         "zoo": "動物園"
       },
       "searchButton": "検索",
@@ -3424,7 +3427,70 @@
         "missingToken": "Appleマップがまだ設定されていません。MapKitの資格情報を追加するよう開発者に依頼してください。",
         "tokenHint": "資格情報が設定されると、サーバーは有効期間の短いMapKitトークンを自動的に署名します。"
       },
-      "title": "マップ"
+      "title": "マップ",
+      "youbike": {
+        "availability": "{{bikes}}台の自転車 · {{docks}}個のドック",
+        "clearRoute": "YouBikeの経路を消去",
+        "directions": "YouBike",
+        "directionsTitle": "YouBikeによる経路",
+        "distanceKilometers": "{{distance}} km",
+        "distanceMeters": "{{distance}} m",
+        "done": "完了",
+        "errors": {
+          "destination_not_in_taiwan": "YouBikeの経路は台湾で利用可能です。",
+          "no_destination_station": "目的地の近くにYouBikeのステーションがありません。",
+          "no_distinct_stations": "YouBikeを利用するには、2つの異なるステーションが必要です。",
+          "no_origin": "YouBikeの利用を開始するには、“現在地”をオンにするか、自宅を台湾に設定してください。",
+          "no_origin_station": "出発地の近くにYouBikeのステーションがありません。",
+          "route_failed": "現在、YouBikeの経路を計画できません。"
+        },
+        "hideSteps": "ステップを非表示",
+        "inactive": "ステーション休止中",
+        "legBike": "{{station}}まで自転車",
+        "legMeta": "{{minutes}}分 · {{distance}}",
+        "legWalk": "{{place}}まで徒歩",
+        "maneuver": {
+          "arrive": "到着",
+          "continue": "{{direction}}へ進む",
+          "continuePlain": "そのまま進む",
+          "depart": "{{direction}}へ向かう",
+          "departPlain": "出発",
+          "direction": {
+            "east": "東",
+            "left": "左",
+            "north": "北",
+            "northeast": "北東",
+            "northwest": "北西",
+            "right": "右",
+            "sharpLeft": "大きく左",
+            "sharpRight": "大きく右",
+            "slightLeft": "やや左",
+            "slightRight": "やや右",
+            "south": "南",
+            "southeast": "南東",
+            "southwest": "南西",
+            "straight": "まっすぐ",
+            "uturn": "Uターン",
+            "west": "西"
+          },
+          "fork": "{{direction}}に進む",
+          "forkPlain": "分岐",
+          "merge": "{{direction}}に合流",
+          "mergePlain": "合流",
+          "roundabout": "ロータリー",
+          "turn": "{{direction}}に曲がる",
+          "turnPlain": "右左折"
+        },
+        "routeRegionLabel": "YouBikeの経路",
+        "routeSummary": "{{minutes}}分 · {{distance}}",
+        "routeTitle": "YouBikeの経路",
+        "routing": "YouBikeの経路を検索中…",
+        "showSteps": "ステップ",
+        "stepAria": "ステップ{{index}}: {{label}}",
+        "stepsRegionLabel": "詳しい道順",
+        "warningNoBikes": "現在、最寄りの出発ステーションに自転車がない可能性があります。",
+        "warningNoDocks": "現在、最寄りの到着ステーションに空きドックがない可能性があります。"
+      }
     },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",

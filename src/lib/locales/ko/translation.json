@@ -3313,7 +3313,7 @@
       "description": "Apple 지도로 장소 찾기",
       "help": {
         "directions": {
-          "description": "장소 카드에서 Apple 지도로 운전 경로를 엽니다 — 새 탭에서 열려 ryOS는 그대로 유지됩니다(지도 안 경로 안내는 아직 없음).",
+          "description": "장소 카드에서 Apple 지도로 운전 경로를 열거나, 대만에서 YouBike 여정을 계획해 도보와 자전거 구간을 지도에 표시합니다.",
           "title": "경로"
         },
         "dropPins": {
@@ -3325,7 +3325,7 @@
           "title": "내 위치"
         },
         "mapTypes": {
-          "description": "보기 메뉴에서 표준, 하이브리드, 위성 및 저채도 표준 간에 전환하십시오",
+          "description": "보기 메뉴에서 지도 유형을 바꾸고, 대만 YouBike 정류장 오버레이를 켜거나 끌 수 있습니다.",
           "title": "지도 유형"
         },
         "poweredByApple": {
@@ -3346,7 +3346,8 @@
         "locateMe": "내 위치 찾기",
         "mutedStandard": "부드러운 표준",
         "satellite": "위성",
-        "standard": "표준"
+        "standard": "표준",
+        "youbike": "YouBike"
       },
       "name": "지도",
       "noResults": "결과 없음",
@@ -3362,7 +3363,8 @@
         "removeFavorite": "즐겨찾기에서 제거",
         "setHome": "집으로 설정",
         "setWork": "직장으로 설정",
-        "work": "직장"
+        "work": "직장",
+        "moreActions": "더보기"
       },
       "places": {
         "allEmpty": "장소를 검색한 후 카드 동작을 사용하여 집, 직장 또는 즐겨찾기로 저장하세요.",
@@ -3411,6 +3413,7 @@
         "theater": "극장",
         "university": "대학교",
         "winery": "와이너리",
+        "youbike": "YouBike",
         "zoo": "동물원"
       },
       "searchButton": "검색",
@@ -3424,7 +3427,70 @@
         "missingToken": "Apple 지도가 아직 구성되지 않았습니다. 개발자에게 MapKit 자격 증명을 추가하도록 요청하세요.",
         "tokenHint": "자격 증명이 구성되면 서버에서 수명이 짧은 MapKit 토큰을 자동으로 서명합니다."
       },
-      "title": "지도"
+      "title": "지도",
+      "youbike": {
+        "availability": "{{bikes}}대 자전거 · {{docks}}개 거치대",
+        "clearRoute": "YouBike 경로 지우기",
+        "directions": "YouBike",
+        "directionsTitle": "YouBike 이용 경로",
+        "distanceKilometers": "{{distance}} km",
+        "distanceMeters": "{{distance}} m",
+        "done": "완료",
+        "errors": {
+          "destination_not_in_taiwan": "YouBike 경로는 대만에서 이용 가능합니다.",
+          "no_destination_station": "목적지 근처에 YouBike 대여소가 없습니다.",
+          "no_distinct_stations": "YouBike를 이용하려면 서로 다른 두 대여소가 필요합니다.",
+          "no_origin": "YouBike 경로를 시작하려면 ‘나의 위치 찾기’를 켜거나 대만 내의 위치를 ‘집’으로 설정하십시오.",
+          "no_origin_station": "출발지 근처에 YouBike 대여소가 없습니다.",
+          "route_failed": "지금은 YouBike 경로를 계획할 수 없습니다."
+        },
+        "hideSteps": "단계 가리기",
+        "inactive": "대여소 운영 종료",
+        "legBike": "{{station}}까지 자전거로 이동",
+        "legMeta": "{{minutes}}분 · {{distance}}",
+        "legWalk": "{{place}}까지 도보로 이동",
+        "maneuver": {
+          "arrive": "도착",
+          "continue": "{{direction}} 방향으로 계속 진행",
+          "continuePlain": "계속 진행",
+          "depart": "{{direction}} 방향으로 출발",
+          "departPlain": "출발",
+          "direction": {
+            "east": "동쪽",
+            "left": "왼쪽",
+            "north": "북쪽",
+            "northeast": "북동쪽",
+            "northwest": "북서쪽",
+            "right": "오른쪽",
+            "sharpLeft": "왼쪽 급",
+            "sharpRight": "오른쪽 급",
+            "slightLeft": "왼쪽 완만",
+            "slightRight": "오른쪽 완만",
+            "south": "남쪽",
+            "southeast": "남동쪽",
+            "southwest": "남서쪽",
+            "straight": "직진",
+            "uturn": "유턴",
+            "west": "서쪽"
+          },
+          "fork": "{{direction}} 방향 유지",
+          "forkPlain": "갈림길",
+          "merge": "{{direction}} 방향으로 합류",
+          "mergePlain": "합류",
+          "roundabout": "회전교차로",
+          "turn": "{{direction}} 회전",
+          "turnPlain": "회전"
+        },
+        "routeRegionLabel": "YouBike 경로",
+        "routeSummary": "{{minutes}}분 · {{distance}}",
+        "routeTitle": "YouBike 경로",
+        "routing": "YouBike 경로를 찾는 중…",
+        "showSteps": "단계",
+        "stepAria": "{{index}}단계: {{label}}",
+        "stepsRegionLabel": "상세 경로 안내",
+        "warningNoBikes": "현재 가장 가까운 출발 대여소에 자전거가 없을 수도 있습니다.",
+        "warningNoDocks": "현재 가장 가까운 도착 대여소에 빈 거치대가 없을 수도 있습니다."
+      }
     },
     "minesweeper": {
       "description": "클래식 퍼즐 게임",

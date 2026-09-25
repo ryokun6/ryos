@@ -19,10 +19,13 @@ import {
 } from "../../utils/savedPlaceVisuals";
 import {
   RYOS_MAP_PLACES_CLUSTER_ID,
+  RYOS_MAP_YOUBIKE_CLUSTER_ID,
   clusteringIdentifierForRegion,
   formatClusterMarkerTitle,
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
+import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
+import { youbikeMapPoiFields } from "../../youbike/place";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
   getMapKit,
@@ -36,6 +39,7 @@ import {
 } from "./mapKitTypes";
 import {
   CITY_LEVEL_SPAN_DEG,
+  DEFAULT_MAP_CENTER,
   FOCUS_PLACE_SPAN_DEG,
   INITIAL_LOCATION_TIMEOUT_MS,
   LOADING_OVERLAY_DELAY_MS,
@@ -168,6 +172,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   const removeFavoritePlace = useMapsStore((s) => s.removeFavorite);
   const recordRecentPlace = useMapsStore((s) => s.recordRecent);
   const setSelectedPlace = useMapsStore((s) => s.setSelectedPlace);
+  const youbikeOverlayEnabled = useMapsStore((s) => s.youbikeOverlayEnabled);
+  const setYoubikeOverlayEnabled = useMapsStore(
+    (s) => s.setYoubikeOverlayEnabled
+  );
   const isPlaceFavorite = useCallback(
     (id: string) => favoritePlaces.some((p) => p.id === id),
     [favoritePlaces]
@@ -220,15 +228,14 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     if (mapInstanceRef.current) return;
     if (!mapSurfaceEl) return;
 
-    // Default region: San Francisco. We center here so the map opens on a
-    // useful, POI-rich location instead of the world view, and switch to
-    // the user's real location only when they hit "Locate Me".
-    const SF_LATITUDE = 37.7749;
-    const SF_LONGITUDE = -122.4194;
-    const SF_LATITUDE_DELTA = 0.12;
-    const SF_LONGITUDE_DELTA = 0.12;
-    const center = new mk.Coordinate(SF_LATITUDE, SF_LONGITUDE);
-    const span = new mk.CoordinateSpan(SF_LATITUDE_DELTA, SF_LONGITUDE_DELTA);
+    // Default region: Taipei. Used only when there is no persisted selected
+    // place, granted geolocation, or saved Home. Locate Me still jumps to
+    // the user's real location.
+    const center = new mk.Coordinate(
+      DEFAULT_MAP_CENTER.latitude,
+      DEFAULT_MAP_CENTER.longitude
+    );
+    const span = new mk.CoordinateSpan(CITY_LEVEL_SPAN_DEG, CITY_LEVEL_SPAN_DEG);
     const region = new mk.CoordinateRegion(center, span);
 
     const map = new mk.Map(mapSurfaceEl, {
@@ -249,6 +256,13 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
     map.annotationForCluster = (cluster) => {
+      if (cluster.clusteringIdentifier === RYOS_MAP_YOUBIKE_CLUSTER_ID) {
+        cluster.title = "";
+        cluster.subtitle = "";
+        cluster.titleVisibility = "hidden";
+        cluster.subtitleVisibility = "hidden";
+        return cluster;
+      }
       if (cluster.clusteringIdentifier !== RYOS_MAP_PLACES_CLUSTER_ID) {
         return;
       }
@@ -481,6 +495,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       category?: string;
       /** When set, passed through to MapKit to supersede the built-in POI. */
       mapKitPlace?: MapKitPlace;
+      youbike?: {
+        bikesAvailable: number;
+        totalDocks: number;
+      };
     }) => {
       const mk = getMapKit();
       const map = mapInstanceRef.current;
@@ -501,17 +519,26 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       }
 
       const coord = new mk.Coordinate(place.latitude, place.longitude);
+      const youbikePoi = youbikeMapPoiFields(place);
       if (!alreadySaved) {
         dispatchUi({ type: "setSelectedResultId", id: place.id });
         const annotation = new mk.MarkerAnnotation(
           coord,
           withMapPlaceClustering(
             getPoiMarkerAnnotationOptions(
-              place.name,
-              place.subtitle ?? "",
+              youbikePoi?.title ?? place.name,
+              youbikePoi ? "" : (place.subtitle ?? ""),
               place.category,
               {
-                ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
+                ...(place.mapKitPlace && !youbikePoi
+                  ? { place: place.mapKitPlace }
+                  : {}),
+                ...(youbikePoi
+                  ? {
+                      calloutEnabled: false,
+                      subtitleVisibility: "hidden",
+                    }
+                  : {}),
               }
             ),
             clusteringIdForCurrentMapRegion()
@@ -719,6 +746,54 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     return entries;
   }, [homePlace, workPlace, favoritePlaces]);
 
+  const savedPlaceIds = useMemo(
+    () => new Set(savedPlaceEntries.map((entry) => entry.place.id)),
+    [savedPlaceEntries]
+  );
+
+  const youbike = useYouBikeLayer({
+    enabled: youbikeOverlayEnabled && status === "ready",
+    mapReadyTick,
+    mapInstanceRef,
+    language: mapKitLanguage,
+    homePlace,
+    workPlace,
+    selectedPlace,
+    setSelectedPlace,
+    recordRecentPlace,
+    savedPlaceIds,
+    isDarkMode,
+  });
+
+  const handleYouBikeDirections = useCallback(
+    (place: SavedPlace) => {
+      track(MAPS_ANALYTICS.YOUBIKE_DIRECTIONS, {
+        appId: "maps",
+        category: place.category || "youbike",
+      });
+      void youbike.handleYouBikeDirections(place);
+    },
+    [youbike]
+  );
+
+  const selectedPlaceWithYoubike = useMemo(() => {
+    if (!selectedPlace) return null;
+    const live = youbike.selectedYoubikeStation;
+    if (!live) return selectedPlace;
+    return {
+      ...selectedPlace,
+      youbike: {
+        stationId: live.stationId,
+        city: live.city,
+        bikesAvailable: live.bikesAvailable,
+        docksAvailable: live.docksAvailable,
+        totalDocks: live.totalDocks,
+        isActive: live.isActive,
+        updatedAt: live.updatedAt,
+      },
+    };
+  }, [selectedPlace, youbike.selectedYoubikeStation]);
+
   // Sync Home / Work / Favorites annotations on the map. Home / Work use
   // branded pins; favorites use the same category icon + color as the
   // place card and search list (`getPoiMarkerStyle`).
@@ -879,7 +954,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   //      deliberately avoid triggering a permission prompt on map open;
   //      the dedicated "Locate Me" button is the right place for that.
   //   3. The user's saved Home — city-level zoom around it
-  //   4. Otherwise, leave the map at the SF default region
+  //   4. Otherwise, leave the map at the Taipei default region
   // Guarded so it only fires once per live MapKit map (including after the
   // surface remounts from minimize): subsequent user-driven selections go
   // through `dropPinAt` / `focusSavedPlace` directly.
@@ -941,7 +1016,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       if (home) {
         frameAtCityLevel(home.latitude, home.longitude);
       }
-      // No home set — leave the map at its SF default region.
+      // No home set — leave the map at its Taipei default region.
     };
 
     const tryUseCurrentLocation = (): boolean => {
@@ -1179,13 +1254,22 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     workPlace,
     favoritePlaces,
     recentPlaces,
-    selectedPlace,
+    selectedPlace: selectedPlaceWithYoubike,
     setHomePlace,
     setWorkPlace,
     handleSelectResult,
     handleSelectSavedPlace,
     handleToggleFavorite,
     handleOpenPlaceDirections,
+    handleYouBikeDirections,
+    handleClearYouBikeRoute: youbike.handleClearYouBikeRoute,
+    focusYouBikeStep: youbike.focusYouBikeStep,
+    youbikeActiveStepIndex: youbike.activeStepIndex,
+    youbikeOverlayEnabled,
+    setYoubikeOverlayEnabled,
+    youbikeRoutePlan: youbike.routePlan,
+    youbikeIsRouting: youbike.isRouting,
+    youbikeRouteError: youbike.routeError,
     handleClosePlaceCard,
     isPlaceFavorite,
     handleZoomIn,

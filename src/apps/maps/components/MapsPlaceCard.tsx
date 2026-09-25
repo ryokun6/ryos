@@ -1,12 +1,16 @@
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import {
+  Bicycle,
   Briefcase,
+  DotsThree,
   House,
   NavigationArrow,
   Star,
   X,
 } from "@phosphor-icons/react";
+import { isInTaiwan } from "../youbike/geo";
+import { isYouBikePlace } from "../youbike/place";
 import { cn } from "@/lib/utils";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
@@ -15,6 +19,12 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   osCardClassName,
   osSubtleIconButtonClassName,
@@ -44,6 +54,7 @@ export interface MapsPlaceCardProps {
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
+  onYouBikeDirections?: (place: SavedPlace) => void;
   onClose: () => void;
 }
 
@@ -98,6 +109,7 @@ export function MapsPlaceCard({
   onSetWork,
   onToggleFavorite,
   onDirections,
+  onYouBikeDirections,
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
@@ -146,6 +158,7 @@ export function MapsPlaceCard({
               onSetWork={onSetWork}
               onToggleFavorite={onToggleFavorite}
               onDirections={onDirections}
+              onYouBikeDirections={onYouBikeDirections}
               t={t}
             />
           </div>
@@ -218,6 +231,19 @@ function PlaceCardHeader({
             {subtitle}
           </div>
         )}
+        {place.youbike && (
+          <div className="mt-0.5 text-[11px] leading-snug text-os-text-secondary">
+            {place.youbike.isActive
+              ? t("apps.maps.youbike.availability", {
+                  defaultValue: "{{bikes}} bikes · {{docks}} docks",
+                  bikes: place.youbike.bikesAvailable,
+                  docks: place.youbike.docksAvailable,
+                })
+              : t("apps.maps.youbike.inactive", {
+                  defaultValue: "Station closed",
+                })}
+          </div>
+        )}
       </div>
       <button
         type="button"
@@ -248,6 +274,7 @@ interface PlaceCardActionsProps {
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
+  onYouBikeDirections?: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -262,12 +289,17 @@ function PlaceCardActions({
   onSetWork,
   onToggleFavorite,
   onDirections,
+  onYouBikeDirections,
   t,
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
   const variant = isMacOSTheme ? "aqua" : "retro";
   const showHomeButton = !savedHomePlace || isHome;
   const showWorkButton = !savedWorkPlace || isWork;
+  const showYouBike =
+    !!onYouBikeDirections &&
+    (isYouBikePlace(place) ||
+      isInTaiwan({ latitude: place.latitude, longitude: place.longitude }));
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -292,101 +324,141 @@ function PlaceCardActions({
         </span>
       </Button>
 
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        onClick={() => onToggleFavorite(place)}
-        aria-pressed={isFavorite}
-        title={
-          isFavorite
-            ? t("apps.maps.placeCard.removeFavorite", {
-                defaultValue: "Remove from Favorites",
-              })
-            : t("apps.maps.placeCard.addFavorite", {
-                defaultValue: "Add to Favorites",
-              })
-        }
-        className={AQUA_ICON_BUTTON_PADDING_CLASS}
-      >
-        <Star
-          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight={
-            isFavorite
-              ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-              : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-          }
-        />
-        <span>
-          {isFavorite
-            ? t("apps.maps.placeCard.favorited", {
-                defaultValue: "Favorited",
-              })
-            : t("apps.maps.placeCard.favorite", {
-                defaultValue: "Favorite",
-              })}
-        </span>
-      </Button>
-
-      {showHomeButton && (
+      {showYouBike && (
         <Button
           type="button"
           variant={variant}
           size="sm"
-          onClick={() => onSetHome(place)}
-          aria-pressed={isHome}
-          title={t("apps.maps.placeCard.setHome", {
-            defaultValue: "Set as Home",
+          onClick={() => onYouBikeDirections?.(place)}
+          title={t("apps.maps.youbike.directionsTitle", {
+            defaultValue: "Directions via YouBike",
           })}
           className={AQUA_ICON_BUTTON_PADDING_CLASS}
         >
-          <House
+          <Bicycle
             size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-            weight={
-              isHome
-                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-            }
+            weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
           />
           <span>
-            {isHome
-              ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
-              : t("apps.maps.placeCard.setHome", {
-                  defaultValue: "Set as Home",
-                })}
+            {t("apps.maps.youbike.directions", {
+              defaultValue: "YouBike",
+            })}
           </span>
         </Button>
       )}
 
-      {showWorkButton && (
-        <Button
-          type="button"
-          variant={variant}
-          size="sm"
-          onClick={() => onSetWork(place)}
-          aria-pressed={isWork}
-          title={t("apps.maps.placeCard.setWork", {
-            defaultValue: "Set as Work",
-          })}
-          className={AQUA_ICON_BUTTON_PADDING_CLASS}
-        >
-          <Briefcase
-            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-            weight={
-              isWork
-                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-            }
-          />
-          <span>
-            {isWork
-              ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
-              : t("apps.maps.placeCard.setWork", {
-                  defaultValue: "Set as Work",
-                })}
-          </span>
-        </Button>
-      )}
+      <PlaceCardMoreMenu
+        place={place}
+        isFavorite={isFavorite}
+        isHome={isHome}
+        isWork={isWork}
+        showHome={showHomeButton}
+        showWork={showWorkButton}
+        onSetHome={onSetHome}
+        onSetWork={onSetWork}
+        onToggleFavorite={onToggleFavorite}
+        t={t}
+      />
     </div>
+  );
+}
+
+function PlaceCardMoreMenu({
+  place,
+  isFavorite,
+  isHome,
+  isWork,
+  showHome,
+  showWork,
+  onSetHome,
+  onSetWork,
+  onToggleFavorite,
+  t,
+}: {
+  place: SavedPlace;
+  isFavorite: boolean;
+  isHome: boolean;
+  isWork: boolean;
+  showHome: boolean;
+  showWork: boolean;
+  onSetHome: (place: SavedPlace) => void;
+  onSetWork: (place: SavedPlace) => void;
+  onToggleFavorite: (place: SavedPlace) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const { isMacOSTheme } = useThemeFlags();
+  const favoriteLabel = isFavorite
+    ? t("apps.maps.placeCard.favorited", { defaultValue: "Favorited" })
+    : t("apps.maps.placeCard.favorite", { defaultValue: "Favorite" });
+  const homeLabel = isHome
+    ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
+    : t("apps.maps.placeCard.setHome", { defaultValue: "Set as Home" });
+  const workLabel = isWork
+    ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
+    : t("apps.maps.placeCard.setWork", { defaultValue: "Set as Work" });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title={t("apps.maps.placeCard.moreActions", { defaultValue: "More" })}
+          aria-label={t("apps.maps.placeCard.moreActions", {
+            defaultValue: "More",
+          })}
+          className={cn(
+            "inline-flex size-7 shrink-0 items-center justify-center rounded-full p-0",
+            "focus:outline-none focus-visible:ring-1",
+            isMacOSTheme
+              ? "aqua-button secondary !h-7 !w-7 !min-h-7 !min-w-7 !rounded-full !p-0"
+              : "border border-os-button-shadow bg-os-button-face text-os-text-primary active:bg-os-button-activeFace"
+          )}
+        >
+          <DotsThree size={18} weight="bold" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="start">
+        <DropdownMenuItem onSelect={() => onToggleFavorite(place)}>
+          <Star
+            weight={
+              isFavorite
+                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+            }
+          />
+          {favoriteLabel}
+        </DropdownMenuItem>
+        {showHome && (
+          <DropdownMenuItem
+            aria-pressed={isHome}
+            onSelect={() => onSetHome(place)}
+          >
+            <House
+              weight={
+                isHome
+                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+              }
+            />
+            {homeLabel}
+          </DropdownMenuItem>
+        )}
+        {showWork && (
+          <DropdownMenuItem
+            aria-pressed={isWork}
+            onSelect={() => onSetWork(place)}
+          >
+            <Briefcase
+              weight={
+                isWork
+                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+              }
+            />
+            {workLabel}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

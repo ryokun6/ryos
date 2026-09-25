@@ -33,7 +33,7 @@ Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import, Smart Groups, and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, dictionary, sticky notes, aquarium, and terrarium | Utilities |
-| [Maps](/docs/maps) | Apple MapKit search and pins; directions open in a new tab (Apple Maps); Chats can open results in-app | Utilities |
+| [Maps](/docs/maps) | Apple MapKit search and pins; YouBike overlay in Taiwan; driving directions open in Apple Maps | Utilities |
 | [Calculator](/docs/calculator) | Basic, scientific, and unit conversion calculator | Utilities |
 | [Admin](/docs/admin) | Admin-only panel for users, chat-room moderation, song library, server health, and Cursor agent telemetry | System |
 

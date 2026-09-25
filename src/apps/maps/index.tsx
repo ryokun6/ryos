@@ -29,16 +29,16 @@ export const helpItems = [
       "Click the Locate Me button to recenter the map on your current location",
   },
   {
-    icon: "🚗",
+    icon: "🚲",
     title: "Directions",
     description:
-      "From a place card, open driving directions in Apple Maps — opens in a new tab so ryOS stays open (in-map routing is not available yet)",
+      "From a place card, open driving directions in Apple Maps, or plan a YouBike trip in Taiwan with walk and bike legs on the map",
   },
   {
     icon: "🛰️",
     title: "Map Types",
     description:
-      "Switch between Standard, Hybrid, Satellite, and Muted Standard from the View menu",
+      "Switch map type from the View menu, and toggle the YouBike station overlay for Taiwan",
   },
   {
     icon: "🌐",

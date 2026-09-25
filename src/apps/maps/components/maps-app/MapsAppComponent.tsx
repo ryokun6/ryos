@@ -9,6 +9,7 @@ import { appMetadata } from "../..";
 import { MapsMenuBar } from "../MapsMenuBar";
 import { MapsPlacesDrawer } from "../MapsPlacesDrawer";
 import { MapsPlaceCard } from "../MapsPlaceCard";
+import { MapsYouBikeRouteCard } from "../MapsYouBikeRouteCard";
 import type { SavedPlace } from "../../utils/types";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import { MapsMapBottomChrome } from "./MapsMapBottomChrome";
@@ -56,6 +57,15 @@ export function MapsAppComponent({
     handleSelectSavedPlace,
     handleToggleFavorite,
     handleOpenPlaceDirections,
+    handleYouBikeDirections,
+    handleClearYouBikeRoute,
+    focusYouBikeStep,
+    youbikeActiveStepIndex,
+    youbikeOverlayEnabled,
+    setYoubikeOverlayEnabled,
+    youbikeRoutePlan,
+    youbikeIsRouting,
+    youbikeRouteError,
     handleClosePlaceCard,
     isPlaceFavorite,
     handleZoomIn,
@@ -76,6 +86,8 @@ export function MapsAppComponent({
       onLocateMe={handleLocateMe}
       mapType={mapType}
       onSetMapType={setMapType}
+      youbikeOverlayEnabled={youbikeOverlayEnabled}
+      onSetYoubikeOverlayEnabled={setYoubikeOverlayEnabled}
       canUseMap={canUseMap}
     />
   );
@@ -172,43 +184,55 @@ export function MapsAppComponent({
               />
             )}
 
-            <MapsPlaceCard
-              place={selectedPlace}
-              isFavorite={
-                selectedPlace ? isPlaceFavorite(selectedPlace.id) : false
-              }
-              isHome={
-                !!selectedPlace &&
-                !!homePlace &&
-                homePlace.id === selectedPlace.id
-              }
-              isWork={
-                !!selectedPlace &&
-                !!workPlace &&
-                workPlace.id === selectedPlace.id
-              }
-              savedHomePlace={homePlace}
-              savedWorkPlace={workPlace}
-              onSetHome={(p: SavedPlace) => {
-                track(MAPS_ANALYTICS.HOME_WORK_SET, {
-                  appId: "maps",
-                  kind: "home",
-                  category: p.category || "unknown",
-                });
-                setHomePlace(p);
-              }}
-              onSetWork={(p: SavedPlace) => {
-                track(MAPS_ANALYTICS.HOME_WORK_SET, {
-                  appId: "maps",
-                  kind: "work",
-                  category: p.category || "unknown",
-                });
-                setWorkPlace(p);
-              }}
-              onToggleFavorite={handleToggleFavorite}
-              onDirections={handleOpenPlaceDirections}
-              onClose={handleClosePlaceCard}
-            />
+            {youbikeRoutePlan || youbikeIsRouting || youbikeRouteError ? (
+              <MapsYouBikeRouteCard
+                plan={youbikeRoutePlan}
+                isRouting={youbikeIsRouting}
+                error={youbikeRouteError}
+                onClose={handleClearYouBikeRoute}
+                onSelectStep={focusYouBikeStep}
+                activeStepIndex={youbikeActiveStepIndex}
+              />
+            ) : (
+              <MapsPlaceCard
+                place={selectedPlace}
+                isFavorite={
+                  selectedPlace ? isPlaceFavorite(selectedPlace.id) : false
+                }
+                isHome={
+                  !!selectedPlace &&
+                  !!homePlace &&
+                  homePlace.id === selectedPlace.id
+                }
+                isWork={
+                  !!selectedPlace &&
+                  !!workPlace &&
+                  workPlace.id === selectedPlace.id
+                }
+                savedHomePlace={homePlace}
+                savedWorkPlace={workPlace}
+                onSetHome={(p: SavedPlace) => {
+                  track(MAPS_ANALYTICS.HOME_WORK_SET, {
+                    appId: "maps",
+                    kind: "home",
+                    category: p.category || "unknown",
+                  });
+                  setHomePlace(p);
+                }}
+                onSetWork={(p: SavedPlace) => {
+                  track(MAPS_ANALYTICS.HOME_WORK_SET, {
+                    appId: "maps",
+                    kind: "work",
+                    category: p.category || "unknown",
+                  });
+                  setWorkPlace(p);
+                }}
+                onToggleFavorite={handleToggleFavorite}
+                onDirections={handleOpenPlaceDirections}
+                onYouBikeDirections={handleYouBikeDirections}
+                onClose={handleClosePlaceCard}
+              />
+            )}
 
             <MapsMapBottomChrome
               isMacOSTheme={isMacOSTheme}

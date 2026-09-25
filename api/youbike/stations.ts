@@ -1,0 +1,324 @@
+import { apiHandler } from "../_utils/api-handler.js";
+import * as RateLimit from "../_utils/_rate-limit.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
+import {
+  YOUBIKE_CACHE_TTL_SECONDS,
+  YOUBIKE_FEED_TIMEOUT_MS,
+  YOUBIKE_OPEN_DATA_FEEDS,
+  YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS,
+  feedsIntersectingBBox,
+  youbikeFeedCacheKey,
+  type YouBikeOpenDataFeed,
+} from "../../src/apps/maps/youbike/feeds";
+import {
+  filterStationsInBBox,
+  parseBBoxQuery,
+} from "../../src/apps/maps/youbike/geo";
+import {
+  mergeYouBikeStations,
+  parseYouBikeStations,
+} from "../../src/apps/maps/youbike/parseStations";
+import type {
+  GeoBBox,
+  YouBikeFeedStatus,
+  YouBikeStation,
+} from "../../src/apps/maps/youbike/types";
+
+const RL_BURST_WINDOW = 60;
+const RL_DAILY_WINDOW = 60 * 60 * 24;
+
+interface CachedFeed {
+  fetchedAt: number;
+  stations: YouBikeStation[];
+  status: YouBikeFeedStatus;
+}
+
+type RedisLike = {
+  get: <T>(key: string) => Promise<T | null>;
+  set: (key: string, value: unknown, opts?: { ex?: number }) => Promise<unknown>;
+};
+
+async function fetchFeedJson(
+  url: string,
+  signal: AbortSignal
+): Promise<unknown> {
+  const response = await fetch(url, {
+    redirect: "follow",
+    signal,
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "ryOS-maps-youbike/1.0",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  const contentType = response.headers.get("content-type") ?? "";
+  const text = await response.text();
+  if (
+    contentType.includes("text/html") ||
+    text.trimStart().startsWith("<")
+  ) {
+    throw new Error("non_json_response");
+  }
+  return JSON.parse(text) as unknown;
+}
+
+async function fetchFeed(
+  feed: YouBikeOpenDataFeed,
+  timeoutMs: number
+): Promise<CachedFeed> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const payload = await fetchFeedJson(feed.url, controller.signal);
+    const stations = parseYouBikeStations(payload, {
+      source: feed.id,
+      city: feed.city,
+    });
+    return {
+      fetchedAt: Date.now(),
+      stations,
+      status: {
+        id: feed.id,
+        city: feed.city,
+        ok: stations.length > 0,
+        count: stations.length,
+        error: stations.length === 0 ? "empty" : undefined,
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "fetch_failed";
+    return {
+      fetchedAt: Date.now(),
+      stations: [],
+      status: {
+        id: feed.id,
+        city: feed.city,
+        ok: false,
+        count: 0,
+        error: message,
+      },
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function readCachedFeed(
+  redis: RedisLike,
+  feed: YouBikeOpenDataFeed
+): Promise<CachedFeed | null> {
+  try {
+    const cached = await redis.get<CachedFeed>(youbikeFeedCacheKey(feed.id));
+    if (cached?.stations && Array.isArray(cached.stations) && cached.status) {
+      return cached;
+    }
+  } catch {
+    // ignore cache read failures
+  }
+  return null;
+}
+
+async function writeCachedFeed(
+  redis: RedisLike,
+  feed: YouBikeOpenDataFeed,
+  payload: CachedFeed
+): Promise<void> {
+  if (!payload.status.ok) return;
+  try {
+    await redis.set(youbikeFeedCacheKey(feed.id), payload, {
+      ex: YOUBIKE_CACHE_TTL_SECONDS,
+    });
+  } catch {
+    // ignore cache write failures
+  }
+}
+
+async function loadFeed(
+  redis: RedisLike,
+  feed: YouBikeOpenDataFeed,
+  timeoutMs: number
+): Promise<{ payload: CachedFeed; cacheHit: boolean }> {
+  const cached = await readCachedFeed(redis, feed);
+  if (cached) return { payload: cached, cacheHit: true };
+  const payload = await fetchFeed(feed, timeoutMs);
+  await writeCachedFeed(redis, feed, payload);
+  return { payload, cacheHit: false };
+}
+
+function warmOptionalFeeds(
+  redis: RedisLike,
+  feeds: YouBikeOpenDataFeed[]
+): void {
+  for (const feed of feeds) {
+    void (async () => {
+      const cached = await readCachedFeed(redis, feed);
+      if (cached) return;
+      const payload = await fetchFeed(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS);
+      await writeCachedFeed(redis, feed, payload);
+    })();
+  }
+}
+
+async function loadStationsForBBox(
+  redis: RedisLike,
+  bbox: GeoBBox | null
+): Promise<{
+  fetchedAt: number;
+  stations: YouBikeStation[];
+  sources: YouBikeFeedStatus[];
+  cacheHit: boolean;
+}> {
+  const relevant = feedsIntersectingBBox(bbox);
+  if (relevant.length === 0) {
+    return { fetchedAt: Date.now(), stations: [], sources: [], cacheHit: true };
+  }
+
+  const required = relevant.filter((feed) => !feed.optional);
+  const optional = relevant.filter((feed) => feed.optional);
+  const waitForOptional = required.length === 0;
+
+  const requiredResults = await Promise.all(
+    required.map((feed) =>
+      loadFeed(redis, feed, YOUBIKE_FEED_TIMEOUT_MS)
+    )
+  );
+
+  const optionalCached: CachedFeed[] = [];
+  const optionalToWarm: YouBikeOpenDataFeed[] = [];
+  for (const feed of optional) {
+    const cached = await readCachedFeed(redis, feed);
+    if (cached) {
+      optionalCached.push(cached);
+    } else {
+      optionalToWarm.push(feed);
+    }
+  }
+
+  let optionalFresh: { payload: CachedFeed; cacheHit: boolean }[] = [];
+  if (waitForOptional && optionalToWarm.length > 0) {
+    optionalFresh = await Promise.all(
+      optionalToWarm.map((feed) =>
+        loadFeed(redis, feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
+      )
+    );
+  } else if (optionalToWarm.length > 0) {
+    warmOptionalFeeds(redis, optionalToWarm);
+  }
+
+  const payloads = [
+    ...requiredResults.map((result) => result.payload),
+    ...optionalCached,
+    ...optionalFresh.map((result) => result.payload),
+  ];
+  const cacheHit =
+    payloads.length > 0 &&
+    requiredResults.every((result) => result.cacheHit) &&
+    optionalFresh.every((result) => result.cacheHit);
+
+  return {
+    fetchedAt: Math.max(Date.now(), ...payloads.map((p) => p.fetchedAt)),
+    stations: mergeYouBikeStations(payloads.map((payload) => payload.stations)),
+    sources: [
+      ...requiredResults.map((result) => result.payload.status),
+      ...optionalCached.map((payload) => payload.status),
+      ...optionalFresh.map((result) => result.payload.status),
+      ...(!waitForOptional
+        ? optionalToWarm.map(
+            (feed) =>
+              ({
+                id: feed.id,
+                city: feed.city,
+                ok: false,
+                count: 0,
+                error: "deferred",
+              }) satisfies YouBikeFeedStatus
+          )
+        : []),
+    ],
+    cacheHit,
+  };
+}
+
+export default apiHandler(
+  { methods: ["GET"] },
+  async ({ req, res, redis, logger, startTime }) => {
+    try {
+      const ip = getClientIp(req);
+      const rl = await RateLimit.checkBurstAndDailyLimits({
+        namespace: "youbike",
+        identifierParts: ["ip", ip],
+        burst: { windowSeconds: RL_BURST_WINDOW, limit: 30 },
+        daily: { windowSeconds: RL_DAILY_WINDOW, limit: 2000 },
+      });
+      if (!rl.ok) {
+        const fallbackWindow =
+          rl.scope === "burst" ? RL_BURST_WINDOW : RL_DAILY_WINDOW;
+        logger.warn("YouBike rate limit exceeded", { ip, scope: rl.scope });
+        logger.response(429, Date.now() - startTime);
+        res.setHeader(
+          "Retry-After",
+          String(rl.result?.resetSeconds ?? fallbackWindow)
+        );
+        res.status(429).json({ error: "rate_limit_exceeded", scope: rl.scope });
+        return;
+      }
+    } catch (error) {
+      logger.error("YouBike rate limit check failed", error);
+    }
+
+    const bbox = parseBBoxQuery({
+      south: req.query.south,
+      west: req.query.west,
+      north: req.query.north,
+      east: req.query.east,
+    });
+    if (
+      req.query.south ||
+      req.query.west ||
+      req.query.north ||
+      req.query.east
+    ) {
+      if (!bbox) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "invalid_bbox" });
+        return;
+      }
+    }
+
+    const payload = await loadStationsForBBox(redis, bbox);
+    const stations = bbox
+      ? filterStationsInBBox(payload.stations, bbox)
+      : payload.stations;
+
+    if (
+      stations.length === 0 &&
+      payload.sources.length > 0 &&
+      !payload.sources.some((source) => source.ok)
+    ) {
+      logger.error("YouBike feeds returned no stations", {
+        sources: payload.sources,
+      });
+      logger.response(502, Date.now() - startTime);
+      res.status(502).json({
+        error: "youbike_feeds_unavailable",
+        sources: payload.sources,
+      });
+      return;
+    }
+
+    logger.info("YouBike stations", {
+      count: stations.length,
+      cacheHit: payload.cacheHit,
+      sources: payload.sources.filter((source) => source.ok).map((s) => s.id),
+    });
+    logger.response(200, Date.now() - startTime);
+    res.status(200).json({
+      stations,
+      fetchedAt: payload.fetchedAt,
+      cacheHit: payload.cacheHit,
+      sources: payload.sources,
+    });
+  }
+);

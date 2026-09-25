@@ -1,0 +1,259 @@
+import { describe, expect, test } from "bun:test";
+import { CITY_LEVEL_SPAN_DEG, FOCUS_PLACE_SPAN_DEG } from "../../../src/apps/maps/components/maps-app/mapsUiState";
+import { CITY_LEVEL_MAX_SPAN_DEG } from "../../../src/apps/maps/utils/mapMarkerClustering";
+import { poiVisualGradient } from "../../../src/apps/maps/utils/poiVisuals";
+import { youbikeMapPoiFields, youbikeStationToSavedPlace } from "../../../src/apps/maps/youbike/place";
+import type { YouBikeStation } from "../../../src/apps/maps/youbike/types";
+import {
+  YOUBIKE_COLOR_AVAILABLE,
+  YOUBIKE_COLOR_EMPTY,
+  YOUBIKE_COLOR_INACTIVE,
+  YOUBIKE_COLOR_LOW,
+  YOUBIKE_DOT_DIM_OPACITY,
+  YOUBIKE_DOT_DIM_SIZE_PX,
+  YOUBIKE_DOT_OUTLINE_DARK,
+  YOUBIKE_DOT_OUTLINE_LIGHT,
+  YOUBIKE_DOT_OUTLINE_PX,
+  YOUBIKE_DOT_SELECTED_SIZE_PX,
+  YOUBIKE_DOT_SIZE_PX,
+  YOUBIKE_MAX_RENDER_SPAN_DEG,
+  YOUBIKE_POI_VISUAL,
+  applyYouBikeDotAppearance,
+  shouldRenderYouBikeOverlayForSpan,
+  youbikeDotFramePx,
+  youbikeDotIsPrimary,
+  youbikeDotOpacity,
+  youbikeDotOutline,
+  youbikeDotSizePx,
+  youbikePinTitle,
+  youbikeShouldPaintDot,
+  youbikeStationMarkerColor,
+  youbikeStationMarkerGradient,
+  youbikeStationMarkerVisual,
+} from "../../../src/apps/maps/youbike/stationVisuals";
+
+function station(overrides: Partial<YouBikeStation> = {}): YouBikeStation {
+  return {
+    id: "youbike:taipei:500101001",
+    stationId: "500101001",
+    city: "taipei",
+    name: "捷運科技大樓站",
+    nameEn: "MRT Technology Bldg. Sta.",
+    address: "復興南路二段235號前",
+    addressEn: "No.235, Sec. 2, Fuxing S. Rd.",
+    area: "大安區",
+    areaEn: "Daan Dist.",
+    latitude: 25.02605,
+    longitude: 121.5436,
+    bikesAvailable: 12,
+    docksAvailable: 16,
+    totalDocks: 28,
+    isActive: true,
+    updatedAt: "2026-09-25T20:30:04",
+    source: "taipei",
+    ...overrides,
+  };
+}
+
+describe("youbikePinTitle", () => {
+  test("is bikes over total docks", () => {
+    expect(youbikePinTitle(station({ bikesAvailable: 12, totalDocks: 28 }))).toBe(
+      "12/28"
+    );
+    expect(youbikePinTitle(station({ bikesAvailable: 0, totalDocks: 16 }))).toBe(
+      "0/16"
+    );
+    expect(
+      youbikePinTitle(station({ bikesAvailable: 3.7, totalDocks: 19.2 }))
+    ).toBe("4/19");
+  });
+
+  test("never includes the station or dock name", () => {
+    const title = youbikePinTitle(station({ name: "YouBike2.0_捷運科技大樓站" }));
+    expect(title).toBe("12/28");
+    expect(title).not.toContain("捷運");
+    expect(title).not.toContain("YouBike");
+    expect(title).not.toContain("Technology");
+  });
+
+  test("clamps non-finite and negative counts to 0", () => {
+    expect(
+      youbikePinTitle(station({ bikesAvailable: -2, totalDocks: -4 }))
+    ).toBe("0/0");
+    expect(
+      youbikePinTitle(station({ bikesAvailable: Number.NaN, totalDocks: Number.NaN }))
+    ).toBe("0/0");
+  });
+});
+
+describe("youbikeMapPoiFields", () => {
+  test("labels the MapKit POI with bikes/total and not the station name", () => {
+    const place = youbikeStationToSavedPlace(
+      station({
+        name: "YouBike2.0_捷運大安站(2號出口)",
+        nameEn: "MRT Da'an Sta (Exit 2)",
+        bikesAvailable: 4,
+        totalDocks: 60,
+      }),
+      "en"
+    );
+    expect(youbikeMapPoiFields(place)).toEqual({
+      title: "4/60",
+      subtitle: "",
+      calloutEnabled: false,
+    });
+    expect(youbikeMapPoiFields(place)?.title).not.toContain("Da'an");
+    expect(
+      youbikeMapPoiFields({ id: "mk:cafe-1", name: "M One Cafe", category: "cafe" })
+    ).toBeNull();
+  });
+});
+
+describe("youbikeStationMarkerColor", () => {
+  test("maps availability to compact-dot colors", () => {
+    expect(youbikeStationMarkerColor(station({ bikesAvailable: 12 }))).toBe(
+      YOUBIKE_COLOR_AVAILABLE
+    );
+    expect(youbikeStationMarkerColor(station({ bikesAvailable: 3 }))).toBe(
+      YOUBIKE_COLOR_LOW
+    );
+    expect(youbikeStationMarkerColor(station({ bikesAvailable: 0 }))).toBe(
+      YOUBIKE_COLOR_EMPTY
+    );
+    expect(
+      youbikeStationMarkerColor(station({ isActive: false, bikesAvailable: 8 }))
+    ).toBe(YOUBIKE_COLOR_INACTIVE);
+  });
+});
+
+describe("YouBike compact dots", () => {
+  test("stay small enough for dense city zoom", () => {
+    expect(YOUBIKE_DOT_SIZE_PX).toBeLessThanOrEqual(6);
+    expect(YOUBIKE_DOT_DIM_SIZE_PX).toBeLessThan(YOUBIKE_DOT_SIZE_PX);
+    expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeLessThanOrEqual(12);
+    expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeGreaterThan(YOUBIKE_DOT_SIZE_PX);
+  });
+
+  test("browse dots stay small and opaque; directions dim non-endpoints", () => {
+    expect(youbikeDotSizePx("normal")).toBe(YOUBIKE_DOT_SIZE_PX);
+    expect(youbikeDotOpacity("normal")).toBe("1");
+    expect(youbikeDotIsPrimary("normal")).toBe(false);
+    expect(youbikeDotSizePx("dimmed")).toBe(YOUBIKE_DOT_DIM_SIZE_PX);
+    expect(youbikeDotOpacity("dimmed")).toBe(YOUBIKE_DOT_DIM_OPACITY);
+    expect(youbikeDotIsPrimary("dimmed")).toBe(false);
+    expect(youbikeDotSizePx("endpoint")).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
+    expect(youbikeDotOpacity("endpoint")).toBe("1");
+    expect(youbikeDotIsPrimary("endpoint")).toBe(true);
+    expect(youbikeDotFramePx("normal")).toBe(
+      YOUBIKE_DOT_SIZE_PX + YOUBIKE_DOT_OUTLINE_PX * 2
+    );
+  });
+
+  test("uses the same shallow POI gradient as regular badges", () => {
+    const available = station({ bikesAvailable: 12 });
+    expect(youbikeStationMarkerVisual(available)).toEqual(YOUBIKE_POI_VISUAL);
+    expect(youbikeStationMarkerGradient(available)).toBe(
+      poiVisualGradient(YOUBIKE_POI_VISUAL)
+    );
+    expect(youbikeStationMarkerGradient(available)).toContain("linear-gradient");
+    expect(youbikeStationMarkerGradient(available)).toContain("color-mix");
+    expect(youbikeStationMarkerGradient(station({ bikesAvailable: 3 }))).toBe(
+      poiVisualGradient(youbikeStationMarkerVisual(station({ bikesAvailable: 3 })))
+    );
+    expect(
+      youbikeStationMarkerGradient(station({ isActive: false, bikesAvailable: 8 }))
+    ).toContain(YOUBIKE_COLOR_INACTIVE);
+  });
+
+  test("uses a white outline in light mode and brighter fills in dark mode", () => {
+    const light = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(light as unknown as HTMLElement, station(), {
+      scheme: "light",
+    });
+    expect(light.style.boxSizing).toBe("content-box");
+    expect(light.style.border).toBe(youbikeDotOutline("light"));
+    expect(light.style.border).toContain(YOUBIKE_DOT_OUTLINE_LIGHT);
+    expect(YOUBIKE_DOT_OUTLINE_LIGHT.toLowerCase()).toBe("#ffffff");
+    expect(light.style.backgroundColor).toBe(YOUBIKE_COLOR_AVAILABLE);
+    expect(light.style.backgroundImage).toBe(youbikeStationMarkerGradient(station(), "light"));
+    expect(light.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
+    expect(light.style.opacity).toBe("1");
+
+    const dark = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(dark as unknown as HTMLElement, station(), {
+      scheme: "dark",
+    });
+    expect(dark.style.border).toBe(youbikeDotOutline("dark"));
+    expect(dark.style.border).toContain(YOUBIKE_DOT_OUTLINE_DARK);
+    expect(dark.style.border.toLowerCase()).not.toContain("#fff");
+    expect(dark.style.backgroundColor).not.toBe(YOUBIKE_COLOR_AVAILABLE);
+    expect(dark.style.backgroundImage).toBe(youbikeStationMarkerGradient(station(), "dark"));
+    expect(youbikeStationMarkerColor(station({ bikesAvailable: 3 }), "dark")).not.toBe(
+      YOUBIKE_COLOR_LOW
+    );
+  });
+
+  test("only route endpoints get full size; other route docks dim", () => {
+    const browse = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(browse as unknown as HTMLElement, station(), {
+      emphasis: "normal",
+    });
+    expect(browse.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
+    expect(browse.style.opacity).toBe("1");
+    expect(browse.style.border).toBe(youbikeDotOutline("light"));
+
+    const dimmed = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(dimmed as unknown as HTMLElement, station(), {
+      emphasis: "dimmed",
+    });
+    expect(dimmed.style.width).toBe(`${YOUBIKE_DOT_DIM_SIZE_PX}px`);
+    expect(dimmed.style.opacity).toBe(YOUBIKE_DOT_DIM_OPACITY);
+    expect(dimmed.style.border).toBe(youbikeDotOutline("light"));
+
+    const endpoint = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(endpoint as unknown as HTMLElement, station(), {
+      emphasis: "endpoint",
+    });
+    expect(endpoint.style.width).toBe(`${YOUBIKE_DOT_SELECTED_SIZE_PX}px`);
+    expect(endpoint.style.opacity).toBe("1");
+    expect(endpoint.style.border).toBe(youbikeDotOutline("light"));
+    expect(endpoint.style.boxShadow).not.toBe("none");
+  });
+
+  test("stays hidden at city-scale cameras", () => {
+    expect(YOUBIKE_MAX_RENDER_SPAN_DEG).toBe(CITY_LEVEL_MAX_SPAN_DEG);
+    expect(YOUBIKE_MAX_RENDER_SPAN_DEG).toBeLessThan(CITY_LEVEL_SPAN_DEG);
+    expect(shouldRenderYouBikeOverlayForSpan(CITY_LEVEL_SPAN_DEG)).toBe(false);
+    expect(shouldRenderYouBikeOverlayForSpan(0.4)).toBe(false);
+    expect(shouldRenderYouBikeOverlayForSpan(FOCUS_PLACE_SPAN_DEG)).toBe(true);
+    expect(shouldRenderYouBikeOverlayForSpan(YOUBIKE_MAX_RENDER_SPAN_DEG)).toBe(
+      true
+    );
+  });
+
+  test("hides the tapped dock and keeps the other docks", () => {
+    const selected = "youbike:taipei:a";
+    const endpoints = ["youbike:taipei:start", "youbike:taipei:end"];
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:a", { selectedYoubikeId: selected })
+    ).toBe(false);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: selected })
+    ).toBe(true);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: null })
+    ).toBe(true);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:start", {
+        selectedYoubikeId: "youbike:taipei:start",
+        endpointIds: endpoints,
+      })
+    ).toBe(false);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:end", {
+        selectedYoubikeId: "youbike:taipei:start",
+        endpointIds: endpoints,
+      })
+    ).toBe(true);
+  });
+});

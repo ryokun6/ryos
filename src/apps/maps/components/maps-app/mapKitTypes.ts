@@ -34,6 +34,8 @@ export interface MapKitClusterAnnotation {
   memberAnnotations?: unknown[];
   title?: string;
   subtitle?: string;
+  titleVisibility?: string;
+  subtitleVisibility?: string;
 }
 
 export interface MapKitMapInstance {
@@ -56,6 +58,15 @@ export interface MapKitMapInstance {
   ) => void;
   addAnnotation: (annotation: unknown) => void;
   removeAnnotation: (annotation: unknown) => void;
+  addOverlay?: (overlay: unknown) => void;
+  removeOverlay?: (overlay: unknown) => void;
+  addOverlays?: (overlays: unknown[]) => void;
+  removeOverlays?: (overlays: unknown[]) => void;
+  showItems?: (
+    items: unknown[],
+    options?: { animate?: boolean; padding?: unknown }
+  ) => void;
+  userLocation?: { coordinate?: MapKitCoordinate } | null;
   addEventListener?: (
     type: string,
     listener: () => void
@@ -94,6 +105,16 @@ export interface MapKitMarkerAnnotation {
   coordinate: MapKitCoordinate;
   data?: unknown;
   clusteringIdentifier?: string | null;
+  color?: string;
+  title?: string;
+  subtitle?: string;
+  titleVisibility?: string;
+  subtitleVisibility?: string;
+  calloutEnabled?: boolean;
+  element?: HTMLElement;
+  size?: { width: number; height: number };
+  /** Offset from the coordinate; positive x/y move the glyph down-right. */
+  anchorOffset?: { x: number; y: number };
   /** Writable. When true MapKit shows the annotation's callout. */
   selected?: boolean;
   addEventListener?: (
@@ -112,6 +133,32 @@ export interface MapKitMarkerAnnotation {
 //   https://developer.apple.com/documentation/mapkitjs/regionpriority
 export type MapKitRegionPriority = "default" | "required";
 
+export interface MapKitDirectionsRoute {
+  path?: MapKitCoordinate[];
+  /** WWDC25 cycling sample returns a polyline overlay instead of `path`. */
+  polyline?: { points?: MapKitCoordinate[]; path?: MapKitCoordinate[] };
+  distance?: number;
+  expectedTravelTime?: number;
+}
+
+export interface MapKitDirectionsResponse {
+  routes?: MapKitDirectionsRoute[];
+}
+
+export interface MapKitDirectionsInstance {
+  route: (
+    request: {
+      origin: MapKitCoordinate;
+      destination: MapKitCoordinate;
+      transportType?: string;
+    },
+    callback: (
+      error: Error | null,
+      data: MapKitDirectionsResponse
+    ) => void
+  ) => void;
+}
+
 export interface MapKitGlobal {
   Map: new (
     element: HTMLElement,
@@ -127,6 +174,30 @@ export interface MapKitGlobal {
     coordinate: MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
+  Annotation?: new (
+    coordinate: MapKitCoordinate,
+    factory: (
+      coordinate: MapKitCoordinate,
+      options?: Record<string, unknown>
+    ) => HTMLElement,
+    options?: Record<string, unknown>
+  ) => MapKitMarkerAnnotation;
+  FeatureVisibility?: { Hidden: string; Adaptive: string; Visible: string };
+  Style?: new (options?: Record<string, unknown>) => unknown;
+  PolylineOverlay?: new (
+    coordinates: MapKitCoordinate[],
+    options?: Record<string, unknown>
+  ) => unknown;
+  Padding?: new (
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+  ) => unknown;
+  Directions?: (new () => MapKitDirectionsInstance) & {
+    Transport?: { Walking?: string; Automobile?: string; Cycling?: string };
+  };
+  DirectionsTransport?: { Walking: string; Automobile: string; Cycling?: string };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };
