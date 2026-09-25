@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   parseBBoxQuery,
   filterStationsInBBox,
+  regionFittingPoints,
 } from "../../../src/apps/maps/youbike/geo";
+import { feedsIntersectingBBox } from "../../../src/apps/maps/youbike/feeds";
 import {
   mergeYouBikeStations,
   parseYouBikeStations,
@@ -159,5 +161,49 @@ describe("filterStationsInBBox", () => {
     });
     expect(filtered).toHaveLength(1);
     expect(filtered[0].stationId).toBe("500101001");
+  });
+});
+
+describe("feedsIntersectingBBox", () => {
+  test("selects Taipei for a Xinyi viewport and skips Kaohsiung", () => {
+    const feeds = feedsIntersectingBBox({
+      south: 25.02,
+      west: 121.55,
+      north: 25.05,
+      east: 121.58,
+    });
+    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
+    expect(feeds.some((feed) => feed.id === "kaohsiung")).toBe(false);
+  });
+
+  test("without a bbox only returns required feeds", () => {
+    const feeds = feedsIntersectingBBox(null);
+    expect(feeds.every((feed) => !feed.optional)).toBe(true);
+    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
+  });
+});
+
+describe("regionFittingPoints", () => {
+  test("fits a Taipei 101 to Main Station hop without island-scale zoom", () => {
+    const region = regionFittingPoints([
+      { latitude: 25.03396, longitude: 121.56447 },
+      { latitude: 25.04792, longitude: 121.51708 },
+    ]);
+    expect(region).not.toBeNull();
+    expect(region!.latitudeDelta).toBeLessThan(0.12);
+    expect(region!.longitudeDelta).toBeLessThan(0.12);
+    expect(region!.latitudeDelta).toBeGreaterThan(0.01);
+    expect(region!.center.latitude).toBeGreaterThan(25.03);
+    expect(region!.center.latitude).toBeLessThan(25.05);
+  });
+
+  test("clamps a trans-Pacific pair so the camera stays local", () => {
+    const region = regionFittingPoints([
+      { latitude: 25.03396, longitude: 121.56447 },
+      { latitude: 37.7749, longitude: -122.4194 },
+    ]);
+    expect(region).not.toBeNull();
+    expect(region!.latitudeDelta).toBeLessThanOrEqual(0.28);
+    expect(region!.longitudeDelta).toBeLessThanOrEqual(0.28);
   });
 });

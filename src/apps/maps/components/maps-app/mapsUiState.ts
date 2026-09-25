@@ -109,8 +109,14 @@ export const FOCUS_PLACE_SPAN_DEG = 0.012;
 // Wider span used for the initial framing around the user's current
 // location or home — ~0.12° ≈ 13 km wide at the equator, which covers a
 // full city / metro area instead of zooming all the way down to a single
-// block. Matches the original SF default region the map boots with.
+// block. Matches the Taipei default region the map boots with.
 export const CITY_LEVEL_SPAN_DEG = 0.12;
+
+/** First-open camera when there is no selected place, Home, or granted geolocation. */
+export const DEFAULT_MAP_CENTER = {
+  latitude: 25.03396,
+  longitude: 121.56447,
+};
 
 // Cap how long we'll wait for a quick geolocation read on first open.
 // We only call `getCurrentPosition` when the Permissions API already

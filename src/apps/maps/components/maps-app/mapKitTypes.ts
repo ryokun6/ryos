@@ -34,6 +34,8 @@ export interface MapKitClusterAnnotation {
   memberAnnotations?: unknown[];
   title?: string;
   subtitle?: string;
+  titleVisibility?: string;
+  subtitleVisibility?: string;
 }
 
 export interface MapKitMapInstance {
@@ -103,6 +105,12 @@ export interface MapKitMarkerAnnotation {
   coordinate: MapKitCoordinate;
   data?: unknown;
   clusteringIdentifier?: string | null;
+  color?: string;
+  title?: string;
+  subtitle?: string;
+  titleVisibility?: string;
+  subtitleVisibility?: string;
+  calloutEnabled?: boolean;
   /** Writable. When true MapKit shows the annotation's callout. */
   selected?: boolean;
   addEventListener?: (
@@ -160,6 +168,7 @@ export interface MapKitGlobal {
     coordinate: MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
+  FeatureVisibility?: { Hidden: string; Adaptive: string; Visible: string };
   Style?: new (options?: Record<string, unknown>) => unknown;
   PolylineOverlay?: new (
     coordinates: MapKitCoordinate[],

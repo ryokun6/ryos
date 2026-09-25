@@ -12,13 +12,17 @@ import {
 } from "../utils/mapMarkerClustering";
 import {
   bboxIntersectsTaiwan,
+  filterStationsInBBox,
   isInTaiwan,
+  padBBox,
+  regionFittingPoints,
   type GeoBBox,
   type GeoPoint,
   type YouBikeRoutePlan,
   type YouBikeStation,
 } from "../youbike";
 import { fetchYouBikeStations } from "../youbike/fetchStations";
+import { mergeYouBikeStations } from "../youbike/parseStations";
 import { youbikeStationToSavedPlace } from "../youbike/place";
 import { isYouBikeRouteError, planYouBikeTrip } from "../youbike/routePlan";
 import {
@@ -36,9 +40,11 @@ import {
 } from "../components/maps-app/mapKitTypes";
 import { readMapRegion } from "../components/maps-app/mapRegionUtils";
 
-/** Don't paint thousands of pins when the island is a postage stamp. */
-const MAX_RENDER_SPAN_DEG = 0.55;
-const REGION_FETCH_DEBOUNCE_MS = 400;
+/** Don't fetch or paint when the island is a postage stamp. */
+const MAX_RENDER_SPAN_DEG = 0.4;
+const REGION_FETCH_DEBOUNCE_MS = 280;
+/** Extra margin so a short pan does not flash empty then refill. */
+const RENDER_PAD_FACTOR = 0.1;
 
 export interface UseYouBikeLayerArgs {
   enabled: boolean;
@@ -158,6 +164,7 @@ export function useYouBikeLayer({
   const overlaysRef = useRef<unknown[]>([]);
   const stationsRef = useRef<YouBikeStation[]>([]);
   const routeRequestIdRef = useRef(0);
+  const fetchAbortRef = useRef<AbortController | null>(null);
   const onSelectStationRef = useRef<(station: YouBikeStation) => void>(
     () => undefined
   );
@@ -219,38 +226,78 @@ export function useYouBikeLayer({
       if (!mk || !map) return;
 
       const region = readMapRegion(map.region);
+      const bbox = regionToBBox(region);
       const span = region
         ? Math.max(region.span.latitudeDelta, region.span.longitudeDelta)
         : 1;
-      if (!enabled || span > MAX_RENDER_SPAN_DEG) {
+      if (!enabled || !bbox || span > MAX_RENDER_SPAN_DEG) {
         clearStationAnnotations();
         return;
       }
+
+      const renderBbox = padBBox(bbox, RENDER_PAD_FACTOR);
+      const visible = filterStationsInBBox(nextStations, renderBbox).filter(
+        (station) => !savedPlaceIds.has(station.id)
+      );
+      const visibleIds = new Set(visible.map((station) => station.id));
 
       const clusteringId = clusteringIdentifierForRegion(
         map.region,
         RYOS_MAP_YOUBIKE_CLUSTER_ID
       );
       const glyph = getYouBikeGlyphImage();
-      const next = new Map<
-        string,
-        { annotation: MapKitMarkerAnnotation; onSelect: () => void }
-      >();
+      const hidden =
+        mk.FeatureVisibility?.Hidden ?? "hidden";
 
-      clearStationAnnotations();
+      for (const [id, wrapper] of annotationsRef.current) {
+        if (visibleIds.has(id)) continue;
+        try {
+          wrapper.annotation.removeEventListener?.("select", wrapper.onSelect);
+        } catch {
+          // ignore
+        }
+        try {
+          map.removeAnnotation(wrapper.annotation);
+        } catch {
+          // ignore
+        }
+        annotationsRef.current.delete(id);
+      }
 
-      for (const station of nextStations) {
-        if (savedPlaceIds.has(station.id)) continue;
+      for (const station of visible) {
+        const existing = annotationsRef.current.get(station.id);
+        if (existing) {
+          const color = youbikeStationMarkerColor(station);
+          if (existing.annotation.color !== color) {
+            existing.annotation.color = color;
+          }
+          existing.annotation.clusteringIdentifier = clusteringId;
+          const onSelect = () => {
+            onSelectStationRef.current(station);
+          };
+          try {
+            existing.annotation.removeEventListener?.("select", existing.onSelect);
+          } catch {
+            // ignore
+          }
+          existing.annotation.addEventListener?.("select", onSelect);
+          annotationsRef.current.set(station.id, {
+            annotation: existing.annotation,
+            onSelect,
+          });
+          continue;
+        }
+
         const coord = new mk.Coordinate(station.latitude, station.longitude);
-        const title = youbikeStationToSavedPlace(station, language).name;
         const annotation = new mk.MarkerAnnotation(coord, {
-          title,
-          subtitle: `${station.bikesAvailable} · ${station.docksAvailable}`,
           color: youbikeStationMarkerColor(station),
           glyphColor: "#ffffff",
           glyphImage: glyph,
           selectedGlyphImage: glyph,
           clusteringIdentifier: clusteringId,
+          titleVisibility: hidden,
+          subtitleVisibility: hidden,
+          calloutEnabled: false,
           data: { youbikeId: station.id },
         });
         const onSelect = () => {
@@ -259,14 +306,13 @@ export function useYouBikeLayer({
         annotation.addEventListener?.("select", onSelect);
         try {
           map.addAnnotation(annotation);
-          next.set(station.id, { annotation, onSelect });
+          annotationsRef.current.set(station.id, { annotation, onSelect });
         } catch {
           // ignore
         }
       }
-      annotationsRef.current = next;
     },
-    [clearStationAnnotations, enabled, language, mapInstanceRef, savedPlaceIds]
+    [clearStationAnnotations, enabled, mapInstanceRef, savedPlaceIds]
   );
 
   const refreshStationsForMap = useCallback(async () => {
@@ -280,27 +326,44 @@ export function useYouBikeLayer({
     }
     const region = readMapRegion(map.region);
     const bbox = regionToBBox(region);
-    if (!bbox || !bboxIntersectsTaiwan(bbox)) {
+    const span = region
+      ? Math.max(region.span.latitudeDelta, region.span.longitudeDelta)
+      : 1;
+    if (!bbox || !bboxIntersectsTaiwan(bbox) || span > MAX_RENDER_SPAN_DEG) {
       setIsLayerVisible(false);
+      if (span > MAX_RENDER_SPAN_DEG) {
+        clearStationAnnotations();
+        return;
+      }
       setStations([]);
       stationsRef.current = [];
       clearStationAnnotations();
       return;
     }
+    if (stationsRef.current.length > 0) {
+      syncStationAnnotations(stationsRef.current);
+    }
     setIsLayerVisible(true);
+    fetchAbortRef.current?.abort();
+    const controller = new AbortController();
+    fetchAbortRef.current = controller;
     setIsLoadingStations(true);
     setStationError(null);
     try {
-      const next = await fetchYouBikeStations(bbox);
+      const next = await fetchYouBikeStations(bbox, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       stationsRef.current = next;
       setStations(next);
       syncStationAnnotations(next);
     } catch (error) {
+      if (controller.signal.aborted) return;
       setStationError(
         error instanceof Error ? error.message : "youbike_fetch_failed"
       );
     } finally {
-      setIsLoadingStations(false);
+      if (!controller.signal.aborted) {
+        setIsLoadingStations(false);
+      }
     }
   }, [clearStationAnnotations, enabled, mapInstanceRef, syncStationAnnotations]);
 
@@ -386,9 +449,20 @@ export function useYouBikeLayer({
           for (const overlay of overlays) map.addOverlay?.(overlay);
         }
         overlaysRef.current = overlays;
-        if (map.showItems) {
-          const padding = mk.Padding ? new mk.Padding(40, 24, 160, 24) : undefined;
-          map.showItems(overlays, { animate: true, padding });
+        const pathPoints = plan.legs.flatMap((leg) =>
+          leg.path && leg.path.length >= 2 ? leg.path : [leg.from, leg.to]
+        );
+        const fitted = regionFittingPoints(pathPoints);
+        if (fitted) {
+          const center = new mk.Coordinate(
+            fitted.center.latitude,
+            fitted.center.longitude
+          );
+          const span = new mk.CoordinateSpan(
+            fitted.latitudeDelta,
+            fitted.longitudeDelta
+          );
+          map.setRegionAnimated(new mk.CoordinateRegion(center, span), true);
         }
       } catch {
         overlaysRef.current = overlays;
@@ -503,16 +577,13 @@ export function useYouBikeLayer({
           return;
         }
 
-        let available = stationsRef.current;
-        if (available.length === 0) {
-          const south = Math.min(originOrError.latitude, destPoint.latitude) - 0.03;
-          const north = Math.max(originOrError.latitude, destPoint.latitude) + 0.03;
-          const west = Math.min(originOrError.longitude, destPoint.longitude) - 0.03;
-          const east = Math.max(originOrError.longitude, destPoint.longitude) + 0.03;
-          available = await fetchYouBikeStations({ south, west, north, east });
-          stationsRef.current = available;
-          setStations(available);
-        }
+        const south = Math.min(originOrError.latitude, destPoint.latitude) - 0.02;
+        const north = Math.max(originOrError.latitude, destPoint.latitude) + 0.02;
+        const west = Math.min(originOrError.longitude, destPoint.longitude) - 0.02;
+        const east = Math.max(originOrError.longitude, destPoint.longitude) + 0.02;
+        const fetched = await fetchYouBikeStations({ south, west, north, east });
+        const available = mergeYouBikeStations([stationsRef.current, fetched]);
+        stationsRef.current = available;
 
         const planned = planYouBikeTrip({
           origin: originOrError,

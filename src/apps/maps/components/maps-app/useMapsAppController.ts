@@ -38,6 +38,7 @@ import {
 } from "./mapKitTypes";
 import {
   CITY_LEVEL_SPAN_DEG,
+  DEFAULT_MAP_CENTER,
   FOCUS_PLACE_SPAN_DEG,
   INITIAL_LOCATION_TIMEOUT_MS,
   LOADING_OVERLAY_DELAY_MS,
@@ -226,15 +227,14 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     if (mapInstanceRef.current) return;
     if (!mapSurfaceEl) return;
 
-    // Default region: San Francisco. We center here so the map opens on a
-    // useful, POI-rich location instead of the world view, and switch to
-    // the user's real location only when they hit "Locate Me".
-    const SF_LATITUDE = 37.7749;
-    const SF_LONGITUDE = -122.4194;
-    const SF_LATITUDE_DELTA = 0.12;
-    const SF_LONGITUDE_DELTA = 0.12;
-    const center = new mk.Coordinate(SF_LATITUDE, SF_LONGITUDE);
-    const span = new mk.CoordinateSpan(SF_LATITUDE_DELTA, SF_LONGITUDE_DELTA);
+    // Default region: Taipei. Used only when there is no persisted selected
+    // place, granted geolocation, or saved Home. Locate Me still jumps to
+    // the user's real location.
+    const center = new mk.Coordinate(
+      DEFAULT_MAP_CENTER.latitude,
+      DEFAULT_MAP_CENTER.longitude
+    );
+    const span = new mk.CoordinateSpan(CITY_LEVEL_SPAN_DEG, CITY_LEVEL_SPAN_DEG);
     const region = new mk.CoordinateRegion(center, span);
 
     const map = new mk.Map(mapSurfaceEl, {
@@ -256,9 +256,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     map.tracksUserLocation = false;
     map.annotationForCluster = (cluster) => {
       if (cluster.clusteringIdentifier === RYOS_MAP_YOUBIKE_CLUSTER_ID) {
-        const count = cluster.memberAnnotations?.length ?? 0;
-        cluster.title = count > 0 ? `YouBike · ${count}` : "YouBike";
+        cluster.title = "";
         cluster.subtitle = "";
+        cluster.titleVisibility = "hidden";
+        cluster.subtitleVisibility = "hidden";
         return cluster;
       }
       if (cluster.clusteringIdentifier !== RYOS_MAP_PLACES_CLUSTER_ID) {
@@ -938,7 +939,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   //      deliberately avoid triggering a permission prompt on map open;
   //      the dedicated "Locate Me" button is the right place for that.
   //   3. The user's saved Home — city-level zoom around it
-  //   4. Otherwise, leave the map at the SF default region
+  //   4. Otherwise, leave the map at the Taipei default region
   // Guarded so it only fires once per live MapKit map (including after the
   // surface remounts from minimize): subsequent user-driven selections go
   // through `dropPinAt` / `focusSavedPlace` directly.
@@ -1000,7 +1001,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       if (home) {
         frameAtCityLevel(home.latitude, home.longitude);
       }
-      // No home set — leave the map at its SF default region.
+      // No home set — leave the map at its Taipei default region.
     };
 
     const tryUseCurrentLocation = (): boolean => {

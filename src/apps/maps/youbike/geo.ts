@@ -53,13 +53,17 @@ export function isInTaiwan(point: GeoPoint): boolean {
   return isValidCoordinate(point) && isInBBox(point, TAIWAN_BBOX);
 }
 
-export function bboxIntersectsTaiwan(bbox: GeoBBox): boolean {
+export function bboxIntersects(a: GeoBBox, b: GeoBBox): boolean {
   return !(
-    bbox.north < TAIWAN_BBOX.south ||
-    bbox.south > TAIWAN_BBOX.north ||
-    bbox.east < TAIWAN_BBOX.west ||
-    bbox.west > TAIWAN_BBOX.east
+    a.north < b.south ||
+    a.south > b.north ||
+    a.east < b.west ||
+    a.west > b.east
   );
+}
+
+export function bboxIntersectsTaiwan(bbox: GeoBBox): boolean {
+  return bboxIntersects(bbox, TAIWAN_BBOX);
 }
 
 export function padBBox(bbox: GeoBBox, factor: number): GeoBBox {
@@ -123,6 +127,60 @@ export function interpolateGreatCircle(
     });
   }
   return path;
+}
+
+export interface FittedMapRegion {
+  center: GeoPoint;
+  latitudeDelta: number;
+  longitudeDelta: number;
+}
+
+/**
+ * Tight camera around a path. Clamped so a short walk is not microscopic
+ * and a bad/long hop cannot zoom the map out to island or country scale.
+ */
+export function regionFittingPoints(
+  points: GeoPoint[],
+  options?: {
+    padFactor?: number;
+    minSpanDeg?: number;
+    maxSpanDeg?: number;
+  }
+): FittedMapRegion | null {
+  const valid = points.filter(isValidCoordinate);
+  if (valid.length === 0) return null;
+  const padFactor = options?.padFactor ?? 0.22;
+  const minSpan = options?.minSpanDeg ?? 0.012;
+  const maxSpan = options?.maxSpanDeg ?? 0.28;
+  let south = valid[0].latitude;
+  let north = valid[0].latitude;
+  let west = valid[0].longitude;
+  let east = valid[0].longitude;
+  for (let i = 1; i < valid.length; i += 1) {
+    const point = valid[i];
+    if (point.latitude < south) south = point.latitude;
+    if (point.latitude > north) north = point.latitude;
+    if (point.longitude < west) west = point.longitude;
+    if (point.longitude > east) east = point.longitude;
+  }
+  const latSpan = Math.max(north - south, 0);
+  const lngSpan = Math.max(east - west, 0);
+  const latitudeDelta = Math.min(
+    maxSpan,
+    Math.max(minSpan, latSpan * (1 + padFactor))
+  );
+  const longitudeDelta = Math.min(
+    maxSpan,
+    Math.max(minSpan, lngSpan * (1 + padFactor))
+  );
+  return {
+    center: {
+      latitude: (south + north) / 2,
+      longitude: (west + east) / 2,
+    },
+    latitudeDelta,
+    longitudeDelta,
+  };
 }
 
 export function parseBBoxQuery(query: {

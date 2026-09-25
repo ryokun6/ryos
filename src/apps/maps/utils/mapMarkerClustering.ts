@@ -15,8 +15,8 @@ export const RYOS_MAP_YOUBIKE_CLUSTER_ID = "ryos.maps.youbike";
 /**
  * When `max(latitudeDelta, longitudeDelta)` exceeds this value (~11 km at the
  * equator), treat the map as zoomed out past city level and allow clustering.
- * Boot default (0.12°) and regional search bias (≤0.5°) sit above this; focus
- * framing (0.012°) stays below.
+ * Boot default Taipei (0.12°) and regional search bias (≤0.5°) sit above this;
+ * focus framing (0.012°) stays below.
  */
 export const CITY_LEVEL_MAX_SPAN_DEG = 0.1;
 

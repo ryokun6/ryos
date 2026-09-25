@@ -739,7 +739,7 @@ const { quotes, chart } = await response.json();</code></pre>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
 <hr>
 <h2>YouBike Stations</h2>
-<p>Proxies official Taiwan YouBike 2.0 municipal open-data JSON (no TDX key). Responses are cached in Redis for 60 seconds, then filtered to an optional viewport bbox.</p>
+<p>Proxies official Taiwan YouBike 2.0 municipal open-data JSON (no TDX key). Each city feed is cached in Redis for 60 seconds. A viewport bbox selects only intersecting city feeds; optional portals never block Taipei. Results are then filtered to that bbox.</p>
 <h3>Endpoint</h3>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/youbike/stations</code></td><td>Live YouBike 2.0 stations for the Maps overlay</td></tr></tbody></table>
 <h3>Request</h3>

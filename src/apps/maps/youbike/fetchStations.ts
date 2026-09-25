@@ -2,6 +2,8 @@ import { padBBox } from "./geo";
 import type { GeoBBox, YouBikeStation, YouBikeStationsResponse } from "./types";
 
 const CLIENT_CACHE_TTL_MS = 45_000;
+/** Fetch a little extra so a short pan can reuse the last payload. */
+export const YOUBIKE_FETCH_PAD_FACTOR = 0.2;
 
 interface CachedStations {
   fetchedAt: number;
@@ -25,7 +27,7 @@ export async function fetchYouBikeStations(
   bbox: GeoBBox,
   options?: { signal?: AbortSignal }
 ): Promise<YouBikeStation[]> {
-  const padded = padBBox(bbox, 0.25);
+  const padded = padBBox(bbox, YOUBIKE_FETCH_PAD_FACTOR);
   if (
     memoryCache &&
     Date.now() - memoryCache.fetchedAt < CLIENT_CACHE_TTL_MS &&

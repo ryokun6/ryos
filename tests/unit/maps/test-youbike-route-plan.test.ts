@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { isInTaiwan } from "../../../src/apps/maps/youbike/geo";
+import { DEFAULT_MAP_CENTER } from "../../../src/apps/maps/components/maps-app/mapsUiState";
 import { pickNearestStation } from "../../../src/apps/maps/youbike/nearestStations";
 import {
   isYouBikeRouteError,
@@ -47,6 +48,10 @@ describe("isInTaiwan", () => {
 
   test("rejects San Francisco", () => {
     expect(isInTaiwan({ latitude: 37.7749, longitude: -122.4194 })).toBe(false);
+  });
+
+  test("default map camera is in Taiwan", () => {
+    expect(isInTaiwan(DEFAULT_MAP_CENTER)).toBe(true);
   });
 });
 
