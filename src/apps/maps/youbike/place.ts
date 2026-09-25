@@ -29,3 +29,10 @@ export function isYouBikePlace(place: { id?: string; category?: string; youbike?
   if (!place) return false;
   return place.category === "youbike" || !!place.youbike || (place.id?.startsWith("youbike:") ?? false);
 }
+
+/** Overlay docks already have a compact annotation — don't stack a named balloon. */
+export function shouldDropNamedSearchPin(
+  place: { id?: string; category?: string; youbike?: unknown } | null
+): boolean {
+  return !isYouBikePlace(place);
+}

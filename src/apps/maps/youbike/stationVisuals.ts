@@ -82,12 +82,15 @@ export function youbikeAvailabilityLabel(station: YouBikeStation): string {
   return `${station.bikesAvailable} · ${station.docksAvailable}`;
 }
 
-/** Short selected-pin label: bike count only, no station name. */
+function clampDockCount(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.round(value)) : 0;
+}
+
+/** Selected-pin label: bikes / total docks, never the station name. */
 export function youbikePinTitle(station: YouBikeStation): string {
-  const bikes = Number.isFinite(station.bikesAvailable)
-    ? Math.max(0, Math.round(station.bikesAvailable))
-    : 0;
-  return String(bikes);
+  const bikes = clampDockCount(station.bikesAvailable);
+  const total = clampDockCount(station.totalDocks);
+  return `${bikes}/${total}`;
 }
 
 export const YOUBIKE_DOT_SIZE_PX = 6;

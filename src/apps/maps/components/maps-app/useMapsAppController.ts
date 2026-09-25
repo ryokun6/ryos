@@ -25,6 +25,7 @@ import {
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
 import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
+import { shouldDropNamedSearchPin } from "../../youbike/place";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
   getMapKit,
@@ -514,7 +515,9 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       }
 
       const coord = new mk.Coordinate(place.latitude, place.longitude);
-      if (!alreadySaved) {
+      // YouBike overlay already paints the dock. A search balloon here
+      // would stack a station-name label on top of the compact dot.
+      if (!alreadySaved && shouldDropNamedSearchPin(place)) {
         dispatchUi({ type: "setSelectedResultId", id: place.id });
         const annotation = new mk.MarkerAnnotation(
           coord,

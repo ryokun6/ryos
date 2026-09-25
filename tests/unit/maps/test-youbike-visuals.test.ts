@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { CITY_LEVEL_SPAN_DEG, FOCUS_PLACE_SPAN_DEG } from "../../../src/apps/maps/components/maps-app/mapsUiState";
 import { CITY_LEVEL_MAX_SPAN_DEG } from "../../../src/apps/maps/utils/mapMarkerClustering";
 import { poiVisualGradient } from "../../../src/apps/maps/utils/poiVisuals";
+import { shouldDropNamedSearchPin } from "../../../src/apps/maps/youbike/place";
 import type { YouBikeStation } from "../../../src/apps/maps/youbike/types";
 import {
   YOUBIKE_COLOR_AVAILABLE,
@@ -50,23 +51,51 @@ function station(overrides: Partial<YouBikeStation> = {}): YouBikeStation {
 }
 
 describe("youbikePinTitle", () => {
-  test("is the available bike count only", () => {
-    expect(youbikePinTitle(station({ bikesAvailable: 12 }))).toBe("12");
-    expect(youbikePinTitle(station({ bikesAvailable: 0 }))).toBe("0");
-    expect(youbikePinTitle(station({ bikesAvailable: 3.7 }))).toBe("4");
+  test("is bikes over total docks", () => {
+    expect(youbikePinTitle(station({ bikesAvailable: 12, totalDocks: 28 }))).toBe(
+      "12/28"
+    );
+    expect(youbikePinTitle(station({ bikesAvailable: 0, totalDocks: 16 }))).toBe(
+      "0/16"
+    );
+    expect(
+      youbikePinTitle(station({ bikesAvailable: 3.7, totalDocks: 19.2 }))
+    ).toBe("4/19");
   });
 
   test("never includes the station or dock name", () => {
     const title = youbikePinTitle(station({ name: "YouBike2.0_捷運科技大樓站" }));
-    expect(title).toBe("12");
+    expect(title).toBe("12/28");
     expect(title).not.toContain("捷運");
     expect(title).not.toContain("YouBike");
     expect(title).not.toContain("Technology");
   });
 
   test("clamps non-finite and negative counts to 0", () => {
-    expect(youbikePinTitle(station({ bikesAvailable: -2 }))).toBe("0");
-    expect(youbikePinTitle(station({ bikesAvailable: Number.NaN }))).toBe("0");
+    expect(
+      youbikePinTitle(station({ bikesAvailable: -2, totalDocks: -4 }))
+    ).toBe("0/0");
+    expect(
+      youbikePinTitle(station({ bikesAvailable: Number.NaN, totalDocks: Number.NaN }))
+    ).toBe("0/0");
+  });
+});
+
+describe("shouldDropNamedSearchPin", () => {
+  test("skips the named balloon for YouBike overlay docks", () => {
+    expect(
+      shouldDropNamedSearchPin({
+        id: "youbike:taipei:500101001",
+        category: "youbike",
+        youbike: {},
+      })
+    ).toBe(false);
+    expect(
+      shouldDropNamedSearchPin({
+        id: "mk:cafe-1",
+        category: "cafe",
+      })
+    ).toBe(true);
   });
 });
 

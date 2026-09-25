@@ -108,9 +108,9 @@ function applyYouBikePinChrome(
   mk: NonNullable<ReturnType<typeof getMapKit>>,
   annotation: MapKitMarkerAnnotation,
   station: YouBikeStation,
-  emphasis: YouBikeDotEmphasis
+  emphasis: YouBikeDotEmphasis,
+  selected: boolean
 ): void {
-  const selected = annotation.selected === true;
   annotation.title = youbikePinTitle(station);
   annotation.subtitle = "";
   annotation.subtitleVisibility = featureVisibility(mk, "hidden");
@@ -369,12 +369,27 @@ export function useYouBikeLayer({
       for (const station of visible) {
         const emphasis = pinEmphasis(station.id, routeEndpointIdsRef.current);
         const bind = (annotation: MapKitMarkerAnnotation) => {
+          const isSelected = () =>
+            annotation.selected === true ||
+            selectedYoubikeIdRef.current === station.id;
           const onSelect = () => {
-            applyYouBikePinChrome(mk, annotation, station, emphasis);
+            applyYouBikePinChrome(
+              mk,
+              annotation,
+              station,
+              emphasis,
+              true
+            );
             onSelectStationRef.current(station);
           };
           const onDeselect = () => {
-            applyYouBikePinChrome(mk, annotation, station, emphasis);
+            applyYouBikePinChrome(
+              mk,
+              annotation,
+              station,
+              emphasis,
+              selectedYoubikeIdRef.current === station.id
+            );
           };
           try {
             annotation.removeEventListener?.("select", onSelect);
@@ -399,7 +414,13 @@ export function useYouBikeLayer({
           }
           annotation.addEventListener?.("select", onSelect);
           annotation.addEventListener?.("deselect", onDeselect);
-          applyYouBikePinChrome(mk, annotation, station, emphasis);
+          applyYouBikePinChrome(
+            mk,
+            annotation,
+            station,
+            emphasis,
+            isSelected()
+          );
           annotation.clusteringIdentifier =
             emphasis === "endpoint" ? null : clusteringId;
           annotationsRef.current.set(station.id, {
