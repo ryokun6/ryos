@@ -19,10 +19,12 @@ import {
 } from "../../utils/savedPlaceVisuals";
 import {
   RYOS_MAP_PLACES_CLUSTER_ID,
+  RYOS_MAP_YOUBIKE_CLUSTER_ID,
   clusteringIdentifierForRegion,
   formatClusterMarkerTitle,
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
+import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
   getMapKit,
@@ -168,6 +170,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   const removeFavoritePlace = useMapsStore((s) => s.removeFavorite);
   const recordRecentPlace = useMapsStore((s) => s.recordRecent);
   const setSelectedPlace = useMapsStore((s) => s.setSelectedPlace);
+  const youbikeOverlayEnabled = useMapsStore((s) => s.youbikeOverlayEnabled);
+  const setYoubikeOverlayEnabled = useMapsStore(
+    (s) => s.setYoubikeOverlayEnabled
+  );
   const isPlaceFavorite = useCallback(
     (id: string) => favoritePlaces.some((p) => p.id === id),
     [favoritePlaces]
@@ -249,6 +255,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     map.showsUserLocation = false;
     map.tracksUserLocation = false;
     map.annotationForCluster = (cluster) => {
+      if (cluster.clusteringIdentifier === RYOS_MAP_YOUBIKE_CLUSTER_ID) {
+        const count = cluster.memberAnnotations?.length ?? 0;
+        cluster.title = count > 0 ? `YouBike · ${count}` : "YouBike";
+        cluster.subtitle = "";
+        return cluster;
+      }
       if (cluster.clusteringIdentifier !== RYOS_MAP_PLACES_CLUSTER_ID) {
         return;
       }
@@ -719,6 +731,53 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     return entries;
   }, [homePlace, workPlace, favoritePlaces]);
 
+  const savedPlaceIds = useMemo(
+    () => new Set(savedPlaceEntries.map((entry) => entry.place.id)),
+    [savedPlaceEntries]
+  );
+
+  const youbike = useYouBikeLayer({
+    enabled: youbikeOverlayEnabled && status === "ready",
+    mapReadyTick,
+    mapInstanceRef,
+    language: mapKitLanguage,
+    homePlace,
+    workPlace,
+    selectedPlace,
+    setSelectedPlace,
+    recordRecentPlace,
+    savedPlaceIds,
+  });
+
+  const handleYouBikeDirections = useCallback(
+    (place: SavedPlace) => {
+      track(MAPS_ANALYTICS.YOUBIKE_DIRECTIONS, {
+        appId: "maps",
+        category: place.category || "youbike",
+      });
+      void youbike.handleYouBikeDirections(place);
+    },
+    [youbike]
+  );
+
+  const selectedPlaceWithYoubike = useMemo(() => {
+    if (!selectedPlace) return null;
+    const live = youbike.selectedYoubikeStation;
+    if (!live) return selectedPlace;
+    return {
+      ...selectedPlace,
+      youbike: {
+        stationId: live.stationId,
+        city: live.city,
+        bikesAvailable: live.bikesAvailable,
+        docksAvailable: live.docksAvailable,
+        totalDocks: live.totalDocks,
+        isActive: live.isActive,
+        updatedAt: live.updatedAt,
+      },
+    };
+  }, [selectedPlace, youbike.selectedYoubikeStation]);
+
   // Sync Home / Work / Favorites annotations on the map. Home / Work use
   // branded pins; favorites use the same category icon + color as the
   // place card and search list (`getPoiMarkerStyle`).
@@ -1179,13 +1238,20 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     workPlace,
     favoritePlaces,
     recentPlaces,
-    selectedPlace,
+    selectedPlace: selectedPlaceWithYoubike,
     setHomePlace,
     setWorkPlace,
     handleSelectResult,
     handleSelectSavedPlace,
     handleToggleFavorite,
     handleOpenPlaceDirections,
+    handleYouBikeDirections,
+    handleClearYouBikeRoute: youbike.handleClearYouBikeRoute,
+    youbikeOverlayEnabled,
+    setYoubikeOverlayEnabled,
+    youbikeRoutePlan: youbike.routePlan,
+    youbikeIsRouting: youbike.isRouting,
+    youbikeRouteError: youbike.routeError,
     handleClosePlaceCard,
     isPlaceFavorite,
     handleZoomIn,

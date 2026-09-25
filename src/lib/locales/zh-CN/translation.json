@@ -3313,7 +3313,7 @@
       "description": "使用 Apple 地图寻找地点",
       "help": {
         "directions": {
-          "description": "从地点卡在 Apple 地图中打开驾车路线。路线会在新标签页中打开，因此 ryOS 会保持运行（暂不支持地图内路线规划）。",
+          "description": "从地点卡打开 Apple 地图的驾车路线，或在台湾规划 YouBike 行程，在地图上显示步行与骑行路段。",
           "title": "路线"
         },
         "dropPins": {
@@ -3325,7 +3325,7 @@
           "title": "定位我"
         },
         "mapTypes": {
-          "description": "在「显示」菜单中切换「标准」、「混合」、「卫星」和「柔和标准」",
+          "description": "从「显示」菜单切换地图类型，并可开关台湾 YouBike 站点图层。",
           "title": "地图类型"
         },
         "poweredByApple": {
@@ -3346,7 +3346,8 @@
         "locateMe": "我的位置",
         "mutedStandard": "柔和标准",
         "satellite": "卫星",
-        "standard": "标准"
+        "standard": "标准",
+        "youbike": "YouBike"
       },
       "name": "地图",
       "noResults": "没有结果",
@@ -3411,6 +3412,7 @@
         "theater": "剧院",
         "university": "大学",
         "winery": "酒庄",
+        "youbike": "YouBike",
         "zoo": "动物园"
       },
       "searchButton": "搜索",
@@ -3424,7 +3426,32 @@
         "missingToken": "尚未配置 Apple 地图。请让开发者添加 MapKit 凭据。",
         "tokenHint": "配置凭据后，服务器会自动签发短期 MapKit 令牌。"
       },
-      "title": "地图"
+      "title": "地图",
+      "youbike": {
+        "availability": "{{bikes}} 辆单车 · {{docks}} 个空位",
+        "clearRoute": "清除 YouBike 路线",
+        "directions": "YouBike",
+        "directionsTitle": "YouBike 路线",
+        "done": "完成",
+        "errors": {
+          "destination_not_in_taiwan": "YouBike 路线仅在台湾提供。",
+          "no_destination_station": "目的地附近没有足够近的 YouBike 站点。",
+          "no_distinct_stations": "YouBike 行程需要两个不同的站点。",
+          "no_origin": "开启“定位”或将“住宅”设在台湾以开始 YouBike 行程。",
+          "no_origin_station": "起点附近没有足够近的 YouBike 站点。",
+          "route_failed": "目前无法规划 YouBike 行程。"
+        },
+        "inactive": "站点已关闭",
+        "legBike": "骑行至 {{station}}",
+        "legMeta": "{{minutes}} 分钟 · {{distance}}",
+        "legWalk": "步行至 {{place}}",
+        "routeRegionLabel": "YouBike 路线",
+        "routeSummary": "{{minutes}} 分钟 · {{distance}}",
+        "routeTitle": "YouBike 路线",
+        "routing": "正在查找 YouBike 路线…",
+        "warningNoBikes": "最近的起点站目前可能没有单车。",
+        "warningNoDocks": "最近的终点站目前可能没有空车位。"
+      }
     },
     "minesweeper": {
       "description": "经典益智游戏",

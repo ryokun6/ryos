@@ -56,6 +56,15 @@ export interface MapKitMapInstance {
   ) => void;
   addAnnotation: (annotation: unknown) => void;
   removeAnnotation: (annotation: unknown) => void;
+  addOverlay?: (overlay: unknown) => void;
+  removeOverlay?: (overlay: unknown) => void;
+  addOverlays?: (overlays: unknown[]) => void;
+  removeOverlays?: (overlays: unknown[]) => void;
+  showItems?: (
+    items: unknown[],
+    options?: { animate?: boolean; padding?: unknown }
+  ) => void;
+  userLocation?: { coordinate?: MapKitCoordinate } | null;
   addEventListener?: (
     type: string,
     listener: () => void
@@ -112,6 +121,30 @@ export interface MapKitMarkerAnnotation {
 //   https://developer.apple.com/documentation/mapkitjs/regionpriority
 export type MapKitRegionPriority = "default" | "required";
 
+export interface MapKitDirectionsRoute {
+  path?: MapKitCoordinate[];
+  distance?: number;
+  expectedTravelTime?: number;
+}
+
+export interface MapKitDirectionsResponse {
+  routes?: MapKitDirectionsRoute[];
+}
+
+export interface MapKitDirectionsInstance {
+  route: (
+    request: {
+      origin: MapKitCoordinate;
+      destination: MapKitCoordinate;
+      transportType?: string;
+    },
+    callback: (
+      error: Error | null,
+      data: MapKitDirectionsResponse
+    ) => void
+  ) => void;
+}
+
 export interface MapKitGlobal {
   Map: new (
     element: HTMLElement,
@@ -127,6 +160,19 @@ export interface MapKitGlobal {
     coordinate: MapKitCoordinate,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
+  Style?: new (options?: Record<string, unknown>) => unknown;
+  PolylineOverlay?: new (
+    coordinates: MapKitCoordinate[],
+    options?: Record<string, unknown>
+  ) => unknown;
+  Padding?: new (
+    top: number,
+    right: number,
+    bottom: number,
+    left: number
+  ) => unknown;
+  Directions?: new () => MapKitDirectionsInstance;
+  DirectionsTransport?: { Walking: string; Automobile: string };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };

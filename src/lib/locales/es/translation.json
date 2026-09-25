@@ -3316,7 +3316,7 @@
       "description": "Busca lugares con Apple Maps",
       "help": {
         "directions": {
-          "description": "Desde la tarjeta del lugar, abre las indicaciones de conducción en Apple Maps: se abre en una pestaña nueva para mantener ryOS abierto (no hay rutas dentro del mapa todavía).",
+          "description": "Desde la ficha de un lugar, abre la ruta en coche en Apple Maps o planifica un viaje YouBike en Taiwán con tramos a pie y en bici en el mapa.",
           "title": "Ruta"
         },
         "dropPins": {
@@ -3328,7 +3328,7 @@
           "title": "Ubicarme"
         },
         "mapTypes": {
-          "description": "Cambia entre Estándar, Híbrido, Satélite y Estándar atenuado desde el menú Visualización",
+          "description": "Cambia el tipo de mapa desde el menú Visualización y activa o desactiva la capa de estaciones YouBike para Taiwán.",
           "title": "Tipos de mapa"
         },
         "poweredByApple": {
@@ -3349,7 +3349,8 @@
         "locateMe": "Ubicarme",
         "mutedStandard": "Estándar suave",
         "satellite": "Satélite",
-        "standard": "Estándar"
+        "standard": "Estándar",
+        "youbike": "YouBike"
       },
       "name": "Mapas",
       "noResults": "Sin resultados",
@@ -3414,6 +3415,7 @@
         "theater": "Teatro",
         "university": "Universidad",
         "winery": "Bodega",
+        "youbike": "YouBike",
         "zoo": "Zoo"
       },
       "searchButton": "Buscar",
@@ -3427,7 +3429,32 @@
         "missingToken": "Apple Maps aún no se ha configurado. Pide al desarrollador que añada las credenciales de MapKit.",
         "tokenHint": "El servidor firma automáticamente tokens de MapKit de corta duración una vez configuradas las credenciales."
       },
-      "title": "Mapas"
+      "title": "Mapas",
+      "youbike": {
+        "availability": "{{bikes}} bicis · {{docks}} anclajes",
+        "clearRoute": "Borrar ruta de YouBike",
+        "directions": "YouBike",
+        "directionsTitle": "Ruta en YouBike",
+        "done": "Listo",
+        "errors": {
+          "destination_not_in_taiwan": "La ruta en YouBike está disponible en Taiwán.",
+          "no_destination_station": "No hay ninguna estación de YouBike lo suficientemente cerca del destino.",
+          "no_distinct_stations": "Se necesitan dos estaciones diferentes para un trayecto en YouBike.",
+          "no_origin": "Activa Localización o define tu casa en Taiwán para iniciar un trayecto en YouBike.",
+          "no_origin_station": "No hay ninguna estación de YouBike lo suficientemente cerca del punto de partida.",
+          "route_failed": "No se ha podido planificar el trayecto en YouBike en este momento."
+        },
+        "inactive": "Estación cerrada",
+        "legBike": "En bici hasta {{station}}",
+        "legMeta": "{{minutes}} min · {{distance}}",
+        "legWalk": "A pie hasta {{place}}",
+        "routeRegionLabel": "Ruta en YouBike",
+        "routeSummary": "{{minutes}} min · {{distance}}",
+        "routeTitle": "Ruta en YouBike",
+        "routing": "Buscando un trayecto de YouBike…",
+        "warningNoBikes": "Es posible que la estación de inicio más cercana no tenga bicicletas en este momento.",
+        "warningNoDocks": "Es posible que la estación de destino más cercana no tenga anclajes libres en este momento."
+      }
     },
     "minesweeper": {
       "description": "Juego de puzle clásico",

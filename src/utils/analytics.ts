@@ -192,6 +192,7 @@ export const MAPS_ANALYTICS = {
   FAVORITE_TOGGLE: "maps:favorite_toggle",
   HOME_WORK_SET: "maps:home_work_set",
   DIRECTIONS: "maps:directions",
+  YOUBIKE_DIRECTIONS: "maps:youbike_directions",
 } as const;
 
 export const AIRDROP_ANALYTICS = {

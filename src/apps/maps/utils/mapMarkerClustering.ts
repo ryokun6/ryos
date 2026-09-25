@@ -9,6 +9,8 @@
 
 /** Shared cluster bucket for ryOS Home / Work / Favorites / search pins. */
 export const RYOS_MAP_PLACES_CLUSTER_ID = "ryos.maps.places";
+/** Separate bucket so YouBike pins don't merge into saved-place clusters. */
+export const RYOS_MAP_YOUBIKE_CLUSTER_ID = "ryos.maps.youbike";
 
 /**
  * When `max(latitudeDelta, longitudeDelta)` exceeds this value (~11 km at the
@@ -28,10 +30,11 @@ export function shouldClusterMarkersForRegion(region: unknown): boolean {
   return Math.max(lat, lng) > CITY_LEVEL_MAX_SPAN_DEG;
 }
 
-export function clusteringIdentifierForRegion(region: unknown): string | null {
-  return shouldClusterMarkersForRegion(region)
-    ? RYOS_MAP_PLACES_CLUSTER_ID
-    : null;
+export function clusteringIdentifierForRegion(
+  region: unknown,
+  clusterId: string = RYOS_MAP_PLACES_CLUSTER_ID
+): string | null {
+  return shouldClusterMarkersForRegion(region) ? clusterId : null;
 }
 
 export function withMapPlaceClustering<T extends Record<string, unknown>>(

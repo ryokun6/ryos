@@ -127,6 +127,7 @@ graph LR
 | `/api/stocks` | Real-time stock quotes |
 | `/api/currency-rate` | Currency conversion rates |
 | `/api/mapkit-token` | MapKit JS token |
+| `/api/youbike/stations` | Taiwan YouBike 2.0 station overlay (cached official open data) |
 | `/api/musickit-token` | MusicKit JS token |
 | `/api/tv/create-channel` | AI-assisted TV channel creation |
 | `/api/opds` | HTTP Basic-authenticated Books acquisition feed |

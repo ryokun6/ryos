@@ -9,6 +9,7 @@ import { appMetadata } from "../..";
 import { MapsMenuBar } from "../MapsMenuBar";
 import { MapsPlacesDrawer } from "../MapsPlacesDrawer";
 import { MapsPlaceCard } from "../MapsPlaceCard";
+import { MapsYouBikeRouteCard } from "../MapsYouBikeRouteCard";
 import type { SavedPlace } from "../../utils/types";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import { MapsMapBottomChrome } from "./MapsMapBottomChrome";
@@ -56,6 +57,13 @@ export function MapsAppComponent({
     handleSelectSavedPlace,
     handleToggleFavorite,
     handleOpenPlaceDirections,
+    handleYouBikeDirections,
+    handleClearYouBikeRoute,
+    youbikeOverlayEnabled,
+    setYoubikeOverlayEnabled,
+    youbikeRoutePlan,
+    youbikeIsRouting,
+    youbikeRouteError,
     handleClosePlaceCard,
     isPlaceFavorite,
     handleZoomIn,
@@ -76,6 +84,8 @@ export function MapsAppComponent({
       onLocateMe={handleLocateMe}
       mapType={mapType}
       onSetMapType={setMapType}
+      youbikeOverlayEnabled={youbikeOverlayEnabled}
+      onSetYoubikeOverlayEnabled={setYoubikeOverlayEnabled}
       canUseMap={canUseMap}
     />
   );
@@ -172,6 +182,13 @@ export function MapsAppComponent({
               />
             )}
 
+            <MapsYouBikeRouteCard
+              plan={youbikeRoutePlan}
+              isRouting={youbikeIsRouting}
+              error={youbikeRouteError}
+              onClose={handleClearYouBikeRoute}
+            />
+
             <MapsPlaceCard
               place={selectedPlace}
               isFavorite={
@@ -207,6 +224,7 @@ export function MapsAppComponent({
               }}
               onToggleFavorite={handleToggleFavorite}
               onDirections={handleOpenPlaceDirections}
+              onYouBikeDirections={handleYouBikeDirections}
               onClose={handleClosePlaceCard}
             />
 

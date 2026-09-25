@@ -22,4 +22,17 @@ export interface SavedPlace {
    *   https://developer.apple.com/documentation/mapkitjs/place/id
    */
   placeId?: string;
+  /**
+   * Live YouBike snapshot when this place is a station POI. Optional so
+   * persisted Home / Work / Favorites stay backward compatible.
+   */
+  youbike?: {
+    stationId: string;
+    city: string;
+    bikesAvailable: number;
+    docksAvailable: number;
+    totalDocks: number;
+    isActive: boolean;
+    updatedAt?: string | null;
+  };
 }

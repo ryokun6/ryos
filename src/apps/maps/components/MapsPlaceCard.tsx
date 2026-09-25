@@ -1,12 +1,15 @@
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import {
+  Bicycle,
   Briefcase,
   House,
   NavigationArrow,
   Star,
   X,
 } from "@phosphor-icons/react";
+import { isInTaiwan } from "../youbike/geo";
+import { isYouBikePlace } from "../youbike/place";
 import { cn } from "@/lib/utils";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
@@ -44,6 +47,7 @@ export interface MapsPlaceCardProps {
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
+  onYouBikeDirections?: (place: SavedPlace) => void;
   onClose: () => void;
 }
 
@@ -98,6 +102,7 @@ export function MapsPlaceCard({
   onSetWork,
   onToggleFavorite,
   onDirections,
+  onYouBikeDirections,
   onClose,
 }: MapsPlaceCardProps) {
   const { t } = useTranslation();
@@ -146,6 +151,7 @@ export function MapsPlaceCard({
               onSetWork={onSetWork}
               onToggleFavorite={onToggleFavorite}
               onDirections={onDirections}
+              onYouBikeDirections={onYouBikeDirections}
               t={t}
             />
           </div>
@@ -218,6 +224,19 @@ function PlaceCardHeader({
             {subtitle}
           </div>
         )}
+        {place.youbike && (
+          <div className="mt-0.5 text-[11px] leading-snug text-os-text-secondary">
+            {place.youbike.isActive
+              ? t("apps.maps.youbike.availability", {
+                  defaultValue: "{{bikes}} bikes · {{docks}} docks",
+                  bikes: place.youbike.bikesAvailable,
+                  docks: place.youbike.docksAvailable,
+                })
+              : t("apps.maps.youbike.inactive", {
+                  defaultValue: "Station closed",
+                })}
+          </div>
+        )}
       </div>
       <button
         type="button"
@@ -248,6 +267,7 @@ interface PlaceCardActionsProps {
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
+  onYouBikeDirections?: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
 
@@ -262,12 +282,17 @@ function PlaceCardActions({
   onSetWork,
   onToggleFavorite,
   onDirections,
+  onYouBikeDirections,
   t,
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
   const variant = isMacOSTheme ? "aqua" : "retro";
   const showHomeButton = !savedHomePlace || isHome;
   const showWorkButton = !savedWorkPlace || isWork;
+  const showYouBike =
+    !!onYouBikeDirections &&
+    (isYouBikePlace(place) ||
+      isInTaiwan({ latitude: place.latitude, longitude: place.longitude }));
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -291,6 +316,29 @@ function PlaceCardActions({
           })}
         </span>
       </Button>
+
+      {showYouBike && (
+        <Button
+          type="button"
+          variant={variant}
+          size="sm"
+          onClick={() => onYouBikeDirections?.(place)}
+          title={t("apps.maps.youbike.directionsTitle", {
+            defaultValue: "Directions via YouBike",
+          })}
+          className={AQUA_ICON_BUTTON_PADDING_CLASS}
+        >
+          <Bicycle
+            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+            weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+          />
+          <span>
+            {t("apps.maps.youbike.directions", {
+              defaultValue: "YouBike",
+            })}
+          </span>
+        </Button>
+      )}
 
       <Button
         type="button"

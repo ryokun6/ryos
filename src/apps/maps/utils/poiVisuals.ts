@@ -4,6 +4,7 @@ import {
   Barbell,
   Bed,
   BeerStein,
+  Bicycle,
   Books,
   Buildings,
   Car,
@@ -41,6 +42,7 @@ const ICONS = {
   ForkKnife,
   Coffee,
   BeerStein,
+  Bicycle,
   Wine,
   ShoppingCart,
   Storefront,
@@ -134,6 +136,7 @@ const VISUALS: Record<string, PoiVisual> = {
   // Transport
   airport: { iconKey: "Airplane", from: "#06b6d4", to: "#0284c7" },
   publicTransport: { iconKey: "Train", from: "#6366f1", to: "#3730a3" },
+  youbike: { iconKey: "Bicycle", from: "#7CB518", to: "#4d7c0f" },
   parking: { iconKey: "Car", from: "#3b82f6", to: "#1d4ed8" },
   gasStation: { iconKey: "GasPump", from: "#f59e0b", to: "#b45309" },
   evCharger: { iconKey: "Lightning", from: "#22c55e", to: "#10b981" },
