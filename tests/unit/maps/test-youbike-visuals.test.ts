@@ -5,11 +5,15 @@ import {
   YOUBIKE_COLOR_EMPTY,
   YOUBIKE_COLOR_INACTIVE,
   YOUBIKE_COLOR_LOW,
+  YOUBIKE_DOT_BORDER_PX,
   YOUBIKE_DOT_DIM_SIZE_PX,
+  YOUBIKE_DOT_SELECTED_BORDER_PX,
   YOUBIKE_DOT_SELECTED_SIZE_PX,
   YOUBIKE_DOT_SIZE_PX,
+  youbikeDotBorderPx,
   youbikeDotSizePx,
   youbikePinTitle,
+  youbikeShouldPaintDot,
   youbikeStationMarkerColor,
 } from "../../../src/apps/maps/youbike/stationVisuals";
 
@@ -86,5 +90,35 @@ describe("YouBike compact dots", () => {
     expect(YOUBIKE_DOT_DIM_SIZE_PX).toBeLessThan(YOUBIKE_DOT_SIZE_PX);
     expect(youbikeDotSizePx("endpoint", false)).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
     expect(youbikeDotSizePx("dimmed", true)).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
+  });
+
+  test("uses a hairline border on small dots", () => {
+    expect(youbikeDotBorderPx("normal", false)).toBe(YOUBIKE_DOT_BORDER_PX);
+    expect(youbikeDotBorderPx("dimmed", false)).toBe(YOUBIKE_DOT_BORDER_PX);
+    expect(YOUBIKE_DOT_BORDER_PX).toBeLessThanOrEqual(0.5);
+    expect(youbikeDotBorderPx("endpoint", false)).toBe(
+      YOUBIKE_DOT_SELECTED_BORDER_PX
+    );
+    expect(YOUBIKE_DOT_SELECTED_BORDER_PX).toBeLessThanOrEqual(1);
+  });
+
+  test("hides other small dots while a dock is selected", () => {
+    const selected = "youbike:taipei:a";
+    const endpoints = ["youbike:taipei:start", "youbike:taipei:end"];
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:a", { selectedYoubikeId: selected })
+    ).toBe(true);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: selected })
+    ).toBe(false);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: null })
+    ).toBe(true);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:start", {
+        selectedYoubikeId: selected,
+        endpointIds: endpoints,
+      })
+    ).toBe(true);
   });
 });

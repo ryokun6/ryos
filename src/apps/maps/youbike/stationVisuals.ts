@@ -47,6 +47,9 @@ export const YOUBIKE_DOT_SIZE_PX = 10;
 export const YOUBIKE_DOT_SELECTED_SIZE_PX = 12;
 export const YOUBIKE_DOT_DIM_SIZE_PX = 6;
 export const YOUBIKE_DOT_DIM_OPACITY = "0.38";
+/** Hairline ring on the default / dimmed dots. */
+export const YOUBIKE_DOT_BORDER_PX = 0.5;
+export const YOUBIKE_DOT_SELECTED_BORDER_PX = 1;
 
 /** How a dock should read while a YouBike route is (or isn't) on screen. */
 export type YouBikeDotEmphasis = "normal" | "endpoint" | "dimmed";
@@ -58,6 +61,29 @@ export function youbikeDotSizePx(
   if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_SIZE_PX;
   if (emphasis === "dimmed") return YOUBIKE_DOT_DIM_SIZE_PX;
   return YOUBIKE_DOT_SIZE_PX;
+}
+
+export function youbikeDotBorderPx(
+  emphasis: YouBikeDotEmphasis,
+  selected: boolean
+): number {
+  if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_BORDER_PX;
+  return YOUBIKE_DOT_BORDER_PX;
+}
+
+/** Hide the dense background dots while a YouBike dock is selected. */
+export function youbikeShouldPaintDot(
+  stationId: string,
+  options: {
+    selectedYoubikeId?: string | null;
+    endpointIds?: Iterable<string>;
+  } = {}
+): boolean {
+  const endpoints = new Set(options.endpointIds ?? []);
+  if (endpoints.has(stationId)) return true;
+  const selectedId = options.selectedYoubikeId ?? null;
+  if (!selectedId) return true;
+  return stationId === selectedId;
 }
 
 export function createYouBikeDotElement(
@@ -79,15 +105,18 @@ export function applyYouBikeDotAppearance(
   const emphasis = options.emphasis ?? "normal";
   const primary = selected || emphasis === "endpoint";
   const size = youbikeDotSizePx(emphasis, selected);
+  const borderPx = youbikeDotBorderPx(emphasis, selected);
   el.style.width = `${size}px`;
   el.style.height = `${size}px`;
   el.style.borderRadius = "50%";
   el.style.backgroundColor = color;
-  el.style.border = primary ? "2px solid #ffffff" : "1.5px solid #ffffff";
+  el.style.border = `${borderPx}px solid ${
+    primary ? "#ffffff" : "rgba(255,255,255,0.85)"
+  }`;
   el.style.boxSizing = "border-box";
   el.style.boxShadow = primary
-    ? "0 0 0 1px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.35)"
-    : "0 0 0 1px rgba(0,0,0,0.22)";
+    ? "0 1px 2px rgba(0,0,0,0.28)"
+    : "none";
   el.style.opacity = !selected && emphasis === "dimmed" ? YOUBIKE_DOT_DIM_OPACITY : "1";
   el.style.pointerEvents = "auto";
 }

@@ -23,7 +23,7 @@ import {
 } from "../youbike";
 import { fetchYouBikeStations } from "../youbike/fetchStations";
 import { mergeYouBikeStations } from "../youbike/parseStations";
-import { youbikeStationToSavedPlace } from "../youbike/place";
+import { isYouBikePlace, youbikeStationToSavedPlace } from "../youbike/place";
 import { isYouBikeRouteError, planYouBikeTrip } from "../youbike/routePlan";
 import {
   YOUBIKE_BIKE_STROKE,
@@ -32,6 +32,7 @@ import {
   createYouBikeDotElement,
   youbikeDotSizePx,
   youbikePinTitle,
+  youbikeShouldPaintDot,
   youbikeStationMarkerColor,
   type YouBikeDotEmphasis,
 } from "../youbike/stationVisuals";
@@ -257,6 +258,7 @@ export function useYouBikeLayer({
   const routeRequestIdRef = useRef(0);
   const fetchAbortRef = useRef<AbortController | null>(null);
   const routeEndpointIdsRef = useRef<Set<string>>(new Set());
+  const selectedYoubikeIdRef = useRef<string | null>(null);
   const onSelectStationRef = useRef<(station: YouBikeStation) => void>(
     () => undefined
   );
@@ -314,6 +316,10 @@ export function useYouBikeLayer({
 
   const syncStationAnnotations = useCallback(
     (nextStations: YouBikeStation[]) => {
+      selectedYoubikeIdRef.current =
+        selectedPlace && isYouBikePlace(selectedPlace)
+          ? selectedPlace.id
+          : null;
       const mk = getMapKit();
       const map = mapInstanceRef.current;
       if (!mk || !map) return;
@@ -330,7 +336,12 @@ export function useYouBikeLayer({
 
       const renderBbox = padBBox(bbox, RENDER_PAD_FACTOR);
       const visible = filterStationsInBBox(nextStations, renderBbox).filter(
-        (station) => !savedPlaceIds.has(station.id)
+        (station) =>
+          !savedPlaceIds.has(station.id) &&
+          youbikeShouldPaintDot(station.id, {
+            selectedYoubikeId: selectedYoubikeIdRef.current,
+            endpointIds: routeEndpointIdsRef.current,
+          })
       );
       const visibleIds = new Set(visible.map((station) => station.id));
 
@@ -421,7 +432,13 @@ export function useYouBikeLayer({
         }
       }
     },
-    [clearStationAnnotations, enabled, mapInstanceRef, savedPlaceIds]
+    [
+      clearStationAnnotations,
+      enabled,
+      mapInstanceRef,
+      savedPlaceIds,
+      selectedPlace,
+    ]
   );
 
   const refreshStationsForMap = useCallback(async () => {
@@ -762,10 +779,12 @@ export function useYouBikeLayer({
       ids.add(routePlan.destinationStation.id);
     }
     routeEndpointIdsRef.current = ids;
+    selectedYoubikeIdRef.current =
+      selectedPlace && isYouBikePlace(selectedPlace) ? selectedPlace.id : null;
     if (stationsRef.current.length > 0) {
       syncStationAnnotations(stationsRef.current);
     }
-  }, [routePlan, syncStationAnnotations]);
+  }, [routePlan, selectedPlace, syncStationAnnotations]);
 
   const selectedYoubikeStation =
     selectedPlace &&
