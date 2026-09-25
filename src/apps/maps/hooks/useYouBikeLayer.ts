@@ -27,8 +27,12 @@ import { youbikeStationToSavedPlace } from "../youbike/place";
 import { isYouBikeRouteError, planYouBikeTrip } from "../youbike/routePlan";
 import {
   YOUBIKE_BIKE_STROKE,
+  YOUBIKE_DOT_SELECTED_SIZE_PX,
+  YOUBIKE_DOT_SIZE_PX,
   YOUBIKE_WALK_STROKE,
-  getYouBikeGlyphImage,
+  applyYouBikeDotAppearance,
+  createYouBikeDotElement,
+  youbikePinTitle,
   youbikeStationMarkerColor,
 } from "../youbike/stationVisuals";
 import {
@@ -76,6 +80,69 @@ function toMapKitCoordinate(
   point: GeoPoint
 ): MapKitCoordinate {
   return new mk.Coordinate(point.latitude, point.longitude);
+}
+
+function featureVisibility(
+  mk: NonNullable<ReturnType<typeof getMapKit>>,
+  kind: "hidden" | "visible"
+): string {
+  if (kind === "visible") return mk.FeatureVisibility?.Visible ?? "visible";
+  return mk.FeatureVisibility?.Hidden ?? "hidden";
+}
+
+function applyYouBikePinChrome(
+  mk: NonNullable<ReturnType<typeof getMapKit>>,
+  annotation: MapKitMarkerAnnotation,
+  station: YouBikeStation
+): void {
+  const selected = annotation.selected === true;
+  annotation.title = youbikePinTitle(station);
+  annotation.subtitle = "";
+  annotation.subtitleVisibility = featureVisibility(mk, "hidden");
+  annotation.titleVisibility = featureVisibility(
+    mk,
+    selected ? "visible" : "hidden"
+  );
+  annotation.calloutEnabled = false;
+  const size = selected ? YOUBIKE_DOT_SELECTED_SIZE_PX : YOUBIKE_DOT_SIZE_PX;
+  annotation.size = { width: size, height: size };
+  const color = youbikeStationMarkerColor(station);
+  if (annotation.element) {
+    applyYouBikeDotAppearance(annotation.element, color, selected);
+  }
+}
+
+function createYouBikeAnnotation(
+  mk: NonNullable<ReturnType<typeof getMapKit>>,
+  station: YouBikeStation,
+  clusteringId: string | null
+): MapKitMarkerAnnotation {
+  const coord = new mk.Coordinate(station.latitude, station.longitude);
+  const color = youbikeStationMarkerColor(station);
+  const hidden = featureVisibility(mk, "hidden");
+  const options = {
+    title: youbikePinTitle(station),
+    subtitle: "",
+    titleVisibility: hidden,
+    subtitleVisibility: hidden,
+    calloutEnabled: false,
+    clusteringIdentifier: clusteringId,
+    data: { youbikeId: station.id },
+    size: { width: YOUBIKE_DOT_SIZE_PX, height: YOUBIKE_DOT_SIZE_PX },
+    animates: false,
+  };
+  if (mk.Annotation) {
+    return new mk.Annotation(
+      coord,
+      () => createYouBikeDotElement(color),
+      options
+    );
+  }
+  return new mk.MarkerAnnotation(coord, {
+    ...options,
+    color,
+    glyphColor: color,
+  });
 }
 
 function requestWalkingPath(
@@ -158,7 +225,11 @@ export function useYouBikeLayer({
   const annotationsRef = useRef<
     Map<
       string,
-      { annotation: MapKitMarkerAnnotation; onSelect: () => void }
+      {
+        annotation: MapKitMarkerAnnotation;
+        onSelect: () => void;
+        onDeselect: () => void;
+      }
     >
   >(new Map());
   const overlaysRef = useRef<unknown[]>([]);
@@ -174,6 +245,7 @@ export function useYouBikeLayer({
     for (const wrapper of annotationsRef.current.values()) {
       try {
         wrapper.annotation.removeEventListener?.("select", wrapper.onSelect);
+        wrapper.annotation.removeEventListener?.("deselect", wrapper.onDeselect);
       } catch {
         // ignore
       }
@@ -245,14 +317,15 @@ export function useYouBikeLayer({
         map.region,
         RYOS_MAP_YOUBIKE_CLUSTER_ID
       );
-      const glyph = getYouBikeGlyphImage();
-      const hidden =
-        mk.FeatureVisibility?.Hidden ?? "hidden";
 
       for (const [id, wrapper] of annotationsRef.current) {
         if (visibleIds.has(id)) continue;
         try {
           wrapper.annotation.removeEventListener?.("select", wrapper.onSelect);
+          wrapper.annotation.removeEventListener?.(
+            "deselect",
+            wrapper.onDeselect
+          );
         } catch {
           // ignore
         }
@@ -265,48 +338,56 @@ export function useYouBikeLayer({
       }
 
       for (const station of visible) {
-        const existing = annotationsRef.current.get(station.id);
-        if (existing) {
-          const color = youbikeStationMarkerColor(station);
-          if (existing.annotation.color !== color) {
-            existing.annotation.color = color;
-          }
-          existing.annotation.clusteringIdentifier = clusteringId;
+        const bind = (annotation: MapKitMarkerAnnotation) => {
           const onSelect = () => {
+            applyYouBikePinChrome(mk, annotation, station);
             onSelectStationRef.current(station);
           };
+          const onDeselect = () => {
+            applyYouBikePinChrome(mk, annotation, station);
+          };
           try {
-            existing.annotation.removeEventListener?.("select", existing.onSelect);
+            annotation.removeEventListener?.("select", onSelect);
+            annotation.removeEventListener?.("deselect", onDeselect);
           } catch {
             // ignore
           }
-          existing.annotation.addEventListener?.("select", onSelect);
+          const existing = annotationsRef.current.get(station.id);
+          if (existing) {
+            try {
+              existing.annotation.removeEventListener?.(
+                "select",
+                existing.onSelect
+              );
+              existing.annotation.removeEventListener?.(
+                "deselect",
+                existing.onDeselect
+              );
+            } catch {
+              // ignore
+            }
+          }
+          annotation.addEventListener?.("select", onSelect);
+          annotation.addEventListener?.("deselect", onDeselect);
+          applyYouBikePinChrome(mk, annotation, station);
+          annotation.clusteringIdentifier = clusteringId;
           annotationsRef.current.set(station.id, {
-            annotation: existing.annotation,
+            annotation,
             onSelect,
+            onDeselect,
           });
+        };
+
+        const existing = annotationsRef.current.get(station.id);
+        if (existing) {
+          bind(existing.annotation);
           continue;
         }
 
-        const coord = new mk.Coordinate(station.latitude, station.longitude);
-        const annotation = new mk.MarkerAnnotation(coord, {
-          color: youbikeStationMarkerColor(station),
-          glyphColor: "#ffffff",
-          glyphImage: glyph,
-          selectedGlyphImage: glyph,
-          clusteringIdentifier: clusteringId,
-          titleVisibility: hidden,
-          subtitleVisibility: hidden,
-          calloutEnabled: false,
-          data: { youbikeId: station.id },
-        });
-        const onSelect = () => {
-          onSelectStationRef.current(station);
-        };
-        annotation.addEventListener?.("select", onSelect);
         try {
+          const annotation = createYouBikeAnnotation(mk, station, clusteringId);
           map.addAnnotation(annotation);
-          annotationsRef.current.set(station.id, { annotation, onSelect });
+          bind(annotation);
         } catch {
           // ignore
         }

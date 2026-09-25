@@ -111,6 +111,10 @@ export interface MapKitMarkerAnnotation {
   titleVisibility?: string;
   subtitleVisibility?: string;
   calloutEnabled?: boolean;
+  element?: HTMLElement;
+  size?: { width: number; height: number };
+  /** Offset from the coordinate; positive x/y move the glyph down-right. */
+  anchorOffset?: { x: number; y: number };
   /** Writable. When true MapKit shows the annotation's callout. */
   selected?: boolean;
   addEventListener?: (
@@ -166,6 +170,14 @@ export interface MapKitGlobal {
   ) => unknown;
   MarkerAnnotation: new (
     coordinate: MapKitCoordinate,
+    options?: Record<string, unknown>
+  ) => MapKitMarkerAnnotation;
+  Annotation?: new (
+    coordinate: MapKitCoordinate,
+    factory: (
+      coordinate: MapKitCoordinate,
+      options?: Record<string, unknown>
+    ) => HTMLElement,
     options?: Record<string, unknown>
   ) => MapKitMarkerAnnotation;
   FeatureVisibility?: { Hidden: string; Adaptive: string; Visible: string };

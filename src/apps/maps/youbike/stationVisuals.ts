@@ -35,6 +35,42 @@ export function youbikeAvailabilityLabel(station: YouBikeStation): string {
   return `${station.bikesAvailable} · ${station.docksAvailable}`;
 }
 
+/** Short selected-pin label: bike count only, no station name. */
+export function youbikePinTitle(station: YouBikeStation): string {
+  const bikes = Number.isFinite(station.bikesAvailable)
+    ? Math.max(0, Math.round(station.bikesAvailable))
+    : 0;
+  return String(bikes);
+}
+
+export const YOUBIKE_DOT_SIZE_PX = 10;
+export const YOUBIKE_DOT_SELECTED_SIZE_PX = 12;
+
+export function createYouBikeDotElement(color: string, selected = false): HTMLDivElement {
+  const el = document.createElement("div");
+  el.setAttribute("aria-hidden", "true");
+  applyYouBikeDotAppearance(el, color, selected);
+  return el;
+}
+
+export function applyYouBikeDotAppearance(
+  el: HTMLElement,
+  color: string,
+  selected = false
+): void {
+  const size = selected ? YOUBIKE_DOT_SELECTED_SIZE_PX : YOUBIKE_DOT_SIZE_PX;
+  el.style.width = `${size}px`;
+  el.style.height = `${size}px`;
+  el.style.borderRadius = "50%";
+  el.style.backgroundColor = color;
+  el.style.border = selected ? "2px solid #ffffff" : "1.5px solid #ffffff";
+  el.style.boxSizing = "border-box";
+  el.style.boxShadow = selected
+    ? "0 0 0 1px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.35)"
+    : "0 0 0 1px rgba(0,0,0,0.22)";
+  el.style.pointerEvents = "auto";
+}
+
 export const YouBikeIcon = Bicycle;
 
 export const YOUBIKE_POI_VISUAL = {
