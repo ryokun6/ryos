@@ -12,6 +12,13 @@ interface MapKitLikeRoute {
   polyline?: { points?: unknown; path?: unknown } | unknown;
   distance?: unknown;
   expectedTravelTime?: unknown;
+  steps?: unknown;
+}
+
+export interface MapKitRouteStep {
+  instruction: string;
+  streetName: string;
+  distanceMeters: number;
 }
 
 function asPoint(value: unknown): GeoPoint | null {
@@ -65,6 +72,36 @@ export function extractMapKitRouteMetrics(route: unknown): {
         ? typed.expectedTravelTime
         : undefined,
   };
+}
+
+/** Turn-by-turn rows from a MapKit JS route (`steps[].instructions`). */
+export function extractMapKitRouteSteps(route: unknown): MapKitRouteStep[] {
+  if (!route || typeof route !== "object") return [];
+  const steps = (route as MapKitLikeRoute).steps;
+  if (!Array.isArray(steps)) return [];
+  const parsed: MapKitRouteStep[] = [];
+  for (const step of steps) {
+    if (!step || typeof step !== "object") continue;
+    const record = step as {
+      instructions?: unknown;
+      distance?: unknown;
+      name?: unknown;
+    };
+    const instruction =
+      typeof record.instructions === "string" ? record.instructions.trim() : "";
+    const streetName = typeof record.name === "string" ? record.name.trim() : "";
+    if (!instruction && !streetName) continue;
+    const distanceMeters =
+      typeof record.distance === "number" && Number.isFinite(record.distance)
+        ? record.distance
+        : 0;
+    parsed.push({
+      instruction: instruction || streetName,
+      streetName,
+      distanceMeters,
+    });
+  }
+  return parsed;
 }
 
 /** Resolve MapKit JS `Directions.Transport` values, including WWDC25 Cycling. */

@@ -65,6 +65,15 @@ export interface YouBikeFeedStatus {
 
 export type YouBikeLegMode = "walk" | "bike";
 
+export interface YouBikeRouteStep {
+  mode: YouBikeLegMode;
+  /** Maneuver, e.g. "Turn right". MapKit may already include the street. */
+  instruction: string;
+  streetName: string;
+  distanceMeters: number;
+  durationSeconds: number;
+}
+
 export interface YouBikeRouteLeg {
   mode: YouBikeLegMode;
   from: GeoPoint;
@@ -75,6 +84,8 @@ export interface YouBikeRouteLeg {
   durationSeconds: number;
   /** Optional road-following path (walk legs from MapKit). */
   path?: GeoPoint[];
+  /** Turn-by-turn maneuvers. Hidden in the route card until requested. */
+  steps?: YouBikeRouteStep[];
 }
 
 export type YouBikeRouteKind = "youbike" | "walk";

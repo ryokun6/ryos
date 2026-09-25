@@ -19,6 +19,21 @@ export async function fetchYouBikeBikeRoute(
   if (!response.ok) return null;
   const data = (await response.json()) as Partial<BikeRouteResult>;
   if (!Array.isArray(data.path) || data.path.length < 8) return null;
+  const steps = Array.isArray(data.steps)
+    ? data.steps.flatMap((step) => {
+        if (!step || typeof step.instruction !== "string") return [];
+        return [
+          {
+            instruction: step.instruction,
+            streetName: typeof step.streetName === "string" ? step.streetName : "",
+            distanceMeters:
+              typeof step.distanceMeters === "number" ? step.distanceMeters : 0,
+            durationSeconds:
+              typeof step.durationSeconds === "number" ? step.durationSeconds : 0,
+          },
+        ];
+      })
+    : [];
   return {
     path: data.path,
     distanceMeters:
@@ -26,5 +41,6 @@ export async function fetchYouBikeBikeRoute(
     durationSeconds:
       typeof data.durationSeconds === "number" ? data.durationSeconds : 0,
     provider: typeof data.provider === "string" ? data.provider : "osrm-bike",
+    steps,
   };
 }

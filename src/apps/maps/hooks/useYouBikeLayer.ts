@@ -18,7 +18,9 @@ import {
   regionFittingPoints,
   type GeoBBox,
   type GeoPoint,
+  type YouBikeLegMode,
   type YouBikeRoutePlan,
+  type YouBikeRouteStep,
   type YouBikeStation,
 } from "../youbike";
 import { fetchYouBikeStations } from "../youbike/fetchStations";
@@ -41,6 +43,7 @@ import { fetchYouBikeBikeRoute } from "../youbike/fetchBikeRoute";
 import {
   extractMapKitRouteMetrics,
   extractMapKitRoutePath,
+  extractMapKitRouteSteps,
   resolveMapKitTransport,
   type MapKitTransportKind,
 } from "../youbike/mapKitRoute";
@@ -95,6 +98,24 @@ function featureVisibility(
 ): string {
   if (kind === "visible") return mk.FeatureVisibility?.Visible ?? "visible";
   return mk.FeatureVisibility?.Hidden ?? "hidden";
+}
+
+function toRouteSteps(
+  mode: YouBikeLegMode,
+  steps: Array<{
+    instruction: string;
+    streetName: string;
+    distanceMeters: number;
+    durationSeconds?: number;
+  }>
+): YouBikeRouteStep[] {
+  return steps.map((step) => ({
+    mode,
+    instruction: step.instruction,
+    streetName: step.streetName,
+    distanceMeters: step.distanceMeters,
+    durationSeconds: step.durationSeconds ?? 0,
+  }));
 }
 
 function pinEmphasis(
@@ -171,10 +192,11 @@ function requestMapKitPath(
   path: GeoPoint[];
   distanceMeters?: number;
   durationSeconds?: number;
+  steps: ReturnType<typeof extractMapKitRouteSteps>;
 } | null> {
   return new Promise((resolve) => {
     if (!mk.Directions) {
-      resolve(kind === "Walking" ? { path: [from, to] } : null);
+      resolve(kind === "Walking" ? { path: [from, to], steps: [] } : null);
       return;
     }
     const transport = resolveMapKitTransport(mk.Directions, kind);
@@ -187,7 +209,7 @@ function requestMapKitPath(
     const timer = window.setTimeout(() => {
       if (settled) return;
       settled = true;
-      resolve(kind === "Walking" ? { path: [from, to] } : null);
+      resolve(kind === "Walking" ? { path: [from, to], steps: [] } : null);
     }, 8000);
     try {
       directions.route(
@@ -203,7 +225,7 @@ function requestMapKitPath(
           const route = data?.routes?.[0];
           const path = extractMapKitRoutePath(route);
           if (error || path.length < 2) {
-            resolve(kind === "Walking" ? { path: [from, to] } : null);
+            resolve(kind === "Walking" ? { path: [from, to], steps: [] } : null);
             return;
           }
           const metrics = extractMapKitRouteMetrics(route);
@@ -211,12 +233,13 @@ function requestMapKitPath(
             path,
             distanceMeters: metrics.distanceMeters,
             durationSeconds: metrics.durationSeconds,
+            steps: extractMapKitRouteSteps(route),
           });
         }
       );
     } catch {
       window.clearTimeout(timer);
-      resolve(kind === "Walking" ? { path: [from, to] } : null);
+      resolve(kind === "Walking" ? { path: [from, to], steps: [] } : null);
     }
   });
 }
@@ -629,6 +652,7 @@ export function useYouBikeLayer({
             path: walking.path,
             distanceMeters: walking.distanceMeters ?? leg.distanceMeters,
             durationSeconds: walking.durationSeconds ?? leg.durationSeconds,
+            steps: toRouteSteps("walk", walking.steps),
           };
         }
         const cycling = mk
@@ -640,6 +664,7 @@ export function useYouBikeLayer({
             path: cycling.path,
             distanceMeters: cycling.distanceMeters ?? leg.distanceMeters,
             durationSeconds: cycling.durationSeconds ?? leg.durationSeconds,
+            steps: toRouteSteps("bike", cycling.steps),
           };
         }
         const routed = await fetchYouBikeBikeRoute(leg.from, leg.to);
@@ -651,6 +676,7 @@ export function useYouBikeLayer({
           path: routed.path,
           distanceMeters: routed.distanceMeters || leg.distanceMeters,
           durationSeconds: routed.durationSeconds || leg.durationSeconds,
+          steps: toRouteSteps("bike", routed.steps),
         };
       })
     );

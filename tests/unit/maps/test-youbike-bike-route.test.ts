@@ -7,8 +7,10 @@ import {
 } from "../../../src/apps/maps/youbike/bikeRoute";
 import {
   extractMapKitRoutePath,
+  extractMapKitRouteSteps,
   resolveMapKitTransport,
 } from "../../../src/apps/maps/youbike/mapKitRoute";
+import { formatYouBikeStepLabel } from "../../../src/apps/maps/youbike/routeSteps";
 
 const TAIPEI_101 = { latitude: 25.03396, longitude: 121.56447 };
 const MAIN_STATION = { latitude: 25.04792, longitude: 121.51708 };
@@ -61,6 +63,60 @@ describe("parseOsrmRoute", () => {
     expect(parsed!.distanceMeters).toBe(2460);
     expect(parsed!.durationSeconds).toBe(720);
     expect(parsed!.provider).toBe("osrm-bike");
+    expect(parsed!.steps).toEqual([]);
+  });
+
+  test("reads turn-by-turn street names from OSRM steps", () => {
+    const coordinates = Array.from({ length: 12 }, (_, i) => [
+      121.564 + i * 0.001,
+      25.034 + i * 0.0004,
+    ]);
+    const parsed = parseOsrmRoute({
+      code: "Ok",
+      routes: [
+        {
+          distance: 2460,
+          duration: 720,
+          geometry: { type: "LineString", coordinates },
+          legs: [
+            {
+              steps: [
+                {
+                  name: "",
+                  distance: 0,
+                  duration: 0,
+                  maneuver: { type: "depart", modifier: "east" },
+                },
+                {
+                  name: "信義路三段",
+                  distance: 180,
+                  duration: 40,
+                  maneuver: { type: "turn", modifier: "right" },
+                },
+                {
+                  name: "",
+                  distance: 0,
+                  duration: 0,
+                  maneuver: { type: "notification" },
+                },
+                {
+                  name: "",
+                  distance: 0,
+                  duration: 0,
+                  maneuver: { type: "arrive" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(parsed!.steps.map((step) => `${step.instruction}|${step.streetName}`)).toEqual([
+      "Head east|",
+      "Turn right|信義路三段",
+      "Arrive|",
+    ]);
+    expect(parsed!.steps[1]?.distanceMeters).toBe(180);
   });
 
   test("rejects a 2-point geodesic hop", () => {
@@ -92,6 +148,7 @@ describe("buildOsrmBikeUrl", () => {
     expect(url).toContain("121.56447,25.03396");
     expect(url).toContain("121.51708,25.04792");
     expect(url).toContain("geometries=geojson");
+    expect(url).toContain("steps=true");
   });
 });
 
@@ -102,7 +159,7 @@ describe("youbikeBikeRouteCacheKey", () => {
         { latitude: 25.03396111, longitude: 121.56446999 },
         MAIN_STATION
       )
-    ).toBe("cache:youbike:route:v1:25.03396,121.56447:25.04792,121.51708");
+    ).toBe("cache:youbike:route:v2:25.03396,121.56447:25.04792,121.51708");
   });
 });
 
@@ -115,6 +172,28 @@ describe("MapKit cycling directions", () => {
       )
     ).toBe("Cycling");
     expect(resolveMapKitTransport({}, "Cycling")).toBe("Cycling");
+  });
+
+  test("reads turn instructions and keeps street names that are already in the text", () => {
+    const steps = extractMapKitRouteSteps({
+      steps: [
+        { instructions: "Turn right onto Ren'ai Road", distance: 240, name: "Ren'ai Road" },
+        { instructions: "Continue", distance: 80 },
+        { instructions: "  ", distance: 0 },
+      ],
+    });
+    expect(steps).toEqual([
+      {
+        instruction: "Turn right onto Ren'ai Road",
+        streetName: "Ren'ai Road",
+        distanceMeters: 240,
+      },
+      { instruction: "Continue", streetName: "", distanceMeters: 80 },
+    ]);
+    expect(formatYouBikeStepLabel(steps[0]!)).toBe("Turn right onto Ren'ai Road");
+    expect(
+      formatYouBikeStepLabel({ instruction: "Turn right", streetName: "信義路三段" })
+    ).toBe("Turn right · 信義路三段");
   });
 
   test("reads path or WWDC polyline overlay points", () => {

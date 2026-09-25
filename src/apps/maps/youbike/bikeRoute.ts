@@ -5,15 +5,23 @@ export const YOUBIKE_BIKE_ROUTE_CACHE_TTL_SECONDS = 30 * 60;
 export const YOUBIKE_BIKE_ROUTE_MAX_METERS = 50_000;
 export const YOUBIKE_BIKE_ROUTE_TIMEOUT_MS = 8_000;
 
-/** FOSSGIS public OSRM bike profile — no API key. */
+/** FOSSGIS public OSRM bike profile — no API key. `steps=true` adds street names. */
 export const DEFAULT_OSRM_BIKE_URL =
-  "https://routing.openstreetmap.de/routed-bike/route/v1/driving/{fromLng},{fromLat};{toLng},{toLat}?overview=full&geometries=geojson";
+  "https://routing.openstreetmap.de/routed-bike/route/v1/driving/{fromLng},{fromLat};{toLng},{toLat}?overview=full&geometries=geojson&steps=true";
+
+export interface BikeRouteStep {
+  instruction: string;
+  streetName: string;
+  distanceMeters: number;
+  durationSeconds: number;
+}
 
 export interface BikeRouteResult {
   path: GeoPoint[];
   distanceMeters: number;
   durationSeconds: number;
   provider: string;
+  steps: BikeRouteStep[];
 }
 
 export interface BikeRouteQuery {
@@ -29,7 +37,7 @@ export function roundCoord(value: number, decimals = 5): number {
 export function youbikeBikeRouteCacheKey(from: GeoPoint, to: GeoPoint): string {
   const a = `${roundCoord(from.latitude)},${roundCoord(from.longitude)}`;
   const b = `${roundCoord(to.latitude)},${roundCoord(to.longitude)}`;
-  return `cache:youbike:route:v1:${a}:${b}`;
+  return `cache:youbike:route:v2:${a}:${b}`;
 }
 
 export function parseBikeRouteQuery(query: {
@@ -70,6 +78,78 @@ export function buildOsrmBikeUrl(
     .replaceAll("{toLng}", String(to.longitude));
 }
 
+function maneuverInstruction(type: string, modifier: string): string {
+  const mod = modifier.replaceAll("_", " ").replaceAll("-", " ").trim();
+  switch (type) {
+    case "depart":
+      return mod ? `Head ${mod}` : "Head";
+    case "arrive":
+      return "Arrive";
+    case "continue":
+    case "new name":
+      return mod ? `Continue ${mod}` : "Continue";
+    case "roundabout":
+    case "rotary":
+    case "exit roundabout":
+    case "exit rotary":
+      return "Roundabout";
+    case "merge":
+      return mod ? `Merge ${mod}` : "Merge";
+    case "fork":
+      return mod ? `Keep ${mod}` : "Fork";
+    case "end of road":
+    case "turn":
+      return mod ? `Turn ${mod}` : "Turn";
+    default:
+      if (!mod) return type ? type.charAt(0).toUpperCase() + type.slice(1) : "Continue";
+      return mod.charAt(0).toUpperCase() + mod.slice(1);
+  }
+}
+
+function parseOsrmSteps(route: {
+  legs?: Array<{ steps?: unknown }>;
+}): BikeRouteStep[] {
+  const steps: BikeRouteStep[] = [];
+  for (const leg of route.legs ?? []) {
+    if (!Array.isArray(leg.steps)) continue;
+    for (const raw of leg.steps) {
+      if (!raw || typeof raw !== "object") continue;
+      const step = raw as {
+        name?: unknown;
+        distance?: unknown;
+        duration?: unknown;
+        maneuver?: { type?: unknown; modifier?: unknown };
+      };
+      const streetName = typeof step.name === "string" ? step.name.trim() : "";
+      const type =
+        typeof step.maneuver?.type === "string" ? step.maneuver.type : "";
+      const modifier =
+        typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : "";
+      if (type === "notification") continue;
+      const distanceMeters =
+        typeof step.distance === "number" && Number.isFinite(step.distance)
+          ? step.distance
+          : 0;
+      if (type !== "depart" && type !== "arrive" && !streetName && distanceMeters < 1) {
+        continue;
+      }
+      const instruction = maneuverInstruction(type, modifier);
+      if (!instruction && !streetName) continue;
+      const durationSeconds =
+        typeof step.duration === "number" && Number.isFinite(step.duration)
+          ? Math.round(step.duration)
+          : 0;
+      steps.push({
+        instruction: instruction || streetName,
+        streetName,
+        distanceMeters,
+        durationSeconds,
+      });
+    }
+  }
+  return steps;
+}
+
 function asLngLatPair(value: unknown): GeoPoint | null {
   if (!Array.isArray(value) || value.length < 2) return null;
   const longitude = Number(value[0]);
@@ -96,7 +176,14 @@ export function parseOsrmRoute(
     }>;
   };
   if (root.code !== undefined && root.code !== "Ok") return null;
-  const route = root.routes?.[0];
+  const route = root.routes?.[0] as
+    | {
+        distance?: unknown;
+        duration?: unknown;
+        geometry?: { type?: unknown; coordinates?: unknown };
+        legs?: Array<{ steps?: unknown }>;
+      }
+    | undefined;
   const coordinates = route?.geometry?.coordinates;
   if (!Array.isArray(coordinates)) return null;
   const path = coordinates
@@ -118,5 +205,6 @@ export function parseOsrmRoute(
     distanceMeters,
     durationSeconds,
     provider,
+    steps: route ? parseOsrmSteps(route) : [],
   };
 }
