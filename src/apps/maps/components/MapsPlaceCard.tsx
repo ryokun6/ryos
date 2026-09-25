@@ -423,18 +423,8 @@ function PlaceCardMoreMenu({
         {homeWorkItems.map((item) => {
           if (item === "setHome") {
             return (
-              <DropdownMenuItem
-                key={item}
-                aria-pressed={isHome}
-                onSelect={() => onSetHome(place)}
-              >
-                <House
-                  weight={
-                    isHome
-                      ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                      : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-                  }
-                />
+              <DropdownMenuItem key={item} onSelect={() => onSetHome(place)}>
+                <House weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
                 {t("apps.maps.placeCard.setHome", {
                   defaultValue: "Set as Home",
                 })}
@@ -443,18 +433,8 @@ function PlaceCardMoreMenu({
           }
           if (item === "setWork") {
             return (
-              <DropdownMenuItem
-                key={item}
-                aria-pressed={isWork}
-                onSelect={() => onSetWork(place)}
-              >
-                <Briefcase
-                  weight={
-                    isWork
-                      ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                      : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-                  }
-                />
+              <DropdownMenuItem key={item} onSelect={() => onSetWork(place)}>
+                <Briefcase weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
                 {t("apps.maps.placeCard.setWork", {
                   defaultValue: "Set as Work",
                 })}
