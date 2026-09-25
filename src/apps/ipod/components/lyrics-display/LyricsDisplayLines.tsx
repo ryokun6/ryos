@@ -11,6 +11,7 @@ import { getVariants } from "./animationVariants";
 import { getLyricsTextAlign } from "./lyricsAlignmentUtils";
 import { LyricsLineRowContent } from "./LyricsLineRowContent";
 import type { LyricsDisplayViewModel } from "./useLyricsDisplayController";
+import { useInterludeHandoffEpoch } from "./useInterludeHandoffEpoch";
 
 type LyricsDisplayLinesProps = {
   vm: LyricsDisplayViewModel;
@@ -33,6 +34,7 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
     isGradientStyle,
     textSizeClass,
     lineHeightClass,
+    gapClass,
     fontClassName,
     interactive,
     onSeekToTime,
@@ -49,7 +51,22 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
     glowShadowHighlight,
   } = vm;
 
+  const interludeOnScreen =
+    introInterludeLead != null ||
+    gapInterludeLead != null ||
+    visibleLines.some(isInterludePlaceholderLine);
+  // Remount when dots end so popLayout cannot keep the exiting dots (or the
+  // pre-gap rows) painted on top of the incoming line. skipEnter holds the
+  // new rows in their resting pose for that one commit.
+  const { epoch: handoffEpoch, skipEnter } =
+    useInterludeHandoffEpoch(interludeOnScreen);
+
   return (
+    <div
+      key={handoffEpoch}
+      data-lyrics-handoff={handoffEpoch}
+      className={`flex w-full max-w-full flex-col items-center ${gapClass}`}
+    >
     <AnimatePresence mode="popLayout">
       {visibleLines.map((line, index) => {
         const isInterludePlaceholder = isInterludePlaceholderLine(line);
@@ -170,12 +187,13 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
         return (
           <motion.div
             key={line.startTimeMs}
-            layout="position"
-            initial="initial"
+            layout={skipEnter ? false : "position"}
+            initial={skipEnter ? false : "initial"}
             animate="animate"
             exit="exit"
             variants={variants}
             transition={dynamicTransition}
+            data-lyric-line={isInterludePlaceholder ? "dots" : line.words}
             className={`px-2 md:px-4 whitespace-pre-wrap break-words max-w-full text-white`}
             style={{
               textAlign: lineTextAlign as CanvasTextAlign,
@@ -236,5 +254,6 @@ export function LyricsDisplayLines({ vm }: LyricsDisplayLinesProps) {
         );
       })}
     </AnimatePresence>
+    </div>
   );
 }

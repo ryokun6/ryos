@@ -11,6 +11,14 @@ import {
   computeAlternatingVisibleLines,
 } from "./lyricsAlignmentUtils";
 
+function sameLineIds(left: LyricLine[], right: LyricLine[]): boolean {
+  if (left.length !== right.length) return false;
+  for (let i = 0; i < left.length; i++) {
+    if (left[i]?.startTimeMs !== right[i]?.startTimeMs) return false;
+  }
+  return true;
+}
+
 export function useLyricsVisibleLines({
   alignment,
   displayOriginalLines,
@@ -32,6 +40,27 @@ export function useLyricsVisibleLines({
 
   const prevLinesRef = useRef<LyricLine[]>(displayOriginalLines);
   const prevCurrentLineRef = useRef(actualCurrentLine);
+
+  // Swap alternating rows during render when playback steps out of a long gap.
+  // A layout effect runs too late if this render also restarts for the presence
+  // remount: that commit would paint the pre-gap pair, then AnimatePresence
+  // would keep the finished lyric mounted for its exit.
+  if (
+    alignment === LyricsAlignment.Alternating &&
+    didAdvancePastLongInterlude(
+      displayOriginalLines,
+      prevCurrentLineRef.current,
+      actualCurrentLine
+    )
+  ) {
+    const nextAltLines = computeAlternatingVisibleLines(
+      displayOriginalLines,
+      actualCurrentLine
+    );
+    if (!sameLineIds(nextAltLines, altLines)) {
+      setAltLines(nextAltLines);
+    }
+  }
 
   // Layout effect so the row swap lands before paint. A passive effect would
   // paint one frame of the pre-gap pair (finished lyric back in the second slot)
@@ -106,11 +135,23 @@ export function useLyricsVisibleLines({
       return currentActualLine ? [currentActualLine] : [];
     }
 
-    return displayOriginalLines.slice(
-      Math.max(0, actualCurrentLine - 1),
-      actualCurrentLine + 2
-    );
-  }, [displayOriginalLines, actualCurrentLine, alignment]);
+    // Focus three normally keeps the finished line in the previous slot. After a
+    // long gap that line was already dropped for the delay dots; putting it back
+    // the moment the next line starts flashes it under the new lyric.
+    const omitCompletedLine =
+      alignment === LyricsAlignment.FocusThree &&
+      showInterludeEllipsis &&
+      didAdvancePastLongInterlude(
+        displayOriginalLines,
+        actualCurrentLine - 1,
+        actualCurrentLine
+      );
+    const start = omitCompletedLine
+      ? actualCurrentLine
+      : Math.max(0, actualCurrentLine - 1);
+    const end = omitCompletedLine ? actualCurrentLine + 3 : actualCurrentLine + 2;
+    return displayOriginalLines.slice(start, end);
+  }, [displayOriginalLines, actualCurrentLine, alignment, showInterludeEllipsis]);
 
   const visibleLines = useMemo(
     () =>
