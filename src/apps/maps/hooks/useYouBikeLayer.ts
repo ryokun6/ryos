@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MutableRefObject,
@@ -14,6 +15,7 @@ import {
   bboxIntersectsTaiwan,
   filterStationsInBBox,
   isInTaiwan,
+  isValidCoordinate,
   padBBox,
   regionFittingPoints,
   type FittedMapRegion,
@@ -43,7 +45,11 @@ import {
   type YouBikeMapScheme,
 } from "../youbike/stationVisuals";
 import { fetchYouBikeBikeRoute } from "../youbike/fetchBikeRoute";
-import { youbikeStepFocusRegion } from "../youbike/routeSteps";
+import {
+  listYouBikeRouteSteps,
+  youbikeNextStepIndex,
+  youbikeStepFocusRegion,
+} from "../youbike/routeSteps";
 import {
   extractMapKitRouteMetrics,
   extractMapKitRoutePath,
@@ -63,6 +69,10 @@ import { readMapRegion } from "../components/maps-app/mapRegionUtils";
 const REGION_FETCH_DEBOUNCE_MS = 280;
 /** Extra margin so a short pan does not flash empty then refill. */
 const RENDER_PAD_FACTOR = 0.1;
+/** Locate Me can flip on before the first user-location-change event. */
+const USER_LOCATION_POLL_MS = 2000;
+/** Ignore sub-meter jitter so step progress does not re-render every fix. */
+const USER_LOCATION_DEDUP_DEG = 1e-5;
 
 export interface UseYouBikeLayerArgs {
   enabled: boolean;
@@ -288,6 +298,8 @@ export function useYouBikeLayer({
   const [routePlan, setRoutePlan] = useState<YouBikeRoutePlan | null>(null);
   const [isRouting, setIsRouting] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [locationTracking, setLocationTracking] = useState(false);
+  const [trackedUser, setTrackedUser] = useState<GeoPoint | null>(null);
 
   const annotationsRef = useRef<
     Map<
@@ -854,6 +866,69 @@ export function useYouBikeLayer({
   }, [clearRouteOverlays]);
 
   useEffect(() => {
+    if (!routePlan || mapReadyTick === 0) {
+      setLocationTracking(false);
+      setTrackedUser(null);
+      return;
+    }
+    const map = mapInstanceRef.current;
+    if (!map) {
+      setLocationTracking(false);
+      setTrackedUser(null);
+      return;
+    }
+
+    let lastLat = Number.NaN;
+    let lastLng = Number.NaN;
+    const readUserLocation = () => {
+      const tracking = map.showsUserLocation || map.tracksUserLocation;
+      setLocationTracking(tracking);
+      if (!tracking) {
+        lastLat = Number.NaN;
+        lastLng = Number.NaN;
+        setTrackedUser(null);
+        return;
+      }
+      const coordinate = map.userLocation?.coordinate;
+      if (
+        !coordinate ||
+        !isValidCoordinate({
+          latitude: coordinate.latitude,
+          longitude: coordinate.longitude,
+        })
+      ) {
+        setTrackedUser(null);
+        return;
+      }
+      if (
+        Math.abs(coordinate.latitude - lastLat) < USER_LOCATION_DEDUP_DEG &&
+        Math.abs(coordinate.longitude - lastLng) < USER_LOCATION_DEDUP_DEG
+      ) {
+        return;
+      }
+      lastLat = coordinate.latitude;
+      lastLng = coordinate.longitude;
+      setTrackedUser({
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+      });
+    };
+
+    readUserLocation();
+    map.addEventListener?.("user-location-change", readUserLocation);
+    const timer = window.setInterval(readUserLocation, USER_LOCATION_POLL_MS);
+    return () => {
+      map.removeEventListener?.("user-location-change", readUserLocation);
+      window.clearInterval(timer);
+    };
+  }, [mapInstanceRef, mapReadyTick, routePlan]);
+
+  const activeStepIndex = useMemo(() => {
+    if (!locationTracking || !trackedUser || !routePlan) return null;
+    return youbikeNextStepIndex(listYouBikeRouteSteps(routePlan), trackedUser);
+  }, [locationTracking, routePlan, trackedUser]);
+
+  useEffect(() => {
     const ids = new Set<string>();
     if (routePlan?.originStation?.id) ids.add(routePlan.originStation.id);
     if (routePlan?.destinationStation?.id) {
@@ -883,5 +958,6 @@ export function useYouBikeLayer({
     handleYouBikeDirections,
     handleClearYouBikeRoute,
     focusYouBikeStep,
+    activeStepIndex,
   };
 }

@@ -60,6 +60,7 @@ export function MapsAppComponent({
     handleYouBikeDirections,
     handleClearYouBikeRoute,
     focusYouBikeStep,
+    youbikeActiveStepIndex,
     youbikeOverlayEnabled,
     setYoubikeOverlayEnabled,
     youbikeRoutePlan,
@@ -190,6 +191,7 @@ export function MapsAppComponent({
                 error={youbikeRouteError}
                 onClose={handleClearYouBikeRoute}
                 onSelectStep={focusYouBikeStep}
+                activeStepIndex={youbikeActiveStepIndex}
               />
             ) : (
               <MapsPlaceCard

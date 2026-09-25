@@ -30,7 +30,11 @@ export interface MapsYouBikeRouteCardProps {
   error: string | null;
   onClose: () => void;
   onSelectStep?: (step: YouBikeRouteStep) => void;
+  /** Step the rider is on while Locate Me is tracking. Null leaves tap styling only. */
+  activeStepIndex?: number | null;
 }
+
+type StepProgress = "idle" | "past" | "current" | "later";
 
 function formatDuration(seconds: number): string {
   const rounded = Math.max(1, Math.round(seconds / 60));
@@ -69,12 +73,14 @@ function stepsScrollMask(fadeTop: boolean, fadeBottom: boolean): string | undefi
 function RouteStepRow({
   step,
   index,
-  selected,
+  progress,
+  tapped,
   onSelect,
 }: {
   step: YouBikeRouteStep;
   index: number;
-  selected: boolean;
+  progress: StepProgress;
+  tapped: boolean;
   onSelect: (step: YouBikeRouteStep, index: number) => void;
 }) {
   const { t } = useTranslation();
@@ -89,11 +95,12 @@ function RouteStepRow({
           distance,
         })
       : distance;
+  const highlighted = progress === "current" || (progress === "idle" && tapped);
   return (
     <li>
       <button
         type="button"
-        aria-current={selected ? "step" : undefined}
+        aria-current={highlighted ? "step" : undefined}
         aria-label={t("apps.maps.youbike.stepAria", {
           defaultValue: "Step {{index}}: {{label}}",
           index: index + 1,
@@ -103,9 +110,11 @@ function RouteStepRow({
         className={cn(
           "flex w-full items-start gap-2 rounded-os px-1.5 py-1 text-left text-[11px] leading-snug",
           "focus:outline-none focus-visible:ring-1",
-          selected
+          highlighted
             ? "bg-os-selection-bg text-os-selection-text"
-            : "text-os-text-primary hover:bg-os-selection-bg/15"
+            : "text-os-text-primary hover:bg-os-selection-bg/15",
+          !highlighted && tapped && "bg-os-selection-bg/20",
+          progress === "past" && "opacity-40"
         )}
       >
         <Icon
@@ -113,12 +122,12 @@ function RouteStepRow({
           weight="fill"
           className={cn(
             "mt-0.5 shrink-0",
-            selected ? "text-os-selection-text" : "text-os-text-secondary"
+            highlighted ? "text-os-selection-text" : "text-os-text-secondary"
           )}
         />
         <div className="min-w-0">
           <div className="font-medium">{label}</div>
-          <div className={selected ? "opacity-80" : "text-os-text-secondary"}>
+          <div className={highlighted ? "opacity-80" : "text-os-text-secondary"}>
             {meta}
           </div>
         </div>
@@ -127,13 +136,22 @@ function RouteStepRow({
   );
 }
 
+function stepProgress(index: number, activeStepIndex: number | null): StepProgress {
+  if (activeStepIndex == null) return "idle";
+  if (index < activeStepIndex) return "past";
+  if (index === activeStepIndex) return "current";
+  return "later";
+}
+
 function YouBikeStepsList({
   steps,
   selectedIndex,
+  activeStepIndex,
   onSelect,
 }: {
   steps: YouBikeRouteStep[];
   selectedIndex: number | null;
+  activeStepIndex: number | null;
   onSelect: (step: YouBikeRouteStep, index: number) => void;
 }) {
   const { t } = useTranslation();
@@ -153,8 +171,21 @@ function YouBikeStepsList({
   }, []);
 
   useLayoutEffect(() => {
+    const list = scrollRef.current;
+    if (list && activeStepIndex != null) {
+      const row = list.children.item(activeStepIndex);
+      if (row instanceof HTMLElement) {
+        const listRect = list.getBoundingClientRect();
+        const rowRect = row.getBoundingClientRect();
+        if (rowRect.top < listRect.top) {
+          list.scrollTop -= listRect.top - rowRect.top;
+        } else if (rowRect.bottom > listRect.bottom) {
+          list.scrollTop += rowRect.bottom - listRect.bottom;
+        }
+      }
+    }
     updateFade();
-  }, [updateFade, steps.length]);
+  }, [activeStepIndex, steps.length, updateFade]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -184,7 +215,8 @@ function YouBikeStepsList({
           key={`${step.mode}-${index}`}
           step={step}
           index={index}
-          selected={selectedIndex === index}
+          progress={stepProgress(index, activeStepIndex)}
+          tapped={selectedIndex === index}
           onSelect={onSelect}
         />
       ))}
@@ -198,6 +230,7 @@ export function MapsYouBikeRouteCard({
   error,
   onClose,
   onSelectStep,
+  activeStepIndex = null,
 }: MapsYouBikeRouteCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
@@ -300,6 +333,7 @@ export function MapsYouBikeRouteCard({
               <YouBikeStepsList
                 steps={steps}
                 selectedIndex={selectedIndex}
+                activeStepIndex={activeStepIndex}
                 onSelect={handleSelectStep}
               />
             )}

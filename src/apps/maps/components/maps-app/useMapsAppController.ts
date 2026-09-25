@@ -1264,6 +1264,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleYouBikeDirections,
     handleClearYouBikeRoute: youbike.handleClearYouBikeRoute,
     focusYouBikeStep: youbike.focusYouBikeStep,
+    youbikeActiveStepIndex: youbike.activeStepIndex,
     youbikeOverlayEnabled,
     setYoubikeOverlayEnabled,
     youbikeRoutePlan: youbike.routePlan,

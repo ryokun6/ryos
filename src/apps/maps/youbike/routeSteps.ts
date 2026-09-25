@@ -199,3 +199,69 @@ export function formatYouBikeStepLabel(step: {
 export function listYouBikeRouteSteps(plan: YouBikeRoutePlan): YouBikeRouteStep[] {
   return plan.legs.flatMap((leg) => leg.steps ?? []);
 }
+
+/** Farther than this from the route, step progress stays off so the list is not dimmed. */
+export const YOUBIKE_STEP_OFF_ROUTE_METERS = 80;
+/** At a maneuver, a slightly later step wins so arrival advances the highlight. */
+const STEP_PROGRESS_TIE_METERS = 8;
+const METERS_PER_DEG_LAT = 111195;
+
+function distanceToSegmentMeters(user: GeoPoint, start: GeoPoint, end: GeoPoint): number {
+  const midLat = ((start.latitude + end.latitude) / 2) * (Math.PI / 180);
+  const metersPerDegLng = METERS_PER_DEG_LAT * Math.cos(midLat);
+  const bx = (end.longitude - start.longitude) * metersPerDegLng;
+  const by = (end.latitude - start.latitude) * METERS_PER_DEG_LAT;
+  const ux = (user.longitude - start.longitude) * metersPerDegLng;
+  const uy = (user.latitude - start.latitude) * METERS_PER_DEG_LAT;
+  const len2 = bx * bx + by * by;
+  let t = 0;
+  if (len2 > 1) {
+    t = (ux * bx + uy * by) / len2;
+    if (t < 0) t = 0;
+    else if (t > 1) t = 1;
+  }
+  return Math.hypot(ux - bx * t, uy - by * t);
+}
+
+function distanceToStepMeters(user: GeoPoint, step: YouBikeRouteStep): number | null {
+  const points = stepPoints(step);
+  if (points.length === 0) return null;
+  if (points.length === 1) {
+    return distanceToSegmentMeters(user, points[0]!, points[0]!);
+  }
+  let best = Infinity;
+  for (let i = 1; i < points.length; i += 1) {
+    const distance = distanceToSegmentMeters(user, points[i - 1]!, points[i]!);
+    if (distance < best) best = distance;
+  }
+  return best;
+}
+
+/**
+ * Step the rider is currently on. Earlier steps are past; the returned index
+ * is the one to highlight. Null when location is off the route or unknown.
+ */
+export function youbikeNextStepIndex(
+  steps: YouBikeRouteStep[],
+  user: GeoPoint
+): number | null {
+  if (!isValidCoordinate(user) || steps.length === 0) return null;
+  let bestDistance = Infinity;
+  let bestIndex = -1;
+  for (let index = 0; index < steps.length; index += 1) {
+    const distance = distanceToStepMeters(user, steps[index]!);
+    if (distance == null || !Number.isFinite(distance)) continue;
+    if (bestIndex < 0 || distance + STEP_PROGRESS_TIE_METERS < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    } else if (
+      index > bestIndex &&
+      distance <= bestDistance + STEP_PROGRESS_TIE_METERS
+    ) {
+      if (distance < bestDistance) bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+  if (bestIndex < 0 || bestDistance > YOUBIKE_STEP_OFF_ROUTE_METERS) return null;
+  return bestIndex;
+}

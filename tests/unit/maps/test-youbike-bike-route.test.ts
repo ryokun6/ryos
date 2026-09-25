@@ -13,8 +13,10 @@ import {
 import {
   formatYouBikeStepLabel,
   localizeYouBikeStepLabel,
+  youbikeNextStepIndex,
   youbikeStepFocusRegion,
 } from "../../../src/apps/maps/youbike/routeSteps";
+import type { YouBikeRouteStep } from "../../../src/apps/maps/youbike/types";
 
 const TAIPEI_101 = { latitude: 25.03396, longitude: 121.56447 };
 const MAIN_STATION = { latitude: 25.04792, longitude: 121.51708 };
@@ -266,6 +268,42 @@ describe("MapKit cycling directions", () => {
         translate
       )
     ).toBe("右轉進入仁愛路");
+  });
+
+  test("highlights the step under the rider and ignores an off-route fix", () => {
+    const step = (
+      path: Array<{ latitude: number; longitude: number }>
+    ): YouBikeRouteStep => ({
+      mode: "bike",
+      instruction: "Continue",
+      streetName: "",
+      distanceMeters: 100,
+      durationSeconds: 40,
+      location: path[0],
+      path,
+    });
+    const steps = [
+      step([
+        { latitude: 25.033, longitude: 121.54 },
+        { latitude: 25.034, longitude: 121.54 },
+      ]),
+      step([
+        { latitude: 25.034, longitude: 121.54 },
+        { latitude: 25.036, longitude: 121.54 },
+      ]),
+    ];
+    expect(
+      youbikeNextStepIndex(steps, { latitude: 25.033, longitude: 121.54 })
+    ).toBe(0);
+    expect(
+      youbikeNextStepIndex(steps, { latitude: 25.035, longitude: 121.54 })
+    ).toBe(1);
+    expect(
+      youbikeNextStepIndex(steps, { latitude: 25.034, longitude: 121.54 })
+    ).toBe(1);
+    expect(
+      youbikeNextStepIndex(steps, { latitude: 25.05, longitude: 121.5 })
+    ).toBeNull();
   });
 
   test("reads path or WWDC polyline overlay points", () => {
