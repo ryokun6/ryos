@@ -87,7 +87,10 @@ function clampDockCount(value: number): number {
 }
 
 /** Selected-pin label: bikes / total docks, never the station name. */
-export function youbikePinTitle(station: YouBikeStation): string {
+export function youbikePinTitle(station: {
+  bikesAvailable: number;
+  totalDocks: number;
+}): string {
   const bikes = clampDockCount(station.bikesAvailable);
   const total = clampDockCount(station.totalDocks);
   return `${bikes}/${total}`;
@@ -116,7 +119,7 @@ export function youbikeDotOpacity(emphasis: YouBikeDotEmphasis): string {
   return youbikeDotIsPrimary(emphasis) ? "1" : YOUBIKE_DOT_DIM_OPACITY;
 }
 
-/** Hide the dense background dots while a YouBike dock is selected. */
+/** Hide only the tapped dock; the MapKit POI replaces it. Other docks stay. */
 export function youbikeShouldPaintDot(
   stationId: string,
   options: {
@@ -124,11 +127,9 @@ export function youbikeShouldPaintDot(
     endpointIds?: Iterable<string>;
   } = {}
 ): boolean {
-  const endpoints = new Set(options.endpointIds ?? []);
-  if (endpoints.has(stationId)) return true;
   const selectedId = options.selectedYoubikeId ?? null;
-  if (!selectedId) return true;
-  return stationId === selectedId;
+  if (selectedId && stationId === selectedId) return false;
+  return true;
 }
 
 export function createYouBikeDotElement(

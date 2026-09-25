@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { CITY_LEVEL_SPAN_DEG, FOCUS_PLACE_SPAN_DEG } from "../../../src/apps/maps/components/maps-app/mapsUiState";
 import { CITY_LEVEL_MAX_SPAN_DEG } from "../../../src/apps/maps/utils/mapMarkerClustering";
 import { poiVisualGradient } from "../../../src/apps/maps/utils/poiVisuals";
-import { shouldDropNamedSearchPin } from "../../../src/apps/maps/youbike/place";
+import { youbikeMapPoiFields, youbikeStationToSavedPlace } from "../../../src/apps/maps/youbike/place";
 import type { YouBikeStation } from "../../../src/apps/maps/youbike/types";
 import {
   YOUBIKE_COLOR_AVAILABLE,
@@ -81,21 +81,26 @@ describe("youbikePinTitle", () => {
   });
 });
 
-describe("shouldDropNamedSearchPin", () => {
-  test("skips the named balloon for YouBike overlay docks", () => {
+describe("youbikeMapPoiFields", () => {
+  test("labels the MapKit POI with bikes/total and not the station name", () => {
+    const place = youbikeStationToSavedPlace(
+      station({
+        name: "YouBike2.0_捷運大安站(2號出口)",
+        nameEn: "MRT Da'an Sta (Exit 2)",
+        bikesAvailable: 4,
+        totalDocks: 60,
+      }),
+      "en"
+    );
+    expect(youbikeMapPoiFields(place)).toEqual({
+      title: "4/60",
+      subtitle: "",
+      calloutEnabled: false,
+    });
+    expect(youbikeMapPoiFields(place)?.title).not.toContain("Da'an");
     expect(
-      shouldDropNamedSearchPin({
-        id: "youbike:taipei:500101001",
-        category: "youbike",
-        youbike: {},
-      })
-    ).toBe(false);
-    expect(
-      shouldDropNamedSearchPin({
-        id: "mk:cafe-1",
-        category: "cafe",
-      })
-    ).toBe(true);
+      youbikeMapPoiFields({ id: "mk:cafe-1", name: "M One Cafe", category: "cafe" })
+    ).toBeNull();
   });
 });
 
@@ -197,21 +202,27 @@ describe("YouBike compact dots", () => {
     );
   });
 
-  test("hides other small dots while a dock is selected", () => {
+  test("hides the tapped dock and keeps the other docks", () => {
     const selected = "youbike:taipei:a";
     const endpoints = ["youbike:taipei:start", "youbike:taipei:end"];
     expect(
       youbikeShouldPaintDot("youbike:taipei:a", { selectedYoubikeId: selected })
-    ).toBe(true);
+    ).toBe(false);
     expect(
       youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: selected })
-    ).toBe(false);
+    ).toBe(true);
     expect(
       youbikeShouldPaintDot("youbike:taipei:b", { selectedYoubikeId: null })
     ).toBe(true);
     expect(
       youbikeShouldPaintDot("youbike:taipei:start", {
-        selectedYoubikeId: selected,
+        selectedYoubikeId: "youbike:taipei:start",
+        endpointIds: endpoints,
+      })
+    ).toBe(false);
+    expect(
+      youbikeShouldPaintDot("youbike:taipei:end", {
+        selectedYoubikeId: "youbike:taipei:start",
         endpointIds: endpoints,
       })
     ).toBe(true);

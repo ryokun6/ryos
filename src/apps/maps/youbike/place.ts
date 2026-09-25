@@ -1,5 +1,6 @@
 import type { SavedPlace } from "../utils/types";
 import { displayStationAddress, displayStationName } from "./parseStations";
+import { youbikePinTitle } from "./stationVisuals";
 import type { YouBikeStation } from "./types";
 
 export function youbikeStationToSavedPlace(
@@ -30,9 +31,27 @@ export function isYouBikePlace(place: { id?: string; category?: string; youbike?
   return place.category === "youbike" || !!place.youbike || (place.id?.startsWith("youbike:") ?? false);
 }
 
-/** Overlay docks already have a compact annotation — don't stack a named balloon. */
-export function shouldDropNamedSearchPin(
-  place: { id?: string; category?: string; youbike?: unknown } | null
-): boolean {
-  return !isYouBikePlace(place);
+type YouBikePoiPlace = {
+  id?: string;
+  name?: string;
+  subtitle?: string;
+  category?: string;
+  youbike?: { bikesAvailable: number; totalDocks: number } | null;
+} | null;
+
+/**
+ * Selected-dock MapKit marker copy. The balloon title is bikes/total;
+ * the station name stays on the place card.
+ */
+export function youbikeMapPoiFields(place: YouBikePoiPlace): {
+  title: string;
+  subtitle: string;
+  calloutEnabled: boolean;
+} | null {
+  if (!place || !isYouBikePlace(place) || !place.youbike) return null;
+  return {
+    title: youbikePinTitle(place.youbike),
+    subtitle: "",
+    calloutEnabled: false,
+  };
 }

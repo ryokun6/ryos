@@ -25,7 +25,7 @@ import {
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
 import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
-import { shouldDropNamedSearchPin } from "../../youbike/place";
+import { youbikeMapPoiFields } from "../../youbike/place";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
   getMapKit,
@@ -495,6 +495,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       category?: string;
       /** When set, passed through to MapKit to supersede the built-in POI. */
       mapKitPlace?: MapKitPlace;
+      youbike?: {
+        bikesAvailable: number;
+        totalDocks: number;
+      };
     }) => {
       const mk = getMapKit();
       const map = mapInstanceRef.current;
@@ -515,19 +519,26 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       }
 
       const coord = new mk.Coordinate(place.latitude, place.longitude);
-      // YouBike overlay already paints the dock. A search balloon here
-      // would stack a station-name label on top of the compact dot.
-      if (!alreadySaved && shouldDropNamedSearchPin(place)) {
+      const youbikePoi = youbikeMapPoiFields(place);
+      if (!alreadySaved) {
         dispatchUi({ type: "setSelectedResultId", id: place.id });
         const annotation = new mk.MarkerAnnotation(
           coord,
           withMapPlaceClustering(
             getPoiMarkerAnnotationOptions(
-              place.name,
-              place.subtitle ?? "",
+              youbikePoi?.title ?? place.name,
+              youbikePoi ? "" : (place.subtitle ?? ""),
               place.category,
               {
-                ...(place.mapKitPlace ? { place: place.mapKitPlace } : {}),
+                ...(place.mapKitPlace && !youbikePoi
+                  ? { place: place.mapKitPlace }
+                  : {}),
+                ...(youbikePoi
+                  ? {
+                      calloutEnabled: false,
+                      subtitleVisibility: "hidden",
+                    }
+                  : {}),
               }
             ),
             clusteringIdForCurrentMapRegion()
