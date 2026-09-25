@@ -3366,7 +3366,8 @@
         "removeFavorite": "Eliminar de Favoritos",
         "setHome": "Establecer como Casa",
         "setWork": "Establecer como Trabajo",
-        "work": "Trabajo"
+        "work": "Trabajo",
+        "moreActions": "Más"
       },
       "places": {
         "allEmpty": "Busca un lugar y usa las acciones de la tarjeta para guardarlo como Casa, Trabajo o Favorito.",

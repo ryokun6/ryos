@@ -3366,7 +3366,8 @@
         "removeFavorite": "Supprimer des favoris",
         "setHome": "Définir comme domicile",
         "setWork": "Définir comme bureau",
-        "work": "Bureau"
+        "work": "Bureau",
+        "moreActions": "Plus"
       },
       "places": {
         "allEmpty": "Recherchez un lieu et utilisez les actions de la fiche pour l’enregistrer comme domicile, bureau ou favori.",

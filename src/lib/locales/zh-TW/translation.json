@@ -3363,7 +3363,8 @@
         "removeFavorite": "從最愛移除",
         "setHome": "設為住家",
         "setWork": "設為公司",
-        "work": "公司"
+        "work": "公司",
+        "moreActions": "更多"
       },
       "places": {
         "allEmpty": "搜尋地點並使用卡片動作將其儲存為「住家」、「公司」或「最愛」。",

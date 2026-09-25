@@ -3363,7 +3363,8 @@
         "removeFavorite": "从个人收藏中移除",
         "setHome": "设为家",
         "setWork": "设为工作地点",
-        "work": "工作"
+        "work": "工作",
+        "moreActions": "更多"
       },
       "places": {
         "allEmpty": "搜索地点，然后使用地点卡上的操作将其设为「家」、「工作」，或添加到个人收藏。",

@@ -4569,7 +4569,8 @@
         "addFavorite": "Add to Favorites",
         "removeFavorite": "Remove from Favorites",
         "favorite": "Favorite",
-        "favorited": "Favorited"
+        "favorited": "Favorited",
+        "moreActions": "More"
       },
       "poiCategory": {
         "restaurant": "Restaurant",

@@ -3,6 +3,7 @@ import { motion, AnimatePresence, type Transition } from "motion/react";
 import {
   Bicycle,
   Briefcase,
+  DotsThree,
   House,
   NavigationArrow,
   Star,
@@ -18,6 +19,12 @@ import {
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   osCardClassName,
   osSubtleIconButtonClassName,
@@ -340,42 +347,6 @@ function PlaceCardActions({
         </Button>
       )}
 
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        onClick={() => onToggleFavorite(place)}
-        aria-pressed={isFavorite}
-        title={
-          isFavorite
-            ? t("apps.maps.placeCard.removeFavorite", {
-                defaultValue: "Remove from Favorites",
-              })
-            : t("apps.maps.placeCard.addFavorite", {
-                defaultValue: "Add to Favorites",
-              })
-        }
-        className={AQUA_ICON_BUTTON_PADDING_CLASS}
-      >
-        <Star
-          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-          weight={
-            isFavorite
-              ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-              : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-          }
-        />
-        <span>
-          {isFavorite
-            ? t("apps.maps.placeCard.favorited", {
-                defaultValue: "Favorited",
-              })
-            : t("apps.maps.placeCard.favorite", {
-                defaultValue: "Favorite",
-              })}
-        </span>
-      </Button>
-
       {showHomeButton && (
         <Button
           type="button"
@@ -406,35 +377,88 @@ function PlaceCardActions({
         </Button>
       )}
 
-      {showWorkButton && (
-        <Button
+      <PlaceCardMoreMenu
+        place={place}
+        isFavorite={isFavorite}
+        isWork={isWork}
+        showWork={showWorkButton}
+        onSetWork={onSetWork}
+        onToggleFavorite={onToggleFavorite}
+        t={t}
+      />
+    </div>
+  );
+}
+
+function PlaceCardMoreMenu({
+  place,
+  isFavorite,
+  isWork,
+  showWork,
+  onSetWork,
+  onToggleFavorite,
+  t,
+}: {
+  place: SavedPlace;
+  isFavorite: boolean;
+  isWork: boolean;
+  showWork: boolean;
+  onSetWork: (place: SavedPlace) => void;
+  onToggleFavorite: (place: SavedPlace) => void;
+  t: ReturnType<typeof useTranslation>["t"];
+}) {
+  const { isMacOSTheme } = useThemeFlags();
+  const favoriteLabel = isFavorite
+    ? t("apps.maps.placeCard.favorited", { defaultValue: "Favorited" })
+    : t("apps.maps.placeCard.favorite", { defaultValue: "Favorite" });
+  const workLabel = isWork
+    ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
+    : t("apps.maps.placeCard.setWork", { defaultValue: "Set as Work" });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
           type="button"
-          variant={variant}
-          size="sm"
-          onClick={() => onSetWork(place)}
-          aria-pressed={isWork}
-          title={t("apps.maps.placeCard.setWork", {
-            defaultValue: "Set as Work",
+          title={t("apps.maps.placeCard.moreActions", { defaultValue: "More" })}
+          aria-label={t("apps.maps.placeCard.moreActions", {
+            defaultValue: "More",
           })}
-          className={AQUA_ICON_BUTTON_PADDING_CLASS}
+          className={cn(
+            "ml-auto inline-flex size-7 shrink-0 items-center justify-center rounded-full p-0",
+            "focus:outline-none focus-visible:ring-1",
+            isMacOSTheme
+              ? "aqua-button secondary !h-7 !w-7 !min-h-7 !min-w-7 !rounded-full !p-0"
+              : "border border-os-button-shadow bg-os-button-face text-os-text-primary active:bg-os-button-activeFace"
+          )}
         >
-          <Briefcase
-            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          <DotsThree size={18} weight="bold" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="top" align="end">
+        <DropdownMenuItem onSelect={() => onToggleFavorite(place)}>
+          <Star
             weight={
-              isWork
+              isFavorite
                 ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
                 : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
             }
           />
-          <span>
-            {isWork
-              ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
-              : t("apps.maps.placeCard.setWork", {
-                  defaultValue: "Set as Work",
-                })}
-          </span>
-        </Button>
-      )}
-    </div>
+          {favoriteLabel}
+        </DropdownMenuItem>
+        {showWork && (
+          <DropdownMenuItem onSelect={() => onSetWork(place)}>
+            <Briefcase
+              weight={
+                isWork
+                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+              }
+            />
+            {workLabel}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

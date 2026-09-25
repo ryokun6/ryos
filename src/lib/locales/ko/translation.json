@@ -3363,7 +3363,8 @@
         "removeFavorite": "즐겨찾기에서 제거",
         "setHome": "집으로 설정",
         "setWork": "직장으로 설정",
-        "work": "직장"
+        "work": "직장",
+        "moreActions": "더보기"
       },
       "places": {
         "allEmpty": "장소를 검색한 후 카드 동작을 사용하여 집, 직장 또는 즐겨찾기로 저장하세요.",

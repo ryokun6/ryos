@@ -3366,7 +3366,8 @@
         "removeFavorite": "Rimuovi dai preferiti",
         "setHome": "Imposta come Casa",
         "setWork": "Imposta come Lavoro",
-        "work": "Lavoro"
+        "work": "Lavoro",
+        "moreActions": "Altro"
       },
       "places": {
         "allEmpty": "Cerca un luogo e usa le azioni della scheda per salvarlo come Casa, Lavoro o Preferito.",

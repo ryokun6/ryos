@@ -3363,7 +3363,8 @@
         "removeFavorite": "Aus Favoriten entfernen",
         "setHome": "Als Privat festlegen",
         "setWork": "Als Arbeit festlegen",
-        "work": "Arbeit"
+        "work": "Arbeit",
+        "moreActions": "Mehr"
       },
       "places": {
         "allEmpty": "Suche nach einem Ort und verwende die Aktionen auf der Karte, um ihn als Privat, Arbeit oder Favorit zu speichern.",
