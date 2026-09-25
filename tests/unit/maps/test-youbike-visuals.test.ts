@@ -11,14 +11,18 @@ import {
   YOUBIKE_COLOR_LOW,
   YOUBIKE_DOT_DIM_OPACITY,
   YOUBIKE_DOT_DIM_SIZE_PX,
+  YOUBIKE_DOT_OUTLINE_COLOR,
+  YOUBIKE_DOT_OUTLINE_PX,
   YOUBIKE_DOT_SELECTED_SIZE_PX,
   YOUBIKE_DOT_SIZE_PX,
   YOUBIKE_MAX_RENDER_SPAN_DEG,
   YOUBIKE_POI_VISUAL,
   applyYouBikeDotAppearance,
   shouldRenderYouBikeOverlayForSpan,
+  youbikeDotFramePx,
   youbikeDotIsPrimary,
   youbikeDotOpacity,
+  youbikeDotOutline,
   youbikeDotSizePx,
   youbikePinTitle,
   youbikeShouldPaintDot,
@@ -124,21 +128,24 @@ describe("youbikeStationMarkerColor", () => {
 describe("YouBike compact dots", () => {
   test("stay small enough for dense city zoom", () => {
     expect(YOUBIKE_DOT_SIZE_PX).toBeLessThanOrEqual(6);
-    expect(YOUBIKE_DOT_DIM_SIZE_PX).toBe(YOUBIKE_DOT_SIZE_PX);
+    expect(YOUBIKE_DOT_DIM_SIZE_PX).toBeLessThan(YOUBIKE_DOT_SIZE_PX);
     expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeLessThanOrEqual(12);
     expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeGreaterThan(YOUBIKE_DOT_SIZE_PX);
   });
 
-  test("keeps browse and background docks dim; only route ends are full", () => {
-    expect(youbikeDotSizePx("dimmed")).toBe(YOUBIKE_DOT_DIM_SIZE_PX);
-    expect(youbikeDotSizePx("normal")).toBe(YOUBIKE_DOT_DIM_SIZE_PX);
-    expect(youbikeDotOpacity("dimmed")).toBe(YOUBIKE_DOT_DIM_OPACITY);
-    expect(youbikeDotOpacity("normal")).toBe(YOUBIKE_DOT_DIM_OPACITY);
-    expect(youbikeDotIsPrimary("dimmed")).toBe(false);
+  test("browse dots stay small and opaque; directions dim non-endpoints", () => {
+    expect(youbikeDotSizePx("normal")).toBe(YOUBIKE_DOT_SIZE_PX);
+    expect(youbikeDotOpacity("normal")).toBe("1");
     expect(youbikeDotIsPrimary("normal")).toBe(false);
+    expect(youbikeDotSizePx("dimmed")).toBe(YOUBIKE_DOT_DIM_SIZE_PX);
+    expect(youbikeDotOpacity("dimmed")).toBe(YOUBIKE_DOT_DIM_OPACITY);
+    expect(youbikeDotIsPrimary("dimmed")).toBe(false);
     expect(youbikeDotSizePx("endpoint")).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
     expect(youbikeDotOpacity("endpoint")).toBe("1");
     expect(youbikeDotIsPrimary("endpoint")).toBe(true);
+    expect(youbikeDotFramePx("normal")).toBe(
+      YOUBIKE_DOT_SIZE_PX + YOUBIKE_DOT_OUTLINE_PX * 2
+    );
   });
 
   test("uses the same shallow POI gradient as regular badges", () => {
@@ -157,30 +164,40 @@ describe("YouBike compact dots", () => {
     ).toContain(YOUBIKE_COLOR_INACTIVE);
   });
 
-  test("paints a borderless gradient disk", () => {
+  test("paints a small opaque gradient disk with a dark outer outline", () => {
     const el = {
       style: {} as Record<string, string>,
     };
     applyYouBikeDotAppearance(el as unknown as HTMLElement, station());
-    expect(el.style.border).toBe("none");
+    expect(el.style.boxSizing).toBe("content-box");
+    expect(el.style.border).toBe(youbikeDotOutline());
     expect(el.style.outline).toBe("none");
+    expect(YOUBIKE_DOT_OUTLINE_PX).toBeGreaterThanOrEqual(1.5);
+    expect(YOUBIKE_DOT_OUTLINE_COLOR.toLowerCase()).not.toContain("fff");
+    expect(el.style.border.toLowerCase()).not.toContain("#fff");
+    expect(el.style.border.toLowerCase()).not.toContain("white");
     expect(el.style.backgroundImage).toBe(youbikeStationMarkerGradient(station()));
     expect(el.style.backgroundColor).toBe(YOUBIKE_COLOR_AVAILABLE);
-    expect(el.style.backgroundImage).not.toContain("#ffffff");
-    expect(el.style.border).not.toContain("white");
-    expect(el.style.width).toBe(`${YOUBIKE_DOT_DIM_SIZE_PX}px`);
-    expect(el.style.opacity).toBe(YOUBIKE_DOT_DIM_OPACITY);
+    expect(el.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
+    expect(el.style.opacity).toBe("1");
   });
 
-  test("only route endpoints get full size and opacity", () => {
+  test("only route endpoints get full size; other route docks dim", () => {
     const browse = { style: {} as Record<string, string> };
     applyYouBikeDotAppearance(browse as unknown as HTMLElement, station(), {
-      selected: true,
+      emphasis: "normal",
+    });
+    expect(browse.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
+    expect(browse.style.opacity).toBe("1");
+    expect(browse.style.border).toBe(youbikeDotOutline());
+
+    const dimmed = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(dimmed as unknown as HTMLElement, station(), {
       emphasis: "dimmed",
     });
-    expect(browse.style.width).toBe(`${YOUBIKE_DOT_DIM_SIZE_PX}px`);
-    expect(browse.style.opacity).toBe(YOUBIKE_DOT_DIM_OPACITY);
-    expect(browse.style.boxShadow).toBe("none");
+    expect(dimmed.style.width).toBe(`${YOUBIKE_DOT_DIM_SIZE_PX}px`);
+    expect(dimmed.style.opacity).toBe(YOUBIKE_DOT_DIM_OPACITY);
+    expect(dimmed.style.border).toBe(youbikeDotOutline());
 
     const endpoint = { style: {} as Record<string, string> };
     applyYouBikeDotAppearance(endpoint as unknown as HTMLElement, station(), {
@@ -188,6 +205,7 @@ describe("YouBike compact dots", () => {
     });
     expect(endpoint.style.width).toBe(`${YOUBIKE_DOT_SELECTED_SIZE_PX}px`);
     expect(endpoint.style.opacity).toBe("1");
+    expect(endpoint.style.border).toBe(youbikeDotOutline());
     expect(endpoint.style.boxShadow).not.toBe("none");
   });
 

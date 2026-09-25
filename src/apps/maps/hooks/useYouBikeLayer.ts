@@ -31,7 +31,7 @@ import {
   applyYouBikeDotAppearance,
   createYouBikeDotElement,
   shouldRenderYouBikeOverlayForSpan,
-  youbikeDotSizePx,
+  youbikeDotFramePx,
   youbikePinTitle,
   youbikeShouldPaintDot,
   youbikeStationMarkerColor,
@@ -101,6 +101,7 @@ function pinEmphasis(
   stationId: string,
   endpointIds: Set<string>
 ): YouBikeDotEmphasis {
+  if (endpointIds.size === 0) return "normal";
   return endpointIds.has(stationId) ? "endpoint" : "dimmed";
 }
 
@@ -119,7 +120,7 @@ function applyYouBikePinChrome(
     selected ? "visible" : "hidden"
   );
   annotation.calloutEnabled = false;
-  const size = youbikeDotSizePx(emphasis);
+  const size = youbikeDotFramePx(emphasis);
   annotation.size = { width: size, height: size };
   if (annotation.element) {
     applyYouBikeDotAppearance(annotation.element, station, { selected, emphasis });
@@ -135,7 +136,7 @@ function createYouBikeAnnotation(
   const coord = new mk.Coordinate(station.latitude, station.longitude);
   const color = youbikeStationMarkerColor(station);
   const hidden = featureVisibility(mk, "hidden");
-  const size = youbikeDotSizePx(emphasis);
+  const size = youbikeDotFramePx(emphasis);
   const options = {
     title: youbikePinTitle(station),
     subtitle: "",
