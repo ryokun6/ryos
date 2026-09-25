@@ -347,41 +347,14 @@ function PlaceCardActions({
         </Button>
       )}
 
-      {showHomeButton && (
-        <Button
-          type="button"
-          variant={variant}
-          size="sm"
-          onClick={() => onSetHome(place)}
-          aria-pressed={isHome}
-          title={t("apps.maps.placeCard.setHome", {
-            defaultValue: "Set as Home",
-          })}
-          className={AQUA_ICON_BUTTON_PADDING_CLASS}
-        >
-          <House
-            size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-            weight={
-              isHome
-                ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-            }
-          />
-          <span>
-            {isHome
-              ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
-              : t("apps.maps.placeCard.setHome", {
-                  defaultValue: "Set as Home",
-                })}
-          </span>
-        </Button>
-      )}
-
       <PlaceCardMoreMenu
         place={place}
         isFavorite={isFavorite}
+        isHome={isHome}
         isWork={isWork}
+        showHome={showHomeButton}
         showWork={showWorkButton}
+        onSetHome={onSetHome}
         onSetWork={onSetWork}
         onToggleFavorite={onToggleFavorite}
         t={t}
@@ -393,16 +366,22 @@ function PlaceCardActions({
 function PlaceCardMoreMenu({
   place,
   isFavorite,
+  isHome,
   isWork,
+  showHome,
   showWork,
+  onSetHome,
   onSetWork,
   onToggleFavorite,
   t,
 }: {
   place: SavedPlace;
   isFavorite: boolean;
+  isHome: boolean;
   isWork: boolean;
+  showHome: boolean;
   showWork: boolean;
+  onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
   onToggleFavorite: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
@@ -411,6 +390,9 @@ function PlaceCardMoreMenu({
   const favoriteLabel = isFavorite
     ? t("apps.maps.placeCard.favorited", { defaultValue: "Favorited" })
     : t("apps.maps.placeCard.favorite", { defaultValue: "Favorite" });
+  const homeLabel = isHome
+    ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
+    : t("apps.maps.placeCard.setHome", { defaultValue: "Set as Home" });
   const workLabel = isWork
     ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
     : t("apps.maps.placeCard.setWork", { defaultValue: "Set as Work" });
@@ -425,7 +407,7 @@ function PlaceCardMoreMenu({
             defaultValue: "More",
           })}
           className={cn(
-            "ml-auto inline-flex size-7 shrink-0 items-center justify-center rounded-full p-0",
+            "inline-flex size-7 shrink-0 items-center justify-center rounded-full p-0",
             "focus:outline-none focus-visible:ring-1",
             isMacOSTheme
               ? "aqua-button secondary !h-7 !w-7 !min-h-7 !min-w-7 !rounded-full !p-0"
@@ -435,7 +417,7 @@ function PlaceCardMoreMenu({
           <DotsThree size={18} weight="bold" aria-hidden="true" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end">
+      <DropdownMenuContent side="top" align="start">
         <DropdownMenuItem onSelect={() => onToggleFavorite(place)}>
           <Star
             weight={
@@ -446,8 +428,26 @@ function PlaceCardMoreMenu({
           />
           {favoriteLabel}
         </DropdownMenuItem>
+        {showHome && (
+          <DropdownMenuItem
+            aria-pressed={isHome}
+            onSelect={() => onSetHome(place)}
+          >
+            <House
+              weight={
+                isHome
+                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
+                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
+              }
+            />
+            {homeLabel}
+          </DropdownMenuItem>
+        )}
         {showWork && (
-          <DropdownMenuItem onSelect={() => onSetWork(place)}>
+          <DropdownMenuItem
+            aria-pressed={isWork}
+            onSelect={() => onSetWork(place)}
+          >
             <Briefcase
               weight={
                 isWork
