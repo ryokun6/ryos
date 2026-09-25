@@ -3366,6 +3366,8 @@
         "removeFavorite": "Remover dos Favoritos",
         "setHome": "Definir como Casa",
         "setWork": "Definir como Trabalho",
+        "unsetHome": "Remover Casa",
+        "unsetWork": "Remover Trabalho",
         "work": "Trabalho",
         "moreActions": "Mais"
       },

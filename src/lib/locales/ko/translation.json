@@ -3363,6 +3363,8 @@
         "removeFavorite": "즐겨찾기에서 제거",
         "setHome": "집으로 설정",
         "setWork": "직장으로 설정",
+        "unsetHome": "집 설정 해제",
+        "unsetWork": "직장 설정 해제",
         "work": "직장",
         "moreActions": "더보기"
       },

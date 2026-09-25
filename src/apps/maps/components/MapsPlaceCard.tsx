@@ -39,6 +39,7 @@ import {
   HOME_SAVED_VISUAL,
   WORK_SAVED_VISUAL,
 } from "../utils/savedPlaceVisuals";
+import { getPlaceHomeWorkMenuItems } from "../utils/homeWorkMenu";
 import type { SavedPlace } from "../utils/types";
 
 export interface MapsPlaceCardProps {
@@ -46,12 +47,10 @@ export interface MapsPlaceCardProps {
   isFavorite: boolean;
   isHome: boolean;
   isWork: boolean;
-  /** When set elsewhere, the Home action is hidden unless this card is Home. */
-  savedHomePlace: SavedPlace | null;
-  /** When set elsewhere, the Work action is hidden unless this card is Work. */
-  savedWorkPlace: SavedPlace | null;
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
+  onUnsetHome: () => void;
+  onUnsetWork: () => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
   onYouBikeDirections?: (place: SavedPlace) => void;
@@ -103,10 +102,10 @@ export function MapsPlaceCard({
   isFavorite,
   isHome,
   isWork,
-  savedHomePlace,
-  savedWorkPlace,
   onSetHome,
   onSetWork,
+  onUnsetHome,
+  onUnsetWork,
   onToggleFavorite,
   onDirections,
   onYouBikeDirections,
@@ -152,10 +151,10 @@ export function MapsPlaceCard({
               isFavorite={isFavorite}
               isHome={isHome}
               isWork={isWork}
-              savedHomePlace={savedHomePlace}
-              savedWorkPlace={savedWorkPlace}
               onSetHome={onSetHome}
               onSetWork={onSetWork}
+              onUnsetHome={onUnsetHome}
+              onUnsetWork={onUnsetWork}
               onToggleFavorite={onToggleFavorite}
               onDirections={onDirections}
               onYouBikeDirections={onYouBikeDirections}
@@ -268,10 +267,10 @@ interface PlaceCardActionsProps {
   isFavorite: boolean;
   isHome: boolean;
   isWork: boolean;
-  savedHomePlace: SavedPlace | null;
-  savedWorkPlace: SavedPlace | null;
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
+  onUnsetHome: () => void;
+  onUnsetWork: () => void;
   onToggleFavorite: (place: SavedPlace) => void;
   onDirections: (place: SavedPlace) => void;
   onYouBikeDirections?: (place: SavedPlace) => void;
@@ -283,10 +282,10 @@ function PlaceCardActions({
   isFavorite,
   isHome,
   isWork,
-  savedHomePlace,
-  savedWorkPlace,
   onSetHome,
   onSetWork,
+  onUnsetHome,
+  onUnsetWork,
   onToggleFavorite,
   onDirections,
   onYouBikeDirections,
@@ -294,8 +293,6 @@ function PlaceCardActions({
 }: PlaceCardActionsProps) {
   const { isMacOSTheme } = useThemeFlags();
   const variant = isMacOSTheme ? "aqua" : "retro";
-  const showHomeButton = !savedHomePlace || isHome;
-  const showWorkButton = !savedWorkPlace || isWork;
   const showYouBike =
     !!onYouBikeDirections &&
     (isYouBikePlace(place) ||
@@ -352,10 +349,10 @@ function PlaceCardActions({
         isFavorite={isFavorite}
         isHome={isHome}
         isWork={isWork}
-        showHome={showHomeButton}
-        showWork={showWorkButton}
         onSetHome={onSetHome}
         onSetWork={onSetWork}
+        onUnsetHome={onUnsetHome}
+        onUnsetWork={onUnsetWork}
         onToggleFavorite={onToggleFavorite}
         t={t}
       />
@@ -368,10 +365,10 @@ function PlaceCardMoreMenu({
   isFavorite,
   isHome,
   isWork,
-  showHome,
-  showWork,
   onSetHome,
   onSetWork,
+  onUnsetHome,
+  onUnsetWork,
   onToggleFavorite,
   t,
 }: {
@@ -379,10 +376,10 @@ function PlaceCardMoreMenu({
   isFavorite: boolean;
   isHome: boolean;
   isWork: boolean;
-  showHome: boolean;
-  showWork: boolean;
   onSetHome: (place: SavedPlace) => void;
   onSetWork: (place: SavedPlace) => void;
+  onUnsetHome: () => void;
+  onUnsetWork: () => void;
   onToggleFavorite: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }) {
@@ -390,12 +387,7 @@ function PlaceCardMoreMenu({
   const favoriteLabel = isFavorite
     ? t("apps.maps.placeCard.favorited", { defaultValue: "Favorited" })
     : t("apps.maps.placeCard.favorite", { defaultValue: "Favorite" });
-  const homeLabel = isHome
-    ? t("apps.maps.placeCard.home", { defaultValue: "Home" })
-    : t("apps.maps.placeCard.setHome", { defaultValue: "Set as Home" });
-  const workLabel = isWork
-    ? t("apps.maps.placeCard.work", { defaultValue: "Work" })
-    : t("apps.maps.placeCard.setWork", { defaultValue: "Set as Work" });
+  const homeWorkItems = getPlaceHomeWorkMenuItems({ isHome, isWork });
 
   return (
     <DropdownMenu>
@@ -428,36 +420,46 @@ function PlaceCardMoreMenu({
           />
           {favoriteLabel}
         </DropdownMenuItem>
-        {showHome && (
-          <DropdownMenuItem
-            aria-pressed={isHome}
-            onSelect={() => onSetHome(place)}
-          >
-            <House
-              weight={
-                isHome
-                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-              }
-            />
-            {homeLabel}
-          </DropdownMenuItem>
-        )}
-        {showWork && (
-          <DropdownMenuItem
-            aria-pressed={isWork}
-            onSelect={() => onSetWork(place)}
-          >
-            <Briefcase
-              weight={
-                isWork
-                  ? AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE
-                  : AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT
-              }
-            />
-            {workLabel}
-          </DropdownMenuItem>
-        )}
+        {homeWorkItems.map((item) => {
+          if (item === "setHome") {
+            return (
+              <DropdownMenuItem key={item} onSelect={() => onSetHome(place)}>
+                <House weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
+                {t("apps.maps.placeCard.setHome", {
+                  defaultValue: "Set as Home",
+                })}
+              </DropdownMenuItem>
+            );
+          }
+          if (item === "setWork") {
+            return (
+              <DropdownMenuItem key={item} onSelect={() => onSetWork(place)}>
+                <Briefcase weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
+                {t("apps.maps.placeCard.setWork", {
+                  defaultValue: "Set as Work",
+                })}
+              </DropdownMenuItem>
+            );
+          }
+          if (item === "unsetHome") {
+            return (
+              <DropdownMenuItem key={item} onSelect={onUnsetHome}>
+                <House weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
+                {t("apps.maps.placeCard.unsetHome", {
+                  defaultValue: "Unset Home",
+                })}
+              </DropdownMenuItem>
+            );
+          }
+          return (
+            <DropdownMenuItem key={item} onSelect={onUnsetWork}>
+              <Briefcase weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT} />
+              {t("apps.maps.placeCard.unsetWork", {
+                defaultValue: "Unset Work",
+              })}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );

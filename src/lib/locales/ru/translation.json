@@ -3372,6 +3372,8 @@
         "removeFavorite": "Удалить из избранного",
         "setHome": "Сделать домом",
         "setWork": "Сделать работой",
+        "unsetHome": "Убрать дом",
+        "unsetWork": "Убрать работу",
         "work": "Работа",
         "moreActions": "Ещё"
       },

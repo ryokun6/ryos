@@ -191,6 +191,7 @@ export const MAPS_ANALYTICS = {
   PLACE_SELECT: "maps:place_select",
   FAVORITE_TOGGLE: "maps:favorite_toggle",
   HOME_WORK_SET: "maps:home_work_set",
+  HOME_WORK_UNSET: "maps:home_work_unset",
   DIRECTIONS: "maps:directions",
   YOUBIKE_DIRECTIONS: "maps:youbike_directions",
 } as const;

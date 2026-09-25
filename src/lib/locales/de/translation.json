@@ -3363,6 +3363,8 @@
         "removeFavorite": "Aus Favoriten entfernen",
         "setHome": "Als Privat festlegen",
         "setWork": "Als Arbeit festlegen",
+        "unsetHome": "Privat entfernen",
+        "unsetWork": "Arbeit entfernen",
         "work": "Arbeit",
         "moreActions": "Mehr"
       },

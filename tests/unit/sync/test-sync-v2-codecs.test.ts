@@ -296,6 +296,40 @@ describe("maps codec", () => {
     expect(state.home).toMatchObject({ name: "Home" });
     expect(state.favorites.map((favorite) => favorite.id)).toEqual(["f1"]);
   });
+
+  test("collect omits unset home/work and apply del clears them", async () => {
+    useMapsStore.setState({
+      home: { id: "h", name: "Home" },
+      work: { id: "w", name: "Work" },
+      favorites: [],
+    } as never);
+
+    const withSlots = SYNC_CODECS.maps.collect(ctx) as Map<string, unknown>;
+    expect(withSlots.has("maps/home")).toBe(true);
+    expect(withSlots.has("maps/work")).toBe(true);
+
+    useMapsStore.getState().setHome(null);
+    useMapsStore.getState().setWork(null);
+
+    const afterUnset = SYNC_CODECS.maps.collect(ctx) as Map<string, unknown>;
+    expect(afterUnset.has("maps/home")).toBe(false);
+    expect(afterUnset.has("maps/work")).toBe(false);
+
+    useMapsStore.setState({
+      home: { id: "h", name: "Home" },
+      work: { id: "w", name: "Work" },
+      favorites: [],
+    } as never);
+    await SYNC_CODECS.maps.apply(
+      [
+        { k: "maps/home", del: true, t },
+        { k: "maps/work", del: true, t },
+      ],
+      ctx
+    );
+    expect(useMapsStore.getState().home).toBeNull();
+    expect(useMapsStore.getState().work).toBeNull();
+  });
 });
 
 describe("stuff codec", () => {
