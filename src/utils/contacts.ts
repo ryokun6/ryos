@@ -69,7 +69,6 @@ export const DEFAULT_RYO_CONTACT_DRAFT: ContactDraft = {
   firstName: "Ryo",
   lastName: "Lu",
   nickname: "ryo",
-  organization: "Cursor",
   emails: ["me@ryo.lu"],
   urls: ["https://ryo.lu", "https://x.com/ryolu_", "https://os.ryo.lu"],
   source: "manual",
