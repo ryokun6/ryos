@@ -30,6 +30,7 @@ import {
   YOUBIKE_WALK_STROKE,
   applyYouBikeDotAppearance,
   createYouBikeDotElement,
+  shouldRenderYouBikeOverlayForSpan,
   youbikeDotSizePx,
   youbikePinTitle,
   youbikeShouldPaintDot,
@@ -52,8 +53,6 @@ import {
 } from "../components/maps-app/mapKitTypes";
 import { readMapRegion } from "../components/maps-app/mapRegionUtils";
 
-/** Don't fetch or paint when the island is a postage stamp. */
-const MAX_RENDER_SPAN_DEG = 0.4;
 const REGION_FETCH_DEBOUNCE_MS = 280;
 /** Extra margin so a short pan does not flash empty then refill. */
 const RENDER_PAD_FACTOR = 0.1;
@@ -123,9 +122,8 @@ function applyYouBikePinChrome(
   annotation.calloutEnabled = false;
   const size = youbikeDotSizePx(emphasis, selected);
   annotation.size = { width: size, height: size };
-  const color = youbikeStationMarkerColor(station);
   if (annotation.element) {
-    applyYouBikeDotAppearance(annotation.element, color, { selected, emphasis });
+    applyYouBikeDotAppearance(annotation.element, station, { selected, emphasis });
   }
 }
 
@@ -153,7 +151,7 @@ function createYouBikeAnnotation(
   if (mk.Annotation) {
     return new mk.Annotation(
       coord,
-      () => createYouBikeDotElement(color, { emphasis }),
+      () => createYouBikeDotElement(station, { emphasis }),
       options
     );
   }
@@ -329,7 +327,7 @@ export function useYouBikeLayer({
       const span = region
         ? Math.max(region.span.latitudeDelta, region.span.longitudeDelta)
         : 1;
-      if (!enabled || !bbox || span > MAX_RENDER_SPAN_DEG) {
+      if (!enabled || !bbox || !shouldRenderYouBikeOverlayForSpan(span)) {
         clearStationAnnotations();
         return;
       }
@@ -455,9 +453,9 @@ export function useYouBikeLayer({
     const span = region
       ? Math.max(region.span.latitudeDelta, region.span.longitudeDelta)
       : 1;
-    if (!bbox || !bboxIntersectsTaiwan(bbox) || span > MAX_RENDER_SPAN_DEG) {
+    if (!bbox || !bboxIntersectsTaiwan(bbox) || !shouldRenderYouBikeOverlayForSpan(span)) {
       setIsLayerVisible(false);
-      if (span > MAX_RENDER_SPAN_DEG) {
+      if (!shouldRenderYouBikeOverlayForSpan(span)) {
         clearStationAnnotations();
         return;
       }

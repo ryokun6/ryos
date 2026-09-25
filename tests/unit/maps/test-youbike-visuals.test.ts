@@ -1,20 +1,26 @@
 import { describe, expect, test } from "bun:test";
+import { CITY_LEVEL_SPAN_DEG, FOCUS_PLACE_SPAN_DEG } from "../../../src/apps/maps/components/maps-app/mapsUiState";
+import { CITY_LEVEL_MAX_SPAN_DEG } from "../../../src/apps/maps/utils/mapMarkerClustering";
+import { poiVisualGradient } from "../../../src/apps/maps/utils/poiVisuals";
 import type { YouBikeStation } from "../../../src/apps/maps/youbike/types";
 import {
   YOUBIKE_COLOR_AVAILABLE,
   YOUBIKE_COLOR_EMPTY,
   YOUBIKE_COLOR_INACTIVE,
   YOUBIKE_COLOR_LOW,
-  YOUBIKE_DOT_BORDER_PX,
   YOUBIKE_DOT_DIM_SIZE_PX,
-  YOUBIKE_DOT_SELECTED_BORDER_PX,
   YOUBIKE_DOT_SELECTED_SIZE_PX,
   YOUBIKE_DOT_SIZE_PX,
-  youbikeDotBorderPx,
+  YOUBIKE_MAX_RENDER_SPAN_DEG,
+  YOUBIKE_POI_VISUAL,
+  applyYouBikeDotAppearance,
+  shouldRenderYouBikeOverlayForSpan,
   youbikeDotSizePx,
   youbikePinTitle,
   youbikeShouldPaintDot,
   youbikeStationMarkerColor,
+  youbikeStationMarkerGradient,
+  youbikeStationMarkerVisual,
 } from "../../../src/apps/maps/youbike/stationVisuals";
 
 function station(overrides: Partial<YouBikeStation> = {}): YouBikeStation {
@@ -92,14 +98,44 @@ describe("YouBike compact dots", () => {
     expect(youbikeDotSizePx("dimmed", true)).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
   });
 
-  test("uses a hairline border on small dots", () => {
-    expect(youbikeDotBorderPx("normal", false)).toBe(YOUBIKE_DOT_BORDER_PX);
-    expect(youbikeDotBorderPx("dimmed", false)).toBe(YOUBIKE_DOT_BORDER_PX);
-    expect(YOUBIKE_DOT_BORDER_PX).toBeLessThanOrEqual(0.5);
-    expect(youbikeDotBorderPx("endpoint", false)).toBe(
-      YOUBIKE_DOT_SELECTED_BORDER_PX
+  test("uses the same shallow POI gradient as regular badges", () => {
+    const available = station({ bikesAvailable: 12 });
+    expect(youbikeStationMarkerVisual(available)).toEqual(YOUBIKE_POI_VISUAL);
+    expect(youbikeStationMarkerGradient(available)).toBe(
+      poiVisualGradient(YOUBIKE_POI_VISUAL)
     );
-    expect(YOUBIKE_DOT_SELECTED_BORDER_PX).toBeLessThanOrEqual(1);
+    expect(youbikeStationMarkerGradient(available)).toContain("linear-gradient");
+    expect(youbikeStationMarkerGradient(available)).toContain("color-mix");
+    expect(youbikeStationMarkerGradient(station({ bikesAvailable: 3 }))).toBe(
+      poiVisualGradient(youbikeStationMarkerVisual(station({ bikesAvailable: 3 })))
+    );
+    expect(
+      youbikeStationMarkerGradient(station({ isActive: false, bikesAvailable: 8 }))
+    ).toContain(YOUBIKE_COLOR_INACTIVE);
+  });
+
+  test("paints a borderless gradient disk", () => {
+    const el = {
+      style: {} as Record<string, string>,
+    };
+    applyYouBikeDotAppearance(el as unknown as HTMLElement, station());
+    expect(el.style.border).toBe("none");
+    expect(el.style.outline).toBe("none");
+    expect(el.style.backgroundImage).toBe(youbikeStationMarkerGradient(station()));
+    expect(el.style.backgroundColor).toBe(YOUBIKE_COLOR_AVAILABLE);
+    expect(el.style.backgroundImage).not.toContain("#ffffff");
+    expect(el.style.border).not.toContain("white");
+  });
+
+  test("stays hidden at city-scale cameras", () => {
+    expect(YOUBIKE_MAX_RENDER_SPAN_DEG).toBe(CITY_LEVEL_MAX_SPAN_DEG);
+    expect(YOUBIKE_MAX_RENDER_SPAN_DEG).toBeLessThan(CITY_LEVEL_SPAN_DEG);
+    expect(shouldRenderYouBikeOverlayForSpan(CITY_LEVEL_SPAN_DEG)).toBe(false);
+    expect(shouldRenderYouBikeOverlayForSpan(0.4)).toBe(false);
+    expect(shouldRenderYouBikeOverlayForSpan(FOCUS_PLACE_SPAN_DEG)).toBe(true);
+    expect(shouldRenderYouBikeOverlayForSpan(YOUBIKE_MAX_RENDER_SPAN_DEG)).toBe(
+      true
+    );
   });
 
   test("hides other small dots while a dock is selected", () => {

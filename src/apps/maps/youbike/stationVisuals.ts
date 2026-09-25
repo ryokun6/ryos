@@ -1,6 +1,11 @@
 import { Bicycle } from "@phosphor-icons/react";
 import phosphorFillPaths from "../utils/phosphorFillPaths.json";
 import { buildGlyphHash } from "../utils/markerGlyphs";
+import { CITY_LEVEL_MAX_SPAN_DEG } from "../utils/mapMarkerClustering";
+import {
+  poiVisualGradient,
+  type PoiVisual,
+} from "../utils/poiVisuals";
 import type { MapKitGlyphImage } from "../utils/poiMarkerStyle";
 import type { YouBikeStation } from "./types";
 
@@ -10,6 +15,40 @@ export const YOUBIKE_COLOR_EMPTY = "#C2410C";
 export const YOUBIKE_COLOR_INACTIVE = "#94a3b8";
 export const YOUBIKE_WALK_STROKE = "#007aff";
 export const YOUBIKE_BIKE_STROKE = "#7CB518";
+
+export const YOUBIKE_POI_VISUAL: PoiVisual = {
+  iconKey: "Bicycle",
+  from: YOUBIKE_COLOR_AVAILABLE,
+  to: "#4d7c0f",
+};
+
+const YOUBIKE_LOW_VISUAL: PoiVisual = {
+  iconKey: "Bicycle",
+  from: YOUBIKE_COLOR_LOW,
+  to: "#92400e",
+};
+
+const YOUBIKE_EMPTY_VISUAL: PoiVisual = {
+  iconKey: "Bicycle",
+  from: YOUBIKE_COLOR_EMPTY,
+  to: "#7f1d1d",
+};
+
+const YOUBIKE_INACTIVE_VISUAL: PoiVisual = {
+  iconKey: "Bicycle",
+  from: YOUBIKE_COLOR_INACTIVE,
+  to: "#475569",
+};
+
+/**
+ * Hide docks at city-scale cameras (Taipei default 0.12°) and wider.
+ * Same cutoff as saved-place clustering so street / neighborhood zoom paints.
+ */
+export const YOUBIKE_MAX_RENDER_SPAN_DEG = CITY_LEVEL_MAX_SPAN_DEG;
+
+export function shouldRenderYouBikeOverlayForSpan(spanDeg: number): boolean {
+  return Number.isFinite(spanDeg) && spanDeg <= YOUBIKE_MAX_RENDER_SPAN_DEG;
+}
 
 const BICYCLE_FILL_PATH =
   phosphorFillPaths.Bicycle ??
@@ -24,11 +63,19 @@ export function getYouBikeGlyphImage(): MapKitGlyphImage {
   return bicycleGlyph;
 }
 
+export function youbikeStationMarkerVisual(station: YouBikeStation): PoiVisual {
+  if (!station.isActive) return YOUBIKE_INACTIVE_VISUAL;
+  if (station.bikesAvailable <= 0) return YOUBIKE_EMPTY_VISUAL;
+  if (station.bikesAvailable <= 3) return YOUBIKE_LOW_VISUAL;
+  return YOUBIKE_POI_VISUAL;
+}
+
 export function youbikeStationMarkerColor(station: YouBikeStation): string {
-  if (!station.isActive) return YOUBIKE_COLOR_INACTIVE;
-  if (station.bikesAvailable <= 0) return YOUBIKE_COLOR_EMPTY;
-  if (station.bikesAvailable <= 3) return YOUBIKE_COLOR_LOW;
-  return YOUBIKE_COLOR_AVAILABLE;
+  return youbikeStationMarkerVisual(station).from;
+}
+
+export function youbikeStationMarkerGradient(station: YouBikeStation): string {
+  return poiVisualGradient(youbikeStationMarkerVisual(station));
 }
 
 export function youbikeAvailabilityLabel(station: YouBikeStation): string {
@@ -47,9 +94,6 @@ export const YOUBIKE_DOT_SIZE_PX = 10;
 export const YOUBIKE_DOT_SELECTED_SIZE_PX = 12;
 export const YOUBIKE_DOT_DIM_SIZE_PX = 6;
 export const YOUBIKE_DOT_DIM_OPACITY = "0.38";
-/** Hairline ring on the default / dimmed dots. */
-export const YOUBIKE_DOT_BORDER_PX = 0.5;
-export const YOUBIKE_DOT_SELECTED_BORDER_PX = 1;
 
 /** How a dock should read while a YouBike route is (or isn't) on screen. */
 export type YouBikeDotEmphasis = "normal" | "endpoint" | "dimmed";
@@ -61,14 +105,6 @@ export function youbikeDotSizePx(
   if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_SIZE_PX;
   if (emphasis === "dimmed") return YOUBIKE_DOT_DIM_SIZE_PX;
   return YOUBIKE_DOT_SIZE_PX;
-}
-
-export function youbikeDotBorderPx(
-  emphasis: YouBikeDotEmphasis,
-  selected: boolean
-): number {
-  if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_BORDER_PX;
-  return YOUBIKE_DOT_BORDER_PX;
 }
 
 /** Hide the dense background dots while a YouBike dock is selected. */
@@ -87,44 +123,37 @@ export function youbikeShouldPaintDot(
 }
 
 export function createYouBikeDotElement(
-  color: string,
+  station: YouBikeStation,
   options: { selected?: boolean; emphasis?: YouBikeDotEmphasis } = {}
 ): HTMLDivElement {
   const el = document.createElement("div");
   el.setAttribute("aria-hidden", "true");
-  applyYouBikeDotAppearance(el, color, options);
+  applyYouBikeDotAppearance(el, station, options);
   return el;
 }
 
 export function applyYouBikeDotAppearance(
   el: HTMLElement,
-  color: string,
+  station: YouBikeStation,
   options: { selected?: boolean; emphasis?: YouBikeDotEmphasis } = {}
 ): void {
   const selected = options.selected === true;
   const emphasis = options.emphasis ?? "normal";
   const primary = selected || emphasis === "endpoint";
   const size = youbikeDotSizePx(emphasis, selected);
-  const borderPx = youbikeDotBorderPx(emphasis, selected);
+  const visual = youbikeStationMarkerVisual(station);
   el.style.width = `${size}px`;
   el.style.height = `${size}px`;
   el.style.borderRadius = "50%";
-  el.style.backgroundColor = color;
-  el.style.border = `${borderPx}px solid ${
-    primary ? "#ffffff" : "rgba(255,255,255,0.85)"
-  }`;
+  el.style.border = "none";
+  el.style.outline = "none";
   el.style.boxSizing = "border-box";
-  el.style.boxShadow = primary
-    ? "0 1px 2px rgba(0,0,0,0.28)"
-    : "none";
-  el.style.opacity = !selected && emphasis === "dimmed" ? YOUBIKE_DOT_DIM_OPACITY : "1";
+  el.style.backgroundColor = visual.from;
+  el.style.backgroundImage = poiVisualGradient(visual);
+  el.style.boxShadow = primary ? "0 1px 2px rgba(0,0,0,0.28)" : "none";
+  el.style.opacity =
+    !selected && emphasis === "dimmed" ? YOUBIKE_DOT_DIM_OPACITY : "1";
   el.style.pointerEvents = "auto";
 }
 
 export const YouBikeIcon = Bicycle;
-
-export const YOUBIKE_POI_VISUAL = {
-  iconKey: "Bicycle" as const,
-  from: YOUBIKE_COLOR_AVAILABLE,
-  to: "#4d7c0f",
-};
