@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from "motion/react";
-import { useMemo, useReducer, useEffect } from "react";
+import { motion } from "motion/react";
+import { useMemo } from "react";
 import { getInterludeDotsFadeOpacity } from "@/utils/karaokeInterludeDisplay";
 import {
   getChinesePhoneticSystem,
@@ -102,21 +102,6 @@ export function LyricsLineRowContent({
     timeMsForInterludeDots !== undefined &&
     interludeInlineCountdownStartMs !== undefined
   );
-  const [dotsState, dispatchDotsState] = useReducer(
-    (state: { dotsExitDone: boolean }, action: { type: "setDotsExitDone"; value: boolean }) => {
-      if (action.type === "setDotsExitDone") {
-        return { dotsExitDone: action.value };
-      }
-      return state;
-    },
-    { dotsExitDone: true }
-  );
-  const dotsExitDone = dotsState.dotsExitDone;
-  useEffect(() => {
-    if (dotsActive && dotsExitDone) {
-      dispatchDotsState({ type: "setDotsExitDone", value: false });
-    }
-  }, [dotsActive, dotsExitDone]);
 
   return (
     <>
@@ -463,7 +448,7 @@ export function LyricsLineRowContent({
           </div>
         );
 
-        if (dotsActive || !dotsExitDone) {
+        if (dotsActive) {
           const interludeStackKind = isKaraokeSize
             ? "lyrics-interlude-stack--karaoke"
             : isFullscreenSize
@@ -473,66 +458,49 @@ export function LyricsLineRowContent({
             <div
               className={`${textSizeClass} ${fontClassName} lyrics-interlude-inline-with-line lyrics-interlude-stack flex w-full max-w-full flex-col gap-y-0 ${interludeStackItemsClass(lineTextAlign)} ${interludeStackKind}`}
             >
-              <AnimatePresence
+              <motion.div
+                key="inline-dots"
                 initial={false}
-                onExitComplete={() =>
-                  dispatchDotsState({ type: "setDotsExitDone", value: true })
-                }
+                animate={{
+                  opacity: interludeInlineDotsOpacity,
+                  scale: 1,
+                }}
+                transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+                className="origin-top"
               >
-                {dotsActive && (
-                  <motion.div
-                    key="inline-dots"
-                    initial={false}
-                    animate={{
-                      opacity: interludeInlineDotsOpacity,
-                      scale: 1,
-                      height: "auto",
-                      marginBottom: 0,
-                    }}
-                    exit={{
-                      opacity: 0,
-                      scale: 0.88,
-                      height: 0,
-                      marginBottom: 0,
-                    }}
-                    transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
-                    className="origin-top overflow-hidden"
-                  >
-                    <span className="karaoke-interlude-circle-dots inline-block">
-                      <WordTimingHighlight
-                        wordTimings={interludeInlineDotsLine!.wordTimings!}
-                        lineStartTimeMs={parseInt(interludeInlineDotsLine!.startTimeMs, 10)}
-                        currentTimeMs={timeMsForInterludeDots!}
-                        processText={processText}
-                        furiganaSegments={inlineDotsAnnotations}
-                        koreanRomanized={!inlineDotsSoramimi && showKoreanRomanization}
-                        japaneseRomaji={
-                          !inlineDotsSoramimi && romanization.enabled && romanization.japaneseRomaji
-                        }
-                        chinesePhonetic={chinesePhoneticForLine(
-                          romanization,
-                          inlineDotsSoramimi
-                        )}
-                        pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
-                        soramimiTargetLanguage={
-                          inlineDotsSoramimi ? romanization.soramamiTargetLanguage : undefined
-                        }
-                        onSeekToTime={undefined}
-                        isOldSchoolKaraoke={isOldSchoolKaraoke}
-                        highlightColor={highlightColor}
-                        glowFilter={glowFilter}
-                        baseColor={baseColor}
-                        isGradient={isGradientStyle}
-                        rainbowHue={
-                          isGradientStyle
-                            ? ((timeMsForInterludeDots! / 6000) * 360) % 360
-                            : undefined
-                        }
-                      />
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                <span className="karaoke-interlude-circle-dots inline-block">
+                  <WordTimingHighlight
+                    wordTimings={interludeInlineDotsLine!.wordTimings!}
+                    lineStartTimeMs={parseInt(interludeInlineDotsLine!.startTimeMs, 10)}
+                    currentTimeMs={timeMsForInterludeDots!}
+                    processText={processText}
+                    furiganaSegments={inlineDotsAnnotations}
+                    koreanRomanized={!inlineDotsSoramimi && showKoreanRomanization}
+                    japaneseRomaji={
+                      !inlineDotsSoramimi && romanization.enabled && romanization.japaneseRomaji
+                    }
+                    chinesePhonetic={chinesePhoneticForLine(
+                      romanization,
+                      inlineDotsSoramimi
+                    )}
+                    pronunciationOnly={romanization.enabled && romanization.pronunciationOnly}
+                    soramimiTargetLanguage={
+                      inlineDotsSoramimi ? romanization.soramamiTargetLanguage : undefined
+                    }
+                    onSeekToTime={undefined}
+                    isOldSchoolKaraoke={isOldSchoolKaraoke}
+                    highlightColor={highlightColor}
+                    glowFilter={glowFilter}
+                    baseColor={baseColor}
+                    isGradient={isGradientStyle}
+                    rainbowHue={
+                      isGradientStyle
+                        ? ((timeMsForInterludeDots! / 6000) * 360) % 360
+                        : undefined
+                    }
+                  />
+                </span>
+              </motion.div>
               {lyricBody}
             </div>
           );
