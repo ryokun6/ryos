@@ -90,21 +90,27 @@ export function youbikePinTitle(station: YouBikeStation): string {
   return String(bikes);
 }
 
-export const YOUBIKE_DOT_SIZE_PX = 10;
+export const YOUBIKE_DOT_SIZE_PX = 6;
 export const YOUBIKE_DOT_SELECTED_SIZE_PX = 12;
-export const YOUBIKE_DOT_DIM_SIZE_PX = 6;
+export const YOUBIKE_DOT_DIM_SIZE_PX = YOUBIKE_DOT_SIZE_PX;
 export const YOUBIKE_DOT_DIM_OPACITY = "0.38";
 
 /** How a dock should read while a YouBike route is (or isn't) on screen. */
 export type YouBikeDotEmphasis = "normal" | "endpoint" | "dimmed";
 
-export function youbikeDotSizePx(
-  emphasis: YouBikeDotEmphasis,
-  selected: boolean
-): number {
-  if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_SIZE_PX;
-  if (emphasis === "dimmed") return YOUBIKE_DOT_DIM_SIZE_PX;
-  return YOUBIKE_DOT_SIZE_PX;
+/** Full chrome is reserved for route start / end docks. */
+export function youbikeDotIsPrimary(emphasis: YouBikeDotEmphasis): boolean {
+  return emphasis === "endpoint";
+}
+
+export function youbikeDotSizePx(emphasis: YouBikeDotEmphasis): number {
+  return youbikeDotIsPrimary(emphasis)
+    ? YOUBIKE_DOT_SELECTED_SIZE_PX
+    : YOUBIKE_DOT_DIM_SIZE_PX;
+}
+
+export function youbikeDotOpacity(emphasis: YouBikeDotEmphasis): string {
+  return youbikeDotIsPrimary(emphasis) ? "1" : YOUBIKE_DOT_DIM_OPACITY;
 }
 
 /** Hide the dense background dots while a YouBike dock is selected. */
@@ -137,10 +143,9 @@ export function applyYouBikeDotAppearance(
   station: YouBikeStation,
   options: { selected?: boolean; emphasis?: YouBikeDotEmphasis } = {}
 ): void {
-  const selected = options.selected === true;
-  const emphasis = options.emphasis ?? "normal";
-  const primary = selected || emphasis === "endpoint";
-  const size = youbikeDotSizePx(emphasis, selected);
+  const emphasis = options.emphasis ?? "dimmed";
+  const primary = youbikeDotIsPrimary(emphasis);
+  const size = youbikeDotSizePx(emphasis);
   const visual = youbikeStationMarkerVisual(station);
   el.style.width = `${size}px`;
   el.style.height = `${size}px`;
@@ -151,8 +156,7 @@ export function applyYouBikeDotAppearance(
   el.style.backgroundColor = visual.from;
   el.style.backgroundImage = poiVisualGradient(visual);
   el.style.boxShadow = primary ? "0 1px 2px rgba(0,0,0,0.28)" : "none";
-  el.style.opacity =
-    !selected && emphasis === "dimmed" ? YOUBIKE_DOT_DIM_OPACITY : "1";
+  el.style.opacity = youbikeDotOpacity(emphasis);
   el.style.pointerEvents = "auto";
 }
 
