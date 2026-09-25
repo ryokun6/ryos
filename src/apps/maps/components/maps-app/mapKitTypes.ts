@@ -135,6 +135,8 @@ export type MapKitRegionPriority = "default" | "required";
 
 export interface MapKitDirectionsRoute {
   path?: MapKitCoordinate[];
+  /** WWDC25 cycling sample returns a polyline overlay instead of `path`. */
+  polyline?: { points?: MapKitCoordinate[]; path?: MapKitCoordinate[] };
   distance?: number;
   expectedTravelTime?: number;
 }
@@ -192,8 +194,10 @@ export interface MapKitGlobal {
     bottom: number,
     left: number
   ) => unknown;
-  Directions?: new () => MapKitDirectionsInstance;
-  DirectionsTransport?: { Walking: string; Automobile: string };
+  Directions?: (new () => MapKitDirectionsInstance) & {
+    Transport?: { Walking?: string; Automobile?: string; Cycling?: string };
+  };
+  DirectionsTransport?: { Walking: string; Automobile: string; Cycling?: string };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };

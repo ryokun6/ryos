@@ -91,7 +91,10 @@ describe("planYouBikeTrip", () => {
     expect(plan.originStation?.stationId).toBe("origin");
     expect(plan.destinationStation?.stationId).toBe("dest");
     expect(plan.legs.map((leg) => leg.mode)).toEqual(["walk", "bike", "walk"]);
-    expect(plan.legs[1]?.path?.length).toBeGreaterThan(2);
+    expect(plan.legs[1]?.path).toEqual([
+      { latitude: NEAR_ORIGIN.latitude, longitude: NEAR_ORIGIN.longitude },
+      { latitude: NEAR_DEST.latitude, longitude: NEAR_DEST.longitude },
+    ]);
     expect(plan.totalDurationSeconds).toBeGreaterThan(0);
   });
 

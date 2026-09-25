@@ -3,7 +3,6 @@ import {
   WALK_SPEED_MPS,
   estimateDurationSeconds,
   haversineMeters,
-  interpolateGreatCircle,
 } from "./geo";
 import {
   DEFAULT_MAX_STATION_WALK_METERS,
@@ -75,7 +74,8 @@ function bikeLeg(
     toLabel,
     distanceMeters,
     durationSeconds: estimateDurationSeconds(distanceMeters, BIKE_SPEED_MPS),
-    path: interpolateGreatCircle(from, to),
+    // Placeholder until the Maps layer fills this with on-road bike geometry.
+    path: [from, to],
   };
 }
 
@@ -117,9 +117,10 @@ function stationLabel(
  * Build a YouBike-aware trip: walk to a nearby station with bikes, bike to
  * a station with docks near the destination, then walk the last block.
  *
- * MapKit has no cycling transport type, so bike-leg geometry is a geodesic
- * estimate. Walk legs start as straight-line estimates; the Maps controller
- * replaces their path/duration with MapKit walking directions when available.
+ * Walk legs start as straight-line estimates (the Maps layer replaces them
+ * with MapKit Walking). Bike legs start as a two-point stub; the layer
+ * fills on-road geometry from MapKit `Directions.Transport.Cycling`
+ * (WWDC25) and falls back to the no-key OSRM bike proxy.
  */
 export function planYouBikeTrip(
   input: PlanYouBikeTripInput

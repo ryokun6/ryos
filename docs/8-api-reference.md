@@ -128,6 +128,7 @@ graph LR
 | `/api/currency-rate` | Currency conversion rates |
 | `/api/mapkit-token` | MapKit JS token |
 | `/api/youbike/stations` | Taiwan YouBike 2.0 station overlay (cached official open data) |
+| `/api/youbike/route` | On-road YouBike bike-leg geometry (cached public OSRM bike profile) |
 | `/api/musickit-token` | MusicKit JS token |
 | `/api/tv/create-channel` | AI-assisted TV channel creation |
 | `/api/opds` | HTTP Basic-authenticated Books acquisition feed |

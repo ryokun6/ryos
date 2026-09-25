@@ -4,3 +4,5 @@ export * from "./feeds";
 export * from "./parseStations";
 export * from "./nearestStations";
 export * from "./routePlan";
+export * from "./bikeRoute";
+export * from "./mapKitRoute";

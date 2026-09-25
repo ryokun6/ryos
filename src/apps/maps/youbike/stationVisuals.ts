@@ -45,29 +45,50 @@ export function youbikePinTitle(station: YouBikeStation): string {
 
 export const YOUBIKE_DOT_SIZE_PX = 10;
 export const YOUBIKE_DOT_SELECTED_SIZE_PX = 12;
+export const YOUBIKE_DOT_DIM_SIZE_PX = 6;
+export const YOUBIKE_DOT_DIM_OPACITY = "0.38";
 
-export function createYouBikeDotElement(color: string, selected = false): HTMLDivElement {
+/** How a dock should read while a YouBike route is (or isn't) on screen. */
+export type YouBikeDotEmphasis = "normal" | "endpoint" | "dimmed";
+
+export function youbikeDotSizePx(
+  emphasis: YouBikeDotEmphasis,
+  selected: boolean
+): number {
+  if (selected || emphasis === "endpoint") return YOUBIKE_DOT_SELECTED_SIZE_PX;
+  if (emphasis === "dimmed") return YOUBIKE_DOT_DIM_SIZE_PX;
+  return YOUBIKE_DOT_SIZE_PX;
+}
+
+export function createYouBikeDotElement(
+  color: string,
+  options: { selected?: boolean; emphasis?: YouBikeDotEmphasis } = {}
+): HTMLDivElement {
   const el = document.createElement("div");
   el.setAttribute("aria-hidden", "true");
-  applyYouBikeDotAppearance(el, color, selected);
+  applyYouBikeDotAppearance(el, color, options);
   return el;
 }
 
 export function applyYouBikeDotAppearance(
   el: HTMLElement,
   color: string,
-  selected = false
+  options: { selected?: boolean; emphasis?: YouBikeDotEmphasis } = {}
 ): void {
-  const size = selected ? YOUBIKE_DOT_SELECTED_SIZE_PX : YOUBIKE_DOT_SIZE_PX;
+  const selected = options.selected === true;
+  const emphasis = options.emphasis ?? "normal";
+  const primary = selected || emphasis === "endpoint";
+  const size = youbikeDotSizePx(emphasis, selected);
   el.style.width = `${size}px`;
   el.style.height = `${size}px`;
   el.style.borderRadius = "50%";
   el.style.backgroundColor = color;
-  el.style.border = selected ? "2px solid #ffffff" : "1.5px solid #ffffff";
+  el.style.border = primary ? "2px solid #ffffff" : "1.5px solid #ffffff";
   el.style.boxSizing = "border-box";
-  el.style.boxShadow = selected
+  el.style.boxShadow = primary
     ? "0 0 0 1px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.35)"
     : "0 0 0 1px rgba(0,0,0,0.22)";
+  el.style.opacity = !selected && emphasis === "dimmed" ? YOUBIKE_DOT_DIM_OPACITY : "1";
   el.style.pointerEvents = "auto";
 }
 

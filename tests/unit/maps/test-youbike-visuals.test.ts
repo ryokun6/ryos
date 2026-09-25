@@ -5,8 +5,10 @@ import {
   YOUBIKE_COLOR_EMPTY,
   YOUBIKE_COLOR_INACTIVE,
   YOUBIKE_COLOR_LOW,
+  YOUBIKE_DOT_DIM_SIZE_PX,
   YOUBIKE_DOT_SELECTED_SIZE_PX,
   YOUBIKE_DOT_SIZE_PX,
+  youbikeDotSizePx,
   youbikePinTitle,
   youbikeStationMarkerColor,
 } from "../../../src/apps/maps/youbike/stationVisuals";
@@ -77,5 +79,12 @@ describe("YouBike compact dots", () => {
     expect(YOUBIKE_DOT_SIZE_PX).toBeLessThanOrEqual(10);
     expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeLessThanOrEqual(12);
     expect(YOUBIKE_DOT_SELECTED_SIZE_PX).toBeGreaterThan(YOUBIKE_DOT_SIZE_PX);
+  });
+
+  test("dim non-endpoint docks during an active route", () => {
+    expect(youbikeDotSizePx("dimmed", false)).toBe(YOUBIKE_DOT_DIM_SIZE_PX);
+    expect(YOUBIKE_DOT_DIM_SIZE_PX).toBeLessThan(YOUBIKE_DOT_SIZE_PX);
+    expect(youbikeDotSizePx("endpoint", false)).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
+    expect(youbikeDotSizePx("dimmed", true)).toBe(YOUBIKE_DOT_SELECTED_SIZE_PX);
   });
 });

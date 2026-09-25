@@ -27,14 +27,21 @@ import { youbikeStationToSavedPlace } from "../youbike/place";
 import { isYouBikeRouteError, planYouBikeTrip } from "../youbike/routePlan";
 import {
   YOUBIKE_BIKE_STROKE,
-  YOUBIKE_DOT_SELECTED_SIZE_PX,
-  YOUBIKE_DOT_SIZE_PX,
   YOUBIKE_WALK_STROKE,
   applyYouBikeDotAppearance,
   createYouBikeDotElement,
+  youbikeDotSizePx,
   youbikePinTitle,
   youbikeStationMarkerColor,
+  type YouBikeDotEmphasis,
 } from "../youbike/stationVisuals";
+import { fetchYouBikeBikeRoute } from "../youbike/fetchBikeRoute";
+import {
+  extractMapKitRouteMetrics,
+  extractMapKitRoutePath,
+  resolveMapKitTransport,
+  type MapKitTransportKind,
+} from "../youbike/mapKitRoute";
 import {
   getMapKit,
   type MapKitCoordinate,
@@ -90,10 +97,19 @@ function featureVisibility(
   return mk.FeatureVisibility?.Hidden ?? "hidden";
 }
 
+function pinEmphasis(
+  stationId: string,
+  endpointIds: Set<string>
+): YouBikeDotEmphasis {
+  if (endpointIds.size === 0) return "normal";
+  return endpointIds.has(stationId) ? "endpoint" : "dimmed";
+}
+
 function applyYouBikePinChrome(
   mk: NonNullable<ReturnType<typeof getMapKit>>,
   annotation: MapKitMarkerAnnotation,
-  station: YouBikeStation
+  station: YouBikeStation,
+  emphasis: YouBikeDotEmphasis
 ): void {
   const selected = annotation.selected === true;
   annotation.title = youbikePinTitle(station);
@@ -104,37 +120,39 @@ function applyYouBikePinChrome(
     selected ? "visible" : "hidden"
   );
   annotation.calloutEnabled = false;
-  const size = selected ? YOUBIKE_DOT_SELECTED_SIZE_PX : YOUBIKE_DOT_SIZE_PX;
+  const size = youbikeDotSizePx(emphasis, selected);
   annotation.size = { width: size, height: size };
   const color = youbikeStationMarkerColor(station);
   if (annotation.element) {
-    applyYouBikeDotAppearance(annotation.element, color, selected);
+    applyYouBikeDotAppearance(annotation.element, color, { selected, emphasis });
   }
 }
 
 function createYouBikeAnnotation(
   mk: NonNullable<ReturnType<typeof getMapKit>>,
   station: YouBikeStation,
-  clusteringId: string | null
+  clusteringId: string | null,
+  emphasis: YouBikeDotEmphasis
 ): MapKitMarkerAnnotation {
   const coord = new mk.Coordinate(station.latitude, station.longitude);
   const color = youbikeStationMarkerColor(station);
   const hidden = featureVisibility(mk, "hidden");
+  const size = youbikeDotSizePx(emphasis, false);
   const options = {
     title: youbikePinTitle(station),
     subtitle: "",
     titleVisibility: hidden,
     subtitleVisibility: hidden,
     calloutEnabled: false,
-    clusteringIdentifier: clusteringId,
+    clusteringIdentifier: emphasis === "endpoint" ? null : clusteringId,
     data: { youbikeId: station.id },
-    size: { width: YOUBIKE_DOT_SIZE_PX, height: YOUBIKE_DOT_SIZE_PX },
+    size: { width: size, height: size },
     animates: false,
   };
   if (mk.Annotation) {
     return new mk.Annotation(
       coord,
-      () => createYouBikeDotElement(color),
+      () => createYouBikeDotElement(color, { emphasis }),
       options
     );
   }
@@ -145,25 +163,32 @@ function createYouBikeAnnotation(
   });
 }
 
-function requestWalkingPath(
+function requestMapKitPath(
   mk: NonNullable<ReturnType<typeof getMapKit>>,
   from: GeoPoint,
-  to: GeoPoint
-): Promise<{ path: GeoPoint[]; distanceMeters?: number; durationSeconds?: number }> {
+  to: GeoPoint,
+  kind: MapKitTransportKind
+): Promise<{
+  path: GeoPoint[];
+  distanceMeters?: number;
+  durationSeconds?: number;
+} | null> {
   return new Promise((resolve) => {
     if (!mk.Directions) {
-      resolve({ path: [from, to] });
+      resolve(kind === "Walking" ? { path: [from, to] } : null);
+      return;
+    }
+    const transport = resolveMapKitTransport(mk.Directions, kind);
+    if (!transport) {
+      resolve(null);
       return;
     }
     const directions = new mk.Directions() as MapKitDirectionsInstance;
-    const transport =
-      (mk.Directions as unknown as { Transport?: { Walking?: string } }).Transport
-        ?.Walking ?? "Walking";
     let settled = false;
     const timer = window.setTimeout(() => {
       if (settled) return;
       settled = true;
-      resolve({ path: [from, to] });
+      resolve(kind === "Walking" ? { path: [from, to] } : null);
     }, 8000);
     try {
       directions.route(
@@ -177,27 +202,22 @@ function requestWalkingPath(
           settled = true;
           window.clearTimeout(timer);
           const route = data?.routes?.[0];
-          if (error || !route?.path || route.path.length < 2) {
-            resolve({ path: [from, to] });
+          const path = extractMapKitRoutePath(route);
+          if (error || path.length < 2) {
+            resolve(kind === "Walking" ? { path: [from, to] } : null);
             return;
           }
+          const metrics = extractMapKitRouteMetrics(route);
           resolve({
-            path: route.path.map((coord) => ({
-              latitude: coord.latitude,
-              longitude: coord.longitude,
-            })),
-            distanceMeters:
-              typeof route.distance === "number" ? route.distance : undefined,
-            durationSeconds:
-              typeof route.expectedTravelTime === "number"
-                ? route.expectedTravelTime
-                : undefined,
+            path,
+            distanceMeters: metrics.distanceMeters,
+            durationSeconds: metrics.durationSeconds,
           });
         }
       );
     } catch {
       window.clearTimeout(timer);
-      resolve({ path: [from, to] });
+      resolve(kind === "Walking" ? { path: [from, to] } : null);
     }
   });
 }
@@ -236,6 +256,7 @@ export function useYouBikeLayer({
   const stationsRef = useRef<YouBikeStation[]>([]);
   const routeRequestIdRef = useRef(0);
   const fetchAbortRef = useRef<AbortController | null>(null);
+  const routeEndpointIdsRef = useRef<Set<string>>(new Set());
   const onSelectStationRef = useRef<(station: YouBikeStation) => void>(
     () => undefined
   );
@@ -338,13 +359,14 @@ export function useYouBikeLayer({
       }
 
       for (const station of visible) {
+        const emphasis = pinEmphasis(station.id, routeEndpointIdsRef.current);
         const bind = (annotation: MapKitMarkerAnnotation) => {
           const onSelect = () => {
-            applyYouBikePinChrome(mk, annotation, station);
+            applyYouBikePinChrome(mk, annotation, station, emphasis);
             onSelectStationRef.current(station);
           };
           const onDeselect = () => {
-            applyYouBikePinChrome(mk, annotation, station);
+            applyYouBikePinChrome(mk, annotation, station, emphasis);
           };
           try {
             annotation.removeEventListener?.("select", onSelect);
@@ -369,8 +391,9 @@ export function useYouBikeLayer({
           }
           annotation.addEventListener?.("select", onSelect);
           annotation.addEventListener?.("deselect", onDeselect);
-          applyYouBikePinChrome(mk, annotation, station);
-          annotation.clusteringIdentifier = clusteringId;
+          applyYouBikePinChrome(mk, annotation, station, emphasis);
+          annotation.clusteringIdentifier =
+            emphasis === "endpoint" ? null : clusteringId;
           annotationsRef.current.set(station.id, {
             annotation,
             onSelect,
@@ -385,7 +408,12 @@ export function useYouBikeLayer({
         }
 
         try {
-          const annotation = createYouBikeAnnotation(mk, station, clusteringId);
+          const annotation = createYouBikeAnnotation(
+            mk,
+            station,
+            clusteringId,
+            emphasis
+          );
           map.addAnnotation(annotation);
           bind(annotation);
         } catch {
@@ -552,18 +580,41 @@ export function useYouBikeLayer({
     [clearRouteOverlays, mapInstanceRef]
   );
 
-  const enrichWalkLegs = useCallback(async (plan: YouBikeRoutePlan) => {
+  const enrichRouteGeometry = useCallback(async (plan: YouBikeRoutePlan) => {
     const mk = getMapKit();
-    if (!mk) return plan;
     const nextLegs = await Promise.all(
       plan.legs.map(async (leg) => {
-        if (leg.mode !== "walk") return leg;
-        const walking = await requestWalkingPath(mk, leg.from, leg.to);
+        if (leg.mode === "walk") {
+          if (!mk) return leg;
+          const walking = await requestMapKitPath(mk, leg.from, leg.to, "Walking");
+          if (!walking) return leg;
+          return {
+            ...leg,
+            path: walking.path,
+            distanceMeters: walking.distanceMeters ?? leg.distanceMeters,
+            durationSeconds: walking.durationSeconds ?? leg.durationSeconds,
+          };
+        }
+        const cycling = mk
+          ? await requestMapKitPath(mk, leg.from, leg.to, "Cycling")
+          : null;
+        if (cycling && cycling.path.length >= 8) {
+          return {
+            ...leg,
+            path: cycling.path,
+            distanceMeters: cycling.distanceMeters ?? leg.distanceMeters,
+            durationSeconds: cycling.durationSeconds ?? leg.durationSeconds,
+          };
+        }
+        const routed = await fetchYouBikeBikeRoute(leg.from, leg.to);
+        if (!routed) {
+          throw new Error("bike_route_failed");
+        }
         return {
           ...leg,
-          path: walking.path,
-          distanceMeters: walking.distanceMeters ?? leg.distanceMeters,
-          durationSeconds: walking.durationSeconds ?? leg.durationSeconds,
+          path: routed.path,
+          distanceMeters: routed.distanceMeters || leg.distanceMeters,
+          durationSeconds: routed.durationSeconds || leg.durationSeconds,
         };
       })
     );
@@ -679,7 +730,7 @@ export function useYouBikeLayer({
           setRoutePlan(null);
           return;
         }
-        const enriched = await enrichWalkLegs(planned);
+        const enriched = await enrichRouteGeometry(planned);
         if (requestId !== routeRequestIdRef.current) return;
         setRoutePlan(enriched);
         drawRouteOverlays(enriched);
@@ -693,7 +744,7 @@ export function useYouBikeLayer({
         }
       }
     },
-    [drawRouteOverlays, enrichWalkLegs, language, resolveOrigin]
+    [drawRouteOverlays, enrichRouteGeometry, language, resolveOrigin]
   );
 
   const handleClearYouBikeRoute = useCallback(() => {
@@ -703,6 +754,18 @@ export function useYouBikeLayer({
     setIsRouting(false);
     clearRouteOverlays();
   }, [clearRouteOverlays]);
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    if (routePlan?.originStation?.id) ids.add(routePlan.originStation.id);
+    if (routePlan?.destinationStation?.id) {
+      ids.add(routePlan.destinationStation.id);
+    }
+    routeEndpointIdsRef.current = ids;
+    if (stationsRef.current.length > 0) {
+      syncStationAnnotations(stationsRef.current);
+    }
+  }, [routePlan, syncStationAnnotations]);
 
   const selectedYoubikeStation =
     selectedPlace &&
