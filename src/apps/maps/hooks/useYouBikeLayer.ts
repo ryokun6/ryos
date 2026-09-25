@@ -16,6 +16,7 @@ import {
   isInTaiwan,
   padBBox,
   regionFittingPoints,
+  type FittedMapRegion,
   type GeoBBox,
   type GeoPoint,
   type YouBikeLegMode,
@@ -42,6 +43,7 @@ import {
   type YouBikeMapScheme,
 } from "../youbike/stationVisuals";
 import { fetchYouBikeBikeRoute } from "../youbike/fetchBikeRoute";
+import { youbikeStepFocusRegion } from "../youbike/routeSteps";
 import {
   extractMapKitRouteMetrics,
   extractMapKitRoutePath,
@@ -105,12 +107,11 @@ function featureVisibility(
 
 function toRouteSteps(
   mode: YouBikeLegMode,
-  steps: Array<{
-    instruction: string;
-    streetName: string;
-    distanceMeters: number;
-    durationSeconds?: number;
-  }>
+  steps: Array<
+    Omit<YouBikeRouteStep, "mode" | "durationSeconds"> & {
+      durationSeconds?: number;
+    }
+  >
 ): YouBikeRouteStep[] {
   return steps.map((step) => ({
     mode,
@@ -118,7 +119,20 @@ function toRouteSteps(
     streetName: step.streetName,
     distanceMeters: step.distanceMeters,
     durationSeconds: step.durationSeconds ?? 0,
+    ...(step.location ? { location: step.location } : {}),
+    ...(step.path && step.path.length >= 2 ? { path: step.path } : {}),
+    ...(step.maneuver ? { maneuver: step.maneuver } : {}),
   }));
+}
+
+function animateMapToRegion(
+  mk: NonNullable<ReturnType<typeof getMapKit>>,
+  map: MapKitMapInstance,
+  fitted: FittedMapRegion
+): void {
+  const center = new mk.Coordinate(fitted.center.latitude, fitted.center.longitude);
+  const span = new mk.CoordinateSpan(fitted.latitudeDelta, fitted.longitudeDelta);
+  map.setRegionAnimated(new mk.CoordinateRegion(center, span), true);
 }
 
 function pinEmphasis(
@@ -637,17 +651,7 @@ export function useYouBikeLayer({
           leg.path && leg.path.length >= 2 ? leg.path : [leg.from, leg.to]
         );
         const fitted = regionFittingPoints(pathPoints);
-        if (fitted) {
-          const center = new mk.Coordinate(
-            fitted.center.latitude,
-            fitted.center.longitude
-          );
-          const span = new mk.CoordinateSpan(
-            fitted.latitudeDelta,
-            fitted.longitudeDelta
-          );
-          map.setRegionAnimated(new mk.CoordinateRegion(center, span), true);
-        }
+        if (fitted) animateMapToRegion(mk, map, fitted);
       } catch {
         overlaysRef.current = overlays;
       }
@@ -825,6 +829,22 @@ export function useYouBikeLayer({
     [drawRouteOverlays, enrichRouteGeometry, language, resolveOrigin]
   );
 
+  const focusYouBikeStep = useCallback(
+    (step: YouBikeRouteStep) => {
+      const mk = getMapKit();
+      const map = mapInstanceRef.current;
+      if (!mk || !map) return;
+      const fitted = youbikeStepFocusRegion(step);
+      if (!fitted) return;
+      try {
+        animateMapToRegion(mk, map, fitted);
+      } catch {
+        // ignore
+      }
+    },
+    [mapInstanceRef]
+  );
+
   const handleClearYouBikeRoute = useCallback(() => {
     routeRequestIdRef.current += 1;
     setRoutePlan(null);
@@ -862,5 +882,6 @@ export function useYouBikeLayer({
     selectedYoubikeStation,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
+    focusYouBikeStep,
   };
 }

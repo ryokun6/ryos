@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Bicycle, ListNumbers, PersonSimpleWalk, X } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
@@ -11,9 +11,11 @@ import {
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type { YouBikeRoutePlan, YouBikeRouteStep } from "../youbike";
 import {
-  formatYouBikeStepLabel,
   listYouBikeRouteSteps,
+  localizeYouBikeStepLabel,
 } from "../youbike/routeSteps";
+
+const STEPS_FADE_PX = 20;
 
 const CARD_TRANSITION: Transition = {
   type: "spring",
@@ -27,6 +29,7 @@ export interface MapsYouBikeRouteCardProps {
   isRouting: boolean;
   error: string | null;
   onClose: () => void;
+  onSelectStep?: (step: YouBikeRouteStep) => void;
 }
 
 function formatDuration(seconds: number): string {
@@ -34,37 +37,159 @@ function formatDuration(seconds: number): string {
   return String(rounded);
 }
 
-function RouteStepRow({ step }: { step: YouBikeRouteStep }) {
+function formatDistance(
+  meters: number,
+  t: (key: string, options?: Record<string, unknown>) => string
+): string {
+  if (meters >= 1000) {
+    return t("apps.maps.youbike.distanceKilometers", {
+      defaultValue: "{{distance}} km",
+      distance: (meters / 1000).toFixed(1),
+    });
+  }
+  return t("apps.maps.youbike.distanceMeters", {
+    defaultValue: "{{distance}} m",
+    distance: Math.round(meters),
+  });
+}
+
+function stepsScrollMask(fadeTop: boolean, fadeBottom: boolean): string | undefined {
+  if (fadeTop && fadeBottom) {
+    return `linear-gradient(to bottom, transparent 0, #000 ${STEPS_FADE_PX}px, #000 calc(100% - ${STEPS_FADE_PX}px), transparent 100%)`;
+  }
+  if (fadeTop) {
+    return `linear-gradient(to bottom, transparent 0, #000 ${STEPS_FADE_PX}px, #000 100%)`;
+  }
+  if (fadeBottom) {
+    return `linear-gradient(to bottom, #000 0, #000 calc(100% - ${STEPS_FADE_PX}px), transparent 100%)`;
+  }
+  return undefined;
+}
+
+function RouteStepRow({
+  step,
+  index,
+  selected,
+  onSelect,
+}: {
+  step: YouBikeRouteStep;
+  index: number;
+  selected: boolean;
+  onSelect: (step: YouBikeRouteStep, index: number) => void;
+}) {
   const { t } = useTranslation();
   const Icon = step.mode === "bike" ? Bicycle : PersonSimpleWalk;
+  const label = localizeYouBikeStepLabel(step, t);
+  const distance = formatDistance(step.distanceMeters, t);
+  const meta =
+    step.durationSeconds >= 30
+      ? t("apps.maps.youbike.legMeta", {
+          defaultValue: "{{minutes}} min · {{distance}}",
+          minutes: formatDuration(step.durationSeconds),
+          distance,
+        })
+      : distance;
   return (
-    <li className="flex items-start gap-2 text-[11px] leading-snug text-os-text-primary">
-      <Icon
-        size={14}
-        weight="fill"
-        className="mt-0.5 shrink-0 text-os-text-secondary"
-      />
-      <div className="min-w-0">
-        <div className="font-medium">{formatYouBikeStepLabel(step)}</div>
-        <div className="text-os-text-secondary">
-          {step.durationSeconds >= 30
-            ? t("apps.maps.youbike.legMeta", {
-                defaultValue: "{{minutes}} min · {{distance}}",
-                minutes: formatDuration(step.durationSeconds),
-                distance: formatDistance(step.distanceMeters),
-              })
-            : formatDistance(step.distanceMeters)}
+    <li>
+      <button
+        type="button"
+        aria-current={selected ? "step" : undefined}
+        aria-label={t("apps.maps.youbike.stepAria", {
+          defaultValue: "Step {{index}}: {{label}}",
+          index: index + 1,
+          label: `${label}. ${meta}`,
+        })}
+        onClick={() => onSelect(step, index)}
+        className={cn(
+          "flex w-full items-start gap-2 rounded-os px-1.5 py-1 text-left text-[11px] leading-snug",
+          "focus:outline-none focus-visible:ring-1",
+          selected
+            ? "bg-os-selection-bg text-os-selection-text"
+            : "text-os-text-primary hover:bg-os-selection-bg/15"
+        )}
+      >
+        <Icon
+          size={14}
+          weight="fill"
+          className={cn(
+            "mt-0.5 shrink-0",
+            selected ? "text-os-selection-text" : "text-os-text-secondary"
+          )}
+        />
+        <div className="min-w-0">
+          <div className="font-medium">{label}</div>
+          <div className={selected ? "opacity-80" : "text-os-text-secondary"}>
+            {meta}
+          </div>
         </div>
-      </div>
+      </button>
     </li>
   );
 }
 
-function formatDistance(meters: number): string {
-  if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(1)} km`;
-  }
-  return `${Math.round(meters)} m`;
+function YouBikeStepsList({
+  steps,
+  selectedIndex,
+  onSelect,
+}: {
+  steps: YouBikeRouteStep[];
+  selectedIndex: number | null;
+  onSelect: (step: YouBikeRouteStep, index: number) => void;
+}) {
+  const { t } = useTranslation();
+  const scrollRef = useRef<HTMLOListElement>(null);
+  const [fade, setFade] = useState({ top: false, bottom: false });
+
+  const updateFade = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    const canScroll = maxScroll > 1;
+    const top = canScroll && el.scrollTop > 1;
+    const bottom = canScroll && el.scrollTop < maxScroll - 1;
+    setFade((prev) =>
+      prev.top === top && prev.bottom === bottom ? prev : { top, bottom }
+    );
+  }, []);
+
+  useLayoutEffect(() => {
+    updateFade();
+  }, [updateFade, steps.length]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateFade, { passive: true });
+    const observer = new ResizeObserver(() => updateFade());
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateFade);
+      observer.disconnect();
+    };
+  }, [updateFade, steps.length]);
+
+  const maskImage = stepsScrollMask(fade.top, fade.bottom);
+
+  return (
+    <ol
+      ref={scrollRef}
+      className="flex max-h-40 flex-col overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]"
+      style={{ maskImage, WebkitMaskImage: maskImage }}
+      aria-label={t("apps.maps.youbike.stepsRegionLabel", {
+        defaultValue: "Turn-by-turn steps",
+      })}
+    >
+      {steps.map((step, index) => (
+        <RouteStepRow
+          key={`${step.mode}-${index}`}
+          step={step}
+          index={index}
+          selected={selectedIndex === index}
+          onSelect={onSelect}
+        />
+      ))}
+    </ol>
+  );
 }
 
 export function MapsYouBikeRouteCard({
@@ -72,16 +197,27 @@ export function MapsYouBikeRouteCard({
   isRouting,
   error,
   onClose,
+  onSelectStep,
 }: MapsYouBikeRouteCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const visible = !!plan || isRouting || !!error;
   const [showSteps, setShowSteps] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const steps = plan ? listYouBikeRouteSteps(plan) : [];
 
   useEffect(() => {
     setShowSteps(false);
+    setSelectedIndex(null);
   }, [plan]);
+
+  const handleSelectStep = useCallback(
+    (step: YouBikeRouteStep, index: number) => {
+      setSelectedIndex(index);
+      onSelectStep?.(step);
+    },
+    [onSelectStep]
+  );
 
   return (
     <AnimatePresence>
@@ -134,7 +270,7 @@ export function MapsYouBikeRouteCard({
                       ? t("apps.maps.youbike.routeSummary", {
                           defaultValue: "{{minutes}} min · {{distance}}",
                           minutes: formatDuration(plan.totalDurationSeconds),
-                          distance: formatDistance(plan.totalDistanceMeters),
+                          distance: formatDistance(plan.totalDistanceMeters, t),
                         })
                       : error
                         ? t(`apps.maps.youbike.errors.${error}`, {
@@ -161,16 +297,11 @@ export function MapsYouBikeRouteCard({
             </div>
 
             {plan && steps.length > 0 && showSteps && (
-              <ol
-                className="flex max-h-40 flex-col gap-1.5 overflow-y-auto"
-                aria-label={t("apps.maps.youbike.stepsRegionLabel", {
-                  defaultValue: "Turn-by-turn steps",
-                })}
-              >
-                {steps.map((step, index) => (
-                  <RouteStepRow key={`${step.mode}-${index}`} step={step} />
-                ))}
-              </ol>
+              <YouBikeStepsList
+                steps={steps}
+                selectedIndex={selectedIndex}
+                onSelect={handleSelectStep}
+              />
             )}
 
             {plan?.warnings.includes("origin_station_no_bikes") && (

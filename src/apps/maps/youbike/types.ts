@@ -65,6 +65,12 @@ export interface YouBikeFeedStatus {
 
 export type YouBikeLegMode = "walk" | "bike";
 
+/** Structured OSRM maneuver. MapKit steps omit this and keep Apple's instruction. */
+export interface YouBikeStepManeuver {
+  type: string;
+  modifier: string;
+}
+
 export interface YouBikeRouteStep {
   mode: YouBikeLegMode;
   /** Maneuver, e.g. "Turn right". MapKit may already include the street. */
@@ -72,6 +78,11 @@ export interface YouBikeRouteStep {
   streetName: string;
   distanceMeters: number;
   durationSeconds: number;
+  /** Where the maneuver happens, when the router provided one. */
+  location?: GeoPoint;
+  /** Road geometry for this step, when the router provided it. */
+  path?: GeoPoint[];
+  maneuver?: YouBikeStepManeuver;
 }
 
 export interface YouBikeRouteLeg {

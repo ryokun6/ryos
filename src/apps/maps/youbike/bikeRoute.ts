@@ -14,6 +14,9 @@ export interface BikeRouteStep {
   streetName: string;
   distanceMeters: number;
   durationSeconds: number;
+  location?: GeoPoint;
+  path?: GeoPoint[];
+  maneuver?: { type: string; modifier: string };
 }
 
 export interface BikeRouteResult {
@@ -37,7 +40,7 @@ export function roundCoord(value: number, decimals = 5): number {
 export function youbikeBikeRouteCacheKey(from: GeoPoint, to: GeoPoint): string {
   const a = `${roundCoord(from.latitude)},${roundCoord(from.longitude)}`;
   const b = `${roundCoord(to.latitude)},${roundCoord(to.longitude)}`;
-  return `cache:youbike:route:v2:${a}:${b}`;
+  return `cache:youbike:route:v3:${a}:${b}`;
 }
 
 export function parseBikeRouteQuery(query: {
@@ -118,7 +121,8 @@ function parseOsrmSteps(route: {
         name?: unknown;
         distance?: unknown;
         duration?: unknown;
-        maneuver?: { type?: unknown; modifier?: unknown };
+        geometry?: { coordinates?: unknown };
+        maneuver?: { type?: unknown; modifier?: unknown; location?: unknown };
       };
       const streetName = typeof step.name === "string" ? step.name.trim() : "";
       const type =
@@ -139,11 +143,20 @@ function parseOsrmSteps(route: {
         typeof step.duration === "number" && Number.isFinite(step.duration)
           ? Math.round(step.duration)
           : 0;
+      const location = asLngLatPair(step.maneuver?.location) ?? undefined;
+      const geometry = Array.isArray(step.geometry?.coordinates)
+        ? step.geometry.coordinates
+            .map(asLngLatPair)
+            .filter((point): point is GeoPoint => point !== null)
+        : [];
       steps.push({
         instruction: instruction || streetName,
         streetName,
         distanceMeters,
         durationSeconds,
+        ...(location ? { location } : {}),
+        ...(geometry.length >= 2 ? { path: geometry } : {}),
+        ...(type || modifier ? { maneuver: { type, modifier } } : {}),
       });
     }
   }

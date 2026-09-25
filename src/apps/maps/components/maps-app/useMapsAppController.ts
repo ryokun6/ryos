@@ -1263,6 +1263,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute: youbike.handleClearYouBikeRoute,
+    focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeOverlayEnabled,
     setYoubikeOverlayEnabled,
     youbikeRoutePlan: youbike.routePlan,

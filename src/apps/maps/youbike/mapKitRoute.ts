@@ -19,6 +19,8 @@ export interface MapKitRouteStep {
   instruction: string;
   streetName: string;
   distanceMeters: number;
+  location?: GeoPoint;
+  path?: GeoPoint[];
 }
 
 function asPoint(value: unknown): GeoPoint | null {
@@ -86,6 +88,9 @@ export function extractMapKitRouteSteps(route: unknown): MapKitRouteStep[] {
       instructions?: unknown;
       distance?: unknown;
       name?: unknown;
+      path?: unknown;
+      coordinate?: unknown;
+      polyline?: { points?: unknown; path?: unknown };
     };
     const instruction =
       typeof record.instructions === "string" ? record.instructions.trim() : "";
@@ -95,10 +100,18 @@ export function extractMapKitRouteSteps(route: unknown): MapKitRouteStep[] {
       typeof record.distance === "number" && Number.isFinite(record.distance)
         ? record.distance
         : 0;
+    let path = asPointList(record.path);
+    if (path.length < 2 && record.polyline && typeof record.polyline === "object") {
+      const fromPoints = asPointList(record.polyline.points);
+      path = fromPoints.length >= 2 ? fromPoints : asPointList(record.polyline.path);
+    }
+    const location = asPoint(record.coordinate) ?? path[0];
     parsed.push({
       instruction: instruction || streetName,
       streetName,
       distanceMeters,
+      ...(location ? { location } : {}),
+      ...(path.length >= 2 ? { path } : {}),
     });
   }
   return parsed;
