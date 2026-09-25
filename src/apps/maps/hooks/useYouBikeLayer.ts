@@ -34,10 +34,12 @@ import {
   createYouBikeDotElement,
   shouldRenderYouBikeOverlayForSpan,
   youbikeDotFramePx,
+  youbikeMapScheme,
   youbikePinTitle,
   youbikeShouldPaintDot,
   youbikeStationMarkerColor,
   type YouBikeDotEmphasis,
+  type YouBikeMapScheme,
 } from "../youbike/stationVisuals";
 import { fetchYouBikeBikeRoute } from "../youbike/fetchBikeRoute";
 import {
@@ -71,6 +73,7 @@ export interface UseYouBikeLayerArgs {
   setSelectedPlace: (place: SavedPlace | null) => void;
   recordRecentPlace: (place: SavedPlace) => void;
   savedPlaceIds: Set<string>;
+  isDarkMode: boolean;
 }
 
 function regionToBBox(region: ReturnType<typeof readMapRegion>): GeoBBox | null {
@@ -131,7 +134,8 @@ function applyYouBikePinChrome(
   annotation: MapKitMarkerAnnotation,
   station: YouBikeStation,
   emphasis: YouBikeDotEmphasis,
-  selected: boolean
+  selected: boolean,
+  scheme: YouBikeMapScheme
 ): void {
   annotation.title = youbikePinTitle(station);
   annotation.subtitle = "";
@@ -144,7 +148,11 @@ function applyYouBikePinChrome(
   const size = youbikeDotFramePx(emphasis);
   annotation.size = { width: size, height: size };
   if (annotation.element) {
-    applyYouBikeDotAppearance(annotation.element, station, { selected, emphasis });
+    applyYouBikeDotAppearance(annotation.element, station, {
+      selected,
+      emphasis,
+      scheme,
+    });
   }
 }
 
@@ -152,10 +160,11 @@ function createYouBikeAnnotation(
   mk: NonNullable<ReturnType<typeof getMapKit>>,
   station: YouBikeStation,
   clusteringId: string | null,
-  emphasis: YouBikeDotEmphasis
+  emphasis: YouBikeDotEmphasis,
+  scheme: YouBikeMapScheme
 ): MapKitMarkerAnnotation {
   const coord = new mk.Coordinate(station.latitude, station.longitude);
-  const color = youbikeStationMarkerColor(station);
+  const color = youbikeStationMarkerColor(station, scheme);
   const hidden = featureVisibility(mk, "hidden");
   const size = youbikeDotFramePx(emphasis);
   const options = {
@@ -172,7 +181,7 @@ function createYouBikeAnnotation(
   if (mk.Annotation) {
     return new mk.Annotation(
       coord,
-      () => createYouBikeDotElement(station, { emphasis }),
+      () => createYouBikeDotElement(station, { emphasis, scheme }),
       options
     );
   }
@@ -255,7 +264,9 @@ export function useYouBikeLayer({
   setSelectedPlace,
   recordRecentPlace,
   savedPlaceIds,
+  isDarkMode,
 }: UseYouBikeLayerArgs) {
+  const colorScheme = youbikeMapScheme(isDarkMode);
   const [stations, setStations] = useState<YouBikeStation[]>([]);
   const [isLayerVisible, setIsLayerVisible] = useState(false);
   const [isLoadingStations, setIsLoadingStations] = useState(false);
@@ -402,7 +413,8 @@ export function useYouBikeLayer({
               annotation,
               station,
               emphasis,
-              true
+              true,
+              colorScheme
             );
             onSelectStationRef.current(station);
           };
@@ -412,7 +424,8 @@ export function useYouBikeLayer({
               annotation,
               station,
               emphasis,
-              selectedYoubikeIdRef.current === station.id
+              selectedYoubikeIdRef.current === station.id,
+              colorScheme
             );
           };
           try {
@@ -443,7 +456,8 @@ export function useYouBikeLayer({
             annotation,
             station,
             emphasis,
-            isSelected()
+            isSelected(),
+            colorScheme
           );
           annotation.clusteringIdentifier =
             emphasis === "endpoint" ? null : clusteringId;
@@ -465,7 +479,8 @@ export function useYouBikeLayer({
             mk,
             station,
             clusteringId,
-            emphasis
+            emphasis,
+            colorScheme
           );
           map.addAnnotation(annotation);
           bind(annotation);
@@ -476,6 +491,7 @@ export function useYouBikeLayer({
     },
     [
       clearStationAnnotations,
+      colorScheme,
       enabled,
       mapInstanceRef,
       savedPlaceIds,

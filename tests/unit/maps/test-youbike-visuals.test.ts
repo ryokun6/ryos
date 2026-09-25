@@ -11,7 +11,8 @@ import {
   YOUBIKE_COLOR_LOW,
   YOUBIKE_DOT_DIM_OPACITY,
   YOUBIKE_DOT_DIM_SIZE_PX,
-  YOUBIKE_DOT_OUTLINE_COLOR,
+  YOUBIKE_DOT_OUTLINE_DARK,
+  YOUBIKE_DOT_OUTLINE_LIGHT,
   YOUBIKE_DOT_OUTLINE_PX,
   YOUBIKE_DOT_SELECTED_SIZE_PX,
   YOUBIKE_DOT_SIZE_PX,
@@ -164,22 +165,32 @@ describe("YouBike compact dots", () => {
     ).toContain(YOUBIKE_COLOR_INACTIVE);
   });
 
-  test("paints a small opaque gradient disk with a dark outer outline", () => {
-    const el = {
-      style: {} as Record<string, string>,
-    };
-    applyYouBikeDotAppearance(el as unknown as HTMLElement, station());
-    expect(el.style.boxSizing).toBe("content-box");
-    expect(el.style.border).toBe(youbikeDotOutline());
-    expect(el.style.outline).toBe("none");
-    expect(YOUBIKE_DOT_OUTLINE_PX).toBeGreaterThanOrEqual(1.5);
-    expect(YOUBIKE_DOT_OUTLINE_COLOR.toLowerCase()).not.toContain("fff");
-    expect(el.style.border.toLowerCase()).not.toContain("#fff");
-    expect(el.style.border.toLowerCase()).not.toContain("white");
-    expect(el.style.backgroundImage).toBe(youbikeStationMarkerGradient(station()));
-    expect(el.style.backgroundColor).toBe(YOUBIKE_COLOR_AVAILABLE);
-    expect(el.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
-    expect(el.style.opacity).toBe("1");
+  test("uses a white outline in light mode and brighter fills in dark mode", () => {
+    const light = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(light as unknown as HTMLElement, station(), {
+      scheme: "light",
+    });
+    expect(light.style.boxSizing).toBe("content-box");
+    expect(light.style.border).toBe(youbikeDotOutline("light"));
+    expect(light.style.border).toContain(YOUBIKE_DOT_OUTLINE_LIGHT);
+    expect(YOUBIKE_DOT_OUTLINE_LIGHT.toLowerCase()).toBe("#ffffff");
+    expect(light.style.backgroundColor).toBe(YOUBIKE_COLOR_AVAILABLE);
+    expect(light.style.backgroundImage).toBe(youbikeStationMarkerGradient(station(), "light"));
+    expect(light.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
+    expect(light.style.opacity).toBe("1");
+
+    const dark = { style: {} as Record<string, string> };
+    applyYouBikeDotAppearance(dark as unknown as HTMLElement, station(), {
+      scheme: "dark",
+    });
+    expect(dark.style.border).toBe(youbikeDotOutline("dark"));
+    expect(dark.style.border).toContain(YOUBIKE_DOT_OUTLINE_DARK);
+    expect(dark.style.border.toLowerCase()).not.toContain("#fff");
+    expect(dark.style.backgroundColor).not.toBe(YOUBIKE_COLOR_AVAILABLE);
+    expect(dark.style.backgroundImage).toBe(youbikeStationMarkerGradient(station(), "dark"));
+    expect(youbikeStationMarkerColor(station({ bikesAvailable: 3 }), "dark")).not.toBe(
+      YOUBIKE_COLOR_LOW
+    );
   });
 
   test("only route endpoints get full size; other route docks dim", () => {
@@ -189,7 +200,7 @@ describe("YouBike compact dots", () => {
     });
     expect(browse.style.width).toBe(`${YOUBIKE_DOT_SIZE_PX}px`);
     expect(browse.style.opacity).toBe("1");
-    expect(browse.style.border).toBe(youbikeDotOutline());
+    expect(browse.style.border).toBe(youbikeDotOutline("light"));
 
     const dimmed = { style: {} as Record<string, string> };
     applyYouBikeDotAppearance(dimmed as unknown as HTMLElement, station(), {
@@ -197,7 +208,7 @@ describe("YouBike compact dots", () => {
     });
     expect(dimmed.style.width).toBe(`${YOUBIKE_DOT_DIM_SIZE_PX}px`);
     expect(dimmed.style.opacity).toBe(YOUBIKE_DOT_DIM_OPACITY);
-    expect(dimmed.style.border).toBe(youbikeDotOutline());
+    expect(dimmed.style.border).toBe(youbikeDotOutline("light"));
 
     const endpoint = { style: {} as Record<string, string> };
     applyYouBikeDotAppearance(endpoint as unknown as HTMLElement, station(), {
@@ -205,7 +216,7 @@ describe("YouBike compact dots", () => {
     });
     expect(endpoint.style.width).toBe(`${YOUBIKE_DOT_SELECTED_SIZE_PX}px`);
     expect(endpoint.style.opacity).toBe("1");
-    expect(endpoint.style.border).toBe(youbikeDotOutline());
+    expect(endpoint.style.border).toBe(youbikeDotOutline("light"));
     expect(endpoint.style.boxShadow).not.toBe("none");
   });
 

@@ -762,6 +762,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     setSelectedPlace,
     recordRecentPlace,
     savedPlaceIds,
+    isDarkMode,
   });
 
   const handleYouBikeDirections = useCallback(
