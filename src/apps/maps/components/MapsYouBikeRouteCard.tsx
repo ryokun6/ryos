@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Bicycle, ListNumbers, Path, PersonSimpleWalk, Stop, X } from "@phosphor-icons/react";
+import { Bicycle, ListNumbers, PersonSimpleWalk, Square, Stop, X } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import { cn } from "@/lib/utils";
+import { resumeAudioContext } from "@/lib/audioContext";
 import {
   AQUA_ICON_BUTTON_PADDING_CLASS,
   AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT,
+  AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE,
 } from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
 import {
@@ -327,7 +329,7 @@ export function MapsYouBikeRouteCard({
   userLocation = null,
   onStartNavigation,
 }: MapsYouBikeRouteCardProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const visible = !!plan || isRouting || !!error;
   const [showSteps, setShowSteps] = useState(false);
@@ -367,7 +369,6 @@ export function MapsYouBikeRouteCard({
     focusedIndex,
     stepCount: steps.length,
     remainingMeters,
-    language: i18n.language,
     labelForIndex,
     thenPhrase,
   });
@@ -402,6 +403,8 @@ export function MapsYouBikeRouteCard({
     setIsNavigating(true);
     const step = steps[index];
     if (step) onSelectStep?.(step);
+    // Resume the shared AudioContext in this tap so Chat / Ryo TTS can play.
+    void resumeAudioContext();
     speakStart(index);
   }, [activeStepIndex, onSelectStep, onStartNavigation, speakStart, steps]);
 
@@ -576,9 +579,9 @@ export function MapsYouBikeRouteCard({
                   onClick={handleStartNavigation}
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
-                  <Path
+                  <Square
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
                   />
                   <span>
                     {t("apps.maps.youbike.startNavigation", {

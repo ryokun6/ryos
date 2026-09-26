@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef } from "react";
+import { useTtsQueue } from "@/hooks/useTtsQueue";
+import { resumeAudioContext } from "@/lib/audioContext";
 import {
   youbikeNavAnnounce,
   type YouBikeNavAnnounceResult,
 } from "../youbike/navigation";
 import {
   cancelYouBikeNavigationSpeech,
-  speakYouBikeNavigation,
+  registerYouBikeNavigationSpeechStop,
 } from "../youbike/navigationSpeech";
 
 export function useYouBikeNavigationSpeech(options: {
@@ -13,7 +15,6 @@ export function useYouBikeNavigationSpeech(options: {
   focusedIndex: number;
   stepCount: number;
   remainingMeters: number | null;
-  language: string;
   labelForIndex: (index: number) => string;
   thenPhrase: (label: string) => string;
 }) {
@@ -22,10 +23,11 @@ export function useYouBikeNavigationSpeech(options: {
     focusedIndex,
     stepCount,
     remainingMeters,
-    language,
     labelForIndex,
     thenPhrase,
   } = options;
+
+  const { speak, stop } = useTtsQueue();
 
   const stateRef = useRef({
     lastSpokenIndex: null as number | null,
@@ -34,10 +36,14 @@ export function useYouBikeNavigationSpeech(options: {
   });
   const labelForIndexRef = useRef(labelForIndex);
   const thenPhraseRef = useRef(thenPhrase);
-  const languageRef = useRef(language);
+  const speakRef = useRef(speak);
+  const stopRef = useRef(stop);
   labelForIndexRef.current = labelForIndex;
   thenPhraseRef.current = thenPhrase;
-  languageRef.current = language;
+  speakRef.current = speak;
+  stopRef.current = stop;
+
+  useEffect(() => registerYouBikeNavigationSpeechStop(stop), [stop]);
 
   const applyDecision = useCallback((decision: YouBikeNavAnnounceResult) => {
     stateRef.current = {
@@ -50,11 +56,17 @@ export function useYouBikeNavigationSpeech(options: {
     if (!label) return;
     const text =
       decision.kind === "approach" ? thenPhraseRef.current(label) : label;
-    speakYouBikeNavigation(text, languageRef.current);
+    // Replace, don't queue — same as Chat's manual replay (stop then speak).
+    stopRef.current();
+    speakRef.current(text);
   }, []);
 
   const speakStart = useCallback(
     (index: number) => {
+      // Unlock the shared AudioContext inside the Start tap, matching Chat /
+      // Ryo: iOS Safari will not play `/api/speech` clips until resume() runs
+      // in a user gesture.
+      void resumeAudioContext();
       applyDecision(
         youbikeNavAnnounce({
           isStarting: true,

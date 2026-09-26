@@ -1,28 +1,30 @@
-import {
-  createSpeechUtterance,
-  getBrowserSpeechSynthesis,
-  ryOSLocaleToSpeechLanguage,
-} from "@/utils/browserSpeech";
+/**
+ * YouBike turn-by-turn speech uses the same Chat / Ryo `useTtsQueue` pipeline
+ * (`speak` → `/api/speech` → shared `AudioContext`). This module only holds
+ * the active hook's `stop` so Stop / Done / clear-route can cancel from
+ * outside the card.
+ */
 
-/** Drop any in-flight YouBike navigation utterance. */
-export function cancelYouBikeNavigationSpeech(): void {
-  getBrowserSpeechSynthesis()?.cancel();
+type StopFn = () => void;
+
+let activeStop: StopFn | null = null;
+
+/** Bind the mounted navigation hook's `useTtsQueue().stop`. */
+export function registerYouBikeNavigationSpeechStop(
+  stop: StopFn
+): () => void {
+  activeStop = stop;
+  return () => {
+    if (activeStop === stop) activeStop = null;
+  };
 }
 
-/**
- * Speak one navigation cue. Cancels the previous utterance so GPS ticks
- * cannot queue a backlog. Call the first time from a user gesture (Start).
- */
-export function speakYouBikeNavigation(text: string, locale: string): void {
-  const synth = getBrowserSpeechSynthesis();
-  const spoken = text.trim();
-  if (!synth || !spoken) return;
-  synth.cancel();
-  synth.resume();
-  const utterance = createSpeechUtterance(spoken, {
-    lang: ryOSLocaleToSpeechLanguage(locale),
-    rate: 1,
-    voices: synth.getVoices(),
-  });
-  synth.speak(utterance);
+/** Drop any in-flight YouBike navigation clip. */
+export function cancelYouBikeNavigationSpeech(): void {
+  activeStop?.();
+}
+
+/** Test helper: clear the registered stop between suites. */
+export function __resetYouBikeNavigationSpeechForTests(): void {
+  activeStop = null;
 }

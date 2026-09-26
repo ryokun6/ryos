@@ -1,10 +1,17 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   YOUBIKE_NAV_APPROACH_METERS,
   YOUBIKE_NAV_SPEAK_COOLDOWN_MS,
   youbikeNavAnnounce,
   youbikeNavigationFocusedIndex,
 } from "../../../src/apps/maps/youbike/navigation";
+import {
+  __resetYouBikeNavigationSpeechForTests,
+  cancelYouBikeNavigationSpeech,
+  registerYouBikeNavigationSpeechStop,
+} from "../../../src/apps/maps/youbike/navigationSpeech";
 import { youbikeStepRemainingMeters } from "../../../src/apps/maps/youbike/routeSteps";
 
 describe("youbikeNavigationFocusedIndex", () => {
@@ -163,5 +170,43 @@ describe("youbikeNavAnnounce", () => {
     });
     expect(result.kind).toBeNull();
     expect(result.lastApproachIndex).toBeNull();
+  });
+});
+
+describe("youbike navigation speech stop registration", () => {
+  afterEach(() => {
+    __resetYouBikeNavigationSpeechForTests();
+  });
+
+  test("cancel invokes the registered Chat/Ryo TTS stop", () => {
+    let stopped = 0;
+    const unregister = registerYouBikeNavigationSpeechStop(() => {
+      stopped += 1;
+    });
+    cancelYouBikeNavigationSpeech();
+    expect(stopped).toBe(1);
+    unregister();
+    cancelYouBikeNavigationSpeech();
+    expect(stopped).toBe(1);
+  });
+
+  test("hooks Chat/Ryo useTtsQueue instead of isolated speechSynthesis", () => {
+    const hook = readFileSync(
+      resolve(import.meta.dir, "../../../src/apps/maps/hooks/useYouBikeNavigationSpeech.ts"),
+      "utf8"
+    );
+    const speech = readFileSync(
+      resolve(import.meta.dir, "../../../src/apps/maps/youbike/navigationSpeech.ts"),
+      "utf8"
+    );
+    const card = readFileSync(
+      resolve(import.meta.dir, "../../../src/apps/maps/components/MapsYouBikeRouteCard.tsx"),
+      "utf8"
+    );
+    expect(hook).toContain('from "@/hooks/useTtsQueue"');
+    expect(hook).toContain("resumeAudioContext");
+    expect(speech).not.toContain("createSpeechUtterance");
+    expect(card).toContain("<Square");
+    expect(card).toContain("AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE");
   });
 });
