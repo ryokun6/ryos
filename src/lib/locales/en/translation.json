@@ -4640,14 +4640,6 @@
         "legMeta": "{{minutes}} min · {{distance}}",
         "showSteps": "Show Steps",
         "hideSteps": "Hide Steps",
-        "startNavigation": "Start Navigation",
-        "stopNavigation": "Stop Navigation",
-        "thenStep": "Then",
-        "thenStepAria": "Then {{label}}",
-        "navigationRegionLabel": "Turn-by-turn navigation",
-        "speech": {
-          "then": "Then {{label}}"
-        },
         "stepsRegionLabel": "Turn-by-turn steps",
         "stepAria": "Step {{index}}: {{label}}",
         "distanceMeters": "{{distance}} m",

@@ -3486,21 +3486,13 @@
           "turn": "{{direction}} abbiegen",
           "turnPlain": "Abbiegen"
         },
-        "navigationRegionLabel": "Schritt-für-Schritt-Navigation",
         "routeRegionLabel": "YouBike-Route",
         "routeSummary": "{{minutes}} Min. · {{distance}}",
         "routeTitle": "YouBike-Route",
         "routing": "YouBike-Route wird gesucht …",
         "showSteps": "Schritte",
-        "speech": {
-          "then": "Dann {{label}}"
-        },
-        "startNavigation": "Navigation starten",
         "stepAria": "Schritt {{index}}: {{label}}",
         "stepsRegionLabel": "Schritt-für-Schritt-Anleitung",
-        "stopNavigation": "Navigation beenden",
-        "thenStep": "Dann",
-        "thenStepAria": "Dann {{label}}",
         "warningNoBikes": "An der nächsten Startstation gibt es derzeit eventuell keine Fahrräder.",
         "warningNoDocks": "An der nächsten Endstation gibt es derzeit eventuell keine freien Stellplätze."
       }

@@ -3486,21 +3486,13 @@
           "turn": "{{direction}}に曲がる",
           "turnPlain": "右左折"
         },
-        "navigationRegionLabel": "ターンバイターンナビゲーション",
         "routeRegionLabel": "YouBikeの経路",
         "routeSummary": "{{minutes}}分 · {{distance}}",
         "routeTitle": "YouBikeの経路",
         "routing": "YouBikeの経路を検索中…",
         "showSteps": "ステップ",
-        "speech": {
-          "then": "その先、{{label}}"
-        },
-        "startNavigation": "ナビゲーションを開始",
         "stepAria": "ステップ{{index}}: {{label}}",
         "stepsRegionLabel": "詳しい道順",
-        "stopNavigation": "ナビゲーションを停止",
-        "thenStep": "その先",
-        "thenStepAria": "その先、{{label}}",
         "warningNoBikes": "現在、最寄りの出発ステーションに自転車がない可能性があります。",
         "warningNoDocks": "現在、最寄りの到着ステーションに空きドックがない可能性があります。"
       }

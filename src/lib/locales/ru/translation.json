@@ -3495,21 +3495,13 @@
           "turn": "Поверните {{direction}}",
           "turnPlain": "Поворот"
         },
-        "navigationRegionLabel": "Пошаговая навигация",
         "routeRegionLabel": "Маршруты YouBike",
         "routeSummary": "{{minutes}} мин · {{distance}}",
         "routeTitle": "Маршруты YouBike",
         "routing": "Поиск поездки YouBike…",
         "showSteps": "Шаги",
-        "speech": {
-          "then": "Затем {{label}}"
-        },
-        "startNavigation": "Начать навигацию",
         "stepAria": "Шаг {{index}}: {{label}}",
         "stepsRegionLabel": "Пошаговые инструкции",
-        "stopNavigation": "Завершить навигацию",
-        "thenStep": "Затем",
-        "thenStepAria": "Затем {{label}}",
         "warningNoBikes": "На ближайшей станции отправления сейчас может не быть велосипедов.",
         "warningNoDocks": "На ближайшей станции прибытия сейчас может не быть свободных мест."
       }
