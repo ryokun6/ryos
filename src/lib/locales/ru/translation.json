@@ -3367,6 +3367,7 @@
         "favorite": "Избранное",
         "favorited": "В избранном",
         "home": "Дом",
+        "moreActions": "Ещё",
         "openDirections": "Построить маршрут в Apple Maps",
         "regionLabel": "Выбранное место",
         "removeFavorite": "Удалить из избранного",
@@ -3374,8 +3375,7 @@
         "setWork": "Сделать работой",
         "unsetHome": "Убрать дом",
         "unsetWork": "Убрать работу",
-        "work": "Работа",
-        "moreActions": "Ещё"
+        "work": "Работа"
       },
       "places": {
         "allEmpty": "Найдите место и воспользуйтесь действиями в карточке, чтобы сохранить его как дом, работу или добавить в избранное.",
@@ -3462,6 +3462,7 @@
         "legWalk": "Пешком до {{place}}",
         "maneuver": {
           "arrive": "Прибытие",
+          "arrivedAtPlace": "Вы прибыли: {{place}}",
           "continue": "Продолжайте движение {{direction}}",
           "continuePlain": "Продолжайте движение",
           "depart": "Направляйтесь {{direction}}",
@@ -3484,10 +3485,12 @@
             "uturn": "разворот",
             "west": "запад"
           },
+          "dockBike": "Верните велосипед",
           "fork": "Держитесь {{direction}}",
           "forkPlain": "Развилка",
           "merge": "Слияние {{direction}}",
           "mergePlain": "Слияние",
+          "pickUpBike": "Возьмите велосипед",
           "roundabout": "Круговое движение",
           "turn": "Поверните {{direction}}",
           "turnPlain": "Поворот"

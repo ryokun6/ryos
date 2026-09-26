@@ -12,11 +12,18 @@ import {
 } from "../../../src/apps/maps/youbike/mapKitRoute";
 import {
   formatYouBikeStepLabel,
+  isGenericArrivalStep,
+  listYouBikeRouteSteps,
   localizeYouBikeStepLabel,
+  youbikeArrivalRoleForLeg,
   youbikeNextStepIndex,
   youbikeStepFocusRegion,
 } from "../../../src/apps/maps/youbike/routeSteps";
-import type { YouBikeRouteStep } from "../../../src/apps/maps/youbike/types";
+import type {
+  YouBikeRouteLeg,
+  YouBikeRoutePlan,
+  YouBikeRouteStep,
+} from "../../../src/apps/maps/youbike/types";
 
 const TAIPEI_101 = { latitude: 25.03396, longitude: 121.56447 };
 const MAIN_STATION = { latitude: 25.04792, longitude: 121.51708 };
@@ -326,5 +333,195 @@ describe("MapKit cycling directions", () => {
         },
       })
     ).toHaveLength(3);
+  });
+});
+
+function routeStep(
+  overrides: Partial<YouBikeRouteStep> &
+    Pick<YouBikeRouteStep, "mode" | "instruction">
+): YouBikeRouteStep {
+  return {
+    streetName: "",
+    distanceMeters: 0,
+    durationSeconds: 0,
+    ...overrides,
+  };
+}
+
+function routeLeg(
+  overrides: Partial<YouBikeRouteLeg> &
+    Pick<YouBikeRouteLeg, "mode" | "fromLabel" | "toLabel" | "steps">
+): YouBikeRouteLeg {
+  return {
+    from: { latitude: 25.03, longitude: 121.56 },
+    to: { latitude: 25.04, longitude: 121.55 },
+    distanceMeters: 400,
+    durationSeconds: 180,
+    ...overrides,
+  };
+}
+
+function routePlan(legs: YouBikeRouteLeg[]): YouBikeRoutePlan {
+  return {
+    kind: "youbike",
+    origin: { latitude: 25.03, longitude: 121.56 },
+    destination: { latitude: 25.05, longitude: 121.54 },
+    originStation: null,
+    destinationStation: null,
+    legs,
+    totalDistanceMeters: 1200,
+    totalDurationSeconds: 540,
+    warnings: [],
+  };
+}
+
+const identityTranslate = (
+  _key: string,
+  options?: { defaultValue?: string; direction?: string; place?: string }
+) => {
+  const value = options?.defaultValue ?? _key;
+  return value
+    .replaceAll("{{direction}}", options?.direction ?? "")
+    .replaceAll("{{place}}", options?.place ?? "");
+};
+
+describe("YouBike arrival step copy", () => {
+  test("detects generic MapKit and OSRM arrivals, not turns", () => {
+    expect(
+      isGenericArrivalStep({
+        instruction: "Arrived at the destination",
+      })
+    ).toBe(true);
+    expect(
+      isGenericArrivalStep({
+        instruction: "Arrive",
+        maneuver: { type: "arrive", modifier: "" },
+      })
+    ).toBe(true);
+    expect(
+      isGenericArrivalStep({ instruction: "Arrived at xxx cafe" })
+    ).toBe(true);
+    expect(isGenericArrivalStep({ instruction: "已抵達目的地" })).toBe(true);
+    expect(
+      isGenericArrivalStep({
+        instruction: "Turn right onto Ren'ai Road",
+      })
+    ).toBe(false);
+  });
+
+  test("labels walk→bike→walk arrivals as pickup, dock, then the place", () => {
+    expect(
+      youbikeArrivalRoleForLeg(
+        [{ mode: "walk" }, { mode: "bike" }, { mode: "walk" }],
+        0
+      )
+    ).toBe("pickup");
+    expect(
+      youbikeArrivalRoleForLeg(
+        [{ mode: "walk" }, { mode: "bike" }, { mode: "walk" }],
+        1
+      )
+    ).toBe("dock");
+    expect(
+      youbikeArrivalRoleForLeg(
+        [{ mode: "walk" }, { mode: "bike" }, { mode: "walk" }],
+        2
+      )
+    ).toBe("place");
+  });
+
+  test("rewrites a 3-leg YouBike trip's generic arrivals", () => {
+    const steps = listYouBikeRouteSteps(
+      routePlan([
+        routeLeg({
+          mode: "walk",
+          fromLabel: "Start",
+          toLabel: "MRT Technology Bldg.",
+          steps: [
+            routeStep({
+              mode: "walk",
+              instruction: "Head east",
+              streetName: "Fuxing S Road",
+              distanceMeters: 80,
+            }),
+            routeStep({
+              mode: "walk",
+              instruction: "Arrived at the destination",
+            }),
+          ],
+        }),
+        routeLeg({
+          mode: "bike",
+          fromLabel: "MRT Technology Bldg.",
+          toLabel: "Zhongxiao Dunhua",
+          steps: [
+            routeStep({
+              mode: "bike",
+              instruction: "Turn right",
+              streetName: "Ren'ai Road",
+              distanceMeters: 240,
+            }),
+            routeStep({
+              mode: "bike",
+              instruction: "Arrive",
+              maneuver: { type: "arrive", modifier: "" },
+            }),
+          ],
+        }),
+        routeLeg({
+          mode: "walk",
+          fromLabel: "Zhongxiao Dunhua",
+          toLabel: "xxx cafe",
+          steps: [
+            routeStep({
+              mode: "walk",
+              instruction: "Arrived at the destination",
+            }),
+          ],
+        }),
+      ])
+    );
+
+    expect(
+      steps.map((step) => localizeYouBikeStepLabel(step, identityTranslate))
+    ).toEqual([
+      "Head east · Fuxing S Road",
+      "Pick up bike",
+      "Turn right · Ren'ai Road",
+      "Dock bike",
+      "Arrived at xxx cafe",
+    ]);
+  });
+
+  test("uses the place name when the last leg is the bike hop", () => {
+    const steps = listYouBikeRouteSteps(
+      routePlan([
+        routeLeg({
+          mode: "walk",
+          fromLabel: "Start",
+          toLabel: "MRT Technology Bldg.",
+          steps: [
+            routeStep({
+              mode: "walk",
+              instruction: "Arrived at the destination",
+            }),
+          ],
+        }),
+        routeLeg({
+          mode: "bike",
+          fromLabel: "MRT Technology Bldg.",
+          toLabel: "xxx cafe",
+          steps: [
+            routeStep({
+              mode: "bike",
+              instruction: "Arrived at the destination",
+            }),
+          ],
+        }),
+      ])
+    );
+    expect(
+      steps.map((step) => localizeYouBikeStepLabel(step, identityTranslate))
+    ).toEqual(["Pick up bike", "Arrived at xxx cafe"]);
   });
 });

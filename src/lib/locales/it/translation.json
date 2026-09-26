@@ -3361,6 +3361,7 @@
         "favorite": "Preferito",
         "favorited": "Aggiunto ai preferiti",
         "home": "Casa",
+        "moreActions": "Altro",
         "openDirections": "Ottieni indicazioni in Mappe",
         "regionLabel": "Luogo selezionato",
         "removeFavorite": "Rimuovi dai preferiti",
@@ -3368,8 +3369,7 @@
         "setWork": "Imposta come Lavoro",
         "unsetHome": "Rimuovi Casa",
         "unsetWork": "Rimuovi Lavoro",
-        "work": "Lavoro",
-        "moreActions": "Altro"
+        "work": "Lavoro"
       },
       "places": {
         "allEmpty": "Cerca un luogo e usa le azioni della scheda per salvarlo come Casa, Lavoro o Preferito.",
@@ -3456,6 +3456,7 @@
         "legWalk": "A piedi verso {{place}}",
         "maneuver": {
           "arrive": "Arrivo",
+          "arrivedAtPlace": "Arrivo a {{place}}",
           "continue": "Continua {{direction}}",
           "continuePlain": "Continua",
           "depart": "Vai verso {{direction}}",
@@ -3478,10 +3479,12 @@
             "uturn": "inversione a U",
             "west": "ovest"
           },
+          "dockBike": "Aggancia la bici",
           "fork": "Tieni la {{direction}}",
           "forkPlain": "Bivio",
           "merge": "Immettiti {{direction}}",
           "mergePlain": "Immissione",
+          "pickUpBike": "Preleva la bici",
           "roundabout": "Rotonda",
           "turn": "Gira {{direction}}",
           "turnPlain": "Svolta"

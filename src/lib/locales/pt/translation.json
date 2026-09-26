@@ -3361,6 +3361,7 @@
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
+        "moreActions": "Mais",
         "openDirections": "Obter indicações no Apple Mapas",
         "regionLabel": "Local selecionado",
         "removeFavorite": "Remover dos Favoritos",
@@ -3368,8 +3369,7 @@
         "setWork": "Definir como Trabalho",
         "unsetHome": "Remover Casa",
         "unsetWork": "Remover Trabalho",
-        "work": "Trabalho",
-        "moreActions": "Mais"
+        "work": "Trabalho"
       },
       "places": {
         "allEmpty": "Busque um local e use as ações do cartão para salvá-lo como Casa, Trabalho ou Favorito.",
@@ -3456,6 +3456,7 @@
         "legWalk": "Caminhar até {{place}}",
         "maneuver": {
           "arrive": "Chegada",
+          "arrivedAtPlace": "Chegou a {{place}}",
           "continue": "Continue {{direction}}",
           "continuePlain": "Continue",
           "depart": "Siga para {{direction}}",
@@ -3478,10 +3479,12 @@
             "uturn": "retorno",
             "west": "oeste"
           },
+          "dockBike": "Devolver bicicleta",
           "fork": "Mantenha-se {{direction}}",
           "forkPlain": "Bifurcação",
           "merge": "Entre {{direction}}",
           "mergePlain": "Convergência",
+          "pickUpBike": "Retirar bicicleta",
           "roundabout": "Rotatória",
           "turn": "Vire {{direction}}",
           "turnPlain": "Vire"

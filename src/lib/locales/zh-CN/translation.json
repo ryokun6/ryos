@@ -3358,6 +3358,7 @@
         "favorite": "个人收藏",
         "favorited": "已收藏",
         "home": "家",
+        "moreActions": "更多",
         "openDirections": "在 Apple 地图中获取路线",
         "regionLabel": "所选地点",
         "removeFavorite": "从个人收藏中移除",
@@ -3365,8 +3366,7 @@
         "setWork": "设为工作地点",
         "unsetHome": "取消家",
         "unsetWork": "取消工作地点",
-        "work": "工作",
-        "moreActions": "更多"
+        "work": "工作"
       },
       "places": {
         "allEmpty": "搜索地点，然后使用地点卡上的操作将其设为「家」、「工作」，或添加到个人收藏。",
@@ -3453,6 +3453,7 @@
         "legWalk": "步行至 {{place}}",
         "maneuver": {
           "arrive": "到达",
+          "arrivedAtPlace": "已到达{{place}}",
           "continue": "继续向{{direction}}",
           "continuePlain": "继续",
           "depart": "向{{direction}}",
@@ -3475,10 +3476,12 @@
             "uturn": "反方向",
             "west": "西"
           },
+          "dockBike": "还车",
           "fork": "靠{{direction}}行驶",
           "forkPlain": "分叉路口",
           "merge": "向{{direction}}汇入",
           "mergePlain": "汇入",
+          "pickUpBike": "取车",
           "roundabout": "环岛",
           "turn": "向{{direction}}转",
           "turnPlain": "转向"

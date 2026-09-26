@@ -3358,6 +3358,7 @@
         "favorite": "よく使う項目",
         "favorited": "よく使う項目に追加済み",
         "home": "自宅",
+        "moreActions": "その他",
         "openDirections": "Apple マップでルートを表示",
         "regionLabel": "選択中の場所",
         "removeFavorite": "よく使う項目から削除",
@@ -3365,8 +3366,7 @@
         "setWork": "勤務先に設定",
         "unsetHome": "自宅を解除",
         "unsetWork": "勤務先を解除",
-        "work": "勤務先",
-        "moreActions": "その他"
+        "work": "勤務先"
       },
       "places": {
         "allEmpty": "場所を検索し、カードのアクションを使用して自宅、勤務先、またはよく使う項目として保存します。",
@@ -3453,6 +3453,7 @@
         "legWalk": "{{place}}まで徒歩",
         "maneuver": {
           "arrive": "到着",
+          "arrivedAtPlace": "{{place}}に到着",
           "continue": "{{direction}}へ進む",
           "continuePlain": "そのまま進む",
           "depart": "{{direction}}へ向かう",
@@ -3475,10 +3476,12 @@
             "uturn": "Uターン",
             "west": "西"
           },
+          "dockBike": "自転車を返却",
           "fork": "{{direction}}に進む",
           "forkPlain": "分岐",
           "merge": "{{direction}}に合流",
           "mergePlain": "合流",
+          "pickUpBike": "自転車を借りる",
           "roundabout": "ロータリー",
           "turn": "{{direction}}に曲がる",
           "turnPlain": "右左折"

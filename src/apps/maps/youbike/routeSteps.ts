@@ -1,6 +1,8 @@
 import { isValidCoordinate, regionFittingPoints, type FittedMapRegion } from "./geo";
 import type {
   GeoPoint,
+  YouBikeArrivalRole,
+  YouBikeLegMode,
   YouBikeRoutePlan,
   YouBikeRouteStep,
   YouBikeStepManeuver,
@@ -12,7 +14,7 @@ const STEP_POINT_SPAN_DEG = 0.008;
 
 type StepTranslate = (
   key: string,
-  options?: { defaultValue?: string; direction?: string }
+  options?: { defaultValue?: string; direction?: string; place?: string }
 ) => string;
 
 const MANEUVER_PHRASES: Record<
@@ -110,6 +112,82 @@ function fillDirection(template: string, direction: string): string {
   return template.replaceAll("{{direction}}", direction);
 }
 
+/** MapKit/OSRM reuse “arrived at the destination” for every leg end. */
+const GENERIC_ARRIVAL_INSTRUCTION =
+  /^(you have )?arriv(e|ed)(\s+at(\s+(the|your)\s+)?destination)?\.?$/iu;
+const ARRIVED_AT_PLACE = /^(you have )?arriv(e|ed)\s+at\b/iu;
+const LOCALIZED_DESTINATION_ARRIVAL =
+  /目的地.*(到|達|着)|到达目的地|抵達目的地|到着.*(目的地)?|목적지에?\s*도착|arriv[ée].*destination|destination.*arriv|ziel.*(angekommen|erreicht)|(llegad|chegad).*destino|arrivato.*destinazione|прибыл.*(назначения|пункт)/iu;
+
+function interpolatePlace(template: string, place: string): string {
+  return template.replaceAll("{{place}}", place);
+}
+
+/** True when a step is a generic arrival, not a turn onto a named street. */
+export function isGenericArrivalStep(
+  step: Pick<YouBikeRouteStep, "instruction" | "maneuver">
+): boolean {
+  const type = step.maneuver?.type.trim().toLowerCase();
+  if (type === "arrive") return true;
+  const instruction = step.instruction.trim();
+  if (!instruction) return false;
+  return (
+    GENERIC_ARRIVAL_INSTRUCTION.test(instruction) ||
+    ARRIVED_AT_PLACE.test(instruction) ||
+    LOCALIZED_DESTINATION_ARRIVAL.test(instruction)
+  );
+}
+
+/** Pickup dock, drop-off dock, or the actual place — last leg is always the place. */
+export function youbikeArrivalRoleForLeg(
+  legs: ReadonlyArray<{ mode: YouBikeLegMode }>,
+  index: number
+): YouBikeArrivalRole {
+  const leg = legs[index];
+  const next = legs[index + 1];
+  if (!next) return "place";
+  if (leg?.mode === "walk" && next.mode === "bike") return "pickup";
+  if (leg?.mode === "bike" && next.mode === "walk") return "dock";
+  return "place";
+}
+
+function tripDestinationLabel(plan: YouBikeRoutePlan): string {
+  for (let i = plan.legs.length - 1; i >= 0; i -= 1) {
+    const label = plan.legs[i]?.toLabel.trim();
+    if (label) return label;
+  }
+  return "Destination";
+}
+
+function localizeArrivalStep(
+  step: Pick<YouBikeRouteStep, "arrivalRole" | "arrivalPlace">,
+  translate: StepTranslate
+): string | null {
+  if (step.arrivalRole === "pickup") {
+    return translate("apps.maps.youbike.maneuver.pickUpBike", {
+      defaultValue: "Pick up bike",
+    });
+  }
+  if (step.arrivalRole === "dock") {
+    return translate("apps.maps.youbike.maneuver.dockBike", {
+      defaultValue: "Dock bike",
+    });
+  }
+  if (step.arrivalRole === "place") {
+    const place = step.arrivalPlace?.trim();
+    if (place) {
+      return translate("apps.maps.youbike.maneuver.arrivedAtPlace", {
+        place,
+        defaultValue: interpolatePlace("Arrived at {{place}}", place),
+      });
+    }
+    return translate("apps.maps.youbike.maneuver.arrive", {
+      defaultValue: "Arrive",
+    });
+  }
+  return null;
+}
+
 /** Localized OSRM maneuver. MapKit instructions are already in the map language. */
 export function youbikeManeuverPhrase(
   maneuver: YouBikeStepManeuver,
@@ -138,9 +216,14 @@ export function youbikeManeuverPhrase(
 }
 
 export function localizeYouBikeStepLabel(
-  step: Pick<YouBikeRouteStep, "instruction" | "streetName" | "maneuver">,
+  step: Pick<
+    YouBikeRouteStep,
+    "instruction" | "streetName" | "maneuver" | "arrivalRole" | "arrivalPlace"
+  >,
   translate: StepTranslate
 ): string {
+  const arrival = localizeArrivalStep(step, translate);
+  if (arrival) return arrival;
   const instruction = step.maneuver
     ? youbikeManeuverPhrase(step.maneuver, translate)
     : step.instruction;
@@ -197,7 +280,19 @@ export function formatYouBikeStepLabel(step: {
 }
 
 export function listYouBikeRouteSteps(plan: YouBikeRoutePlan): YouBikeRouteStep[] {
-  return plan.legs.flatMap((leg) => leg.steps ?? []);
+  const arrivalPlace = tripDestinationLabel(plan);
+  return plan.legs.flatMap((leg, legIndex) => {
+    const steps = leg.steps ?? [];
+    const arrivalRole = youbikeArrivalRoleForLeg(plan.legs, legIndex);
+    return steps.map((step) => {
+      if (!isGenericArrivalStep(step)) return step;
+      return {
+        ...step,
+        arrivalRole,
+        arrivalPlace,
+      };
+    });
+  });
 }
 
 /** Farther than this from the route, step progress stays off so the list is not dimmed. */
