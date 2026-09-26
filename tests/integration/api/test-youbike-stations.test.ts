@@ -45,6 +45,38 @@ describe("youbike stations", () => {
     );
   }, 20000);
 
+  test("returns stations inside a Taichung bbox from the national dump", async () => {
+    const res = await fetchWithOrigin(
+      `${BASE_URL}/api/youbike/stations?south=24.12&west=120.64&north=24.16&east=120.70`,
+      { headers: makeRateLimitBypassHeaders() }
+    );
+    if (res.status === 429) return;
+    if (res.status === 502) return;
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as {
+      stations?: Array<{
+        id: string;
+        city?: string;
+        latitude: number;
+        longitude: number;
+        bikesAvailable: number;
+      }>;
+      sources?: Array<{ id: string; ok: boolean; count?: number }>;
+    };
+    expect(Array.isArray(data.stations)).toBe(true);
+    expect((data.stations ?? []).length).toBeGreaterThan(0);
+    const first = data.stations![0];
+    expect(first.id.startsWith("youbike:")).toBe(true);
+    expect(first.latitude).toBeGreaterThan(24);
+    expect(first.latitude).toBeLessThan(24.3);
+    expect(first.longitude).toBeGreaterThan(120.5);
+    expect(first.longitude).toBeLessThan(120.8);
+    expect(typeof first.bikesAvailable).toBe("number");
+    expect(
+      data.sources?.some((source) => source.id === "national" && source.ok)
+    ).toBe(true);
+  }, 30000);
+
   test("OPTIONS preflight succeeds", async () => {
     const res = await fetchWithOrigin(`${BASE_URL}/api/youbike/stations`, {
       method: "OPTIONS",

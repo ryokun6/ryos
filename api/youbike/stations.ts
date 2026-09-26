@@ -2,11 +2,12 @@ import { apiHandler } from "../_utils/api-handler.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
-  YOUBIKE_CACHE_TTL_SECONDS,
   YOUBIKE_FEED_TIMEOUT_MS,
-  YOUBIKE_OPEN_DATA_FEEDS,
   YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS,
+  feedCacheTtlSeconds,
+  feedTimeoutMs,
   feedsIntersectingBBox,
+  shouldWaitForOptionalFeeds,
   youbikeFeedCacheKey,
   type YouBikeOpenDataFeed,
 } from "../../src/apps/maps/youbike/feeds";
@@ -37,6 +38,31 @@ type RedisLike = {
   get: <T>(key: string) => Promise<T | null>;
   set: (key: string, value: unknown, opts?: { ex?: number }) => Promise<unknown>;
 };
+
+const memoryFeedCache = new Map<
+  string,
+  { payload: CachedFeed; expiresAt: number }
+>();
+
+function readMemoryFeed(feedId: string): CachedFeed | null {
+  const cached = memoryFeedCache.get(feedId);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    memoryFeedCache.delete(feedId);
+    return null;
+  }
+  return cached.payload;
+}
+
+function writeMemoryFeed(
+  feed: YouBikeOpenDataFeed,
+  payload: CachedFeed
+): void {
+  memoryFeedCache.set(feed.id, {
+    payload,
+    expiresAt: Date.now() + feedCacheTtlSeconds(feed) * 1000,
+  });
+}
 
 async function fetchFeedJson(
   url: string,
@@ -109,9 +135,12 @@ async function readCachedFeed(
   redis: RedisLike,
   feed: YouBikeOpenDataFeed
 ): Promise<CachedFeed | null> {
+  const memoryHit = readMemoryFeed(feed.id);
+  if (memoryHit) return memoryHit;
   try {
     const cached = await redis.get<CachedFeed>(youbikeFeedCacheKey(feed.id));
     if (cached?.stations && Array.isArray(cached.stations) && cached.status) {
+      writeMemoryFeed(feed, cached);
       return cached;
     }
   } catch {
@@ -126,12 +155,13 @@ async function writeCachedFeed(
   payload: CachedFeed
 ): Promise<void> {
   if (!payload.status.ok) return;
+  writeMemoryFeed(feed, payload);
   try {
     await redis.set(youbikeFeedCacheKey(feed.id), payload, {
-      ex: YOUBIKE_CACHE_TTL_SECONDS,
+      ex: feedCacheTtlSeconds(feed),
     });
   } catch {
-    // ignore cache write failures
+    // ignore cache write failures (national dump may exceed Redis value limits)
   }
 }
 
@@ -155,7 +185,10 @@ function warmOptionalFeeds(
     void (async () => {
       const cached = await readCachedFeed(redis, feed);
       if (cached) return;
-      const payload = await fetchFeed(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS);
+      const payload = await fetchFeed(
+        feed,
+        feedTimeoutMs(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
+      );
       await writeCachedFeed(redis, feed, payload);
     })();
   }
@@ -177,11 +210,16 @@ async function loadStationsForBBox(
 
   const required = relevant.filter((feed) => !feed.optional);
   const optional = relevant.filter((feed) => feed.optional);
-  const waitForOptional = required.length === 0;
+
+  const waitForOptional = shouldWaitForOptionalFeeds(
+    bbox,
+    required,
+    optional
+  );
 
   const requiredResults = await Promise.all(
     required.map((feed) =>
-      loadFeed(redis, feed, YOUBIKE_FEED_TIMEOUT_MS)
+      loadFeed(redis, feed, feedTimeoutMs(feed, YOUBIKE_FEED_TIMEOUT_MS))
     )
   );
 
@@ -200,7 +238,11 @@ async function loadStationsForBBox(
   if (waitForOptional && optionalToWarm.length > 0) {
     optionalFresh = await Promise.all(
       optionalToWarm.map((feed) =>
-        loadFeed(redis, feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
+        loadFeed(
+          redis,
+          feed,
+          feedTimeoutMs(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
+        )
       )
     );
   } else if (optionalToWarm.length > 0) {

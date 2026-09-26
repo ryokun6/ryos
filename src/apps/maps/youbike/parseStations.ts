@@ -112,24 +112,56 @@ function unwrapStationRows(payload: unknown): unknown[] {
   return [];
 }
 
+const STATION_PREFIX_CITY: Array<[string, YouBikeCityId]> = [
+  // Official YouBike 2.0 station_no prefixes from the national dump.
+  ["5001", "taipei"],
+  ["5002", "newtaipei"],
+  ["5003", "taoyuan"],
+  ["5004", "hsinchu"],
+  ["5005", "hsinchuCounty"],
+  ["5006", "taichung"],
+  ["5007", "miaoli"],
+  ["5008", "kaohsiung"],
+  ["5009", "tainan"],
+  ["5010", "chiayi"],
+  ["5011", "chiayi"],
+  ["5012", "kaohsiung"],
+  ["5013", "tainan"],
+  ["5014", "pingtung"],
+  ["5015", "taitung"],
+  ["5082", "hsinchu"],
+];
+
+const AREA_CODE_CITY: Record<string, YouBikeCityId> = {
+  "00": "taipei",
+  "01": "taichung",
+  "05": "newtaipei",
+  "07": "taoyuan",
+  "08": "chiayi",
+  "09": "hsinchu",
+  "0A": "miaoli",
+  "0B": "hsinchuCounty",
+  "10": "hsinchu",
+  "11": "chiayi",
+  "12": "kaohsiung",
+  "13": "tainan",
+  "14": "pingtung",
+  "15": "taitung",
+};
+
 function inferCityFromId(
   stationId: string,
-  fallback: YouBikeCityId
+  fallback: YouBikeCityId,
+  areaCode?: string
 ): YouBikeCityId {
   if (fallback !== "unknown") return fallback;
-  // YouBike 2.0 station numbers encode the city in the 500xxx prefix.
-  if (stationId.startsWith("5001")) return "taipei";
-  if (stationId.startsWith("5002")) return "taoyuan";
-  if (stationId.startsWith("5003") || stationId.startsWith("5004")) {
-    return "newtaipei";
+  for (const [prefix, city] of STATION_PREFIX_CITY) {
+    if (stationId.startsWith(prefix)) return city;
   }
-  if (stationId.startsWith("5005")) return "hsinchu";
-  if (stationId.startsWith("5006")) return "taichung";
-  if (stationId.startsWith("5007")) return "chiayi";
-  if (stationId.startsWith("5008")) return "kaohsiung";
-  if (stationId.startsWith("5009")) return "tainan";
-  if (stationId.startsWith("5010")) return "miaoli";
-  if (stationId.startsWith("5011")) return "hsinchuCounty";
+  if (areaCode) {
+    const fromArea = AREA_CODE_CITY[areaCode];
+    if (fromArea) return fromArea;
+  }
   return fallback;
 }
 
@@ -146,6 +178,7 @@ function parseOneStation(
   const motcPosition = nestedPosition(record.StationPosition);
 
   const stationId = pickString(record, [
+    "station_no",
     "sno",
     "StationID",
     "station_id",
@@ -171,6 +204,7 @@ function parseOneStation(
   const bikesAvailable = Math.max(
     0,
     pickNumber(record, [
+      "available_spaces",
       "available_rent_bikes",
       "AvailableRentBikes",
       "sbi",
@@ -180,6 +214,7 @@ function parseOneStation(
   const docksAvailable = Math.max(
     0,
     pickNumber(record, [
+      "empty_spaces",
       "available_return_bikes",
       "AvailableReturnBikes",
       "bemp",
@@ -189,6 +224,7 @@ function parseOneStation(
   const totalDocks = Math.max(
     bikesAvailable + docksAvailable,
     pickNumber(record, [
+      "parking_spaces",
       "Quantity",
       "quantity",
       "total",
@@ -199,17 +235,19 @@ function parseOneStation(
   );
 
   const nameZh = stripYouBikePrefix(
-    pickString(record, ["sna", "name"]) || motcName.zh
+    pickString(record, ["name_tw", "sna", "name"]) || motcName.zh
   );
   const nameEn = stripYouBikePrefix(
-    pickString(record, ["snaen", "name_en"]) || motcName.en || nameZh
+    pickString(record, ["name_en", "snaen"]) || motcName.en || nameZh
   );
-  const address = pickString(record, ["ar", "address"]) || motcAddress.zh;
+  const address =
+    pickString(record, ["address_tw", "ar", "address"]) || motcAddress.zh;
   const addressEn =
-    pickString(record, ["aren", "address_en"]) || motcAddress.en || address;
+    pickString(record, ["address_en", "aren"]) || motcAddress.en || address;
 
-  const city = inferCityFromId(stationId, fallbackCity);
-  const serviceStatus = pickNumber(record, ["ServiceStatus"]);
+  const areaCode = pickString(record, ["area_code"]);
+  const city = inferCityFromId(stationId, fallbackCity, areaCode);
+  const serviceStatus = pickNumber(record, ["ServiceStatus", "status"]);
   const active =
     serviceStatus === null
       ? isActiveFlag(record.act ?? record.Act ?? record.active)
@@ -223,8 +261,8 @@ function parseOneStation(
     nameEn: nameEn || nameZh,
     address,
     addressEn,
-    area: pickString(record, ["sarea", "area"]),
-    areaEn: pickString(record, ["sareaen", "area_en"]),
+    area: pickString(record, ["district_tw", "sarea", "area"]),
+    areaEn: pickString(record, ["district_en", "sareaen", "area_en"]),
     latitude,
     longitude,
     bikesAvailable,
@@ -234,6 +272,8 @@ function parseOneStation(
     updatedAt:
       pickString(record, [
         "mday",
+        "updated_at",
+        "time",
         "infoTime",
         "updateTime",
         "SrcUpdateTime",
