@@ -83,6 +83,26 @@ export function useYouBikeNavigationSpeech(options: {
     [applyDecision, remainingMeters, stepCount]
   );
 
+  const speakManualAdvance = useCallback(
+    (index: number) => {
+      void resumeAudioContext();
+      applyDecision(
+        youbikeNavAnnounce({
+          isStarting: false,
+          isManualAdvance: true,
+          focusedIndex: index,
+          stepCount,
+          remainingMeters,
+          lastSpokenIndex: stateRef.current.lastSpokenIndex,
+          lastApproachIndex: stateRef.current.lastApproachIndex,
+          lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
+          nowMs: Date.now(),
+        })
+      );
+    },
+    [applyDecision, remainingMeters, stepCount]
+  );
+
   useEffect(() => {
     if (!enabled) {
       cancelYouBikeNavigationSpeech();
@@ -109,5 +129,9 @@ export function useYouBikeNavigationSpeech(options: {
 
   useEffect(() => () => cancelYouBikeNavigationSpeech(), []);
 
-  return { speakStart, cancel: cancelYouBikeNavigationSpeech };
+  return {
+    speakStart,
+    speakManualAdvance,
+    cancel: cancelYouBikeNavigationSpeech,
+  };
 }

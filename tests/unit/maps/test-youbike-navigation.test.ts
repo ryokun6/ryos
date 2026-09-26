@@ -25,6 +25,16 @@ describe("youbikeNavigationFocusedIndex", () => {
     ).toBe(2);
   });
 
+  test("lets a Then tap ahead of GPS win until GPS catches up", () => {
+    expect(
+      youbikeNavigationFocusedIndex({
+        stepCount: 4,
+        gpsIndex: 1,
+        manualIndex: 2,
+      })
+    ).toBe(2);
+  });
+
   test("falls back to the manual index when GPS is off the route", () => {
     expect(
       youbikeNavigationFocusedIndex({
@@ -171,6 +181,22 @@ describe("youbikeNavAnnounce", () => {
     expect(result.kind).toBeNull();
     expect(result.lastApproachIndex).toBeNull();
   });
+
+  test("speaks a manual Then advance even during the GPS cooldown", () => {
+    const result = youbikeNavAnnounce({
+      ...base,
+      isStarting: false,
+      isManualAdvance: true,
+      focusedIndex: 1,
+      lastSpokenIndex: 0,
+      lastSpeakAtMs: 10_000,
+      nowMs: 10_000 + 200,
+      remainingMeters: null,
+    });
+    expect(result.kind).toBe("advance");
+    expect(result.speakIndex).toBe(1);
+    expect(result.lastSpokenIndex).toBe(1);
+  });
 });
 
 describe("youbike navigation speech stop registration", () => {
@@ -205,9 +231,11 @@ describe("youbike navigation speech stop registration", () => {
     );
     expect(hook).toContain('from "@/hooks/useTtsQueue"');
     expect(hook).toContain("resumeAudioContext");
+    expect(hook).toContain("speakManualAdvance");
     expect(speech).not.toContain("createSpeechUtterance");
     expect(card).toContain("<Play");
     expect(card).toContain("<Square");
     expect(card).toContain("AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE");
+    expect(card).toContain("speakManualAdvance");
   });
 });

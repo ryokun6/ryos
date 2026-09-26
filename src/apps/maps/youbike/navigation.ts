@@ -7,6 +7,8 @@ export type YouBikeNavAnnounceKind = "start" | "advance" | "approach";
 
 export interface YouBikeNavAnnounceInput {
   isStarting: boolean;
+  /** Then / Next tap — speak the new step even inside the GPS cooldown. */
+  isManualAdvance?: boolean;
   focusedIndex: number;
   stepCount: number;
   remainingMeters: number | null;
@@ -32,7 +34,7 @@ function clampStepIndex(index: number, stepCount: number): number {
   return index;
 }
 
-/** GPS step when on-route; otherwise the rider's manual index. */
+/** GPS step when on-route; a Then tap ahead of GPS wins until GPS catches up. */
 export function youbikeNavigationFocusedIndex(options: {
   stepCount: number;
   gpsIndex: number | null;
@@ -40,10 +42,11 @@ export function youbikeNavigationFocusedIndex(options: {
 }): number {
   const { stepCount, gpsIndex, manualIndex } = options;
   if (stepCount <= 0) return 0;
+  const manual = clampStepIndex(manualIndex, stepCount);
   if (gpsIndex != null && gpsIndex >= 0 && gpsIndex < stepCount) {
-    return gpsIndex;
+    return Math.max(gpsIndex, manual);
   }
-  return clampStepIndex(manualIndex, stepCount);
+  return manual;
 }
 
 function idleAnnounce(
@@ -76,6 +79,16 @@ export function youbikeNavAnnounce(
   if (input.isStarting && input.stepCount > 0) {
     return {
       kind: "start",
+      speakIndex: focusedIndex,
+      lastSpokenIndex: focusedIndex,
+      lastApproachIndex: input.lastApproachIndex,
+      lastSpeakAtMs: input.nowMs,
+    };
+  }
+
+  if (input.isManualAdvance && input.stepCount > 0) {
+    return {
+      kind: "advance",
       speakIndex: focusedIndex,
       lastSpokenIndex: focusedIndex,
       lastApproachIndex: input.lastApproachIndex,

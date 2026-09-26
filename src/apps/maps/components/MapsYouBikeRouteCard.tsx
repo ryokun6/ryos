@@ -364,7 +364,7 @@ export function MapsYouBikeRouteCard({
       }),
     [t]
   );
-  const { speakStart, cancel } = useYouBikeNavigationSpeech({
+  const { speakStart, speakManualAdvance, cancel } = useYouBikeNavigationSpeech({
     enabled: isNavigating,
     focusedIndex,
     stepCount: steps.length,
@@ -516,11 +516,11 @@ export function MapsYouBikeRouteCard({
                 onSelectCurrent={() => handleSelectStep(focusedStep, focusedIndex)}
                 onSelectUpcoming={() => {
                   if (!upcomingStep) return;
-                  if (activeStepIndex == null) {
-                    setManualIndex(focusedIndex + 1);
-                    setSelectedIndex(focusedIndex + 1);
-                  }
-                  handleSelectStep(upcomingStep, focusedIndex + 1);
+                  const nextIndex = focusedIndex + 1;
+                  setManualIndex(nextIndex);
+                  setSelectedIndex(nextIndex);
+                  handleSelectStep(upcomingStep, nextIndex);
+                  speakManualAdvance(nextIndex);
                 }}
               />
             )}
