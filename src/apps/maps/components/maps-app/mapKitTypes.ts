@@ -200,9 +200,19 @@ export interface MapKitGlobal {
     left: number
   ) => unknown;
   Directions?: (new () => MapKitDirectionsInstance) & {
-    Transport?: { Walking?: string; Automobile?: string; Cycling?: string };
+    Transport?: {
+      Walking?: string;
+      Automobile?: string;
+      Cycling?: string;
+      Transit?: string;
+    };
   };
-  DirectionsTransport?: { Walking: string; Automobile: string; Cycling?: string };
+  DirectionsTransport?: {
+    Walking: string;
+    Automobile: string;
+    Cycling?: string;
+    Transit?: string;
+  };
   // Optional in the type so loaders that don't expose the constant still
   // typecheck. We default to "default" / "required" string literals.
   RegionPriority?: { Default: MapKitRegionPriority; Required: MapKitRegionPriority };

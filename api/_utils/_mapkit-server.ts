@@ -238,6 +238,53 @@ export async function searchPlaces(
   return (await response.json()) as MapKitSearchResponse;
 }
 
+export interface MapKitDirectionsOptions {
+  origin: { latitude: number; longitude: number };
+  destination: { latitude: number; longitude: number };
+  transportType: "Automobile" | "Walking" | "Cycling" | "Transit";
+  lang?: string;
+  signal?: AbortSignal;
+}
+
+/**
+ * Call Apple's `/v1/directions`. Transit is requested when the client
+ * MapKit JS `Directions.Transport` enum does not expose it.
+ */
+export async function getDirections(
+  options: MapKitDirectionsOptions
+): Promise<unknown> {
+  const accessToken = await fetchAccessToken();
+  const url = new URL(`${MAPS_API_HOST}/v1/directions`);
+  url.searchParams.set("origin", formatCoord(options.origin));
+  url.searchParams.set(
+    "destination",
+    formatCoord(options.destination)
+  );
+  url.searchParams.set("transportType", options.transportType);
+  if (options.lang) {
+    url.searchParams.set("lang", options.lang);
+  }
+
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: options.signal,
+  });
+
+  if (response.status === 401 || response.status === 403) {
+    cachedAccessToken = null;
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Apple Maps Server API directions failed: ${response.status} ${detail.slice(0, 200)}`
+    );
+  }
+
+  return response.json();
+}
+
 /** Resolve the canonical POI category for a search hit. */
 export function resolvePoiCategory(place: MapKitSearchPlace): string | undefined {
   return (

@@ -29,10 +29,10 @@ export const helpItems = [
       "Click the Locate Me button to recenter the map on your current location",
   },
   {
-    icon: "🚲",
+    icon: "🚗",
     title: "Directions",
     description:
-      "From a place card, open driving directions in Apple Maps, or plan a YouBike trip in Taiwan with walk and bike legs on the map",
+      "From a place card, get Drive or Transit directions on the map, or plan a YouBike trip in Taiwan. Use More to open the place in Apple Maps or Google Maps.",
   },
   {
     icon: "🛰️",

@@ -602,7 +602,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     contacts: "Address book with vCard import, Smart Groups, and cloud sync",
     books: "EPUB reader with a wooden bookshelf, page-turn reader, reading-progress sync, and Finder import",
     tv: "Channel-surfing YouTube TV with CRT effects, MTV synced lyrics, and AI-generated channels",
-    maps: "Apple MapKit search and pins; YouBike overlay in Taiwan; driving directions open in Apple Maps",
+    maps: "Apple MapKit search and pins; YouBike overlay in Taiwan; in-map Drive, Transit, and YouBike directions",
     calculator: "Basic, scientific, and unit conversion calculator with theme-specific chrome and live currency rates",
   };
 

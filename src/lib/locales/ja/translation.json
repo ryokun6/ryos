@@ -3311,6 +3311,20 @@
     },
     "maps": {
       "description": "Apple マップで場所を検索",
+      "directions": {
+        "clearRoute": "経路を消去",
+        "driveTitle": "車の経路",
+        "errors": {
+          "no_origin": "経路を表示するには、“現在地を表示”をオンにするか、自宅を設定してください。",
+          "route_failed": "現在、経路が見つかりません。",
+          "transit_unavailable": "ここからの交通機関の経路が見つかりませんでした。"
+        },
+        "modeListLabel": "移動手段",
+        "routeRegionLabel": "経路",
+        "routingDrive": "車の経路を検索中…",
+        "routingTransit": "交通機関の経路を検索中…",
+        "transitTitle": "交通機関の経路"
+      },
       "help": {
         "directions": {
           "description": "場所カードから Apple マップで車のルートを開くか、台湾で YouBike の行程を計画して、徒歩と自転車の区間を地図上に表示します。",
@@ -3355,15 +3369,21 @@
         "addFavorite": "よく使う項目に追加",
         "close": "場所のカードを閉じる",
         "directions": "経路",
+        "drive": "車",
+        "driveTitle": "車の経路",
         "favorite": "よく使う項目",
         "favorited": "よく使う項目に追加済み",
         "home": "自宅",
         "moreActions": "その他",
         "openDirections": "Apple マップでルートを表示",
+        "openInAppleMaps": "Appleマップで開く",
+        "openInGoogleMaps": "Googleマップで開く",
         "regionLabel": "選択中の場所",
         "removeFavorite": "よく使う項目から削除",
         "setHome": "自宅に設定",
         "setWork": "勤務先に設定",
+        "transit": "交通機関",
+        "transitTitle": "交通機関の経路",
         "unsetHome": "自宅を解除",
         "unsetWork": "勤務先を解除",
         "work": "勤務先"

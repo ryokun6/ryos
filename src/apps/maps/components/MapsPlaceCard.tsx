@@ -7,6 +7,7 @@ import {
   DotsThree,
   House,
   Star,
+  TrainSimple,
   X,
 } from "@phosphor-icons/react";
 import { isInTaiwan } from "../youbike/geo";
@@ -23,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -41,6 +43,8 @@ import {
 } from "../utils/savedPlaceVisuals";
 import { getPlaceHomeWorkMenuItems } from "../utils/homeWorkMenu";
 import type { SavedPlace } from "../utils/types";
+import { MapsExternalMapsMenuItems } from "./MapsExternalMapsMenuItems";
+import type { DirectionsMode } from "../directions/types";
 
 export interface MapsPlaceCardProps {
   place: SavedPlace | null;
@@ -52,7 +56,7 @@ export interface MapsPlaceCardProps {
   onUnsetHome: () => void;
   onUnsetWork: () => void;
   onToggleFavorite: (place: SavedPlace) => void;
-  onDirections: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace, mode: DirectionsMode) => void;
   onYouBikeDirections?: (place: SavedPlace) => void;
   onClose: () => void;
 }
@@ -272,7 +276,7 @@ interface PlaceCardActionsProps {
   onUnsetHome: () => void;
   onUnsetWork: () => void;
   onToggleFavorite: (place: SavedPlace) => void;
-  onDirections: (place: SavedPlace) => void;
+  onDirections: (place: SavedPlace, mode: DirectionsMode) => void;
   onYouBikeDirections?: (place: SavedPlace) => void;
   t: ReturnType<typeof useTranslation>["t"];
 }
@@ -304,9 +308,9 @@ function PlaceCardActions({
         type="button"
         variant={variant}
         size="sm"
-        onClick={() => onDirections(place)}
-        title={t("apps.maps.placeCard.openDirections", {
-          defaultValue: "Get directions in Apple Maps",
+        onClick={() => onDirections(place, "drive")}
+        title={t("apps.maps.placeCard.driveTitle", {
+          defaultValue: "Driving Directions",
         })}
         className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >
@@ -315,8 +319,29 @@ function PlaceCardActions({
           weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
         />
         <span>
-          {t("apps.maps.placeCard.directions", {
-            defaultValue: "Directions",
+          {t("apps.maps.placeCard.drive", {
+            defaultValue: "Drive",
+          })}
+        </span>
+      </Button>
+
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => onDirections(place, "transit")}
+        title={t("apps.maps.placeCard.transitTitle", {
+          defaultValue: "Transit Directions",
+        })}
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
+      >
+        <TrainSimple
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+        />
+        <span>
+          {t("apps.maps.placeCard.transit", {
+            defaultValue: "Transit",
           })}
         </span>
       </Button>
@@ -460,6 +485,16 @@ function PlaceCardMoreMenu({
             </DropdownMenuItem>
           );
         })}
+        <DropdownMenuSeparator />
+        <MapsExternalMapsMenuItems
+          destination={{
+            latitude: place.latitude,
+            longitude: place.longitude,
+          }}
+          placeName={place.name}
+          asDirections={false}
+          t={t}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );

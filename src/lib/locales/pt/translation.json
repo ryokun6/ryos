@@ -3314,6 +3314,20 @@
     },
     "maps": {
       "description": "Encontre lugares com o Apple Mapas",
+      "directions": {
+        "clearRoute": "Limpar itinerário",
+        "driveTitle": "Trajeto de Carro",
+        "errors": {
+          "no_origin": "Ative o Localizar-me ou defina o endereço de Casa para iniciar o trajeto.",
+          "route_failed": "Não foi possível encontrar um itinerário agora.",
+          "transit_unavailable": "Não foi possível encontrar um itinerário de transporte público a partir daqui."
+        },
+        "modeListLabel": "Modo de transporte",
+        "routeRegionLabel": "Trajeto",
+        "routingDrive": "Buscando itinerário de carro…",
+        "routingTransit": "Buscando itinerário de transporte público…",
+        "transitTitle": "Trajeto de Transporte Público"
+      },
       "help": {
         "directions": {
           "description": "No cartão de um lugar, abra rotas de carro no Apple Maps ou planeje uma viagem YouBike em Taiwan com trechos a pé e de bicicleta no mapa.",
@@ -3358,15 +3372,21 @@
         "addFavorite": "Adicionar aos Favoritos",
         "close": "Fechar cartão do local",
         "directions": "Trajeto",
+        "drive": "Carro",
+        "driveTitle": "Trajeto de Carro",
         "favorite": "Favorito",
         "favorited": "Favoritado",
         "home": "Casa",
         "moreActions": "Mais",
         "openDirections": "Obter indicações no Apple Mapas",
+        "openInAppleMaps": "Abrir no Mapas da Apple",
+        "openInGoogleMaps": "Abrir no Google Maps",
         "regionLabel": "Local selecionado",
         "removeFavorite": "Remover dos Favoritos",
         "setHome": "Definir como Casa",
         "setWork": "Definir como Trabalho",
+        "transit": "Transporte Público",
+        "transitTitle": "Trajeto de Transporte Público",
         "unsetHome": "Remover Casa",
         "unsetWork": "Remover Trabalho",
         "work": "Trabalho"

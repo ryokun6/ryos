@@ -336,7 +336,10 @@ function distanceToSegmentMeters(user: GeoPoint, start: GeoPoint, end: GeoPoint)
   return projectUserOnSegment(user, start, end).distance;
 }
 
-function distanceToStepMeters(user: GeoPoint, step: YouBikeRouteStep): number | null {
+function distanceToStepMeters(
+  user: GeoPoint,
+  step: Pick<YouBikeRouteStep, "location" | "path">
+): number | null {
   const points = stepPoints(step);
   if (points.length === 0) return null;
   if (points.length === 1) {
@@ -387,7 +390,7 @@ export function youbikeStepRemainingMeters(
  * is the one to highlight. Null when location is off the route or unknown.
  */
 export function youbikeNextStepIndex(
-  steps: YouBikeRouteStep[],
+  steps: Array<Pick<YouBikeRouteStep, "location" | "path">>,
   user: GeoPoint
 ): number | null {
   if (!isValidCoordinate(user) || steps.length === 0) return null;

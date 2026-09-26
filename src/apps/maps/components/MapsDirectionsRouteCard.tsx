@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  Bicycle,
+  Car,
   DotsThree,
   ListNumbers,
   PersonSimpleWalk,
   Play,
   Square,
+  TrainSimple,
   X,
 } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
@@ -28,16 +29,21 @@ import {
   osCardClassName,
   osSubtleIconButtonClassName,
 } from "@/components/shared/osThemePrimitives";
-import { MapsExternalMapsMenuItems } from "./MapsExternalMapsMenuItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useYouBikeNavigationSpeech } from "../hooks/useYouBikeNavigationSpeech";
-import type { GeoPoint, YouBikeRoutePlan, YouBikeRouteStep } from "../youbike";
 import { youbikeNavigationFocusedIndex } from "../youbike/navigation";
 import {
-  listYouBikeRouteSteps,
-  localizeYouBikeStepLabel,
+  formatYouBikeStepLabel,
   youbikeStepRemainingMeters,
 } from "../youbike/routeSteps";
+import {
+  directionsBadgeGradient,
+  type DirectionsMode,
+  type DirectionsRouteError,
+  type DirectionsRoutePlan,
+  type DirectionsRouteStep,
+} from "../directions";
+import { MapsExternalMapsMenuItems } from "./MapsExternalMapsMenuItems";
 
 const STEPS_FADE_PX = 20;
 
@@ -48,20 +54,19 @@ const CARD_TRANSITION: Transition = {
   mass: 0.7,
 };
 
-export interface MapsYouBikeRouteCardProps {
-  plan: YouBikeRoutePlan | null;
+export interface MapsDirectionsRouteCardProps {
+  plan: DirectionsRoutePlan | null;
   isRouting: boolean;
-  error: string | null;
+  error: DirectionsRouteError | null;
+  pendingMode?: DirectionsMode | null;
+  fallbackDestination?: { latitude: number; longitude: number; name?: string } | null;
   onClose: () => void;
-  onSelectStep?: (step: YouBikeRouteStep) => void;
-  /** Step the rider is on while Locate Me is tracking. Null leaves tap styling only. */
+  onChangeMode: (mode: DirectionsMode) => void;
+  onSelectStep?: (step: DirectionsRouteStep) => void;
   activeStepIndex?: number | null;
-  /** Live user point while Locate Me is tracking; used for remaining distance. */
-  userLocation?: GeoPoint | null;
-  /** Locate Me is on — keep the camera on the rider instead of framing each step. */
+  userLocation?: { latitude: number; longitude: number } | null;
   followUserLocation?: boolean;
-  /** Start / Stop Navigation so the map can start or tear down a GPS watch. */
-  onNavigatingChange?: (active: boolean) => void;
+  onStartNavigation?: () => void;
 }
 
 type StepProgress = "idle" | "past" | "current" | "later";
@@ -100,6 +105,33 @@ function stepsScrollMask(fadeTop: boolean, fadeBottom: boolean): string | undefi
   return undefined;
 }
 
+function StepIcon({
+  kind,
+  size,
+  className,
+}: {
+  kind: DirectionsRouteStep["kind"];
+  size: number;
+  className?: string;
+}) {
+  const Icon =
+    kind === "walk" ? PersonSimpleWalk : kind === "transit" ? TrainSimple : Car;
+  return (
+    <Icon
+      size={size}
+      weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
+      className={className}
+    />
+  );
+}
+
+function stepProgress(index: number, activeStepIndex: number | null): StepProgress {
+  if (activeStepIndex == null) return "idle";
+  if (index < activeStepIndex) return "past";
+  if (index === activeStepIndex) return "current";
+  return "later";
+}
+
 function RouteStepRow({
   step,
   index,
@@ -107,15 +139,14 @@ function RouteStepRow({
   tapped,
   onSelect,
 }: {
-  step: YouBikeRouteStep;
+  step: DirectionsRouteStep;
   index: number;
   progress: StepProgress;
   tapped: boolean;
-  onSelect: (step: YouBikeRouteStep, index: number) => void;
+  onSelect: (step: DirectionsRouteStep, index: number) => void;
 }) {
   const { t } = useTranslation();
-  const Icon = step.mode === "bike" ? Bicycle : PersonSimpleWalk;
-  const label = localizeYouBikeStepLabel(step, t);
+  const label = formatYouBikeStepLabel(step);
   const distance = formatDistance(step.distanceMeters, t);
   const meta =
     step.durationSeconds >= 30
@@ -147,9 +178,9 @@ function RouteStepRow({
           progress === "past" && "opacity-40"
         )}
       >
-        <Icon
+        <StepIcon
+          kind={step.kind}
           size={14}
-          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
           className={cn(
             "mt-0.5 shrink-0",
             highlighted ? "text-os-selection-text" : "text-os-text-secondary"
@@ -166,14 +197,7 @@ function RouteStepRow({
   );
 }
 
-function stepProgress(index: number, activeStepIndex: number | null): StepProgress {
-  if (activeStepIndex == null) return "idle";
-  if (index < activeStepIndex) return "past";
-  if (index === activeStepIndex) return "current";
-  return "later";
-}
-
-function YouBikeNavigationFocus({
+function NavigationFocus({
   current,
   currentIndex,
   upcoming,
@@ -181,26 +205,17 @@ function YouBikeNavigationFocus({
   onSelectCurrent,
   onSelectUpcoming,
 }: {
-  current: YouBikeRouteStep;
+  current: DirectionsRouteStep;
   currentIndex: number;
-  upcoming: YouBikeRouteStep | null;
+  upcoming: DirectionsRouteStep | null;
   remainingMeters: number | null;
   onSelectCurrent: () => void;
   onSelectUpcoming: () => void;
 }) {
   const { t } = useTranslation();
-  const CurrentIcon = current.mode === "bike" ? Bicycle : PersonSimpleWalk;
-  const UpcomingIcon = upcoming
-    ? upcoming.mode === "bike"
-      ? Bicycle
-      : PersonSimpleWalk
-    : null;
-  const currentLabel = localizeYouBikeStepLabel(current, t);
-  const upcomingLabel = upcoming ? localizeYouBikeStepLabel(upcoming, t) : null;
-  const currentMeta = formatDistance(
-    remainingMeters ?? current.distanceMeters,
-    t
-  );
+  const currentLabel = formatYouBikeStepLabel(current);
+  const upcomingLabel = upcoming ? formatYouBikeStepLabel(upcoming) : null;
+  const currentMeta = formatDistance(remainingMeters ?? current.distanceMeters, t);
 
   return (
     <div
@@ -225,15 +240,9 @@ function YouBikeNavigationFocus({
           "focus:outline-none focus-visible:ring-1"
         )}
       >
-        <CurrentIcon
-          size={18}
-          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
-          className="mt-0.5 shrink-0"
-        />
+        <StepIcon kind={current.kind} size={18} className="mt-0.5 shrink-0" />
         <div className="min-w-0">
-          <div className="text-[15px] font-semibold leading-snug">
-            {currentLabel}
-          </div>
+          <div className="text-[15px] font-semibold leading-snug">{currentLabel}</div>
           <div className="text-[11px] leading-snug opacity-80">{currentMeta}</div>
         </div>
       </button>
@@ -251,13 +260,11 @@ function YouBikeNavigationFocus({
             "hover:bg-os-selection-bg/15 focus:outline-none focus-visible:ring-1"
           )}
         >
-          {UpcomingIcon && (
-            <UpcomingIcon
-              size={14}
-              weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
-              className="mt-0.5 shrink-0 text-os-text-secondary"
-            />
-          )}
+          <StepIcon
+            kind={upcoming.kind}
+            size={14}
+            className="mt-0.5 shrink-0 text-os-text-secondary"
+          />
           <span className="shrink-0 font-medium text-os-text-secondary">
             {t("apps.maps.youbike.thenStep", { defaultValue: "Then" })}
           </span>
@@ -270,16 +277,16 @@ function YouBikeNavigationFocus({
   );
 }
 
-function YouBikeStepsList({
+function StepsList({
   steps,
   selectedIndex,
   activeStepIndex,
   onSelect,
 }: {
-  steps: YouBikeRouteStep[];
+  steps: DirectionsRouteStep[];
   selectedIndex: number | null;
   activeStepIndex: number | null;
-  onSelect: (step: YouBikeRouteStep, index: number) => void;
+  onSelect: (step: DirectionsRouteStep, index: number) => void;
 }) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLOListElement>(null);
@@ -339,7 +346,7 @@ function YouBikeStepsList({
     >
       {steps.map((step, index) => (
         <RouteStepRow
-          key={`${step.mode}-${index}`}
+          key={`${step.kind}-${index}`}
           step={step}
           index={index}
           progress={stepProgress(index, activeStepIndex)}
@@ -351,25 +358,89 @@ function YouBikeStepsList({
   );
 }
 
-export function MapsYouBikeRouteCard({
+function ModeSwitcher({
+  mode,
+  disabled,
+  onChange,
+}: {
+  mode: DirectionsMode;
+  disabled: boolean;
+  onChange: (mode: DirectionsMode) => void;
+}) {
+  const { t } = useTranslation();
+  const { isMacOSTheme } = useThemeFlags();
+  const variant = isMacOSTheme ? "aqua" : "retro";
+  return (
+    <div
+      className="flex flex-wrap items-center gap-1.5"
+      role="tablist"
+      aria-label={t("apps.maps.directions.modeListLabel", {
+        defaultValue: "Travel mode",
+      })}
+    >
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        role="tab"
+        aria-selected={mode === "drive"}
+        disabled={disabled && mode !== "drive"}
+        onClick={() => onChange("drive")}
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
+      >
+        <Car
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+        />
+        <span>
+          {t("apps.maps.placeCard.drive", { defaultValue: "Drive" })}
+        </span>
+      </Button>
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        role="tab"
+        aria-selected={mode === "transit"}
+        disabled={disabled && mode !== "transit"}
+        onClick={() => onChange("transit")}
+        className={AQUA_ICON_BUTTON_PADDING_CLASS}
+      >
+        <TrainSimple
+          size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+        />
+        <span>
+          {t("apps.maps.placeCard.transit", { defaultValue: "Transit" })}
+        </span>
+      </Button>
+    </div>
+  );
+}
+
+export function MapsDirectionsRouteCard({
   plan,
   isRouting,
   error,
+  pendingMode = null,
+  fallbackDestination = null,
   onClose,
+  onChangeMode,
   onSelectStep,
   activeStepIndex = null,
   userLocation = null,
   followUserLocation = false,
-  onNavigatingChange,
-}: MapsYouBikeRouteCardProps) {
+  onStartNavigation,
+}: MapsDirectionsRouteCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const visible = !!plan || isRouting || !!error;
+  const mode = plan?.mode ?? pendingMode ?? "drive";
   const [showSteps, setShowSteps] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const [manualIndex, setManualIndex] = useState(0);
-  const steps = plan ? listYouBikeRouteSteps(plan) : [];
+  const steps = plan?.steps ?? [];
   const focusedIndex = youbikeNavigationFocusedIndex({
     stepCount: steps.length,
     gpsIndex: activeStepIndex,
@@ -381,13 +452,14 @@ export function MapsYouBikeRouteCard({
     ? youbikeStepRemainingMeters(focusedStep, userLocation)
     : null;
   const buttonVariant = isMacOSTheme ? "aqua" : "retro";
+  const HeaderIcon = mode === "transit" ? TrainSimple : Car;
 
   const labelForIndex = useCallback(
     (index: number) => {
       const step = steps[index];
-      return step ? localizeYouBikeStepLabel(step, t) : "";
+      return step ? formatYouBikeStepLabel(step) : "";
     },
-    [steps, t]
+    [steps]
   );
   const thenPhrase = useCallback(
     (label: string) =>
@@ -412,11 +484,10 @@ export function MapsYouBikeRouteCard({
     setIsNavigating(false);
     setManualIndex(0);
     cancel();
-    onNavigatingChange?.(false);
-  }, [plan, cancel, onNavigatingChange]);
+  }, [plan, cancel]);
 
   const handleSelectStep = useCallback(
-    (step: YouBikeRouteStep, index: number) => {
+    (step: DirectionsRouteStep, index: number) => {
       setSelectedIndex(index);
       if (!followUserLocation) onSelectStep?.(step);
     },
@@ -430,11 +501,8 @@ export function MapsYouBikeRouteCard({
       gpsIndex: activeStepIndex,
       manualIndex: 0,
     });
-    // Speak/unlock in this tap before any location prompt. Enabling
-    // showsUserLocation can present a permission dialog and end the
-    // iOS Safari gesture window used to start speechSynthesis.
     speakStart(index);
-    onNavigatingChange?.(true);
+    onStartNavigation?.();
     setManualIndex(index);
     setSelectedIndex(index);
     setShowSteps(false);
@@ -444,8 +512,8 @@ export function MapsYouBikeRouteCard({
   }, [
     activeStepIndex,
     followUserLocation,
-    onNavigatingChange,
     onSelectStep,
+    onStartNavigation,
     speakStart,
     steps,
   ]);
@@ -453,19 +521,13 @@ export function MapsYouBikeRouteCard({
   const handleStopNavigation = useCallback(() => {
     cancel();
     setIsNavigating(false);
-    onNavigatingChange?.(false);
-  }, [cancel, onNavigatingChange]);
+  }, [cancel]);
 
   const handleClose = useCallback(() => {
     cancel();
     setIsNavigating(false);
-    onNavigatingChange?.(false);
     onClose();
-  }, [cancel, onClose, onNavigatingChange]);
-
-  useEffect(() => {
-    return () => onNavigatingChange?.(false);
-  }, [onNavigatingChange]);
+  }, [cancel, onClose]);
 
   const stepsRef = useRef(steps);
   const onSelectStepRef = useRef(onSelectStep);
@@ -478,14 +540,41 @@ export function MapsYouBikeRouteCard({
     if (step) onSelectStepRef.current?.(step);
   }, [focusedIndex, followUserLocation, isNavigating]);
 
+  const title =
+    mode === "transit"
+      ? t("apps.maps.directions.transitTitle", {
+          defaultValue: "Transit Directions",
+        })
+      : t("apps.maps.directions.driveTitle", {
+          defaultValue: "Driving Directions",
+        });
+  const routingLabel =
+    mode === "transit"
+      ? t("apps.maps.directions.routingTransit", {
+          defaultValue: "Finding a transit route…",
+        })
+      : t("apps.maps.directions.routingDrive", {
+          defaultValue: "Finding a driving route…",
+        });
+  const errorLabel = error
+    ? t(`apps.maps.directions.errors.${error}`, {
+        defaultValue:
+          error === "no_origin"
+            ? "Turn on Locate Me or set Home to start directions."
+            : error === "transit_unavailable"
+              ? "Couldn't find a transit route from here."
+              : "Couldn't find a route right now.",
+      })
+    : null;
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
-          key="youbike-route"
+          key="maps-directions"
           role="region"
-          aria-label={t("apps.maps.youbike.routeRegionLabel", {
-            defaultValue: "YouBike directions",
+          aria-label={t("apps.maps.directions.routeRegionLabel", {
+            defaultValue: "Directions",
           })}
           className="pointer-events-auto relative w-full min-w-0 select-none"
           initial={{ y: 24, opacity: 0 }}
@@ -506,40 +595,28 @@ export function MapsYouBikeRouteCard({
             <div className="flex items-start gap-2.5">
               <div
                 className="aqua-icon-badge flex size-9 shrink-0 items-center justify-center text-white"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(180deg, #7CB518 0%, color-mix(in srgb, #7CB518 82%, #4d7c0f) 100%)",
-                }}
+                style={{ backgroundImage: directionsBadgeGradient(mode) }}
                 aria-hidden="true"
               >
-                <Bicycle size={20} weight="fill" />
+                <HeaderIcon size={20} weight="fill" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[13px] font-semibold leading-tight text-os-text-primary">
-                  {t("apps.maps.youbike.routeTitle", {
-                    defaultValue: "YouBike Directions",
-                  })}
+                  {title}
                 </div>
                 <div className="text-[11px] leading-snug text-os-text-secondary">
                   {isRouting
-                    ? t("apps.maps.youbike.routing", {
-                        defaultValue: "Finding a YouBike trip…",
-                      })
+                    ? routingLabel
                     : plan
                       ? t("apps.maps.youbike.routeSummary", {
                           defaultValue: "{{minutes}} min · {{distance}}",
-                          minutes: formatDuration(plan.totalDurationSeconds),
-                          distance: formatDistance(plan.totalDistanceMeters, t),
+                          minutes: formatDuration(plan.durationSeconds),
+                          distance: formatDistance(plan.distanceMeters, t),
                         })
-                      : error
-                        ? t(`apps.maps.youbike.errors.${error}`, {
-                            defaultValue:
-                              "Couldn't plan a YouBike trip from here.",
-                          })
-                        : null}
+                      : errorLabel}
                 </div>
               </div>
-              {plan && (
+              {(plan || fallbackDestination) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
@@ -561,10 +638,10 @@ export function MapsYouBikeRouteCard({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent side="top" align="end">
                     <MapsExternalMapsMenuItems
-                      destination={plan.destination}
-                      origin={plan.origin}
-                      mode="cycle"
-                      placeName={plan.destinationStation?.name}
+                      destination={plan?.destination ?? fallbackDestination!}
+                      origin={plan?.origin}
+                      mode={mode}
+                      placeName={plan?.destinationLabel ?? fallbackDestination?.name}
                       asDirections
                       t={t}
                     />
@@ -579,16 +656,18 @@ export function MapsYouBikeRouteCard({
                   "focus:outline-none focus-visible:ring-1",
                   osSubtleIconButtonClassName()
                 )}
-                aria-label={t("apps.maps.youbike.clearRoute", {
-                  defaultValue: "Clear YouBike route",
+                aria-label={t("apps.maps.directions.clearRoute", {
+                  defaultValue: "Clear route",
                 })}
               >
                 <X size={12} weight="bold" />
               </button>
             </div>
 
+            <ModeSwitcher mode={mode} disabled={isRouting} onChange={onChangeMode} />
+
             {plan && focusedStep && isNavigating && (
-              <YouBikeNavigationFocus
+              <NavigationFocus
                 current={focusedStep}
                 currentIndex={focusedIndex}
                 upcoming={upcomingStep}
@@ -606,29 +685,12 @@ export function MapsYouBikeRouteCard({
             )}
 
             {plan && steps.length > 0 && showSteps && !isNavigating && (
-              <YouBikeStepsList
+              <StepsList
                 steps={steps}
                 selectedIndex={selectedIndex}
                 activeStepIndex={activeStepIndex}
                 onSelect={handleSelectStep}
               />
-            )}
-
-            {plan?.warnings.includes("origin_station_no_bikes") && (
-              <div className="text-[11px] text-os-text-secondary">
-                {t("apps.maps.youbike.warningNoBikes", {
-                  defaultValue:
-                    "The nearest start station may have no bikes right now.",
-                })}
-              </div>
-            )}
-            {plan?.warnings.includes("destination_station_no_docks") && (
-              <div className="text-[11px] text-os-text-secondary">
-                {t("apps.maps.youbike.warningNoDocks", {
-                  defaultValue:
-                    "The nearest end station may have no empty docks right now.",
-                })}
-              </div>
             )}
 
             <div className="flex flex-wrap items-center justify-end gap-2">

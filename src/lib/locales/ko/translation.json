@@ -3311,6 +3311,20 @@
     },
     "maps": {
       "description": "Apple 지도로 장소 찾기",
+      "directions": {
+        "clearRoute": "경로 지우기",
+        "driveTitle": "운전 경로",
+        "errors": {
+          "no_origin": "경로를 시작하려면 ‘내 위치 찾기’를 켜거나 ‘집’을 설정하십시오.",
+          "route_failed": "지금은 경로를 찾을 수 없습니다.",
+          "transit_unavailable": "여기서 출발하는 대중교통 경로를 찾을 수 없습니다."
+        },
+        "modeListLabel": "이동 수단",
+        "routeRegionLabel": "경로",
+        "routingDrive": "운전 경로 찾는 중…",
+        "routingTransit": "대중교통 경로 찾는 중…",
+        "transitTitle": "대중교통 경로"
+      },
       "help": {
         "directions": {
           "description": "장소 카드에서 Apple 지도로 운전 경로를 열거나, 대만에서 YouBike 여정을 계획해 도보와 자전거 구간을 지도에 표시합니다.",
@@ -3355,15 +3369,21 @@
         "addFavorite": "즐겨찾기에 추가",
         "close": "장소 카드 닫기",
         "directions": "경로",
+        "drive": "운전",
+        "driveTitle": "운전 경로",
         "favorite": "즐겨찾기",
         "favorited": "즐겨찾기에 추가됨",
         "home": "집",
         "moreActions": "더보기",
         "openDirections": "Apple 지도에서 길 찾기",
+        "openInAppleMaps": "Apple 지도로 열기",
+        "openInGoogleMaps": "Google 지도로 열기",
         "regionLabel": "선택된 장소",
         "removeFavorite": "즐겨찾기에서 제거",
         "setHome": "집으로 설정",
         "setWork": "직장으로 설정",
+        "transit": "대중교통",
+        "transitTitle": "대중교통 경로",
         "unsetHome": "집 설정 해제",
         "unsetWork": "직장 설정 해제",
         "work": "직장"

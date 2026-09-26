@@ -3314,6 +3314,20 @@
     },
     "maps": {
       "description": "Trouvez des lieux avec Apple Maps",
+      "directions": {
+        "clearRoute": "Effacer l’itinéraire",
+        "driveTitle": "Itinéraire en voiture",
+        "errors": {
+          "no_origin": "Activez « Me localiser » ou définissez votre domicile pour lancer l’itinéraire.",
+          "route_failed": "Impossible de trouver un itinéraire pour le moment.",
+          "transit_unavailable": "Impossible de trouver un itinéraire en transports depuis cet endroit."
+        },
+        "modeListLabel": "Mode de transport",
+        "routeRegionLabel": "Itinéraire",
+        "routingDrive": "Recherche d’un itinéraire en voiture…",
+        "routingTransit": "Recherche d’un itinéraire en transports…",
+        "transitTitle": "Itinéraire en transports"
+      },
       "help": {
         "directions": {
           "description": "Depuis une fiche de lieu, ouvrez un itinéraire en voiture dans Apple Plans, ou planifiez un trajet YouBike à Taïwan avec des segments à pied et à vélo sur la carte.",
@@ -3358,15 +3372,21 @@
         "addFavorite": "Ajouter aux favoris",
         "close": "Fermer la fiche du lieu",
         "directions": "Itinéraire",
+        "drive": "Voiture",
+        "driveTitle": "Itinéraire en voiture",
         "favorite": "Favori",
         "favorited": "Favori",
         "home": "Domicile",
         "moreActions": "Plus",
         "openDirections": "Obtenir l’itinéraire dans Plans",
+        "openInAppleMaps": "Ouvrir dans Apple Maps",
+        "openInGoogleMaps": "Ouvrir dans Google Maps",
         "regionLabel": "Lieu sélectionné",
         "removeFavorite": "Supprimer des favoris",
         "setHome": "Définir comme domicile",
         "setWork": "Définir comme bureau",
+        "transit": "Transports",
+        "transitTitle": "Itinéraire en transports",
         "unsetHome": "Retirer le domicile",
         "unsetWork": "Retirer le bureau",
         "work": "Bureau"

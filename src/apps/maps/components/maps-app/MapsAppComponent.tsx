@@ -10,6 +10,7 @@ import { MapsMenuBar } from "../MapsMenuBar";
 import { MapsPlacesDrawer } from "../MapsPlacesDrawer";
 import { MapsPlaceCard } from "../MapsPlaceCard";
 import { MapsYouBikeRouteCard } from "../MapsYouBikeRouteCard";
+import { MapsDirectionsRouteCard } from "../MapsDirectionsRouteCard";
 import type { SavedPlace } from "../../utils/types";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import { MapsMapBottomChrome } from "./MapsMapBottomChrome";
@@ -59,6 +60,16 @@ export function MapsAppComponent({
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
+    handleClearDirectionsRoute,
+    handleChangeDirectionsMode,
+    focusDirectionsStep,
+    directionsRoutePlan,
+    directionsIsRouting,
+    directionsRouteError,
+    directionsPendingMode,
+    directionsDestinationPlace,
+    directionsActiveStepIndex,
+    directionsTrackedUser,
     locateMeEnabled,
     focusYouBikeStep,
     youbikeActiveStepIndex,
@@ -186,7 +197,26 @@ export function MapsAppComponent({
               />
             )}
 
-            {youbikeRoutePlan || youbikeIsRouting || youbikeRouteError ? (
+            {directionsRoutePlan ||
+            directionsIsRouting ||
+            directionsRouteError ? (
+              <MapsDirectionsRouteCard
+                plan={directionsRoutePlan}
+                isRouting={directionsIsRouting}
+                error={directionsRouteError}
+                pendingMode={directionsPendingMode}
+                fallbackDestination={directionsDestinationPlace}
+                onClose={handleClearDirectionsRoute}
+                onChangeMode={handleChangeDirectionsMode}
+                onSelectStep={focusDirectionsStep}
+                activeStepIndex={directionsActiveStepIndex}
+                userLocation={directionsTrackedUser}
+                followUserLocation={locateMeEnabled}
+                onStartNavigation={
+                  locateMeEnabled ? undefined : handleLocateMe
+                }
+              />
+            ) : youbikeRoutePlan || youbikeIsRouting || youbikeRouteError ? (
               <MapsYouBikeRouteCard
                 plan={youbikeRoutePlan}
                 isRouting={youbikeIsRouting}

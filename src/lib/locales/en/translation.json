@@ -4561,7 +4561,13 @@
         "regionLabel": "Selected place",
         "close": "Close place card",
         "directions": "Directions",
+        "drive": "Drive",
+        "transit": "Transit",
+        "driveTitle": "Driving Directions",
+        "transitTitle": "Transit Directions",
         "openDirections": "Get directions in Apple Maps",
+        "openInAppleMaps": "Open in Apple Maps",
+        "openInGoogleMaps": "Open in Google Maps",
         "setHome": "Set as Home",
         "home": "Home",
         "unsetHome": "Unset Home",
@@ -4700,6 +4706,20 @@
           "route_failed": "Couldn't plan a YouBike trip right now."
         }
       },
+      "directions": {
+        "driveTitle": "Driving Directions",
+        "transitTitle": "Transit Directions",
+        "routeRegionLabel": "Directions",
+        "modeListLabel": "Travel mode",
+        "routingDrive": "Finding a driving route…",
+        "routingTransit": "Finding a transit route…",
+        "clearRoute": "Clear route",
+        "errors": {
+          "no_origin": "Turn on Locate Me or set Home to start directions.",
+          "route_failed": "Couldn't find a route right now.",
+          "transit_unavailable": "Couldn't find a transit route from here."
+        }
+      },
       "status": {
         "idle": "Apple Maps is initializing…",
         "loading": "Loading Apple Maps…",
@@ -4722,7 +4742,7 @@
         },
         "directions": {
           "title": "Directions",
-          "description": "From a place card, open driving directions in Apple Maps, or plan a YouBike trip in Taiwan with walk and bike legs on the map"
+          "description": "From a place card, get Drive or Transit directions on the map, or plan a YouBike trip in Taiwan. Use More to open the place in Apple Maps or Google Maps."
         },
         "mapTypes": {
           "title": "Map Types",

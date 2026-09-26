@@ -3311,6 +3311,20 @@
     },
     "maps": {
       "description": "使用 Apple 地图寻找地点",
+      "directions": {
+        "clearRoute": "清除路线",
+        "driveTitle": "驾车路线",
+        "errors": {
+          "no_origin": "开启“定位我的位置”或设置“住宅”以开始获取路线。",
+          "route_failed": "目前找不到路线。",
+          "transit_unavailable": "找不到从这里出发的公交路线。"
+        },
+        "modeListLabel": "出行方式",
+        "routeRegionLabel": "路线",
+        "routingDrive": "正在寻找驾车路线…",
+        "routingTransit": "正在寻找公交路线…",
+        "transitTitle": "公交路线"
+      },
       "help": {
         "directions": {
           "description": "从地点卡打开 Apple 地图的驾车路线，或在台湾规划 YouBike 行程，在地图上显示步行与骑行路段。",
@@ -3355,15 +3369,21 @@
         "addFavorite": "添加到个人收藏",
         "close": "关闭地点卡",
         "directions": "路线",
+        "drive": "驾车",
+        "driveTitle": "驾车路线",
         "favorite": "个人收藏",
         "favorited": "已收藏",
         "home": "家",
         "moreActions": "更多",
         "openDirections": "在 Apple 地图中获取路线",
+        "openInAppleMaps": "在“Apple 地图”中打开",
+        "openInGoogleMaps": "在“Google 地图”中打开",
         "regionLabel": "所选地点",
         "removeFavorite": "从个人收藏中移除",
         "setHome": "设为家",
         "setWork": "设为工作地点",
+        "transit": "公交",
+        "transitTitle": "公交路线",
         "unsetHome": "取消家",
         "unsetWork": "取消工作地点",
         "work": "工作"

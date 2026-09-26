@@ -3314,6 +3314,20 @@
     },
     "maps": {
       "description": "Busca lugares con Apple Maps",
+      "directions": {
+        "clearRoute": "Borrar ruta",
+        "driveTitle": "Ruta en coche",
+        "errors": {
+          "no_origin": "Activa Localizarme o define tu casa para obtener la ruta.",
+          "route_failed": "No se ha podido encontrar ninguna ruta en este momento.",
+          "transit_unavailable": "No se ha podido encontrar ninguna ruta en transporte público desde aquí."
+        },
+        "modeListLabel": "Modo de transporte",
+        "routeRegionLabel": "Ruta",
+        "routingDrive": "Buscando una ruta en coche…",
+        "routingTransit": "Buscando una ruta en transporte público…",
+        "transitTitle": "Ruta en transporte público"
+      },
       "help": {
         "directions": {
           "description": "Desde la ficha de un lugar, abre la ruta en coche en Apple Maps o planifica un viaje YouBike en Taiwán con tramos a pie y en bici en el mapa.",
@@ -3358,15 +3372,21 @@
         "addFavorite": "Añadir a favoritos",
         "close": "Cerrar tarjeta de lugar",
         "directions": "Ruta",
+        "drive": "En coche",
+        "driveTitle": "Ruta en coche",
         "favorite": "Favorito",
         "favorited": "En favoritos",
         "home": "Casa",
         "moreActions": "Más",
         "openDirections": "Obtener indicaciones en Apple Maps",
+        "openInAppleMaps": "Abrir en Apple Maps",
+        "openInGoogleMaps": "Abrir en Google Maps",
         "regionLabel": "Lugar seleccionado",
         "removeFavorite": "Eliminar de Favoritos",
         "setHome": "Establecer como Casa",
         "setWork": "Establecer como Trabajo",
+        "transit": "Transporte público",
+        "transitTitle": "Ruta en transporte público",
         "unsetHome": "Quitar Casa",
         "unsetWork": "Quitar Trabajo",
         "work": "Trabajo"

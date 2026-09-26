@@ -1,6 +1,10 @@
 import type { GeoPoint } from "./types";
 
-export type MapKitTransportKind = "Walking" | "Cycling";
+export type MapKitTransportKind =
+  | "Walking"
+  | "Cycling"
+  | "Automobile"
+  | "Transit";
 
 interface MapKitLikeCoordinate {
   latitude?: unknown;
@@ -117,6 +121,14 @@ export function extractMapKitRouteSteps(route: unknown): MapKitRouteStep[] {
   return parsed;
 }
 
+function transportLookup(
+  transport: Record<string, string> | undefined,
+  name: "Walking" | "Cycling" | "Automobile" | "Transit"
+): string {
+  if (!transport) return name;
+  return transport[name] ?? transport[name.toLowerCase()] ?? name;
+}
+
 /** Resolve MapKit JS `Directions.Transport` values, including WWDC25 Cycling. */
 export function resolveMapKitTransport(
   directions: { Transport?: Record<string, string> } | undefined,
@@ -124,7 +136,13 @@ export function resolveMapKitTransport(
 ): string | null {
   const transport = directions?.Transport;
   if (kind === "Cycling") {
-    return transport?.Cycling ?? transport?.cycling ?? "Cycling";
+    return transportLookup(transport, "Cycling");
   }
-  return transport?.Walking ?? transport?.walking ?? "Walking";
+  if (kind === "Automobile") {
+    return transportLookup(transport, "Automobile");
+  }
+  if (kind === "Transit") {
+    return transportLookup(transport, "Transit");
+  }
+  return transportLookup(transport, "Walking");
 }

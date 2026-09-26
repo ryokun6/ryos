@@ -3320,6 +3320,20 @@
     },
     "maps": {
       "description": "Ищите места в Apple Maps",
+      "directions": {
+        "clearRoute": "Очистить маршрут",
+        "driveTitle": "Маршруты на автомобиле",
+        "errors": {
+          "no_origin": "Включите функцию «Моя геопозиция» или укажите домашний адрес, чтобы построить маршрут.",
+          "route_failed": "Не удалось найти маршрут.",
+          "transit_unavailable": "Не удалось найти маршрут на общественном транспорте."
+        },
+        "modeListLabel": "Способ передвижения",
+        "routeRegionLabel": "Маршруты",
+        "routingDrive": "Поиск маршрута на автомобиле…",
+        "routingTransit": "Поиск маршрута на общественном транспорте…",
+        "transitTitle": "Маршруты на общественном транспорте"
+      },
       "help": {
         "directions": {
           "description": "С карточки места откройте маршрут на автомобиле в Apple Картах или спланируйте поездку на YouBike на Тайване с пешими и велосипедными участками на карте.",
@@ -3364,15 +3378,21 @@
         "addFavorite": "Добавить в избранное",
         "close": "Закрыть карточку места",
         "directions": "Маршрут",
+        "drive": "На авто",
+        "driveTitle": "Маршруты на автомобиле",
         "favorite": "Избранное",
         "favorited": "В избранном",
         "home": "Дом",
         "moreActions": "Ещё",
         "openDirections": "Построить маршрут в Apple Maps",
+        "openInAppleMaps": "Открыть в Apple Maps",
+        "openInGoogleMaps": "Открыть в Google Maps",
         "regionLabel": "Выбранное место",
         "removeFavorite": "Удалить из избранного",
         "setHome": "Сделать домом",
         "setWork": "Сделать работой",
+        "transit": "Транспорт",
+        "transitTitle": "Маршруты на общественном транспорте",
         "unsetHome": "Убрать дом",
         "unsetWork": "Убрать работу",
         "work": "Работа"

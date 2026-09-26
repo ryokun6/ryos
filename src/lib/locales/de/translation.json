@@ -3311,6 +3311,20 @@
     },
     "maps": {
       "description": "Orte mit Apple Karten finden",
+      "directions": {
+        "clearRoute": "Route löschen",
+        "driveTitle": "Route (Auto)",
+        "errors": {
+          "no_origin": "Aktiviere „Meinen Standort finden“ oder lege „Privat“ fest, um die Route zu starten.",
+          "route_failed": "Momentan konnte keine Route gefunden werden.",
+          "transit_unavailable": "Von hier aus konnte keine ÖPNV-Route gefunden werden."
+        },
+        "modeListLabel": "Fortbewegungsart",
+        "routeRegionLabel": "Route",
+        "routingDrive": "Route (Auto) wird gesucht …",
+        "routingTransit": "ÖPNV-Route wird gesucht …",
+        "transitTitle": "ÖPNV-Route"
+      },
       "help": {
         "directions": {
           "description": "Öffnen Sie von einer Ortskarte aus Autofahrrouten in Apple Maps, oder planen Sie eine YouBike-Fahrt in Taiwan mit Geh- und Radabschnitten auf der Karte.",
@@ -3355,15 +3369,21 @@
         "addFavorite": "Zu Favoriten hinzufügen",
         "close": "Ortskarte schließen",
         "directions": "Route",
+        "drive": "Fahren",
+        "driveTitle": "Route (Auto)",
         "favorite": "Favorit",
         "favorited": "Favorisiert",
         "home": "Privat",
         "moreActions": "Mehr",
         "openDirections": "Route in Apple Karten erhalten",
+        "openInAppleMaps": "In Apple Karten öffnen",
+        "openInGoogleMaps": "In Google Maps öffnen",
         "regionLabel": "Ausgewählter Ort",
         "removeFavorite": "Aus Favoriten entfernen",
         "setHome": "Als Privat festlegen",
         "setWork": "Als Arbeit festlegen",
+        "transit": "ÖPNV",
+        "transitTitle": "ÖPNV-Route",
         "unsetHome": "Privat entfernen",
         "unsetWork": "Arbeit entfernen",
         "work": "Arbeit"

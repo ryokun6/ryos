@@ -3311,6 +3311,20 @@
     },
     "maps": {
       "description": "使用 Apple 地圖尋找地點",
+      "directions": {
+        "clearRoute": "清除路線",
+        "driveTitle": "開車路線",
+        "errors": {
+          "no_origin": "開啟「定位我的位置」或設定「住家」來開始取得路線。",
+          "route_failed": "目前找不到路線。",
+          "transit_unavailable": "找不到從這裡出發的大眾運輸路線。"
+        },
+        "modeListLabel": "交通方式",
+        "routeRegionLabel": "路線",
+        "routingDrive": "正在尋找開車路線…",
+        "routingTransit": "正在尋找大眾運輸路線…",
+        "transitTitle": "大眾運輸路線"
+      },
       "help": {
         "directions": {
           "description": "從地點卡開啟 Apple 地圖的開車路線，或在臺灣規劃 YouBike 行程，於地圖上顯示步行與騎乘路段。",
@@ -3355,15 +3369,21 @@
         "addFavorite": "加入最愛",
         "close": "關閉地點卡",
         "directions": "路線",
+        "drive": "開車",
+        "driveTitle": "開車路線",
         "favorite": "喜好項目",
         "favorited": "已加入喜好項目",
         "home": "住家",
         "moreActions": "更多",
         "openDirections": "在 Apple 地圖取得路線",
+        "openInAppleMaps": "在 Apple 地圖中打開",
+        "openInGoogleMaps": "在 Google 地圖中打開",
         "regionLabel": "已選取的地點",
         "removeFavorite": "從最愛移除",
         "setHome": "設為住家",
         "setWork": "設為公司",
+        "transit": "大眾運輸",
+        "transitTitle": "大眾運輸路線",
         "unsetHome": "取消住家",
         "unsetWork": "取消公司",
         "work": "公司"

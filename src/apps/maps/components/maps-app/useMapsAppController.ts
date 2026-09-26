@@ -12,7 +12,8 @@ import { useMapKit } from "../../hooks/useMapKit";
 import { useMapsStore } from "@/stores/useMapsStore";
 import type { SavedPlace } from "../../utils/types";
 import { getPoiMarkerAnnotationOptions } from "../../utils/poiMarkerStyle";
-import { buildAppleMapsDrivingDirectionsUrl } from "../../utils/appleMapsLinks";
+import { useMapKitDirectionsLayer } from "../../hooks/useMapKitDirectionsLayer";
+import type { DirectionsMode } from "../../directions/types";
 import {
   homeMarkerAnnotationStyle,
   workMarkerAnnotationStyle,
@@ -687,17 +688,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     clearDroppedAnnotation();
   }, [setSelectedPlace, clearDroppedAnnotation]);
 
-  const handleOpenPlaceDirections = useCallback((place: SavedPlace) => {
-    track(MAPS_ANALYTICS.DIRECTIONS, {
-      appId: "maps",
-      category: place.category || "unknown",
-    });
-    const url = buildAppleMapsDrivingDirectionsUrl(
-      place.latitude,
-      place.longitude
-    );
-    window.location.assign(url);
-  }, []);
+  const directions = useMapKitDirectionsLayer({
+    mapReadyTick,
+    mapInstanceRef,
+    homePlace,
+    workPlace,
+  });
 
   const handleToggleFavorite = useCallback(
     (place: SavedPlace) => {
@@ -773,15 +769,51 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     youbike.handleClearYouBikeRoute();
   }, [youbike]);
 
+  const handleOpenPlaceDirections = useCallback(
+    (place: SavedPlace, mode: DirectionsMode) => {
+      track(MAPS_ANALYTICS.DIRECTIONS, {
+        appId: "maps",
+        category: place.category || "unknown",
+        mode,
+      });
+      youbike.handleClearYouBikeRoute();
+      void directions.handleDirections(place, mode);
+    },
+    [directions, youbike]
+  );
+
+  const handleChangeDirectionsMode = useCallback(
+    (mode: DirectionsMode) => {
+      const place = directions.destinationPlace;
+      if (!place) return;
+      if (
+        directions.pendingMode === mode &&
+        directions.routePlan &&
+        !directions.routeError
+      ) {
+        return;
+      }
+      handleOpenPlaceDirections(place, mode);
+    },
+    [
+      directions.destinationPlace,
+      directions.pendingMode,
+      directions.routeError,
+      directions.routePlan,
+      handleOpenPlaceDirections,
+    ]
+  );
+
   const handleYouBikeDirections = useCallback(
     (place: SavedPlace) => {
       track(MAPS_ANALYTICS.YOUBIKE_DIRECTIONS, {
         appId: "maps",
         category: place.category || "youbike",
       });
+      directions.handleClearRoute();
       void youbike.handleYouBikeDirections(place);
     },
-    [youbike]
+    [directions, youbike]
   );
 
   const selectedPlaceWithYoubike = useMemo(() => {
@@ -1275,6 +1307,16 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
+    handleClearDirectionsRoute: directions.handleClearRoute,
+    handleChangeDirectionsMode,
+    focusDirectionsStep: directions.focusStep,
+    directionsRoutePlan: directions.routePlan,
+    directionsIsRouting: directions.isRouting,
+    directionsRouteError: directions.routeError,
+    directionsPendingMode: directions.pendingMode,
+    directionsDestinationPlace: directions.destinationPlace,
+    directionsActiveStepIndex: directions.activeStepIndex,
+    directionsTrackedUser: directions.trackedUser,
     locateMeEnabled,
     focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeActiveStepIndex: youbike.activeStepIndex,
