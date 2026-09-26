@@ -80,6 +80,8 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       speechEnabled: false,
       keepTalkingEnabled: true,
 
+      // null = Control Panels "Default" → `/api/speech` uses DEFAULT_TTS_MODEL (OpenAI).
+      // Persisted "elevenlabs" is left alone.
       ttsModel: null,
       ttsVoice: null,
       browserTtsVoiceURI: null,

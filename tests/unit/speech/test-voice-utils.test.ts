@@ -3,11 +3,16 @@ import {
   DEFAULT_ELEVENLABS_MODEL_ID,
   DEFAULT_ELEVENLABS_OUTPUT_FORMAT,
   DEFAULT_ELEVENLABS_VOICE_ID,
+  DEFAULT_TTS_MODEL,
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
 } from "../../../api/_utils/voice";
 
 describe("voice utils", () => {
+  test("unset TTS model falls back to OpenAI, not ElevenLabs", () => {
+    expect(DEFAULT_TTS_MODEL).toBe("openai");
+  });
+
   test("transcribeAudioBuffer uses the provided file metadata", async () => {
     const result = await transcribeAudioBuffer({
       buffer: new Uint8Array([1, 2, 3]),
