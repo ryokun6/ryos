@@ -59,7 +59,6 @@ export function MapsAppComponent({
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
-    handleYouBikeNavigatingChange,
     locateMeEnabled,
     focusYouBikeStep,
     youbikeActiveStepIndex,
@@ -197,7 +196,6 @@ export function MapsAppComponent({
                 activeStepIndex={youbikeActiveStepIndex}
                 userLocation={youbikeTrackedUser}
                 followUserLocation={locateMeEnabled}
-                onNavigatingChange={handleYouBikeNavigatingChange}
               />
             ) : (
               <MapsPlaceCard

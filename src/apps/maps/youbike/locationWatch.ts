@@ -13,7 +13,6 @@ export const YOUBIKE_NAV_WATCH_OPTIONS: PositionOptions = {
 
 export interface YouBikeUserLocationWatchFlags {
   locateMeEnabled: boolean;
-  isNavigating: boolean;
 }
 
 export interface GeolocationWatchLike {
@@ -33,27 +32,18 @@ export interface YouBikeUserLocationWatch {
   source: "geolocation" | "none";
 }
 
-/**
- * Continuous GPS is only for Locate Me + Start Navigation together.
- * Locate Me alone keeps MapKit's existing recenter / follow.
- * Navigation alone does not start a watcher.
- */
+/** Continuous GPS whenever Locate Me is on. Navigation is not required. */
 export function shouldWatchYouBikeUserLocation(
   flags: YouBikeUserLocationWatchFlags
 ): boolean {
-  return flags.locateMeEnabled && flags.isNavigating;
+  return flags.locateMeEnabled;
 }
 
-/**
- * Locate Me button: first tap (or a tap outside navigation) enables follow.
- * A tap while already on *and* navigating turns it off so the watcher stops.
- */
+/** Locate Me is a toggle: off → on starts the watch; on → off tears it down. */
 export function nextLocateMeEnabled(options: {
   currentlyEnabled: boolean;
-  isNavigating: boolean;
 }): boolean {
-  if (options.currentlyEnabled && options.isNavigating) return false;
-  return true;
+  return !options.currentlyEnabled;
 }
 
 export function isDistinctUserLocation(
@@ -111,7 +101,7 @@ export function createYouBikeUserPuckElement(): HTMLElement {
 }
 
 /**
- * Own the Geolocation watch so navigation is not stuck on MapKit's first fix.
+ * Own the Geolocation watch so Locate Me is not stuck on MapKit's first fix.
  * `watchPosition` can be missing on some older MapKit JS / WebKit builds.
  */
 export function startYouBikeUserLocationWatch(options: {

@@ -77,8 +77,6 @@ import { readMapRegion } from "../components/maps-app/mapRegionUtils";
 const REGION_FETCH_DEBOUNCE_MS = 280;
 /** Extra margin so a short pan does not flash empty then refill. */
 const RENDER_PAD_FACTOR = 0.1;
-/** Locate Me can flip on before the first user-location-change event. */
-const USER_LOCATION_POLL_MS = 2000;
 
 export interface UseYouBikeLayerArgs {
   enabled: boolean;
@@ -92,10 +90,8 @@ export interface UseYouBikeLayerArgs {
   recordRecentPlace: (place: SavedPlace) => void;
   savedPlaceIds: Set<string>;
   isDarkMode: boolean;
-  /** Toolbar / menu Locate Me is on. */
+  /** Toolbar / menu Locate Me is on — starts a continuous GPS watch. */
   locateMeEnabled: boolean;
-  /** YouBike Start Navigation is active. */
-  isNavigating: boolean;
 }
 
 function regionToBBox(region: ReturnType<typeof readMapRegion>): GeoBBox | null {
@@ -300,7 +296,6 @@ export function useYouBikeLayer({
   savedPlaceIds,
   isDarkMode,
   locateMeEnabled,
-  isNavigating,
 }: UseYouBikeLayerArgs) {
   const colorScheme = youbikeMapScheme(isDarkMode);
   const [stations, setStations] = useState<YouBikeStation[]>([]);
@@ -333,7 +328,6 @@ export function useYouBikeLayer({
     () => undefined
   );
   const userPuckRef = useRef<MapKitMarkerAnnotation | null>(null);
-  const wasWatchingRef = useRef(false);
 
   const removeUserPuck = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -936,31 +930,16 @@ export function useYouBikeLayer({
     setRouteError(null);
     setIsRouting(false);
     clearRouteOverlays();
-    removeUserPuck();
-  }, [clearRouteOverlays, removeUserPuck]);
+  }, [clearRouteOverlays]);
 
   useEffect(() => {
-    const shouldWatch = shouldWatchYouBikeUserLocation({
-      locateMeEnabled,
-      isNavigating,
-    });
+    const shouldWatch = shouldWatchYouBikeUserLocation({ locateMeEnabled });
     if (!shouldWatch || mapReadyTick === 0) {
       removeUserPuck();
-      if (wasWatchingRef.current && locateMeEnabled && mapReadyTick !== 0) {
-        const map = mapInstanceRef.current;
-        if (map) {
-          map.showsUserLocation = true;
-          map.tracksUserLocation = true;
-        }
-      }
-      if (!shouldWatch) wasWatchingRef.current = false;
-      if (!shouldWatch && !locateMeEnabled && !routePlan) {
-        setLocationTracking(false);
-        setTrackedUser(null);
-      }
+      setLocationTracking(false);
+      setTrackedUser(null);
       return;
     }
-    wasWatchingRef.current = true;
 
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -1030,65 +1009,12 @@ export function useYouBikeLayer({
     };
   }, [
     followUserOnMap,
-    isNavigating,
     locateMeEnabled,
     mapInstanceRef,
     mapReadyTick,
     removeUserPuck,
-    routePlan,
     upsertUserPuck,
   ]);
-
-  useEffect(() => {
-    if (
-      shouldWatchYouBikeUserLocation({
-        locateMeEnabled,
-        isNavigating,
-      })
-    ) {
-      return;
-    }
-    if (!routePlan || mapReadyTick === 0) {
-      setLocationTracking(false);
-      setTrackedUser(null);
-      return;
-    }
-    const map = mapInstanceRef.current;
-    if (!map) {
-      setLocationTracking(false);
-      setTrackedUser(null);
-      return;
-    }
-
-    let lastPoint: GeoPoint | null = null;
-    const readUserLocation = (event?: unknown) => {
-      const tracking = map.showsUserLocation || map.tracksUserLocation;
-      setLocationTracking(tracking);
-      if (!tracking) {
-        lastPoint = null;
-        setTrackedUser(null);
-        return;
-      }
-      const point =
-        coordinateFromUserLocationEvent(event) ??
-        geoPointFromCoords(map.userLocation?.coordinate);
-      if (!point) {
-        setTrackedUser(null);
-        return;
-      }
-      if (!isDistinctUserLocation(lastPoint, point)) return;
-      lastPoint = point;
-      setTrackedUser(point);
-    };
-
-    readUserLocation();
-    map.addEventListener?.("user-location-change", readUserLocation);
-    const timer = window.setInterval(() => readUserLocation(), USER_LOCATION_POLL_MS);
-    return () => {
-      map.removeEventListener?.("user-location-change", readUserLocation);
-      window.clearInterval(timer);
-    };
-  }, [isNavigating, locateMeEnabled, mapInstanceRef, mapReadyTick, routePlan]);
 
   const activeStepIndex = useMemo(() => {
     if (!locationTracking || !trackedUser || !routePlan) return null;

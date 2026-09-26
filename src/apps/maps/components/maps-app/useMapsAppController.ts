@@ -105,7 +105,6 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   // when status flipped to "ready" mid-render.
   const [mapReadyTick, setMapReadyTick] = useState(0);
   const [locateMeEnabled, setLocateMeEnabled] = useState(false);
-  const [youbikeNavigating, setYoubikeNavigating] = useState(false);
   /** Set when the map container DOM mounts; cleared when it unmounts (e.g. minimize). */
   const [mapSurfaceEl, setMapSurfaceEl] = useState<HTMLDivElement | null>(null);
   // Framed viewport once per fresh MapKit instance (reset when the map is torn down).
@@ -137,7 +136,6 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     lastFocusedPlaceIdRef.current = null;
     setMapReadyTick(0);
     setLocateMeEnabled(false);
-    setYoubikeNavigating(false);
   }, []);
 
   const attachMapSurfaceRef = useCallback(
@@ -769,15 +767,9 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     savedPlaceIds,
     isDarkMode,
     locateMeEnabled,
-    isNavigating: youbikeNavigating,
   });
 
-  const handleYouBikeNavigatingChange = useCallback((active: boolean) => {
-    setYoubikeNavigating(active);
-  }, []);
-
   const handleClearYouBikeRoute = useCallback(() => {
-    setYoubikeNavigating(false);
     youbike.handleClearYouBikeRoute();
   }, [youbike]);
 
@@ -1176,15 +1168,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     const map = mapInstanceRef.current;
     if (!map) return;
     setLocateMeEnabled((enabled) => {
-      const next = nextLocateMeEnabled({
-        currentlyEnabled: enabled,
-        isNavigating: youbikeNavigating,
-      });
+      const next = nextLocateMeEnabled({ currentlyEnabled: enabled });
       map.showsUserLocation = next;
       map.tracksUserLocation = next;
       return next;
     });
-  }, [youbikeNavigating]);
+  }, []);
 
   // Debounced search-as-you-type. Fires `performSearch` after the user pauses
   // for ~250ms. Pressing Enter still triggers immediately via handleSearchKeyDown
@@ -1286,7 +1275,6 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
-    handleYouBikeNavigatingChange,
     locateMeEnabled,
     focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeActiveStepIndex: youbike.activeStepIndex,

@@ -37,51 +37,18 @@ function mockGeolocation() {
 }
 
 describe("shouldWatchYouBikeUserLocation", () => {
-  test("watches only when Locate Me and navigation are both on", () => {
-    expect(
-      shouldWatchYouBikeUserLocation({
-        locateMeEnabled: true,
-        isNavigating: true,
-      })
-    ).toBe(true);
-    expect(
-      shouldWatchYouBikeUserLocation({
-        locateMeEnabled: true,
-        isNavigating: false,
-      })
-    ).toBe(false);
-    expect(
-      shouldWatchYouBikeUserLocation({
-        locateMeEnabled: false,
-        isNavigating: true,
-      })
-    ).toBe(false);
-    expect(
-      shouldWatchYouBikeUserLocation({
-        locateMeEnabled: false,
-        isNavigating: false,
-      })
-    ).toBe(false);
+  test("watches whenever Locate Me is on, even without navigation", () => {
+    expect(shouldWatchYouBikeUserLocation({ locateMeEnabled: true })).toBe(true);
+    expect(shouldWatchYouBikeUserLocation({ locateMeEnabled: false })).toBe(
+      false
+    );
   });
 });
 
 describe("nextLocateMeEnabled", () => {
-  test("keeps Locate Me on outside navigation so a second tap recenters", () => {
-    expect(
-      nextLocateMeEnabled({ currentlyEnabled: false, isNavigating: false })
-    ).toBe(true);
-    expect(
-      nextLocateMeEnabled({ currentlyEnabled: true, isNavigating: false })
-    ).toBe(true);
-    expect(
-      nextLocateMeEnabled({ currentlyEnabled: false, isNavigating: true })
-    ).toBe(true);
-  });
-
-  test("turns Locate Me off when it is already on during navigation", () => {
-    expect(
-      nextLocateMeEnabled({ currentlyEnabled: true, isNavigating: true })
-    ).toBe(false);
+  test("toggles Locate Me on and off", () => {
+    expect(nextLocateMeEnabled({ currentlyEnabled: false })).toBe(true);
+    expect(nextLocateMeEnabled({ currentlyEnabled: true })).toBe(false);
   });
 });
 
@@ -195,7 +162,7 @@ describe("createYouBikeUserPuckElement", () => {
 });
 
 describe("YouBike navigation location wiring", () => {
-  test("layer watches GPS during Locate Me + navigation and tears it down", () => {
+  test("layer watches GPS whenever Locate Me is on and tears it down", () => {
     const layer = readFileSync(
       resolve(import.meta.dir, "../../../src/apps/maps/hooks/useYouBikeLayer.ts"),
       "utf8"
@@ -219,7 +186,7 @@ describe("YouBike navigation location wiring", () => {
     expect(layer).toContain("coordinateFromUserLocationEvent");
     expect(layer).toContain("watch.stop()");
     expect(layer).toContain("locateMeEnabled");
-    expect(layer).toContain("isNavigating");
+    expect(layer).not.toContain("isNavigating");
     expect(card).toContain("onNavigatingChange");
     expect(card).toContain("followUserLocation");
     expect(card).toContain("onNavigatingChange?.(true)");
@@ -228,7 +195,7 @@ describe("YouBike navigation location wiring", () => {
       card.indexOf("onNavigatingChange?.(true)")
     );
     expect(app).not.toContain("onStartNavigation={handleLocateMe}");
-    expect(app).toContain("onNavigatingChange=");
+    expect(app).not.toContain("onNavigatingChange=");
     expect(app).toContain("followUserLocation={locateMeEnabled}");
     const controller = readFileSync(
       resolve(
@@ -238,6 +205,6 @@ describe("YouBike navigation location wiring", () => {
       "utf8"
     );
     expect(controller).toContain("nextLocateMeEnabled");
-    expect(controller).toContain("isNavigating: youbikeNavigating");
+    expect(controller).not.toContain("isNavigating: youbikeNavigating");
   });
 });
