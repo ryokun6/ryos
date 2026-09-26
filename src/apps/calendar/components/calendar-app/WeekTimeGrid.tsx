@@ -12,6 +12,7 @@ import {
   DEFAULT_TIME_GRID_HOUR_HEIGHT,
   useTimeScaleGestures,
 } from "../../hooks/useTimeScaleGestures";
+import { useCalendarPeriodSwipe } from "../../hooks/useCalendarPeriodSwipe";
 import { TimedEventBlock } from "../TimedEventBlock";
 import {
   EVENT_COLOR_LIGHT,
@@ -40,6 +41,9 @@ export function WeekTimeGrid({
   hourHeight,
   setHourHeight,
   onUpdateEvent,
+  onSwipePrev,
+  onSwipeNext,
+  compact = false,
 }: {
   weekDates: WeekDay[];
   selectedEventId: string | null;
@@ -55,13 +59,26 @@ export function WeekTimeGrid({
   hourHeight: number;
   setHourHeight: (h: number) => void;
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
+  onSwipePrev?: () => void;
+  onSwipeNext?: () => void;
+  /** Fit all 7 days without horizontal overflow (narrow / phone). */
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
+  const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const horizontalScrollRef = useRef<HTMLDivElement>(null);
   useTimeScaleGestures(scrollRef, hourHeight, setHourHeight, {
-    horizontalScrollParentRef: horizontalScrollRef,
+    horizontalScrollParentRef: compact ? undefined : horizontalScrollRef,
+  });
+  const { swipeOffsetX, isSwiping } = useCalendarPeriodSwipe(rootRef, {
+    enabled: Boolean(onSwipePrev || onSwipeNext),
+    onNavigate: (direction) => {
+      if (direction === "prev") onSwipePrev?.();
+      else onSwipeNext?.();
+    },
+    horizontalScrollRef: compact ? undefined : horizontalScrollRef,
   });
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
@@ -112,21 +129,40 @@ export function WeekTimeGrid({
   const hasAllDayEvents = weekDates.some((d) => d.allDayEvents.length > 0);
 
   const MIN_DAY_COL = 52;
-  const MIN_WEEK_WIDTH = 48 + 7 * MIN_DAY_COL;
+  const TIME_GUTTER = compact ? 36 : 48;
+  const MIN_WEEK_WIDTH = TIME_GUTTER + 7 * MIN_DAY_COL;
 
   return (
-    <div ref={horizontalScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden">
-      <div className="flex flex-col h-full" style={{ minWidth: MIN_WEEK_WIDTH }}>
+    <div
+      ref={rootRef}
+      className="flex-1 overflow-hidden touch-pan-y"
+      style={{
+        transform: swipeOffsetX ? `translateX(${swipeOffsetX}px)` : undefined,
+        transition: isSwiping ? "none" : "transform 160ms ease-out",
+        willChange: isSwiping ? "transform" : undefined,
+      }}
+    >
+    <div
+      ref={horizontalScrollRef}
+      className={cn(
+        "size-full overflow-y-hidden",
+        compact ? "overflow-x-hidden" : "overflow-x-auto"
+      )}
+    >
+      <div
+        className="flex flex-col h-full"
+        style={compact ? undefined : { minWidth: MIN_WEEK_WIDTH }}
+      >
         <div
           className={cn("flex border-b shrink-0", osSeparatorBorderClassName())}
         >
-          <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} />
+          <div style={{ width: TIME_GUTTER, minWidth: TIME_GUTTER, flexShrink: 0 }} />
           {weekDates.map((day) => (
             <button
               key={day.date}
               type="button"
               onClick={() => onDateClick(day.date)}
-              className="flex-1 text-center py-1.5 min-w-0 transition-colors"
+              className="flex-1 text-center py-1.5 min-w-0 transition-colors touch-manipulation"
               style={{ borderBottom: "2px solid transparent" }}
             >
               <div className={cn("text-[10px] opacity-50 leading-none", useGeneva && "font-geneva-12")}>{day.dayName}</div>
@@ -136,7 +172,9 @@ export function WeekTimeGrid({
                   day.isToday && "rounded-full text-white"
                 )}
                 style={{
-                  width: 22, height: 22, lineHeight: "22px",
+                  width: compact ? 20 : 22,
+                  height: compact ? 20 : 22,
+                  lineHeight: compact ? "20px" : "22px",
                   ...(day.isToday ? { backgroundColor: isWindowsTheme ? TODAY_RED_XP : TODAY_RED } : {}),
                 }}
               >
@@ -153,7 +191,7 @@ export function WeekTimeGrid({
           >
             <div
               className={cn("flex items-center justify-end px-1 text-[9px] opacity-40", useGeneva && "font-geneva-12")}
-              style={{ width: 48, minWidth: 48, flexShrink: 0 }}
+              style={{ width: TIME_GUTTER, minWidth: TIME_GUTTER, flexShrink: 0 }}
             >
               {t("apps.calendar.views.allDay")}
             </div>
@@ -198,14 +236,14 @@ export function WeekTimeGrid({
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0">
           <div className="flex relative" style={{ height: totalHours * hourHeight }}>
-            <div style={{ width: 48, minWidth: 48, flexShrink: 0 }} className="relative">
+            <div style={{ width: TIME_GUTTER, minWidth: TIME_GUTTER, flexShrink: 0 }} className="relative">
               {Array.from({ length: totalHours }, (_, i) => {
                 const hour = HOUR_START + i;
                 return (
                   <div
                     key={hour}
-                    className={cn("absolute right-1 text-[10px] opacity-40 text-right", useGeneva && "font-geneva-12")}
-                    style={{ top: i * hourHeight - 6, width: 40 }}
+                    className={cn("absolute right-0.5 text-[10px] opacity-40 text-right", useGeneva && "font-geneva-12")}
+                    style={{ top: i * hourHeight - 6, width: TIME_GUTTER - 8 }}
                   >
                     {hourLabels[hour]}
                   </div>
@@ -274,6 +312,7 @@ export function WeekTimeGrid({
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

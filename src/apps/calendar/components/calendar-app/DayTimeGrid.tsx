@@ -6,6 +6,7 @@ import {
   DEFAULT_TIME_GRID_HOUR_HEIGHT,
   useTimeScaleGestures,
 } from "../../hooks/useTimeScaleGestures";
+import { useCalendarPeriodSwipe } from "../../hooks/useCalendarPeriodSwipe";
 import { TimedEventBlock } from "../TimedEventBlock";
 import {
   EVENT_COLOR_LIGHT,
@@ -37,6 +38,8 @@ export function DayTimeGrid({
   hourHeight,
   setHourHeight,
   onUpdateEvent,
+  onSwipePrev,
+  onSwipeNext,
 }: {
   date: string;
   events: CalendarEvent[];
@@ -52,10 +55,20 @@ export function DayTimeGrid({
   hourHeight: number;
   setHourHeight: (h: number) => void;
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
+  onSwipePrev?: () => void;
+  onSwipeNext?: () => void;
 }) {
   const useGeneva = isMacOSTheme || isSystem7Theme;
+  const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   useTimeScaleGestures(scrollRef, hourHeight, setHourHeight);
+  const { swipeOffsetX, isSwiping } = useCalendarPeriodSwipe(rootRef, {
+    enabled: Boolean(onSwipePrev || onSwipeNext),
+    onNavigate: (direction) => {
+      if (direction === "prev") onSwipePrev?.();
+      else onSwipeNext?.();
+    },
+  });
   const lastTapRef = useRef<{ id: string; time: number } | null>(null);
 
   const handleEventTap = useCallback((ev: CalendarEvent, e?: React.MouseEvent) => {
@@ -116,7 +129,15 @@ export function DayTimeGrid({
   const totalHours = HOUR_END - HOUR_START;
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+    <div
+      ref={rootRef}
+      className="flex-1 flex flex-col overflow-hidden min-w-0 touch-pan-y"
+      style={{
+        transform: swipeOffsetX ? `translateX(${swipeOffsetX}px)` : undefined,
+        transition: isSwiping ? "none" : "transform 160ms ease-out",
+        willChange: isSwiping ? "transform" : undefined,
+      }}
+    >
       {allDayEvents.length > 0 && (
         <div className={cn("px-2 py-1 border-b flex flex-col gap-0.5", osSeparatorBorderClassName())}>
           {allDayEvents.map((ev) => (
