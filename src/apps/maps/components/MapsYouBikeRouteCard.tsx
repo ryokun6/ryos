@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Bicycle, ListNumbers, PersonSimpleWalk, Square, Stop, X } from "@phosphor-icons/react";
+import { Bicycle, ListNumbers, PersonSimpleWalk, Play, Square, X } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -560,9 +560,9 @@ export function MapsYouBikeRouteCard({
                   onClick={handleStopNavigation}
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
-                  <Stop
+                  <Square
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
                   />
                   <span>
                     {t("apps.maps.youbike.stopNavigation", {
@@ -579,9 +579,9 @@ export function MapsYouBikeRouteCard({
                   onClick={handleStartNavigation}
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
-                  <Square
+                  <Play
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
                   />
                   <span>
                     {t("apps.maps.youbike.startNavigation", {

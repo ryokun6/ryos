@@ -206,6 +206,7 @@ describe("youbike navigation speech stop registration", () => {
     expect(hook).toContain('from "@/hooks/useTtsQueue"');
     expect(hook).toContain("resumeAudioContext");
     expect(speech).not.toContain("createSpeechUtterance");
+    expect(card).toContain("<Play");
     expect(card).toContain("<Square");
     expect(card).toContain("AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE");
   });
