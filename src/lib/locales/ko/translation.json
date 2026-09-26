@@ -3486,13 +3486,21 @@
           "turn": "{{direction}} 회전",
           "turnPlain": "회전"
         },
+        "navigationRegionLabel": "턴 바이 턴 경로 안내",
         "routeRegionLabel": "YouBike 경로",
         "routeSummary": "{{minutes}}분 · {{distance}}",
         "routeTitle": "YouBike 경로",
         "routing": "YouBike 경로를 찾는 중…",
         "showSteps": "단계",
+        "speech": {
+          "then": "그런 다음 {{label}}"
+        },
+        "startNavigation": "경로 안내 시작",
         "stepAria": "{{index}}단계: {{label}}",
         "stepsRegionLabel": "상세 경로 안내",
+        "stopNavigation": "경로 안내 중단",
+        "thenStep": "그런 다음",
+        "thenStepAria": "그런 다음 {{label}}",
         "warningNoBikes": "현재 가장 가까운 출발 대여소에 자전거가 없을 수도 있습니다.",
         "warningNoDocks": "현재 가장 가까운 도착 대여소에 빈 거치대가 없을 수도 있습니다."
       }

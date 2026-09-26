@@ -50,6 +50,7 @@ import {
   youbikeNextStepIndex,
   youbikeStepFocusRegion,
 } from "../youbike/routeSteps";
+import { cancelYouBikeNavigationSpeech } from "../youbike/navigationSpeech";
 import {
   extractMapKitRouteMetrics,
   extractMapKitRoutePath,
@@ -859,6 +860,7 @@ export function useYouBikeLayer({
 
   const handleClearYouBikeRoute = useCallback(() => {
     routeRequestIdRef.current += 1;
+    cancelYouBikeNavigationSpeech();
     setRoutePlan(null);
     setRouteError(null);
     setIsRouting(false);
@@ -959,5 +961,6 @@ export function useYouBikeLayer({
     handleClearYouBikeRoute,
     focusYouBikeStep,
     activeStepIndex,
+    trackedUser,
   };
 }
