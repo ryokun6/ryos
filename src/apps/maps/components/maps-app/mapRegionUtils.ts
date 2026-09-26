@@ -1,6 +1,12 @@
 import type { MapKitStatus } from "../../hooks/useMapKit";
 import type { MapKitCoordinate } from "./mapKitTypes";
-import { MAP_MAX_SPAN_DEG, MAP_MIN_SPAN_DEG } from "./mapsUiState";
+import {
+  CITY_LEVEL_SPAN_DEG,
+  DEFAULT_MAP_CENTER,
+  LOCATE_ME_SPAN_DEG,
+  MAP_MAX_SPAN_DEG,
+  MAP_MIN_SPAN_DEG,
+} from "./mapsUiState";
 
 export interface MapKitRegionLike {
   center: MapKitCoordinate;
@@ -29,6 +35,77 @@ export function readMapRegion(region: unknown): MapKitRegionLike | null {
 
 export function clampMapSpanDegrees(degrees: number): number {
   return Math.min(MAP_MAX_SPAN_DEG, Math.max(MAP_MIN_SPAN_DEG, degrees));
+}
+
+/** Wider axis of the visible region; null when the map has no readable span. */
+export function visibleMapSpanDeg(region: MapKitRegionLike | null): number | null {
+  if (!region) return null;
+  const span = Math.max(region.span.latitudeDelta, region.span.longitudeDelta);
+  return Number.isFinite(span) ? span : null;
+}
+
+export function squareMapRegion(
+  center: MapKitCoordinate,
+  spanDeg: number
+): MapKitRegionLike {
+  return {
+    center,
+    span: { latitudeDelta: spanDeg, longitudeDelta: spanDeg },
+  };
+}
+
+/** Street / neighborhood camera used when Locate Me turns on or Maps opens on Home. */
+export function locateMeFocusRegion(center: MapKitCoordinate): MapKitRegionLike {
+  return squareMapRegion(center, LOCATE_ME_SPAN_DEG);
+}
+
+export function initialHomeMapRegion(home: MapKitCoordinate): MapKitRegionLike {
+  return locateMeFocusRegion(home);
+}
+
+export type InitialMapFrameTarget =
+  | "home"
+  | "grantedLocation"
+  | "geoip"
+  | "defaultTaipei";
+
+/**
+ * Home starts close. Granted GPS, GeoIP city, and Taipei fallback stay
+ * city-wide so YouBike / metro overview is unchanged.
+ */
+export function initialMapFrameSpanDeg(target: InitialMapFrameTarget): number {
+  return target === "home" ? LOCATE_ME_SPAN_DEG : CITY_LEVEL_SPAN_DEG;
+}
+
+/** Last-resort city-wide camera when GeoIP has no usable point. */
+export function defaultTaipeiMapRegion(): MapKitRegionLike {
+  return squareMapRegion(DEFAULT_MAP_CENTER, CITY_LEVEL_SPAN_DEG);
+}
+
+export function geoIpCityMapRegion(center: MapKitCoordinate): MapKitRegionLike {
+  return squareMapRegion(center, CITY_LEVEL_SPAN_DEG);
+}
+
+export type LocateMeCameraMode = "focus" | "recenter" | "idle";
+
+/**
+ * First Locate Me fix zooms in to the neighborhood span only when the
+ * current view is wider. If the user is already closer, just recenter.
+ * Later GPS ticks only recenter so pinch-zoom while tracking is kept.
+ * Locate Me off is always idle — do not zoom out or reset the region.
+ */
+export function locateMeCameraMode(options: {
+  locateMeEnabled: boolean;
+  hasAppliedFocusZoom: boolean;
+  currentSpanDeg?: number | null;
+}): LocateMeCameraMode {
+  if (!options.locateMeEnabled) return "idle";
+  if (options.hasAppliedFocusZoom) return "recenter";
+  const span = options.currentSpanDeg;
+  if (typeof span === "number" && Number.isFinite(span) && span <= LOCATE_ME_SPAN_DEG) {
+    return "recenter";
+  }
+  return "focus";
 }
 
 export function statusMessageKey(status: MapKitStatus): string {

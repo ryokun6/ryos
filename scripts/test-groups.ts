@@ -10,6 +10,7 @@ export const API_TEST_FILES = [
   "tests/integration/api/test-auth-ban-lockout.test.ts",
   "tests/integration/api/test-auth-extra.test.ts",
   "tests/integration/api/test-auth-recovery.test.ts",
+  "tests/integration/api/test-geo.test.ts",
   "tests/integration/api/test-iframe-check.test.ts",
   "tests/integration/api/test-kosync.test.ts",
   "tests/integration/api/test-link-preview.test.ts",

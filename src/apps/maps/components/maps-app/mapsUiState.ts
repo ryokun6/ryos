@@ -100,19 +100,20 @@ export function mapsUiReducer(state: MapsUiState, action: MapsUiAction): MapsUiS
 }
 
 // Coordinate-degree span used when focusing on a single place (search hit,
-// saved-place tap, persisted selection re-center). ~0.012° ≈ 1.3 km wide
-// at the equator — neighborhood / street level — which mirrors how the
-// system Maps app zooms when you tap a result. The previous value (0.05)
-// stayed at region level and made it hard to see surrounding streets.
+// saved-place tap, persisted selection re-center), turning Locate Me on,
+// or opening Maps on a saved Home. ~0.012° ≈ 1.3 km wide at the equator —
+// neighborhood / street level, not indoor-tight and not a city overview.
 export const FOCUS_PLACE_SPAN_DEG = 0.012;
 
-// Wider span used for the initial framing around the user's current
-// location or home — ~0.12° ≈ 13 km wide at the equator, which covers a
-// full city / metro area instead of zooming all the way down to a single
-// block. Matches the Taipei default region the map boots with.
+/** Same neighborhood span as place focus — Locate Me on / Home start camera. */
+export const LOCATE_ME_SPAN_DEG = FOCUS_PLACE_SPAN_DEG;
+
+// Wider span for GeoIP city framing, silent granted-GPS first-open,
+// and the Taipei last-resort boot. ~0.12° ≈ 13 km — city / metro.
+// Home start and Locate Me use LOCATE_ME_SPAN_DEG instead.
 export const CITY_LEVEL_SPAN_DEG = 0.12;
 
-/** First-open camera when there is no selected place, Home, or granted geolocation. */
+/** Last-resort first-open camera when GeoIP has no usable city point. */
 export const DEFAULT_MAP_CENTER = {
   latitude: 25.03396,
   longitude: 121.56447,

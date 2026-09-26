@@ -72,7 +72,13 @@ import {
   type MapKitMapInstance,
   type MapKitMarkerAnnotation,
 } from "../components/maps-app/mapKitTypes";
-import { readMapRegion } from "../components/maps-app/mapRegionUtils";
+import {
+  locateMeCameraMode,
+  locateMeFocusRegion,
+  readMapRegion,
+  visibleMapSpanDeg,
+  type LocateMeCameraMode,
+} from "../components/maps-app/mapRegionUtils";
 
 const REGION_FETCH_DEBOUNCE_MS = 280;
 /** Extra margin so a short pan does not flash empty then refill. */
@@ -328,6 +334,7 @@ export function useYouBikeLayer({
     () => undefined
   );
   const userPuckRef = useRef<MapKitMarkerAnnotation | null>(null);
+  const locateMeZoomAppliedRef = useRef(false);
 
   const removeUserPuck = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -372,19 +379,29 @@ export function useYouBikeLayer({
     [mapInstanceRef]
   );
 
-  const followUserOnMap = useCallback((point: GeoPoint) => {
-    const mk = getMapKit();
-    const map = mapInstanceRef.current;
-    if (!mk || !map) return;
-    try {
-      map.setCenterAnimated(
-        new mk.Coordinate(point.latitude, point.longitude),
-        true
-      );
-    } catch {
-      // ignore
-    }
-  }, [mapInstanceRef]);
+  const followUserOnMap = useCallback(
+    (point: GeoPoint, mode: LocateMeCameraMode = "recenter") => {
+      const mk = getMapKit();
+      const map = mapInstanceRef.current;
+      if (!mk || !map || mode === "idle") return;
+      try {
+        const coord = new mk.Coordinate(point.latitude, point.longitude);
+        if (mode === "focus") {
+          const focused = locateMeFocusRegion(point);
+          const span = new mk.CoordinateSpan(
+            focused.span.latitudeDelta,
+            focused.span.longitudeDelta
+          );
+          map.setRegionAnimated(new mk.CoordinateRegion(coord, span), true);
+          return;
+        }
+        map.setCenterAnimated(coord, true);
+      } catch {
+        // ignore
+      }
+    },
+    [mapInstanceRef]
+  );
 
   const clearStationAnnotations = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -935,9 +952,12 @@ export function useYouBikeLayer({
   useEffect(() => {
     const shouldWatch = shouldWatchYouBikeUserLocation({ locateMeEnabled });
     if (!shouldWatch || mapReadyTick === 0) {
+      locateMeZoomAppliedRef.current = false;
       removeUserPuck();
       setLocationTracking(false);
       setTrackedUser(null);
+      // Leave the camera where it is — toggling Locate Me off must not
+      // zoom out to city-wide or reset the region.
       return;
     }
 
@@ -945,22 +965,31 @@ export function useYouBikeLayer({
     if (!map) return;
 
     setLocationTracking(true);
+    locateMeZoomAppliedRef.current = false;
     let lastPoint: GeoPoint | null = null;
-    const applyFix = (point: GeoPoint, mode: "geolocation" | "mapkit") => {
+    const applyFix = (point: GeoPoint, source: "geolocation" | "mapkit") => {
       if (!isDistinctUserLocation(lastPoint, point)) return;
       lastPoint = point;
       setTrackedUser(point);
-      if (mode === "geolocation") {
-        followUserOnMap(point);
+      const camera = locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: locateMeZoomAppliedRef.current,
+        currentSpanDeg: visibleMapSpanDeg(readMapRegion(map.region)),
+      });
+      // Geolocation owns the camera (center + first-on zoom-in). MapKit's
+      // tracksUserLocation already recenters; we only tighten to the
+      // neighborhood span when the current view is wider. An already-closer
+      // zoom is kept (recenter only).
+      if (source === "geolocation" || camera === "focus") {
+        followUserOnMap(point, camera);
+      }
+      locateMeZoomAppliedRef.current = true;
+      if (source === "geolocation") {
         upsertUserPuck(point);
       }
     };
 
     const seed = geoPointFromCoords(map.userLocation?.coordinate);
-    if (seed) {
-      lastPoint = seed;
-      setTrackedUser(seed);
-    }
 
     const geolocation =
       typeof navigator !== "undefined" ? navigator.geolocation : null;
@@ -973,12 +1002,14 @@ export function useYouBikeLayer({
       map.showsUserLocation = false;
       map.tracksUserLocation = false;
       if (seed) {
-        followUserOnMap(seed);
-        upsertUserPuck(seed);
+        applyFix(seed, "geolocation");
       }
     } else {
       map.showsUserLocation = true;
       map.tracksUserLocation = true;
+      if (seed) {
+        applyFix(seed, "mapkit");
+      }
     }
 
     const onMapkitLocation = (event?: unknown) => {

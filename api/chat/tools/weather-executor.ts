@@ -28,6 +28,7 @@ import {
 import type { Redis } from "../../_utils/redis.js";
 import { checkToolRateLimit } from "./_tool-rate-limit.js";
 import type { ServerToolContext } from "./types.js";
+import { parseIpGeolocationPoint } from "../../../src/shared/ipGeolocation.js";
 
 /** Identifies ryOS to Nominatim per its usage policy (server-side calls only). */
 const GEOCODE_USER_AGENT = "ryOS/1.0 (https://os.ryo.lu)";
@@ -42,28 +43,17 @@ interface ResolvedLocation {
   source: GetWeatherLocationSource;
 }
 
-function coerceCoordinate(value: string | number | undefined): number | null {
-  const num = typeof value === "string" ? Number(value) : value;
-  if (typeof num !== "number" || !Number.isFinite(num)) return null;
-  return num;
-}
-
 /**
  * IP-derived fallback coordinates from the request, mirroring the maps tool.
  * Rejects Null Island (0,0), which Vercel ships for unknown IPs.
  */
 function resolveIpLocation(context: ServerToolContext): ResolvedLocation | null {
-  const geo = context.requestGeo;
-  if (!geo) return null;
-  const lat = coerceCoordinate(geo.latitude);
-  const lon = coerceCoordinate(geo.longitude);
-  if (lat === null || lon === null) return null;
-  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-  if (lat === 0 && lon === 0) return null;
+  const point = parseIpGeolocationPoint(context.requestGeo);
+  if (!point) return null;
   return {
-    latitude: lat,
-    longitude: lon,
-    city: geo.city || null,
+    latitude: point.latitude,
+    longitude: point.longitude,
+    city: context.requestGeo?.city || null,
     source: "ip-geolocation",
   };
 }
