@@ -76,6 +76,7 @@ import {
   locateMeCameraMode,
   locateMeFocusRegion,
   readMapRegion,
+  visibleMapSpanDeg,
   type LocateMeCameraMode,
 } from "../components/maps-app/mapRegionUtils";
 
@@ -973,16 +974,16 @@ export function useYouBikeLayer({
       const camera = locateMeCameraMode({
         locateMeEnabled: true,
         hasAppliedFocusZoom: locateMeZoomAppliedRef.current,
+        currentSpanDeg: visibleMapSpanDeg(readMapRegion(map.region)),
       });
-      // Geolocation owns the camera (center + first-on zoom). MapKit's
-      // tracksUserLocation already recenters; we only take the first-on
-      // neighborhood zoom so toggling Locate Me is not stuck city-wide.
+      // Geolocation owns the camera (center + first-on zoom-in). MapKit's
+      // tracksUserLocation already recenters; we only tighten to the
+      // neighborhood span when the current view is wider. An already-closer
+      // zoom is kept (recenter only).
       if (source === "geolocation" || camera === "focus") {
         followUserOnMap(point, camera);
       }
-      if (camera === "focus") {
-        locateMeZoomAppliedRef.current = true;
-      }
+      locateMeZoomAppliedRef.current = true;
       if (source === "geolocation") {
         upsertUserPuck(point);
       }

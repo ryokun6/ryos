@@ -14,6 +14,7 @@ import {
   initialMapFrameSpanDeg,
   locateMeCameraMode,
   locateMeFocusRegion,
+  visibleMapSpanDeg,
 } from "../../../src/apps/maps/components/maps-app/mapRegionUtils";
 import { shouldRenderYouBikeOverlayForSpan } from "../../../src/apps/maps/youbike/stationVisuals";
 
@@ -52,6 +53,37 @@ describe("locate / home camera spans", () => {
         hasAppliedFocusZoom: true,
       })
     ).toBe("recenter");
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: false,
+        currentSpanDeg: CITY_LEVEL_SPAN_DEG,
+      })
+    ).toBe("focus");
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: false,
+        currentSpanDeg: LOCATE_ME_SPAN_DEG,
+      })
+    ).toBe("recenter");
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: false,
+        currentSpanDeg: LOCATE_ME_SPAN_DEG / 2,
+      })
+    ).toBe("recenter");
+  });
+
+  test("visible span is the wider axis of the current region", () => {
+    expect(
+      visibleMapSpanDeg({
+        center: HOME,
+        span: { latitudeDelta: 0.004, longitudeDelta: 0.009 },
+      })
+    ).toBe(0.009);
+    expect(visibleMapSpanDeg(null)).toBeNull();
   });
 
   test("Locate Me focus region is a square neighborhood span around the fix", () => {
@@ -110,6 +142,8 @@ describe("locate / home camera wiring", () => {
 
     expect(layer).toContain("locateMeCameraMode");
     expect(layer).toContain("locateMeFocusRegion");
+    expect(layer).toContain("visibleMapSpanDeg");
+    expect(layer).toContain("currentSpanDeg");
     expect(layer).toContain('mode === "focus"');
     expect(layer).toContain("setRegionAnimated");
     expect(layer).toContain("setCenterAnimated");

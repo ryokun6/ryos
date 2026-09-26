@@ -37,6 +37,13 @@ export function clampMapSpanDegrees(degrees: number): number {
   return Math.min(MAP_MAX_SPAN_DEG, Math.max(MAP_MIN_SPAN_DEG, degrees));
 }
 
+/** Wider axis of the visible region; null when the map has no readable span. */
+export function visibleMapSpanDeg(region: MapKitRegionLike | null): number | null {
+  if (!region) return null;
+  const span = Math.max(region.span.latitudeDelta, region.span.longitudeDelta);
+  return Number.isFinite(span) ? span : null;
+}
+
 export function squareMapRegion(
   center: MapKitCoordinate,
   spanDeg: number
@@ -82,16 +89,23 @@ export function geoIpCityMapRegion(center: MapKitCoordinate): MapKitRegionLike {
 export type LocateMeCameraMode = "focus" | "recenter" | "idle";
 
 /**
- * First Locate Me fix zooms to neighborhood span; later GPS ticks only
- * recenter so the rider can still pinch / zoom while tracking.
+ * First Locate Me fix zooms in to the neighborhood span only when the
+ * current view is wider. If the user is already closer, just recenter.
+ * Later GPS ticks only recenter so pinch-zoom while tracking is kept.
  * Locate Me off is always idle — do not zoom out or reset the region.
  */
 export function locateMeCameraMode(options: {
   locateMeEnabled: boolean;
   hasAppliedFocusZoom: boolean;
+  currentSpanDeg?: number | null;
 }): LocateMeCameraMode {
   if (!options.locateMeEnabled) return "idle";
-  return options.hasAppliedFocusZoom ? "recenter" : "focus";
+  if (options.hasAppliedFocusZoom) return "recenter";
+  const span = options.currentSpanDeg;
+  if (typeof span === "number" && Number.isFinite(span) && span <= LOCATE_ME_SPAN_DEG) {
+    return "recenter";
+  }
+  return "focus";
 }
 
 export function statusMessageKey(status: MapKitStatus): string {
