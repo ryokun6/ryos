@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  primeAssistantSpeech,
-  speakAssistantText,
-  stopAssistantSpeech,
-} from "@/components/assistant/assistantSpeech";
+  createSpeechUtterance,
+  getBrowserSpeechSynthesis,
+  ryOSLocaleToSpeechLanguage,
+} from "@/utils/browserSpeech";
 import {
   youbikeNavAnnounce,
   type YouBikeNavAnnounceResult,
@@ -14,8 +14,9 @@ import {
   registerYouBikeNavigationSpeechStop,
 } from "../youbike/navigationSpeech";
 
-/** Same gesture set the floating assistant uses to unlock iOS Safari TTS. */
-const SPEECH_UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"] as const;
+function stopYouBikeBrowserSpeech() {
+  getBrowserSpeechSynthesis()?.cancel();
+}
 
 export function useYouBikeNavigationSpeech(options: {
   enabled: boolean;
@@ -49,24 +50,29 @@ export function useYouBikeNavigationSpeech(options: {
   localeRef.current = i18n.language;
 
   useEffect(
-    () => registerYouBikeNavigationSpeechStop(stopAssistantSpeech),
+    () => registerYouBikeNavigationSpeechStop(stopYouBikeBrowserSpeech),
     []
   );
 
-  const playCue = useCallback(
-    (text: string, fromGesture: boolean) => {
-      if (!text.trim()) return;
-      // Browser Chat / floating assistant: prime inside the tap, then
-      // speakAssistantText (speechSynthesis). iOS drops a speak() that is
-      // not in a gesture until the first in-gesture utterance starts.
-      if (fromGesture) primeAssistantSpeech();
-      speakAssistantText(text, { locale: localeRef.current });
-    },
-    []
-  );
+  // Same composition as Books / Calculator / desktop assistant: shared
+  // createSpeechUtterance + speechSynthesis. Speak synchronously so iOS
+  // Safari accepts Start / Then taps (Calculator's gesture rule).
+  const playCue = useCallback((text: string) => {
+    const spoken = text.trim();
+    const synth = getBrowserSpeechSynthesis();
+    if (!spoken || !synth) return;
+    synth.resume();
+    synth.cancel();
+    synth.getVoices();
+    const utterance = createSpeechUtterance(spoken, {
+      lang: ryOSLocaleToSpeechLanguage(localeRef.current),
+      voices: synth.getVoices(),
+    });
+    synth.speak(utterance);
+  }, []);
 
   const applyDecision = useCallback(
-    (decision: YouBikeNavAnnounceResult, fromGesture: boolean) => {
+    (decision: YouBikeNavAnnounceResult) => {
       stateRef.current = {
         lastSpokenIndex: decision.lastSpokenIndex,
         lastApproachIndex: decision.lastApproachIndex,
@@ -77,7 +83,7 @@ export function useYouBikeNavigationSpeech(options: {
       if (!label) return;
       const text =
         decision.kind === "approach" ? thenPhraseRef.current(label) : label;
-      playCue(text, fromGesture);
+      playCue(text);
     },
     [playCue]
   );
@@ -94,8 +100,7 @@ export function useYouBikeNavigationSpeech(options: {
           lastApproachIndex: null,
           lastSpeakAtMs: 0,
           nowMs: Date.now(),
-        }),
-        true
+        })
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -114,8 +119,7 @@ export function useYouBikeNavigationSpeech(options: {
           lastApproachIndex: stateRef.current.lastApproachIndex,
           lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
           nowMs: Date.now(),
-        }),
-        true
+        })
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -149,29 +153,9 @@ export function useYouBikeNavigationSpeech(options: {
         lastApproachIndex: stateRef.current.lastApproachIndex,
         lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
         nowMs: Date.now(),
-      }),
-      false
-    );
-  }, [applyDecision, enabled, focusedIndex, remainingMeters, stepCount]);
-
-  // Same capture listeners as useAssistantSpeech: a later tap re-speaks a
-  // GPS cue iOS dropped, and keeps synthesis unlocked after Start.
-  useEffect(() => {
-    if (!enabled) return;
-    if (typeof document === "undefined") return;
-    const unlock = () => primeAssistantSpeech();
-    SPEECH_UNLOCK_EVENTS.forEach((event) =>
-      document.addEventListener(event, unlock, {
-        capture: true,
-        passive: true,
       })
     );
-    return () => {
-      SPEECH_UNLOCK_EVENTS.forEach((event) =>
-        document.removeEventListener(event, unlock, true)
-      );
-    };
-  }, [enabled]);
+  }, [applyDecision, enabled, focusedIndex, remainingMeters, stepCount]);
 
   useEffect(() => () => cancelYouBikeNavigationSpeech(), []);
 

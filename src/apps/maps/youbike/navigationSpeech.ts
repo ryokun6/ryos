@@ -1,16 +1,17 @@
 /**
- * YouBike turn-by-turn speech uses the same browser TTS path as the
- * in-browser floating assistant (`primeAssistantSpeech` +
- * `speakAssistantText` → `speechSynthesis`). This module only holds the
- * active hook's `stop` so Stop / Done / clear-route can cancel from
- * outside the card.
+ * YouBike turn-by-turn speech uses the shared browser TTS helpers in
+ * `@/utils/browserSpeech` (`createSpeechUtterance` +
+ * `getBrowserSpeechSynthesis`) — the same path as the desktop assistant,
+ * Books read-aloud, and Calculator. This module only holds the active
+ * hook's `stop` so Stop / Done / clear-route can cancel from outside the
+ * card.
  */
 
 type StopFn = () => void;
 
 let activeStop: StopFn | null = null;
 
-/** Bind the mounted navigation hook's assistant `stopAssistantSpeech`. */
+/** Bind the mounted navigation hook's `speechSynthesis.cancel`. */
 export function registerYouBikeNavigationSpeechStop(
   stop: StopFn
 ): () => void {
