@@ -39,8 +39,6 @@ import {
   type MapKitSearchInstance,
 } from "./mapKitTypes";
 import {
-  CITY_LEVEL_SPAN_DEG,
-  DEFAULT_MAP_CENTER,
   FOCUS_PLACE_SPAN_DEG,
   INITIAL_LOCATION_TIMEOUT_MS,
   LOADING_OVERLAY_DELAY_MS,
@@ -51,6 +49,9 @@ import {
 } from "./mapsUiState";
 import {
   clampMapSpanDegrees,
+  defaultTaipeiMapRegion,
+  initialHomeMapRegion,
+  initialMapFrameSpanDeg,
   readMapRegion,
   statusMessageKey,
 } from "./mapRegionUtils";
@@ -231,14 +232,18 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     if (mapInstanceRef.current) return;
     if (!mapSurfaceEl) return;
 
-    // Default region: Taipei. Used only when there is no persisted selected
-    // place, granted geolocation, or saved Home. Locate Me still jumps to
-    // the user's real location.
+    // Default region: Taipei city-wide. Used only when there is no persisted
+    // selected place, granted geolocation, or saved Home. Locate Me / Home
+    // start use the closer neighborhood span instead.
+    const taipei = defaultTaipeiMapRegion();
     const center = new mk.Coordinate(
-      DEFAULT_MAP_CENTER.latitude,
-      DEFAULT_MAP_CENTER.longitude
+      taipei.center.latitude,
+      taipei.center.longitude
     );
-    const span = new mk.CoordinateSpan(CITY_LEVEL_SPAN_DEG, CITY_LEVEL_SPAN_DEG);
+    const span = new mk.CoordinateSpan(
+      taipei.span.latitudeDelta,
+      taipei.span.longitudeDelta
+    );
     const region = new mk.CoordinateRegion(center, span);
 
     const map = new mk.Map(mapSurfaceEl, {
@@ -955,13 +960,14 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   }, [selectedResultId, isPlaceSaved]);
 
   // On first map ready, frame the viewport so the user immediately sees
-  // a useful, city-level region. Priority order:
+  // a useful region. Priority order:
   //   1. Persisted `selectedPlace` — re-drop / re-center on the open card
   //   2. The user's current location, but only when geolocation
   //      permission has already been granted in a previous session. We
   //      deliberately avoid triggering a permission prompt on map open;
   //      the dedicated "Locate Me" button is the right place for that.
-  //   3. The user's saved Home — city-level zoom around it
+  //      Silent granted-GPS framing stays city-wide.
+  //   3. The user's saved Home — neighborhood / street zoom around it
   //   4. Otherwise, leave the map at the Taipei default region
   // Guarded so it only fires once per live MapKit map (including after the
   // surface remounts from minimize): subsequent user-driven selections go
@@ -1003,13 +1009,14 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
 
     let cancelled = false;
 
-    const frameAtCityLevel = (latitude: number, longitude: number) => {
+    const frameAround = (
+      latitude: number,
+      longitude: number,
+      spanDeg: number
+    ) => {
       if (cancelled) return;
       const center = new mk.Coordinate(latitude, longitude);
-      const span = new mk.CoordinateSpan(
-        CITY_LEVEL_SPAN_DEG,
-        CITY_LEVEL_SPAN_DEG
-      );
+      const span = new mk.CoordinateSpan(spanDeg, spanDeg);
       const region = new mk.CoordinateRegion(center, span);
       map.setRegionAnimated(region, true);
     };
@@ -1022,7 +1029,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       // value at the time the async permission probe resolves.
       const home = useMapsStore.getState().home;
       if (home) {
-        frameAtCityLevel(home.latitude, home.longitude);
+        const focused = initialHomeMapRegion(home);
+        frameAround(
+          focused.center.latitude,
+          focused.center.longitude,
+          focused.span.latitudeDelta
+        );
       }
       // No home set — leave the map at its Taipei default region.
     };
@@ -1043,7 +1055,11 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
           if (resolved) return;
           resolved = true;
           window.clearTimeout(timer);
-          frameAtCityLevel(pos.coords.latitude, pos.coords.longitude);
+          frameAround(
+            pos.coords.latitude,
+            pos.coords.longitude,
+            initialMapFrameSpanDeg("grantedLocation")
+          );
         },
         () => {
           if (resolved) return;
