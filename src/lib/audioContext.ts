@@ -115,17 +115,45 @@ const waitForRunningState = async (
   });
 };
 
+export type ResumeAudioContextOptions = {
+  /**
+   * When resume() does not reach `running`, close and replace the context.
+   * Chat / Maps TTS must pass `false`: `/api/speech` decode happens after the
+   * tap, and a replacement context created outside the gesture stays silent
+   * on iOS Safari. Gesture unlock (`unlockAudioFromGesture`) already warmed
+   * the existing graph.
+   */
+  allowRecreate?: boolean;
+};
+
 /**
  * Ensure the global `AudioContext` is in the `running` state. If it is
- * `suspended`/`interrupted`, attempt `resume()`. If that fails, recreate a
- * brand-new context so that subsequent playback succeeds.
+ * `suspended`/`interrupted`, attempt `resume()`. If that fails, optionally
+ * recreate a brand-new context so that subsequent playback succeeds.
  */
-export const resumeAudioContext = async (): Promise<void> => {
+export const resumeAudioContext = async (
+  options?: ResumeAudioContextOptions
+): Promise<void> => {
+  const allowRecreate = options?.allowRecreate !== false;
+
   // If there's already a resume in progress, wait for it
   if (resumeInProgress) {
     await resumeInProgress;
     // After waiting, check if context is now running
     if (audioContext?.state === "running") {
+      return;
+    }
+    // TTS playback must not fall through into close()+recreate after a tap.
+    if (!allowRecreate) {
+      const ctx = getAudioContext();
+      if (ctx.state !== "running" && ctx.state !== "closed") {
+        try {
+          await ctx.resume();
+          await waitForRunningState(ctx);
+        } catch {
+          // Still need a user gesture; keep the existing context.
+        }
+      }
       return;
     }
     // If still not running, fall through to try again
@@ -155,6 +183,12 @@ export const resumeAudioContext = async (): Promise<void> => {
 
     state = ctx.state as AudioContextState | "interrupted";
     if (state !== "running") {
+      if (!allowRecreate) {
+        log.debug("AudioContext still not running; keeping existing context", {
+          state,
+        });
+        return;
+      }
       try {
         log.debug("AudioContext still not running after resume; recreating", {
           state,
@@ -218,10 +252,34 @@ const isSafari = typeof navigator !== "undefined" &&
 const GESTURE_EVENTS = ["touchstart", "touchend", "click", "keydown"] as const;
 
 /**
- * Handler that attempts to resume AudioContext during a user gesture.
- * iOS Safari requires resume() to be called directly within a gesture handler.
- * This handler stays attached and will re-unlock audio after returning from background.
+ * Unlock Web Audio from a user gesture (Chat / iOS Safari).
+ * Always resume + play a silent buffer — iOS can report "running" and still
+ * stay mute until a gesture-created source starts.
  */
+export function unlockAudioFromGesture(): void {
+  attachUnlockListeners();
+  let ctx = getAudioContext();
+  if (ctx.state === "closed") {
+    audioContext = null;
+    ctx = getAudioContext();
+  }
+  try {
+    void ctx.resume();
+  } catch {
+    // ignore
+  }
+  try {
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // ignore
+  }
+  needsGestureReunlock = false;
+}
+
 const unlockAudioHandler = () => {
   // Ensure we have a context to unlock. Creating/resuming inside the gesture
   // handler is critical for iOS Safari reliability.

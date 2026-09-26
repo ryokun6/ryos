@@ -3,7 +3,6 @@ import { Bicycle, ListNumbers, PersonSimpleWalk, Play, Square, X } from "@phosph
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import { cn } from "@/lib/utils";
-import { resumeAudioContext } from "@/lib/audioContext";
 import {
   AQUA_ICON_BUTTON_ICON_CLASS,
   AQUA_ICON_BUTTON_PADDING_CLASS,
@@ -413,6 +412,10 @@ export function MapsYouBikeRouteCard({
       gpsIndex: activeStepIndex,
       manualIndex: 0,
     });
+    // Speak/unlock in this tap before MapKit location. Enabling
+    // showsUserLocation can present a permission dialog and end the
+    // iOS Safari gesture window Chat uses to start `/api/speech`.
+    speakStart(index);
     onStartNavigation?.();
     setManualIndex(index);
     setSelectedIndex(index);
@@ -420,9 +423,6 @@ export function MapsYouBikeRouteCard({
     setIsNavigating(true);
     const step = steps[index];
     if (step) onSelectStep?.(step);
-    // Resume the shared AudioContext in this tap so Chat / Ryo TTS can play.
-    void resumeAudioContext();
-    speakStart(index);
   }, [activeStepIndex, onSelectStep, onStartNavigation, speakStart, steps]);
 
   const handleStopNavigation = useCallback(() => {

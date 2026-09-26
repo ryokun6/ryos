@@ -6,7 +6,11 @@ import {
   updateTtsDucking,
   type TtsDuckingToken,
 } from "@/lib/audioDucking";
-import { getAudioContext, resumeAudioContext } from "@/lib/audioContext";
+import {
+  getAudioContext,
+  resumeAudioContext,
+  unlockAudioFromGesture,
+} from "@/lib/audioContext";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -130,6 +134,36 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   }, [masterVolumeRef, speechVolumeRef]);
 
   /**
+   * Warm this queue's gain node inside a user gesture (Start / Then / Chat
+   * send). iOS Safari will not play later `/api/speech` buffers unless the
+   * shared context was resumed and a source started in that gesture.
+   */
+  const unlock = useCallback(() => {
+    isStoppedRef.current = false;
+    unlockAudioFromGesture();
+    const ctx = ensureContext();
+    try {
+      void ctx.resume();
+    } catch {
+      // ignore
+    }
+    if (gainNodeRef.current) {
+      const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+      gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
+      gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
+    }
+    try {
+      const buffer = ctx.createBuffer(1, 1, 22050);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(gainNodeRef.current ?? ctx.destination);
+      source.start(0);
+    } catch {
+      // ignore
+    }
+  }, [ensureContext, masterVolumeRef, speechVolumeRef]);
+
+  /**
    * Process pending requests up to the maximum parallel limit
    */
   const processPendingRequests = useCallback(() => {
@@ -241,6 +275,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // Signal that we are actively queueing again
       isStoppedRef.current = false;
 
+      // Chat speaker / Maps Start / Then all call speak() inside the tap.
+      // Unlock here (same helpers Chat already relies on) so the shared
+      // context + this queue's gain exist before `/api/speech` returns.
+      unlock();
+
       // Use queued fetch to limit parallel requests
       const fetchPromise = queuedFetch(text.trim());
 
@@ -258,8 +297,10 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
             onEnd?.();
             return;
           }
-          // Ensure the shared context is ready
-          await resumeAudioContext();
+          // Resume only — do not close/recreate. A replacement context
+          // created after the tap stays suspended on iOS Safari (Chat
+          // stays audible because its first speak() already unlocked).
+          await resumeAudioContext({ allowRecreate: false });
           const ctx = ensureContext();
           if (gainNodeRef.current) {
             const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
@@ -310,7 +351,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef]
+    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef, unlock]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
@@ -421,5 +462,5 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     };
   }, []);
 
-  return { speak, stop, isSpeaking };
+  return { speak, stop, unlock, isSpeaking };
 }

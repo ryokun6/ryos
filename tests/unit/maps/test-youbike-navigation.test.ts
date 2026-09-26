@@ -229,15 +229,39 @@ describe("youbike navigation speech stop registration", () => {
       resolve(import.meta.dir, "../../../src/apps/maps/components/MapsYouBikeRouteCard.tsx"),
       "utf8"
     );
+    const tts = readFileSync(
+      resolve(import.meta.dir, "../../../src/hooks/useTtsQueue.ts"),
+      "utf8"
+    );
+    const audio = readFileSync(
+      resolve(import.meta.dir, "../../../src/lib/audioContext.ts"),
+      "utf8"
+    );
     expect(hook).toContain('from "@/hooks/useTtsQueue"');
-    expect(hook).toContain("resumeAudioContext");
+    expect(hook).toContain("cleanTextForSpeech");
+    expect(hook).toContain("unlock");
+    expect(hook).toContain("fromGesture: true, replace: false");
+    expect(hook).toContain("justEnabled");
+    expect(hook).not.toContain("resumeAudioContext");
     expect(hook).toContain("speakManualAdvance");
     expect(speech).not.toContain("createSpeechUtterance");
+    expect(tts).toContain("unlockAudioFromGesture");
+    expect(tts).toContain("allowRecreate: false");
+    expect(audio).toContain("export function unlockAudioFromGesture");
     expect(card).toContain("<Play");
     expect(card).toContain("<Square");
+    expect(card).toMatch(
+      /<Square[\s\S]*?weight=\{AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT\}/
+    );
+    expect(card).not.toMatch(
+      /<Square[\s\S]*?weight=\{AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE\}/
+    );
     expect(card).toContain("AQUA_ICON_BUTTON_ICON_CLASS");
-    expect(card).toContain("AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE");
     expect(card).toContain("speakManualAdvance");
+    expect(card).toContain("speakStart(index)");
+    expect(card.indexOf("speakStart(index)")).toBeLessThan(
+      card.indexOf("onStartNavigation?.()")
+    );
     expect(card).not.toMatch(/<svg[\s>]/);
     expect(card).not.toContain("createSpeechUtterance");
   });

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
-import { resumeAudioContext } from "@/lib/audioContext";
+import { cleanTextForSpeech } from "@/apps/chats/utils/textForSpeech";
 import {
   youbikeNavAnnounce,
   type YouBikeNavAnnounceResult,
@@ -27,46 +27,66 @@ export function useYouBikeNavigationSpeech(options: {
     thenPhrase,
   } = options;
 
-  const { speak, stop } = useTtsQueue();
+  const { speak, stop, unlock } = useTtsQueue();
 
   const stateRef = useRef({
     lastSpokenIndex: null as number | null,
     lastApproachIndex: null as number | null,
     lastSpeakAtMs: 0,
   });
+  const wasEnabledRef = useRef(false);
   const labelForIndexRef = useRef(labelForIndex);
   const thenPhraseRef = useRef(thenPhrase);
   const speakRef = useRef(speak);
   const stopRef = useRef(stop);
+  const unlockRef = useRef(unlock);
   labelForIndexRef.current = labelForIndex;
   thenPhraseRef.current = thenPhrase;
   speakRef.current = speak;
   stopRef.current = stop;
+  unlockRef.current = unlock;
 
   useEffect(() => registerYouBikeNavigationSpeechStop(stop), [stop]);
 
-  const applyDecision = useCallback((decision: YouBikeNavAnnounceResult) => {
-    stateRef.current = {
-      lastSpokenIndex: decision.lastSpokenIndex,
-      lastApproachIndex: decision.lastApproachIndex,
-      lastSpeakAtMs: decision.lastSpeakAtMs,
-    };
-    if (decision.kind == null || decision.speakIndex == null) return;
-    const label = labelForIndexRef.current(decision.speakIndex);
-    if (!label) return;
-    const text =
-      decision.kind === "approach" ? thenPhraseRef.current(label) : label;
-    // Replace, don't queue — same as Chat's manual replay (stop then speak).
-    stopRef.current();
-    speakRef.current(text);
-  }, []);
+  const playCue = useCallback(
+    (
+      text: string,
+      options: { fromGesture: boolean; replace: boolean }
+    ) => {
+      const spoken = cleanTextForSpeech(text);
+      if (!spoken) return;
+      // Chat's speaker button stop()s only when replacing a clip. Doing
+      // that on Start aborted the in-gesture `/api/speech` fetch on iOS
+      // once the enabled-effect re-ran. Unlock is also inside speak().
+      if (options.replace) stopRef.current();
+      if (options.fromGesture) unlockRef.current();
+      speakRef.current(spoken);
+    },
+    []
+  );
+
+  const applyDecision = useCallback(
+    (
+      decision: YouBikeNavAnnounceResult,
+      play: { fromGesture: boolean; replace: boolean }
+    ) => {
+      stateRef.current = {
+        lastSpokenIndex: decision.lastSpokenIndex,
+        lastApproachIndex: decision.lastApproachIndex,
+        lastSpeakAtMs: decision.lastSpeakAtMs,
+      };
+      if (decision.kind == null || decision.speakIndex == null) return;
+      const label = labelForIndexRef.current(decision.speakIndex);
+      if (!label) return;
+      const text =
+        decision.kind === "approach" ? thenPhraseRef.current(label) : label;
+      playCue(text, play);
+    },
+    [playCue]
+  );
 
   const speakStart = useCallback(
     (index: number) => {
-      // Unlock the shared AudioContext inside the Start tap, matching Chat /
-      // Ryo: iOS Safari will not play `/api/speech` clips until resume() runs
-      // in a user gesture.
-      void resumeAudioContext();
       applyDecision(
         youbikeNavAnnounce({
           isStarting: true,
@@ -77,7 +97,8 @@ export function useYouBikeNavigationSpeech(options: {
           lastApproachIndex: null,
           lastSpeakAtMs: 0,
           nowMs: Date.now(),
-        })
+        }),
+        { fromGesture: true, replace: false }
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -85,7 +106,6 @@ export function useYouBikeNavigationSpeech(options: {
 
   const speakManualAdvance = useCallback(
     (index: number) => {
-      void resumeAudioContext();
       applyDecision(
         youbikeNavAnnounce({
           isStarting: false,
@@ -97,7 +117,8 @@ export function useYouBikeNavigationSpeech(options: {
           lastApproachIndex: stateRef.current.lastApproachIndex,
           lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
           nowMs: Date.now(),
-        })
+        }),
+        { fromGesture: true, replace: true }
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -105,14 +126,22 @@ export function useYouBikeNavigationSpeech(options: {
 
   useEffect(() => {
     if (!enabled) {
-      cancelYouBikeNavigationSpeech();
-      stateRef.current = {
-        lastSpokenIndex: null,
-        lastApproachIndex: null,
-        lastSpeakAtMs: 0,
-      };
+      if (wasEnabledRef.current) {
+        cancelYouBikeNavigationSpeech();
+        stateRef.current = {
+          lastSpokenIndex: null,
+          lastApproachIndex: null,
+          lastSpeakAtMs: 0,
+        };
+      }
+      wasEnabledRef.current = false;
       return;
     }
+    const justEnabled = !wasEnabledRef.current;
+    wasEnabledRef.current = true;
+    // Start already spoke in the tap. Do not stop()+speak() again here —
+    // that races the in-flight /api/speech request outside the gesture.
+    if (justEnabled) return;
     applyDecision(
       youbikeNavAnnounce({
         isStarting: false,
@@ -123,7 +152,8 @@ export function useYouBikeNavigationSpeech(options: {
         lastApproachIndex: stateRef.current.lastApproachIndex,
         lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
         nowMs: Date.now(),
-      })
+      }),
+      { fromGesture: false, replace: true }
     );
   }, [applyDecision, enabled, focusedIndex, remainingMeters, stepCount]);
 
