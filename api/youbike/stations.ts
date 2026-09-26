@@ -43,6 +43,7 @@ const memoryFeedCache = new Map<
   string,
   { payload: CachedFeed; expiresAt: number }
 >();
+const inflightFeeds = new Map<string, Promise<CachedFeed>>();
 
 function readMemoryFeed(feedId: string): CachedFeed | null {
   const cached = memoryFeedCache.get(feedId);
@@ -172,7 +173,14 @@ async function loadFeed(
 ): Promise<{ payload: CachedFeed; cacheHit: boolean }> {
   const cached = await readCachedFeed(redis, feed);
   if (cached) return { payload: cached, cacheHit: true };
-  const payload = await fetchFeed(feed, timeoutMs);
+  let inflight = inflightFeeds.get(feed.id);
+  if (!inflight) {
+    inflight = fetchFeed(feed, timeoutMs).finally(() => {
+      inflightFeeds.delete(feed.id);
+    });
+    inflightFeeds.set(feed.id, inflight);
+  }
+  const payload = await inflight;
   await writeCachedFeed(redis, feed, payload);
   return { payload, cacheHit: false };
 }

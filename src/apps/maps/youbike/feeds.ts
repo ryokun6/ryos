@@ -46,7 +46,7 @@ export const YOUBIKE_OPEN_DATA_FEEDS: YouBikeOpenDataFeed[] = [
     optional: true,
     bbox: TAIWAN_BBOX,
     url: "https://apis.youbike.com.tw/json/station-yb2.json",
-    timeoutMs: 12_000,
+    timeoutMs: 20_000,
     cacheTtlSeconds: 120,
   },
 ];
@@ -93,5 +93,5 @@ export function shouldWaitForOptionalFeeds(
 }
 
 export function youbikeFeedCacheKey(feedId: string): string {
-  return `cache:youbike:stations:v3:${feedId}`;
+  return `cache:youbike:stations:v4:${feedId}`;
 }
