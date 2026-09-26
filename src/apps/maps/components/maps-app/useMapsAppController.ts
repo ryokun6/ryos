@@ -1211,6 +1211,8 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     if (!map) return;
     setLocateMeEnabled((enabled) => {
       const next = nextLocateMeEnabled({ currentlyEnabled: enabled });
+      // Stop or start tracking only. Off must not reframe / zoom out —
+      // the first-on neighborhood zoom lives in the location watch.
       map.showsUserLocation = next;
       map.tracksUserLocation = next;
       return next;

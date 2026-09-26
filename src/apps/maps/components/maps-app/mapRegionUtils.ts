@@ -84,6 +84,7 @@ export type LocateMeCameraMode = "focus" | "recenter" | "idle";
 /**
  * First Locate Me fix zooms to neighborhood span; later GPS ticks only
  * recenter so the rider can still pinch / zoom while tracking.
+ * Locate Me off is always idle — do not zoom out or reset the region.
  */
 export function locateMeCameraMode(options: {
   locateMeEnabled: boolean;

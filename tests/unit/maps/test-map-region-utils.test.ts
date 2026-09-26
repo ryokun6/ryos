@@ -36,6 +36,12 @@ describe("locate / home camera spans", () => {
     ).toBe("idle");
     expect(
       locateMeCameraMode({
+        locateMeEnabled: false,
+        hasAppliedFocusZoom: true,
+      })
+    ).toBe("idle");
+    expect(
+      locateMeCameraMode({
         locateMeEnabled: true,
         hasAppliedFocusZoom: false,
       })
@@ -118,5 +124,23 @@ describe("locate / home camera wiring", () => {
     expect(controller).toContain("fetchApproximateCityLocation");
     expect(controller).toContain("frameAtHomeOrGeoIp");
     expect(controller).not.toContain("frameAtCityLevel(home");
+
+    const handleStart = controller.indexOf("const handleLocateMe");
+    const handleEnd = controller.indexOf("}, []);", handleStart);
+    const handleLocateMe = controller.slice(handleStart, handleEnd);
+    expect(handleLocateMe).toContain("map.showsUserLocation = next");
+    expect(handleLocateMe).toContain("map.tracksUserLocation = next");
+    expect(handleLocateMe).not.toContain("setRegionAnimated");
+    expect(handleLocateMe).not.toContain("setCenterAnimated");
+    expect(handleLocateMe).not.toContain("geoIpCityMapRegion");
+    expect(handleLocateMe).not.toContain("defaultTaipeiMapRegion");
+
+    const stopStart = layer.indexOf("if (!shouldWatch || mapReadyTick === 0)");
+    const stopEnd = layer.indexOf("const map = mapInstanceRef.current;", stopStart);
+    const stopWatch = layer.slice(stopStart, stopEnd);
+    expect(stopWatch).toContain("removeUserPuck");
+    expect(stopWatch).not.toContain("setRegionAnimated");
+    expect(stopWatch).not.toContain("setCenterAnimated");
+    expect(stopWatch).not.toContain("followUserOnMap");
   });
 });

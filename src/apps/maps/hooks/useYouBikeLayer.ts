@@ -955,6 +955,8 @@ export function useYouBikeLayer({
       removeUserPuck();
       setLocationTracking(false);
       setTrackedUser(null);
+      // Leave the camera where it is — toggling Locate Me off must not
+      // zoom out to city-wide or reset the region.
       return;
     }
 
