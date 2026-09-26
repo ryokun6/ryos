@@ -93,7 +93,11 @@ export function MapsMapBottomChrome({
           aria-pressed={locateMePressed}
           className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
         >
-          <NavigationArrow size={12} weight="fill" />
+          <NavigationArrow
+            size={12}
+            weight="fill"
+            className={locateMePressed ? "text-os-link" : undefined}
+          />
         </Button>
         <Button
           type="button"

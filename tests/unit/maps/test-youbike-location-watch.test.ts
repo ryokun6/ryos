@@ -207,4 +207,21 @@ describe("YouBike navigation location wiring", () => {
     expect(controller).toContain("nextLocateMeEnabled");
     expect(controller).not.toContain("isNavigating: youbikeNavigating");
   });
+
+  test("Locate Me keeps outline chrome and only blues the glyph when tracking", () => {
+    const chrome = readFileSync(
+      resolve(
+        import.meta.dir,
+        "../../../src/apps/maps/components/maps-app/MapsMapBottomChrome.tsx"
+      ),
+      "utf8"
+    );
+    expect(chrome).toContain("aria-pressed={locateMePressed}");
+    expect(chrome).toContain('locateMePressed ? "text-os-link"');
+    expect(chrome).toContain('variant={isMacOSTheme ? "aqua" : "retro"}');
+    expect(chrome).not.toContain("aqua-button primary");
+    expect(chrome).not.toContain('variant="default"');
+    expect(chrome).not.toContain("bg-os-selection-bg");
+    expect(chrome).not.toContain("bg-primary");
+  });
 });
