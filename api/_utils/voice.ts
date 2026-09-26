@@ -1,7 +1,8 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 
-export const DEFAULT_TTS_MODEL = "elevenlabs";
+/** Unset client `ttsModel` (`null` / omitted) uses this provider. Stored ElevenLabs stays ElevenLabs. */
+export const DEFAULT_TTS_MODEL = "openai";
 export const DEFAULT_OPENAI_TTS_VOICE = "alloy";
 export const DEFAULT_OPENAI_TTS_SPEED = 1.1;
 export const DEFAULT_TRANSCRIPTION_MODEL = "whisper-1";
