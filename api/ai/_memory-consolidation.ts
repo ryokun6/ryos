@@ -1,5 +1,5 @@
 import { generateText, Output } from "ai";
-import { google } from "@ai-sdk/google";
+import { DEFAULT_MODEL, getModelInstance } from "../_utils/_aiModels.js";
 import { z } from "zod";
 
 /**
@@ -57,13 +57,12 @@ export async function consolidateMemoryContent(
     .join("\n\n");
 
   const { output: consolidated } = await generateText({
-    model: google("gemini-3-flash-preview"),
+    model: getModelInstance(DEFAULT_MODEL),
     output: Output.object({
       schema: memoryConsolidationSchema,
     }),
     instructions: CONSOLIDATION_PROMPT,
     prompt: `NEW:\nSummary: ${newMemory.summary}\nContent: ${newMemory.content}\n\nEXISTING:\n${existingContentText}\n\nMerge into one clean, deduplicated entry.`,
-    temperature: 0.3,
   });
 
   return { summary: consolidated.summary, content: consolidated.content };

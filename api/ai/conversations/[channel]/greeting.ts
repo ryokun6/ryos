@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { DEFAULT_MODEL, getModelInstance } from "../../../_utils/_aiModels.js";
 import { waitUntil } from "../../../_utils/_background.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { loadRyoMemoryContext } from "../../../_utils/ryo-conversation.js";
@@ -151,8 +151,7 @@ ${greetingMemoryContext}
 Generate ONE short proactive greeting. Pick one interesting angle from the context — a recent topic, a memory, something timely — and use it naturally. Don't try to cover everything.`;
 
       const { text } = await generateText({
-        model: google("gemini-3-flash-preview"),
-        temperature: 1,
+        model: getModelInstance(DEFAULT_MODEL),
         maxOutputTokens: 2000,
         instructions: PROACTIVE_GREETING_INSTRUCTIONS,
         messages: [

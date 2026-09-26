@@ -5,7 +5,7 @@
  */
 
 import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { DEFAULT_MODEL, getModelInstance } from "../_utils/_aiModels.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
@@ -102,10 +102,9 @@ export default apiHandler<RyoReplyRequest>(
     try {
       logger.info("Generating AI reply", { roomId, promptLength: prompt.length });
       const { text } = await generateText({
-        model: google("gemini-3-flash-preview"),
+        model: getModelInstance(DEFAULT_MODEL),
         instructions: CHAT_ROOM_REPLY_INSTRUCTIONS,
         messages,
-        temperature: 0.6,
       });
       replyText = text;
       logger.info("AI reply generated", { replyLength: replyText.length });

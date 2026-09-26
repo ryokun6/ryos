@@ -450,14 +450,14 @@ describe("AI conversation client", () => {
 
     expect(
       buildAIConversationRequestBody({
-        body: { model: "gemini-3-flash" },
+        body: { model: "gpt-6" },
         id: "sdk-chat",
         messages,
         trigger: "submit-message",
         conversation,
       })
     ).toEqual({
-      model: "gemini-3-flash",
+      model: "gpt-6",
       id: "sdk-chat",
       trigger: "submit-message",
       conversation,
@@ -522,7 +522,7 @@ describe("AI conversation client", () => {
     ];
 
     const request = buildAIConversationRequestBody({
-      body: { model: "gemini-3-flash" },
+      body: { model: "gpt-6" },
       id: "sdk-chat",
       messages,
       trigger: "submit-message",

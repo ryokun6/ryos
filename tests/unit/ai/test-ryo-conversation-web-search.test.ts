@@ -22,7 +22,7 @@ const baseSystemState: RyoConversationSystemState = {
 
 async function prepareConversation(options: {
   channel: "chat" | "telegram";
-  model: "gpt-6" | "gpt-5.5" | "sonnet-4.6" | "gemini-3-flash";
+  model: "gpt-6" | "gpt-5.5" | "opus-5.5";
   username?: string | null;
   systemState?: RyoConversationSystemState;
 }) {
@@ -39,12 +39,6 @@ function hasWebSearchTool(
   tools: Record<string, unknown>
 ): tools is Record<string, { id?: string }> {
   return "web_search" in tools;
-}
-
-function hasGoogleSearchTool(
-  tools: Record<string, unknown>
-): tools is Record<string, { id?: string }> {
-  return "google_search" in tools;
 }
 
 describe("prepareRyoConversationModelInput web search gating", () => {
@@ -86,7 +80,7 @@ describe("prepareRyoConversationModelInput web search gating", () => {
   test("does not add web_search for authenticated chat on non-openai models", async () => {
     const prepared = await prepareConversation({
       channel: "chat",
-      model: "sonnet-4.6",
+      model: "opus-5.5",
       username: "ryo",
       systemState: baseSystemState,
     });
@@ -103,41 +97,5 @@ describe("prepareRyoConversationModelInput web search gating", () => {
 
     expect(hasWebSearchTool(prepared.tools)).toBe(true);
     expect(prepared.tools.web_search.id).toBe("openai.web_search");
-  });
-
-  test("adds google_search for authenticated chat on gemini 3 flash", async () => {
-    const prepared = await prepareConversation({
-      channel: "chat",
-      model: "gemini-3-flash",
-      username: "ryo",
-      systemState: baseSystemState,
-    });
-
-    expect("web_search" in prepared.tools).toBe(false);
-    expect(hasGoogleSearchTool(prepared.tools)).toBe(true);
-    expect(prepared.tools.google_search.id).toBe("google.google_search");
-  });
-
-  test("adds google_search for telegram on gemini 3 flash", async () => {
-    const prepared = await prepareConversation({
-      channel: "telegram",
-      model: "gemini-3-flash",
-      username: "ryo",
-    });
-
-    expect("web_search" in prepared.tools).toBe(false);
-    expect(hasGoogleSearchTool(prepared.tools)).toBe(true);
-    expect(prepared.tools.google_search.id).toBe("google.google_search");
-  });
-
-  test("does not add google_search for anonymous gemini conversations", async () => {
-    const prepared = await prepareConversation({
-      channel: "chat",
-      model: "gemini-3-flash",
-      username: null,
-      systemState: baseSystemState,
-    });
-
-    expect("google_search" in prepared.tools).toBe(false);
   });
 });

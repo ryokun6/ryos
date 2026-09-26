@@ -2,7 +2,7 @@
 
 /**
  * Generate documentation pages for each app using AI subagents.
- * Reads app metadata and source code, then uses Gemini to generate comprehensive doc pages.
+ * Reads app metadata and source code, then uses gpt-6 to generate comprehensive doc pages.
  * 
  * Usage:
  *   bun run scripts/generate-app-docs.ts                    # Generate all app docs (skip existing)
@@ -13,8 +13,8 @@
 
 import { readFile, readdir, stat, writeFile } from "fs/promises";
 import { join } from "path";
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { DEFAULT_MODEL, getModelInstance } from "../api/_utils/_aiModels.js";
 
 const DOCS_DIR = "docs";
 const APPS_DIR = "src/apps";
@@ -521,14 +521,13 @@ Write the documentation in a clear, professional tone. Use markdown formatting p
 
   try {
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: getModelInstance(DEFAULT_MODEL),
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.7,
     });
 
     return text;

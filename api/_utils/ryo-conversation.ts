@@ -1,5 +1,4 @@
 import { openai } from "@ai-sdk/openai";
-import { google } from "@ai-sdk/google";
 import type { Redis } from "./redis.js";
 import {
   convertToModelMessages,
@@ -318,16 +317,6 @@ function shouldEnableOpenAIWebSearch({
   return (model === "gpt-6" || model === "gpt-5.5") && !!username;
 }
 
-function shouldEnableGoogleSearch({
-  model,
-  username,
-}: {
-  model: SupportedModel;
-  username?: string | null;
-}): boolean {
-  return model === "gemini-3-flash" && !!username;
-}
-
 function createOpenAIWebSearchTool(
   systemState?: RyoConversationSystemState
 ): ReturnType<typeof openai.tools.webSearch> {
@@ -352,10 +341,6 @@ function createOpenAIWebSearchTool(
         }
       : {}
   );
-}
-
-function createGoogleSearchTool(): ReturnType<typeof google.tools.googleSearch> {
-  return google.tools.googleSearch({});
 }
 
 /**
@@ -1004,11 +989,6 @@ export async function prepareRyoConversationModelInput(
     ...(shouldEnableOpenAIWebSearch({ model, username })
       ? {
           web_search: createOpenAIWebSearchTool(effectiveSystemState),
-        }
-      : {}),
-    ...(shouldEnableGoogleSearch({ model, username })
-      ? {
-          google_search: createGoogleSearchTool(),
         }
       : {}),
   };

@@ -222,7 +222,7 @@ describe("AI conversation API", () => {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
-          model: "gemini-3-flash",
+          model: "gpt-6",
           conversation: {
             id: initial.conversation.id,
             revision: initial.conversation.revision,
@@ -290,7 +290,7 @@ describe("AI conversation API", () => {
     const firstOperationId = crypto.randomUUID();
     const userMessageId = crypto.randomUUID();
     const firstBody = JSON.stringify({
-      model: "gemini-3-flash",
+      model: "gpt-6",
       conversation: {
         id: initial.conversation.id,
         revision: initial.conversation.revision,
@@ -361,7 +361,7 @@ describe("AI conversation API", () => {
       method: "POST",
       headers: makeRateLimitBypassHeaders(),
       body: JSON.stringify({
-        model: "gemini-3-flash",
+        model: "gpt-6",
         conversation: {
           id: initial.conversation.id,
           revision: initial.conversation.revision,
@@ -384,7 +384,7 @@ describe("AI conversation API", () => {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
-          model: "gemini-3-flash",
+          model: "gpt-6",
           conversation: {
             id: persisted.conversation.id,
             revision: persisted.conversation.revision,
@@ -453,7 +453,7 @@ describe("AI conversation API", () => {
         method: "POST",
         headers: makeRateLimitBypassHeaders(),
         body: JSON.stringify({
-          model: "gemini-3-flash",
+          model: "gpt-6",
           trigger: "regenerate-message",
           messageId: oldSecondAssistantId,
           conversation: {
