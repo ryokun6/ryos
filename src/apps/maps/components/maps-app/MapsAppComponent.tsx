@@ -59,6 +59,7 @@ export function MapsAppComponent({
     handleOpenPlaceDirections,
     handleYouBikeDirections,
     handleClearYouBikeRoute,
+    locateMeEnabled,
     focusYouBikeStep,
     youbikeActiveStepIndex,
     youbikeTrackedUser,
@@ -194,7 +195,7 @@ export function MapsAppComponent({
                 onSelectStep={focusYouBikeStep}
                 activeStepIndex={youbikeActiveStepIndex}
                 userLocation={youbikeTrackedUser}
-                onStartNavigation={handleLocateMe}
+                followUserLocation={locateMeEnabled}
               />
             ) : (
               <MapsPlaceCard
@@ -273,6 +274,7 @@ export function MapsAppComponent({
               locateMeTitle={t("apps.maps.menu.locateMe", {
                 defaultValue: "Locate Me",
               })}
+              locateMePressed={locateMeEnabled}
               placesTitle={t("apps.maps.places.title", {
                 defaultValue: "Places",
               })}

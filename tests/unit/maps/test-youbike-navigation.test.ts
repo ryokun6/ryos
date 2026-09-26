@@ -251,8 +251,10 @@ describe("youbike navigation speech stop registration", () => {
     expect(card).toContain("AQUA_ICON_BUTTON_ICON_CLASS");
     expect(card).toContain("speakManualAdvance");
     expect(card).toContain("speakStart(index)");
+    expect(card).toContain("onNavigatingChange");
+    expect(card).toContain("followUserLocation");
     expect(card.indexOf("speakStart(index)")).toBeLessThan(
-      card.indexOf("onStartNavigation?.()")
+      card.indexOf("onNavigatingChange?.(true)")
     );
     expect(card).not.toMatch(/<svg[\s>]/);
     expect(card).not.toContain("useTtsQueue");

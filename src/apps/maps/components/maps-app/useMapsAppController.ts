@@ -25,6 +25,7 @@ import {
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
 import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
+import { nextLocateMeEnabled } from "../../youbike/locationWatch";
 import { youbikeMapPoiFields } from "../../youbike/place";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
@@ -103,6 +104,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   // the saved-annotations sync silently miss the first map-ready window
   // when status flipped to "ready" mid-render.
   const [mapReadyTick, setMapReadyTick] = useState(0);
+  const [locateMeEnabled, setLocateMeEnabled] = useState(false);
   /** Set when the map container DOM mounts; cleared when it unmounts (e.g. minimize). */
   const [mapSurfaceEl, setMapSurfaceEl] = useState<HTMLDivElement | null>(null);
   // Framed viewport once per fresh MapKit instance (reset when the map is torn down).
@@ -133,6 +135,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     hasHydratedSelectedRef.current = false;
     lastFocusedPlaceIdRef.current = null;
     setMapReadyTick(0);
+    setLocateMeEnabled(false);
   }, []);
 
   const attachMapSurfaceRef = useCallback(
@@ -763,7 +766,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     recordRecentPlace,
     savedPlaceIds,
     isDarkMode,
+    locateMeEnabled,
   });
+
+  const handleClearYouBikeRoute = useCallback(() => {
+    youbike.handleClearYouBikeRoute();
+  }, [youbike]);
 
   const handleYouBikeDirections = useCallback(
     (place: SavedPlace) => {
@@ -1159,8 +1167,12 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
-    map.showsUserLocation = true;
-    map.tracksUserLocation = true;
+    setLocateMeEnabled((enabled) => {
+      const next = nextLocateMeEnabled({ currentlyEnabled: enabled });
+      map.showsUserLocation = next;
+      map.tracksUserLocation = next;
+      return next;
+    });
   }, []);
 
   // Debounced search-as-you-type. Fires `performSearch` after the user pauses
@@ -1262,7 +1274,8 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleToggleFavorite,
     handleOpenPlaceDirections,
     handleYouBikeDirections,
-    handleClearYouBikeRoute: youbike.handleClearYouBikeRoute,
+    handleClearYouBikeRoute,
+    locateMeEnabled,
     focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeActiveStepIndex: youbike.activeStepIndex,
     youbikeTrackedUser: youbike.trackedUser,

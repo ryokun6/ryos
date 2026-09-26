@@ -69,16 +69,21 @@ export interface MapKitMapInstance {
   userLocation?: { coordinate?: MapKitCoordinate } | null;
   addEventListener?: (
     type: string,
-    listener: () => void
+    listener: (event?: MapKitUserLocationEvent) => void
   ) => void;
   removeEventListener?: (
     type: string,
-    listener: () => void
+    listener: (event?: MapKitUserLocationEvent) => void
   ) => void;
   annotationForCluster?: (
     cluster: MapKitClusterAnnotation
   ) => MapKitClusterAnnotation | void;
   destroy: () => void;
+}
+
+export interface MapKitUserLocationEvent {
+  coordinate?: MapKitCoordinate;
+  timestamp?: Date;
 }
 
 export interface MapKitSearchInstance {
