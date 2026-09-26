@@ -214,7 +214,7 @@ async function loadStationsForBBox(
 }
 
 export default apiHandler(
-  { methods: ["GET"] },
+  { methods: ["GET"], auth: "none" },
   async ({ req, res, redis, logger, startTime }) => {
     try {
       const ip = getClientIp(req);

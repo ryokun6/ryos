@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  TAIWAN_BBOX,
   parseBBoxQuery,
   filterStationsInBBox,
   regionFittingPoints,
@@ -269,7 +270,7 @@ describe("feedsIntersectingBBox", () => {
       id: "national",
       url: "https://apis.youbike.com.tw/json/station-yb2.json",
     });
-    expect(YOUBIKE_OPEN_DATA_FEEDS[0].optional).toBeUndefined();
+    expect(YOUBIKE_OPEN_DATA_FEEDS[0].bbox).toEqual(TAIWAN_BBOX);
   });
 
   test("selects the national dump for Taipei and Taichung viewports", () => {
@@ -289,9 +290,19 @@ describe("feedsIntersectingBBox", () => {
     expect(taichung.map((feed) => feed.id)).toEqual(["national"]);
   });
 
-  test("without a bbox returns the required national dump", () => {
+  test("without a bbox returns the national dump", () => {
     const feeds = feedsIntersectingBBox(null);
     expect(feeds.map((feed) => feed.id)).toEqual(["national"]);
+  });
+
+  test("skips the dump for a viewport outside Taiwan", () => {
+    const feeds = feedsIntersectingBBox({
+      south: 37.7,
+      west: -122.5,
+      north: 37.8,
+      east: -122.4,
+    });
+    expect(feeds).toEqual([]);
   });
 });
 

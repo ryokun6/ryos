@@ -6,13 +6,8 @@ export interface YouBikeOpenDataFeed {
   city: YouBikeCityId;
   /** Official YouBike JSON (no API key). */
   url: string;
-  /** Coverage used to skip feeds outside the current viewport. */
+  /** Coverage used to skip the feed when the viewport is outside Taiwan. */
   bbox: GeoBBox;
-  /**
-   * When true, a fetch failure is logged but the response still succeeds
-   * if another feed returned stations.
-   */
-  optional?: boolean;
   /** Override the default fetch timeout for this feed. */
   timeoutMs?: number;
   /** Override the default Redis TTL for a successful cache write. */
@@ -57,9 +52,7 @@ export function feedsIntersectingBBox(
   bbox: GeoBBox | null,
   feeds: YouBikeOpenDataFeed[] = YOUBIKE_OPEN_DATA_FEEDS
 ): YouBikeOpenDataFeed[] {
-  if (!bbox) {
-    return feeds.filter((feed) => !feed.optional);
-  }
+  if (!bbox) return feeds;
   return feeds.filter((feed) => bboxIntersects(bbox, feed.bbox));
 }
 
