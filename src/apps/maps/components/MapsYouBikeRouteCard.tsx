@@ -367,10 +367,10 @@ export function MapsYouBikeRouteCard({
                   <ListNumbers size={14} weight="bold" />
                   {showSteps
                     ? t("apps.maps.youbike.hideSteps", {
-                        defaultValue: "Hide steps",
+                        defaultValue: "Hide Steps",
                       })
                     : t("apps.maps.youbike.showSteps", {
-                        defaultValue: "Steps",
+                        defaultValue: "Show Steps",
                       })}
                 </Button>
               )}

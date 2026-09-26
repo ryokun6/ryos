@@ -3361,6 +3361,7 @@
         "favorite": "Favori",
         "favorited": "Favori",
         "home": "Domicile",
+        "moreActions": "Plus",
         "openDirections": "Obtenir l’itinéraire dans Plans",
         "regionLabel": "Lieu sélectionné",
         "removeFavorite": "Supprimer des favoris",
@@ -3368,8 +3369,7 @@
         "setWork": "Définir comme bureau",
         "unsetHome": "Retirer le domicile",
         "unsetWork": "Retirer le bureau",
-        "work": "Bureau",
-        "moreActions": "Plus"
+        "work": "Bureau"
       },
       "places": {
         "allEmpty": "Recherchez un lieu et utilisez les actions de la fiche pour l’enregistrer comme domicile, bureau ou favori.",
@@ -3456,6 +3456,7 @@
         "legWalk": "Marcher jusqu’à {{place}}",
         "maneuver": {
           "arrive": "Arrivée",
+          "arrivedAtPlace": "Arrivé à {{place}}",
           "continue": "Continuer {{direction}}",
           "continuePlain": "Continuer",
           "depart": "Prendre la direction {{direction}}",
@@ -3478,10 +3479,12 @@
             "uturn": "demi-tour",
             "west": "ouest"
           },
+          "dockBike": "Rendre le vélo",
           "fork": "Gardez la {{direction}}",
           "forkPlain": "Bifurcation",
           "merge": "S'insérer {{direction}}",
           "mergePlain": "Insertion",
+          "pickUpBike": "Prendre le vélo",
           "roundabout": "Rond-point",
           "turn": "Tournez {{direction}}",
           "turnPlain": "Tourner"

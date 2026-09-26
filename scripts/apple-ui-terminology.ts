@@ -33,6 +33,8 @@ export const ENGLISH_STYLE_EXPECTATIONS = {
   "apps.ipod.menu.repeatOne": "Repeat One",
   "apps.ipod.menu.chinesePinyin": "Chinese (Pinyin)",
   "apps.ipod.menu.chineseZhuyin": "Chinese (Zhuyin)",
+  "apps.maps.youbike.hideSteps": "Hide Steps",
+  "apps.maps.youbike.showSteps": "Show Steps",
   "apps.videos.menu.repeatAll": "Repeat All",
   "apps.videos.menu.repeatOne": "Repeat One",
   "apps.karaoke.menu.repeatAll": "Repeat All",

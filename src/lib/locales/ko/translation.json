@@ -3358,6 +3358,7 @@
         "favorite": "즐겨찾기",
         "favorited": "즐겨찾기에 추가됨",
         "home": "집",
+        "moreActions": "더보기",
         "openDirections": "Apple 지도에서 길 찾기",
         "regionLabel": "선택된 장소",
         "removeFavorite": "즐겨찾기에서 제거",
@@ -3365,8 +3366,7 @@
         "setWork": "직장으로 설정",
         "unsetHome": "집 설정 해제",
         "unsetWork": "직장 설정 해제",
-        "work": "직장",
-        "moreActions": "더보기"
+        "work": "직장"
       },
       "places": {
         "allEmpty": "장소를 검색한 후 카드 동작을 사용하여 집, 직장 또는 즐겨찾기로 저장하세요.",
@@ -3453,6 +3453,7 @@
         "legWalk": "{{place}}까지 도보로 이동",
         "maneuver": {
           "arrive": "도착",
+          "arrivedAtPlace": "{{place}} 도착",
           "continue": "{{direction}} 방향으로 계속 진행",
           "continuePlain": "계속 진행",
           "depart": "{{direction}} 방향으로 출발",
@@ -3475,10 +3476,12 @@
             "uturn": "유턴",
             "west": "서쪽"
           },
+          "dockBike": "자전거 반납",
           "fork": "{{direction}} 방향 유지",
           "forkPlain": "갈림길",
           "merge": "{{direction}} 방향으로 합류",
           "mergePlain": "합류",
+          "pickUpBike": "자전거 대여",
           "roundabout": "회전교차로",
           "turn": "{{direction}} 회전",
           "turnPlain": "회전"

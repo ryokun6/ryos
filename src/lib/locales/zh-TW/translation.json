@@ -3358,6 +3358,7 @@
         "favorite": "喜好項目",
         "favorited": "已加入喜好項目",
         "home": "住家",
+        "moreActions": "更多",
         "openDirections": "在 Apple 地圖取得路線",
         "regionLabel": "已選取的地點",
         "removeFavorite": "從最愛移除",
@@ -3365,8 +3366,7 @@
         "setWork": "設為公司",
         "unsetHome": "取消住家",
         "unsetWork": "取消公司",
-        "work": "公司",
-        "moreActions": "更多"
+        "work": "公司"
       },
       "places": {
         "allEmpty": "搜尋地點並使用卡片動作將其儲存為「住家」、「公司」或「最愛」。",
@@ -3453,6 +3453,7 @@
         "legWalk": "步行前往 {{place}}",
         "maneuver": {
           "arrive": "抵達",
+          "arrivedAtPlace": "已抵達 {{place}}",
           "continue": "繼續向{{direction}}",
           "continuePlain": "繼續",
           "depart": "向{{direction}}",
@@ -3475,10 +3476,12 @@
             "uturn": "反方向",
             "west": "西"
           },
+          "dockBike": "還車",
           "fork": "靠{{direction}}行駛",
           "forkPlain": "分岔路",
           "merge": "匯入{{direction}}",
           "mergePlain": "匯入",
+          "pickUpBike": "取車",
           "roundabout": "圓環",
           "turn": "向{{direction}}轉",
           "turnPlain": "轉彎"

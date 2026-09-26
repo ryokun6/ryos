@@ -3358,6 +3358,7 @@
         "favorite": "Favorit",
         "favorited": "Favorisiert",
         "home": "Privat",
+        "moreActions": "Mehr",
         "openDirections": "Route in Apple Karten erhalten",
         "regionLabel": "Ausgewählter Ort",
         "removeFavorite": "Aus Favoriten entfernen",
@@ -3365,8 +3366,7 @@
         "setWork": "Als Arbeit festlegen",
         "unsetHome": "Privat entfernen",
         "unsetWork": "Arbeit entfernen",
-        "work": "Arbeit",
-        "moreActions": "Mehr"
+        "work": "Arbeit"
       },
       "places": {
         "allEmpty": "Suche nach einem Ort und verwende die Aktionen auf der Karte, um ihn als Privat, Arbeit oder Favorit zu speichern.",
@@ -3453,6 +3453,7 @@
         "legWalk": "Zu Fuß zu {{place}}",
         "maneuver": {
           "arrive": "Ankunft",
+          "arrivedAtPlace": "Ankunft bei {{place}}",
           "continue": "Weiter {{direction}}",
           "continuePlain": "Weiter",
           "depart": "Nach {{direction}}",
@@ -3475,10 +3476,12 @@
             "uturn": "Wenden",
             "west": "Westen"
           },
+          "dockBike": "Fahrrad andocken",
           "fork": "{{direction}} halten",
           "forkPlain": "Gabelung",
           "merge": "{{direction}} einfädeln",
           "mergePlain": "Einfädeln",
+          "pickUpBike": "Fahrrad abholen",
           "roundabout": "Kreisverkehr",
           "turn": "{{direction}} abbiegen",
           "turnPlain": "Abbiegen"

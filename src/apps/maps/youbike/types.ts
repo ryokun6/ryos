@@ -71,6 +71,9 @@ export interface YouBikeStepManeuver {
   modifier: string;
 }
 
+/** How a generic “arrive at the destination” step should read on a multi-leg trip. */
+export type YouBikeArrivalRole = "pickup" | "dock" | "place";
+
 export interface YouBikeRouteStep {
   mode: YouBikeLegMode;
   /** Maneuver, e.g. "Turn right". MapKit may already include the street. */
@@ -83,6 +86,10 @@ export interface YouBikeRouteStep {
   /** Road geometry for this step, when the router provided it. */
   path?: GeoPoint[];
   maneuver?: YouBikeStepManeuver;
+  /** Set when this step is a generic arrival that should use YouBike copy. */
+  arrivalRole?: YouBikeArrivalRole;
+  /** Place name for `arrivalRole: "place"` (the trip destination). */
+  arrivalPlace?: string;
 }
 
 export interface YouBikeRouteLeg {
