@@ -5,6 +5,7 @@ import { motion, AnimatePresence, type Transition } from "motion/react";
 import { cn } from "@/lib/utils";
 import { resumeAudioContext } from "@/lib/audioContext";
 import {
+  AQUA_ICON_BUTTON_ICON_CLASS,
   AQUA_ICON_BUTTON_PADDING_CLASS,
   AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
   AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT,
@@ -133,7 +134,7 @@ function RouteStepRow({
       >
         <Icon
           size={14}
-          weight="fill"
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
           className={cn(
             "mt-0.5 shrink-0",
             highlighted ? "text-os-selection-text" : "text-os-text-secondary"
@@ -174,6 +175,11 @@ function YouBikeNavigationFocus({
 }) {
   const { t } = useTranslation();
   const CurrentIcon = current.mode === "bike" ? Bicycle : PersonSimpleWalk;
+  const UpcomingIcon = upcoming
+    ? upcoming.mode === "bike"
+      ? Bicycle
+      : PersonSimpleWalk
+    : null;
   const currentLabel = localizeYouBikeStepLabel(current, t);
   const upcomingLabel = upcoming ? localizeYouBikeStepLabel(upcoming, t) : null;
   const currentMeta = formatDistance(
@@ -204,7 +210,11 @@ function YouBikeNavigationFocus({
           "focus:outline-none focus-visible:ring-1"
         )}
       >
-        <CurrentIcon size={18} weight="fill" className="mt-0.5 shrink-0" />
+        <CurrentIcon
+          size={18}
+          weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
+          className="mt-0.5 shrink-0"
+        />
         <div className="min-w-0">
           <div className="text-[15px] font-semibold leading-snug">
             {currentLabel}
@@ -226,6 +236,13 @@ function YouBikeNavigationFocus({
             "hover:bg-os-selection-bg/15 focus:outline-none focus-visible:ring-1"
           )}
         >
+          {UpcomingIcon && (
+            <UpcomingIcon
+              size={14}
+              weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
+              className="mt-0.5 shrink-0 text-os-text-secondary"
+            />
+          )}
           <span className="shrink-0 font-medium text-os-text-secondary">
             {t("apps.maps.youbike.thenStep", { defaultValue: "Then" })}
           </span>
@@ -561,6 +578,7 @@ export function MapsYouBikeRouteCard({
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
                   <Square
+                    className={AQUA_ICON_BUTTON_ICON_CLASS}
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
                     weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
                   />
@@ -580,6 +598,7 @@ export function MapsYouBikeRouteCard({
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
                   <Play
+                    className={AQUA_ICON_BUTTON_ICON_CLASS}
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
                     weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
                   />
@@ -600,6 +619,7 @@ export function MapsYouBikeRouteCard({
                   className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
                   <ListNumbers
+                    className={AQUA_ICON_BUTTON_ICON_CLASS}
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
                     weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
                   />

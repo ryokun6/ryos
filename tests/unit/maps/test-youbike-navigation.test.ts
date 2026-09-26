@@ -235,7 +235,10 @@ describe("youbike navigation speech stop registration", () => {
     expect(speech).not.toContain("createSpeechUtterance");
     expect(card).toContain("<Play");
     expect(card).toContain("<Square");
+    expect(card).toContain("AQUA_ICON_BUTTON_ICON_CLASS");
     expect(card).toContain("AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE");
     expect(card).toContain("speakManualAdvance");
+    expect(card).not.toMatch(/<svg[\s>]/);
+    expect(card).not.toContain("createSpeechUtterance");
   });
 });
