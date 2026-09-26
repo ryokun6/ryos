@@ -3,9 +3,9 @@ import { motion, AnimatePresence, type Transition } from "motion/react";
 import {
   Bicycle,
   Briefcase,
+  Car,
   DotsThree,
   House,
-  NavigationArrow,
   Star,
   X,
 } from "@phosphor-icons/react";
@@ -310,7 +310,7 @@ function PlaceCardActions({
         })}
         className={AQUA_ICON_BUTTON_PADDING_CLASS}
       >
-        <NavigationArrow
+        <Car
           size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
           weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
         />
