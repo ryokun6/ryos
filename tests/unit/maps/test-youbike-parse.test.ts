@@ -7,7 +7,6 @@ import {
 import {
   YOUBIKE_OPEN_DATA_FEEDS,
   feedsIntersectingBBox,
-  shouldWaitForOptionalFeeds,
 } from "../../../src/apps/maps/youbike/feeds";
 import {
   mergeYouBikeStations,
@@ -264,78 +263,35 @@ describe("filterStationsInBBox", () => {
 });
 
 describe("feedsIntersectingBBox", () => {
-  test("uses the national dump instead of dead municipal portals", () => {
-    expect(YOUBIKE_OPEN_DATA_FEEDS.map((feed) => feed.id)).toEqual([
-      "taipei",
-      "national",
-    ]);
-    expect(
-      YOUBIKE_OPEN_DATA_FEEDS.some((feed) =>
-        feed.url.includes("datacenter.taichung.gov.tw")
-      )
-    ).toBe(false);
+  test("uses the official YouBike app national dump as the only source", () => {
+    expect(YOUBIKE_OPEN_DATA_FEEDS).toHaveLength(1);
+    expect(YOUBIKE_OPEN_DATA_FEEDS[0]).toMatchObject({
+      id: "national",
+      url: "https://apis.youbike.com.tw/json/station-yb2.json",
+    });
+    expect(YOUBIKE_OPEN_DATA_FEEDS[0].optional).toBeUndefined();
   });
 
-  test("selects Taipei plus the national dump for a Xinyi viewport", () => {
-    const feeds = feedsIntersectingBBox({
+  test("selects the national dump for Taipei and Taichung viewports", () => {
+    const taipei = feedsIntersectingBBox({
       south: 25.02,
       west: 121.55,
       north: 25.05,
       east: 121.58,
     });
-    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
-    expect(feeds.some((feed) => feed.id === "national")).toBe(true);
-  });
-
-  test("selects only the national dump for a Taichung viewport", () => {
-    const feeds = feedsIntersectingBBox({
+    const taichung = feedsIntersectingBBox({
       south: 24.12,
       west: 120.64,
       north: 24.16,
-      east: 120.70,
+      east: 120.7,
     });
-    expect(feeds.map((feed) => feed.id)).toEqual(["national"]);
+    expect(taipei.map((feed) => feed.id)).toEqual(["national"]);
+    expect(taichung.map((feed) => feed.id)).toEqual(["national"]);
   });
 
-  test("without a bbox only returns required feeds", () => {
+  test("without a bbox returns the required national dump", () => {
     const feeds = feedsIntersectingBBox(null);
-    expect(feeds.every((feed) => !feed.optional)).toBe(true);
-    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
-  });
-});
-
-describe("shouldWaitForOptionalFeeds", () => {
-  const taipei = YOUBIKE_OPEN_DATA_FEEDS.find((feed) => feed.id === "taipei")!;
-  const national = YOUBIKE_OPEN_DATA_FEEDS.find((feed) => feed.id === "national")!;
-
-  test("waits for the national dump when Taipei is out of view", () => {
-    expect(
-      shouldWaitForOptionalFeeds(
-        { south: 24.12, west: 120.64, north: 24.16, east: 120.7 },
-        [],
-        [national]
-      )
-    ).toBe(true);
-  });
-
-  test("does not block a Taipei-only camera on the national dump", () => {
-    expect(
-      shouldWaitForOptionalFeeds(
-        { south: 25.02, west: 121.55, north: 25.05, east: 121.58 },
-        [taipei],
-        [national]
-      )
-    ).toBe(false);
-  });
-
-  test("waits when the viewport sticks out of Taipei", () => {
-    expect(
-      shouldWaitForOptionalFeeds(
-        { south: 24.98, west: 121.4, north: 25.1, east: 121.6 },
-        [taipei],
-        [national]
-      )
-    ).toBe(true);
+    expect(feeds.map((feed) => feed.id)).toEqual(["national"]);
   });
 });
 

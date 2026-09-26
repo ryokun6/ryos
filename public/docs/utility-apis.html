@@ -739,7 +739,7 @@ const { quotes, chart } = await response.json();</code></pre>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
 <hr>
 <h2>YouBike Stations</h2>
-<p>Proxies official Taiwan YouBike 2.0 JSON (no TDX key). Taipei uses the city DOT Azure blob (cached 60s). Other cities use YouBike’s official national 2.0 dump (about 6MB, cached 120s, 20s timeout). A viewport bbox selects intersecting feeds; the national dump is waited on when Taipei is out of view or the camera sticks outside Taipei. Results are then filtered to that bbox.</p>
+<p>Proxies the official YouBike 2.0 national dump (<code>station-yb2.json</code>, the same file the YouBike app loads). One source covers every city, including Taichung. The ~6MB payload is cached 120s (Redis + process memory) with a 20s fetch timeout. A viewport bbox selects intersecting coverage; results are then filtered to that bbox.</p>
 <h3>Endpoint</h3>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/youbike/stations</code></td><td>Live YouBike 2.0 stations for the Maps overlay</td></tr></tbody></table>
 <h3>Request</h3>
@@ -766,13 +766,13 @@ const { quotes, chart } = await response.json();</code></pre>
   ],
   "fetchedAt": 1758800000000,
   "cacheHit": true,
-  "sources": [{ "id": "taipei", "city": "taipei", "ok": true, "count": 1807 }]
+  "sources": [{ "id": "national", "city": "unknown", "ok": true, "count": 9629 }]
 }</code></pre>
 <strong>Error Responses:</strong>
 <table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>invalid_bbox</code></td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>502</td><td>Every official feed failed or returned no stations</td></tr></tbody></table>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
-<p>Taipei’s DOT Azure blob is the verified primary feed. Non-Taipei coverage comes from the official national dump (municipal portals for Taichung, New Taipei, Taoyuan, Hsinchu, Tainan, and Kaohsiung are dead or non-JSON).</p>
+<p>The official YouBike app dump is the only source. Municipal portals for Taichung, New Taipei, Taoyuan, Hsinchu, Tainan, and Kaohsiung are dead or non-JSON and are not fetched.</p>
 <hr>
 <h2>Apple Token APIs</h2>
 <p>Mint short-lived Apple-issued ES256 JWTs for client-side Apple SDKs. Both endpoints sign and cache a token in memory, returning the same <code>{ token, expiresAt }</code> shape and a <code>Cache-Control: private</code> header. They return <code>500</code> (with the missing env vars) when not configured.</p>

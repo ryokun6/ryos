@@ -40,9 +40,9 @@ describe("youbike stations", () => {
     expect(first.latitude).toBeGreaterThan(25);
     expect(first.longitude).toBeGreaterThan(121);
     expect(typeof first.bikesAvailable).toBe("number");
-    expect(data.sources?.some((source) => source.id === "taipei" && source.ok)).toBe(
-      true
-    );
+    expect(
+      data.sources?.some((source) => source.id === "national" && source.ok)
+    ).toBe(true);
   }, 20000);
 
   test("returns stations inside a Taichung bbox from the national dump", async () => {

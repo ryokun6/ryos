@@ -3,11 +3,9 @@ import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   YOUBIKE_FEED_TIMEOUT_MS,
-  YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS,
   feedCacheTtlSeconds,
   feedTimeoutMs,
   feedsIntersectingBBox,
-  shouldWaitForOptionalFeeds,
   youbikeFeedCacheKey,
   type YouBikeOpenDataFeed,
 } from "../../src/apps/maps/youbike/feeds";
@@ -185,23 +183,6 @@ async function loadFeed(
   return { payload, cacheHit: false };
 }
 
-function warmOptionalFeeds(
-  redis: RedisLike,
-  feeds: YouBikeOpenDataFeed[]
-): void {
-  for (const feed of feeds) {
-    void (async () => {
-      const cached = await readCachedFeed(redis, feed);
-      if (cached) return;
-      const payload = await fetchFeed(
-        feed,
-        feedTimeoutMs(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
-      );
-      await writeCachedFeed(redis, feed, payload);
-    })();
-  }
-}
-
 async function loadStationsForBBox(
   redis: RedisLike,
   bbox: GeoBBox | null
@@ -216,78 +197,19 @@ async function loadStationsForBBox(
     return { fetchedAt: Date.now(), stations: [], sources: [], cacheHit: true };
   }
 
-  const required = relevant.filter((feed) => !feed.optional);
-  const optional = relevant.filter((feed) => feed.optional);
-
-  const waitForOptional = shouldWaitForOptionalFeeds(
-    bbox,
-    required,
-    optional
-  );
-
-  const requiredResults = await Promise.all(
-    required.map((feed) =>
+  const results = await Promise.all(
+    relevant.map((feed) =>
       loadFeed(redis, feed, feedTimeoutMs(feed, YOUBIKE_FEED_TIMEOUT_MS))
     )
   );
 
-  const optionalCached: CachedFeed[] = [];
-  const optionalToWarm: YouBikeOpenDataFeed[] = [];
-  for (const feed of optional) {
-    const cached = await readCachedFeed(redis, feed);
-    if (cached) {
-      optionalCached.push(cached);
-    } else {
-      optionalToWarm.push(feed);
-    }
-  }
-
-  let optionalFresh: { payload: CachedFeed; cacheHit: boolean }[] = [];
-  if (waitForOptional && optionalToWarm.length > 0) {
-    optionalFresh = await Promise.all(
-      optionalToWarm.map((feed) =>
-        loadFeed(
-          redis,
-          feed,
-          feedTimeoutMs(feed, YOUBIKE_OPTIONAL_FEED_TIMEOUT_MS)
-        )
-      )
-    );
-  } else if (optionalToWarm.length > 0) {
-    warmOptionalFeeds(redis, optionalToWarm);
-  }
-
-  const payloads = [
-    ...requiredResults.map((result) => result.payload),
-    ...optionalCached,
-    ...optionalFresh.map((result) => result.payload),
-  ];
-  const cacheHit =
-    payloads.length > 0 &&
-    requiredResults.every((result) => result.cacheHit) &&
-    optionalFresh.every((result) => result.cacheHit);
-
   return {
-    fetchedAt: Math.max(Date.now(), ...payloads.map((p) => p.fetchedAt)),
-    stations: mergeYouBikeStations(payloads.map((payload) => payload.stations)),
-    sources: [
-      ...requiredResults.map((result) => result.payload.status),
-      ...optionalCached.map((payload) => payload.status),
-      ...optionalFresh.map((result) => result.payload.status),
-      ...(!waitForOptional
-        ? optionalToWarm.map(
-            (feed) =>
-              ({
-                id: feed.id,
-                city: feed.city,
-                ok: false,
-                count: 0,
-                error: "deferred",
-              }) satisfies YouBikeFeedStatus
-          )
-        : []),
-    ],
-    cacheHit,
+    fetchedAt: Math.max(Date.now(), ...results.map((result) => result.payload.fetchedAt)),
+    stations: mergeYouBikeStations(
+      results.map((result) => result.payload.stations)
+    ),
+    sources: results.map((result) => result.payload.status),
+    cacheHit: results.every((result) => result.cacheHit),
   };
 }
 
