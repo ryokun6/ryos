@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  TAIWAN_BBOX,
   parseBBoxQuery,
   filterStationsInBBox,
   regionFittingPoints,
 } from "../../../src/apps/maps/youbike/geo";
-import { feedsIntersectingBBox } from "../../../src/apps/maps/youbike/feeds";
+import {
+  YOUBIKE_OPEN_DATA_FEEDS,
+  feedsIntersectingBBox,
+} from "../../../src/apps/maps/youbike/feeds";
 import {
   mergeYouBikeStations,
   parseYouBikeStations,
@@ -47,6 +51,101 @@ describe("parseYouBikeStations", () => {
       latitude: 25.02605,
       longitude: 121.5436,
     });
+  });
+
+  test("parses the official national YouBike 2.0 dump schema", () => {
+    const stations = parseYouBikeStations(
+      [
+        {
+          country_code: "00",
+          area_code: "01",
+          type: 2,
+          status: 1,
+          station_no: "500601001",
+          name_tw: "綠川東中山路口",
+          district_tw: "中區",
+          address_tw: "綠川東街/中山路口(東側)",
+          name_en: "Luchuan E. St. / Zhongshan Rd.",
+          district_en: "Central Dist",
+          address_en: "Luchuan E. St. & Zhongshan Rd. Intersection (East)",
+          parking_spaces: 16,
+          available_spaces: 6,
+          empty_spaces: 10,
+          lat: "24.13785",
+          lng: "120.68337",
+          updated_at: "2026-09-26 20:29:31",
+        },
+      ],
+      { source: "national", city: "unknown" }
+    );
+    expect(stations).toHaveLength(1);
+    expect(stations[0]).toMatchObject({
+      id: "youbike:taichung:500601001",
+      stationId: "500601001",
+      city: "taichung",
+      name: "綠川東中山路口",
+      nameEn: "Luchuan E. St. / Zhongshan Rd.",
+      address: "綠川東街/中山路口(東側)",
+      area: "中區",
+      bikesAvailable: 6,
+      docksAvailable: 10,
+      totalDocks: 16,
+      isActive: true,
+      latitude: 24.13785,
+      longitude: 120.68337,
+      source: "national",
+    });
+  });
+
+  test("maps national dump prefixes to Kaohsiung and Tainan", () => {
+    const stations = parseYouBikeStations(
+      [
+        {
+          station_no: "501201001",
+          name_tw: "捷運美麗島站",
+          available_spaces: 3,
+          empty_spaces: 12,
+          parking_spaces: 15,
+          lat: 22.63213,
+          lng: 120.30212,
+          status: 1,
+        },
+        {
+          station_no: "501301001",
+          name_tw: "臺南火車站",
+          available_spaces: 4,
+          empty_spaces: 8,
+          parking_spaces: 12,
+          lat: 22.997,
+          lng: 120.213,
+          status: 1,
+        },
+      ],
+      { source: "national", city: "unknown" }
+    );
+    expect(stations.map((station) => station.city)).toEqual([
+      "kaohsiung",
+      "tainan",
+    ]);
+  });
+
+  test("treats national dump status=2 as inactive", () => {
+    const stations = parseYouBikeStations(
+      [
+        {
+          station_no: "500601002",
+          name_tw: "維修中",
+          available_spaces: 0,
+          empty_spaces: 10,
+          lat: 24.14,
+          lng: 120.68,
+          status: 2,
+        },
+      ],
+      { source: "national", city: "unknown" }
+    );
+    expect(stations).toHaveLength(1);
+    expect(stations[0].isActive).toBe(false);
   });
 
   test("parses MOTC TDX-style station objects", () => {
@@ -165,21 +264,45 @@ describe("filterStationsInBBox", () => {
 });
 
 describe("feedsIntersectingBBox", () => {
-  test("selects Taipei for a Xinyi viewport and skips Kaohsiung", () => {
-    const feeds = feedsIntersectingBBox({
+  test("uses the official YouBike app national dump as the only source", () => {
+    expect(YOUBIKE_OPEN_DATA_FEEDS).toHaveLength(1);
+    expect(YOUBIKE_OPEN_DATA_FEEDS[0]).toMatchObject({
+      id: "national",
+      url: "https://apis.youbike.com.tw/json/station-yb2.json",
+    });
+    expect(YOUBIKE_OPEN_DATA_FEEDS[0].bbox).toEqual(TAIWAN_BBOX);
+  });
+
+  test("selects the national dump for Taipei and Taichung viewports", () => {
+    const taipei = feedsIntersectingBBox({
       south: 25.02,
       west: 121.55,
       north: 25.05,
       east: 121.58,
     });
-    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
-    expect(feeds.some((feed) => feed.id === "kaohsiung")).toBe(false);
+    const taichung = feedsIntersectingBBox({
+      south: 24.12,
+      west: 120.64,
+      north: 24.16,
+      east: 120.7,
+    });
+    expect(taipei.map((feed) => feed.id)).toEqual(["national"]);
+    expect(taichung.map((feed) => feed.id)).toEqual(["national"]);
   });
 
-  test("without a bbox only returns required feeds", () => {
+  test("without a bbox returns the national dump", () => {
     const feeds = feedsIntersectingBBox(null);
-    expect(feeds.every((feed) => !feed.optional)).toBe(true);
-    expect(feeds.some((feed) => feed.id === "taipei")).toBe(true);
+    expect(feeds.map((feed) => feed.id)).toEqual(["national"]);
+  });
+
+  test("skips the dump for a viewport outside Taiwan", () => {
+    const feeds = feedsIntersectingBBox({
+      south: 37.7,
+      west: -122.5,
+      north: 37.8,
+      east: -122.4,
+    });
+    expect(feeds).toEqual([]);
   });
 });
 

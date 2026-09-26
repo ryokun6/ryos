@@ -26,6 +26,8 @@ export type YouBikeCityId =
   | "chiayi"
   | "tainan"
   | "kaohsiung"
+  | "pingtung"
+  | "taitung"
   | "unknown";
 
 export interface YouBikeStation {
