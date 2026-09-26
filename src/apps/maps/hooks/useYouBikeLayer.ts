@@ -15,7 +15,6 @@ import {
   bboxIntersectsTaiwan,
   filterStationsInBBox,
   isInTaiwan,
-  isValidCoordinate,
   padBBox,
   regionFittingPoints,
   type FittedMapRegion,
@@ -978,7 +977,7 @@ export function useYouBikeLayer({
       }
     };
 
-    const seed = geoPointFromCoords(map.userLocation?.coordinate ?? {});
+    const seed = geoPointFromCoords(map.userLocation?.coordinate);
     if (seed) {
       lastPoint = seed;
       setTrackedUser(seed);
@@ -1009,7 +1008,7 @@ export function useYouBikeLayer({
         applyFix(fromEvent, watch.source === "geolocation" ? "geolocation" : "mapkit");
         return;
       }
-      const fromMap = geoPointFromCoords(map.userLocation?.coordinate ?? {});
+      const fromMap = geoPointFromCoords(map.userLocation?.coordinate);
       if (fromMap) {
         applyFix(fromMap, watch.source === "geolocation" ? "geolocation" : "mapkit");
       }
@@ -1072,7 +1071,7 @@ export function useYouBikeLayer({
       }
       const point =
         coordinateFromUserLocationEvent(event) ??
-        geoPointFromCoords(map.userLocation?.coordinate ?? {});
+        geoPointFromCoords(map.userLocation?.coordinate);
       if (!point) {
         setTrackedUser(null);
         return;

@@ -114,6 +114,8 @@ describe("coordinateFromUserLocationEvent", () => {
     expect(coordinateFromUserLocationEvent(undefined)).toBeNull();
     expect(coordinateFromUserLocationEvent({})).toBeNull();
     expect(geoPointFromCoords({ latitude: "x", longitude: 121 })).toBeNull();
+    expect(geoPointFromCoords(undefined)).toBeNull();
+    expect(geoPointFromCoords({})).toBeNull();
   });
 });
 

@@ -69,10 +69,16 @@ export function isDistinctUserLocation(
   );
 }
 
-export function geoPointFromCoords(coords: {
-  latitude: unknown;
-  longitude: unknown;
-}): GeoPoint | null {
+export function geoPointFromCoords(
+  coords:
+    | {
+        latitude?: unknown;
+        longitude?: unknown;
+      }
+    | null
+    | undefined
+): GeoPoint | null {
+  if (!coords) return null;
   const point = {
     latitude: Number(coords.latitude),
     longitude: Number(coords.longitude),
