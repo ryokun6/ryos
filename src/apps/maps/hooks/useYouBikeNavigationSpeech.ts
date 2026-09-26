@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
-import { useTtsQueue } from "@/hooks/useTtsQueue";
-import { cleanTextForSpeech } from "@/apps/chats/utils/textForSpeech";
+import { useTranslation } from "react-i18next";
+import {
+  primeAssistantSpeech,
+  speakAssistantText,
+  stopAssistantSpeech,
+} from "@/components/assistant/assistantSpeech";
 import {
   youbikeNavAnnounce,
   type YouBikeNavAnnounceResult,
@@ -9,6 +13,9 @@ import {
   cancelYouBikeNavigationSpeech,
   registerYouBikeNavigationSpeechStop,
 } from "../youbike/navigationSpeech";
+
+/** Same gesture set the floating assistant uses to unlock iOS Safari TTS. */
+const SPEECH_UNLOCK_EVENTS = ["pointerdown", "touchend", "keydown"] as const;
 
 export function useYouBikeNavigationSpeech(options: {
   enabled: boolean;
@@ -26,8 +33,7 @@ export function useYouBikeNavigationSpeech(options: {
     labelForIndex,
     thenPhrase,
   } = options;
-
-  const { speak, stop, unlock } = useTtsQueue();
+  const { i18n } = useTranslation();
 
   const stateRef = useRef({
     lastSpokenIndex: null as number | null,
@@ -37,39 +43,30 @@ export function useYouBikeNavigationSpeech(options: {
   const wasEnabledRef = useRef(false);
   const labelForIndexRef = useRef(labelForIndex);
   const thenPhraseRef = useRef(thenPhrase);
-  const speakRef = useRef(speak);
-  const stopRef = useRef(stop);
-  const unlockRef = useRef(unlock);
+  const localeRef = useRef(i18n.language);
   labelForIndexRef.current = labelForIndex;
   thenPhraseRef.current = thenPhrase;
-  speakRef.current = speak;
-  stopRef.current = stop;
-  unlockRef.current = unlock;
+  localeRef.current = i18n.language;
 
-  useEffect(() => registerYouBikeNavigationSpeechStop(stop), [stop]);
+  useEffect(
+    () => registerYouBikeNavigationSpeechStop(stopAssistantSpeech),
+    []
+  );
 
   const playCue = useCallback(
-    (
-      text: string,
-      options: { fromGesture: boolean; replace: boolean }
-    ) => {
-      const spoken = cleanTextForSpeech(text);
-      if (!spoken) return;
-      // Chat's speaker button stop()s only when replacing a clip. Doing
-      // that on Start aborted the in-gesture `/api/speech` fetch on iOS
-      // once the enabled-effect re-ran. Unlock is also inside speak().
-      if (options.replace) stopRef.current();
-      if (options.fromGesture) unlockRef.current();
-      speakRef.current(spoken);
+    (text: string, fromGesture: boolean) => {
+      if (!text.trim()) return;
+      // Browser Chat / floating assistant: prime inside the tap, then
+      // speakAssistantText (speechSynthesis). iOS drops a speak() that is
+      // not in a gesture until the first in-gesture utterance starts.
+      if (fromGesture) primeAssistantSpeech();
+      speakAssistantText(text, { locale: localeRef.current });
     },
     []
   );
 
   const applyDecision = useCallback(
-    (
-      decision: YouBikeNavAnnounceResult,
-      play: { fromGesture: boolean; replace: boolean }
-    ) => {
+    (decision: YouBikeNavAnnounceResult, fromGesture: boolean) => {
       stateRef.current = {
         lastSpokenIndex: decision.lastSpokenIndex,
         lastApproachIndex: decision.lastApproachIndex,
@@ -80,7 +77,7 @@ export function useYouBikeNavigationSpeech(options: {
       if (!label) return;
       const text =
         decision.kind === "approach" ? thenPhraseRef.current(label) : label;
-      playCue(text, play);
+      playCue(text, fromGesture);
     },
     [playCue]
   );
@@ -98,7 +95,7 @@ export function useYouBikeNavigationSpeech(options: {
           lastSpeakAtMs: 0,
           nowMs: Date.now(),
         }),
-        { fromGesture: true, replace: false }
+        true
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -118,7 +115,7 @@ export function useYouBikeNavigationSpeech(options: {
           lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
           nowMs: Date.now(),
         }),
-        { fromGesture: true, replace: true }
+        true
       );
     },
     [applyDecision, remainingMeters, stepCount]
@@ -139,8 +136,8 @@ export function useYouBikeNavigationSpeech(options: {
     }
     const justEnabled = !wasEnabledRef.current;
     wasEnabledRef.current = true;
-    // Start already spoke in the tap. Do not stop()+speak() again here —
-    // that races the in-flight /api/speech request outside the gesture.
+    // Start already spoke in the tap. Do not cancel+speak again here —
+    // iOS would drop the replacement speak() outside the gesture.
     if (justEnabled) return;
     applyDecision(
       youbikeNavAnnounce({
@@ -153,9 +150,28 @@ export function useYouBikeNavigationSpeech(options: {
         lastSpeakAtMs: stateRef.current.lastSpeakAtMs,
         nowMs: Date.now(),
       }),
-      { fromGesture: false, replace: true }
+      false
     );
   }, [applyDecision, enabled, focusedIndex, remainingMeters, stepCount]);
+
+  // Same capture listeners as useAssistantSpeech: a later tap re-speaks a
+  // GPS cue iOS dropped, and keeps synthesis unlocked after Start.
+  useEffect(() => {
+    if (!enabled) return;
+    if (typeof document === "undefined") return;
+    const unlock = () => primeAssistantSpeech();
+    SPEECH_UNLOCK_EVENTS.forEach((event) =>
+      document.addEventListener(event, unlock, {
+        capture: true,
+        passive: true,
+      })
+    );
+    return () => {
+      SPEECH_UNLOCK_EVENTS.forEach((event) =>
+        document.removeEventListener(event, unlock, true)
+      );
+    };
+  }, [enabled]);
 
   useEffect(() => () => cancelYouBikeNavigationSpeech(), []);
 

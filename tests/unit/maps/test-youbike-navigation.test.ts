@@ -204,7 +204,7 @@ describe("youbike navigation speech stop registration", () => {
     __resetYouBikeNavigationSpeechForTests();
   });
 
-  test("cancel invokes the registered Chat/Ryo TTS stop", () => {
+  test("cancel invokes the registered assistant browser TTS stop", () => {
     let stopped = 0;
     const unregister = registerYouBikeNavigationSpeechStop(() => {
       stopped += 1;
@@ -216,7 +216,7 @@ describe("youbike navigation speech stop registration", () => {
     expect(stopped).toBe(1);
   });
 
-  test("hooks Chat/Ryo useTtsQueue instead of isolated speechSynthesis", () => {
+  test("hooks floating-assistant browser TTS instead of useTtsQueue", () => {
     const hook = readFileSync(
       resolve(import.meta.dir, "../../../src/apps/maps/hooks/useYouBikeNavigationSpeech.ts"),
       "utf8"
@@ -229,25 +229,16 @@ describe("youbike navigation speech stop registration", () => {
       resolve(import.meta.dir, "../../../src/apps/maps/components/MapsYouBikeRouteCard.tsx"),
       "utf8"
     );
-    const tts = readFileSync(
-      resolve(import.meta.dir, "../../../src/hooks/useTtsQueue.ts"),
-      "utf8"
-    );
-    const audio = readFileSync(
-      resolve(import.meta.dir, "../../../src/lib/audioContext.ts"),
-      "utf8"
-    );
-    expect(hook).toContain('from "@/hooks/useTtsQueue"');
-    expect(hook).toContain("cleanTextForSpeech");
-    expect(hook).toContain("unlock");
-    expect(hook).toContain("fromGesture: true, replace: false");
+    expect(hook).toContain("primeAssistantSpeech");
+    expect(hook).toContain("speakAssistantText");
+    expect(hook).toContain("stopAssistantSpeech");
     expect(hook).toContain("justEnabled");
-    expect(hook).not.toContain("resumeAudioContext");
     expect(hook).toContain("speakManualAdvance");
-    expect(speech).not.toContain("createSpeechUtterance");
-    expect(tts).toContain("unlockAudioFromGesture");
-    expect(tts).toContain("allowRecreate: false");
-    expect(audio).toContain("export function unlockAudioFromGesture");
+    expect(hook).not.toContain("useTtsQueue");
+    expect(hook).not.toContain("/api/speech");
+    expect(hook).not.toContain("resumeAudioContext");
+    expect(speech).toContain("speakAssistantText");
+    expect(speech).not.toContain("useTtsQueue");
     expect(card).toContain("<Play");
     expect(card).toContain("<Square");
     expect(card).toMatch(
@@ -263,6 +254,6 @@ describe("youbike navigation speech stop registration", () => {
       card.indexOf("onStartNavigation?.()")
     );
     expect(card).not.toMatch(/<svg[\s>]/);
-    expect(card).not.toContain("createSpeechUtterance");
+    expect(card).not.toContain("useTtsQueue");
   });
 });

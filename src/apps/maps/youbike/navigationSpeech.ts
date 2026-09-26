@@ -1,7 +1,8 @@
 /**
- * YouBike turn-by-turn speech uses the same Chat / Ryo `useTtsQueue` pipeline
- * (`speak` → `/api/speech` → shared `AudioContext`). This module only holds
- * the active hook's `stop` so Stop / Done / clear-route can cancel from
+ * YouBike turn-by-turn speech uses the same browser TTS path as the
+ * in-browser floating assistant (`primeAssistantSpeech` +
+ * `speakAssistantText` → `speechSynthesis`). This module only holds the
+ * active hook's `stop` so Stop / Done / clear-route can cancel from
  * outside the card.
  */
 
@@ -9,7 +10,7 @@ type StopFn = () => void;
 
 let activeStop: StopFn | null = null;
 
-/** Bind the mounted navigation hook's `useTtsQueue().stop`. */
+/** Bind the mounted navigation hook's assistant `stopAssistantSpeech`. */
 export function registerYouBikeNavigationSpeechStop(
   stop: StopFn
 ): () => void {
