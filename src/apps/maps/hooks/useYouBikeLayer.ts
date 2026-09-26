@@ -52,6 +52,14 @@ import {
 } from "../youbike/routeSteps";
 import { cancelYouBikeNavigationSpeech } from "../youbike/navigationSpeech";
 import {
+  coordinateFromUserLocationEvent,
+  createYouBikeUserPuckElement,
+  geoPointFromCoords,
+  isDistinctUserLocation,
+  shouldWatchYouBikeUserLocation,
+  startYouBikeUserLocationWatch,
+} from "../youbike/locationWatch";
+import {
   extractMapKitRouteMetrics,
   extractMapKitRoutePath,
   extractMapKitRouteSteps,
@@ -72,8 +80,6 @@ const REGION_FETCH_DEBOUNCE_MS = 280;
 const RENDER_PAD_FACTOR = 0.1;
 /** Locate Me can flip on before the first user-location-change event. */
 const USER_LOCATION_POLL_MS = 2000;
-/** Ignore sub-meter jitter so step progress does not re-render every fix. */
-const USER_LOCATION_DEDUP_DEG = 1e-5;
 
 export interface UseYouBikeLayerArgs {
   enabled: boolean;
@@ -87,6 +93,10 @@ export interface UseYouBikeLayerArgs {
   recordRecentPlace: (place: SavedPlace) => void;
   savedPlaceIds: Set<string>;
   isDarkMode: boolean;
+  /** Toolbar / menu Locate Me is on. */
+  locateMeEnabled: boolean;
+  /** YouBike Start Navigation is active. */
+  isNavigating: boolean;
 }
 
 function regionToBBox(region: ReturnType<typeof readMapRegion>): GeoBBox | null {
@@ -290,6 +300,8 @@ export function useYouBikeLayer({
   recordRecentPlace,
   savedPlaceIds,
   isDarkMode,
+  locateMeEnabled,
+  isNavigating,
 }: UseYouBikeLayerArgs) {
   const colorScheme = youbikeMapScheme(isDarkMode);
   const [stations, setStations] = useState<YouBikeStation[]>([]);
@@ -321,6 +333,65 @@ export function useYouBikeLayer({
   const onSelectStationRef = useRef<(station: YouBikeStation) => void>(
     () => undefined
   );
+  const userPuckRef = useRef<MapKitMarkerAnnotation | null>(null);
+  const wasWatchingRef = useRef(false);
+
+  const removeUserPuck = useCallback(() => {
+    const map = mapInstanceRef.current;
+    const puck = userPuckRef.current;
+    userPuckRef.current = null;
+    if (!puck || !map) return;
+    try {
+      map.removeAnnotation(puck);
+    } catch {
+      // ignore
+    }
+  }, [mapInstanceRef]);
+
+  const upsertUserPuck = useCallback(
+    (point: GeoPoint) => {
+      const mk = getMapKit();
+      const map = mapInstanceRef.current;
+      if (!mk || !map) return;
+      const coord = new mk.Coordinate(point.latitude, point.longitude);
+      if (userPuckRef.current) {
+        userPuckRef.current.coordinate = coord;
+        return;
+      }
+      try {
+        const annotation = mk.Annotation
+          ? new mk.Annotation(coord, createYouBikeUserPuckElement, {
+              title: "",
+              calloutEnabled: false,
+              animates: false,
+            })
+          : new mk.MarkerAnnotation(coord, {
+              title: "",
+              calloutEnabled: false,
+              color: "#007aff",
+            });
+        map.addAnnotation(annotation);
+        userPuckRef.current = annotation;
+      } catch {
+        // ignore
+      }
+    },
+    [mapInstanceRef]
+  );
+
+  const followUserOnMap = useCallback((point: GeoPoint) => {
+    const mk = getMapKit();
+    const map = mapInstanceRef.current;
+    if (!mk || !map) return;
+    try {
+      map.setCenterAnimated(
+        new mk.Coordinate(point.latitude, point.longitude),
+        true
+      );
+    } catch {
+      // ignore
+    }
+  }, [mapInstanceRef]);
 
   const clearStationAnnotations = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -622,8 +693,9 @@ export function useYouBikeLayer({
     return () => {
       clearStationAnnotations();
       clearRouteOverlays();
+      removeUserPuck();
     };
-  }, [clearRouteOverlays, clearStationAnnotations]);
+  }, [clearRouteOverlays, clearStationAnnotations, removeUserPuck]);
 
   const drawRouteOverlays = useCallback(
     (plan: YouBikeRoutePlan) => {
@@ -865,9 +937,118 @@ export function useYouBikeLayer({
     setRouteError(null);
     setIsRouting(false);
     clearRouteOverlays();
-  }, [clearRouteOverlays]);
+    removeUserPuck();
+  }, [clearRouteOverlays, removeUserPuck]);
 
   useEffect(() => {
+    const shouldWatch = shouldWatchYouBikeUserLocation({
+      locateMeEnabled,
+      isNavigating,
+    });
+    if (!shouldWatch || mapReadyTick === 0) {
+      removeUserPuck();
+      if (wasWatchingRef.current && locateMeEnabled && mapReadyTick !== 0) {
+        const map = mapInstanceRef.current;
+        if (map) {
+          map.showsUserLocation = true;
+          map.tracksUserLocation = true;
+        }
+      }
+      if (!shouldWatch) wasWatchingRef.current = false;
+      if (!shouldWatch && !locateMeEnabled && !routePlan) {
+        setLocationTracking(false);
+        setTrackedUser(null);
+      }
+      return;
+    }
+    wasWatchingRef.current = true;
+
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    setLocationTracking(true);
+    let lastPoint: GeoPoint | null = null;
+    const applyFix = (point: GeoPoint, mode: "geolocation" | "mapkit") => {
+      if (!isDistinctUserLocation(lastPoint, point)) return;
+      lastPoint = point;
+      setTrackedUser(point);
+      if (mode === "geolocation") {
+        followUserOnMap(point);
+        upsertUserPuck(point);
+      }
+    };
+
+    const seed = geoPointFromCoords(map.userLocation?.coordinate ?? {});
+    if (seed) {
+      lastPoint = seed;
+      setTrackedUser(seed);
+    }
+
+    const geolocation =
+      typeof navigator !== "undefined" ? navigator.geolocation : null;
+    const watch = startYouBikeUserLocationWatch({
+      geolocation,
+      onUpdate: (point) => applyFix(point, "geolocation"),
+    });
+
+    if (watch.source === "geolocation") {
+      map.showsUserLocation = false;
+      map.tracksUserLocation = false;
+      if (seed) {
+        followUserOnMap(seed);
+        upsertUserPuck(seed);
+      }
+    } else {
+      map.showsUserLocation = true;
+      map.tracksUserLocation = true;
+    }
+
+    const onMapkitLocation = (event?: unknown) => {
+      const fromEvent = coordinateFromUserLocationEvent(event);
+      if (fromEvent) {
+        applyFix(fromEvent, watch.source === "geolocation" ? "geolocation" : "mapkit");
+        return;
+      }
+      const fromMap = geoPointFromCoords(map.userLocation?.coordinate ?? {});
+      if (fromMap) {
+        applyFix(fromMap, watch.source === "geolocation" ? "geolocation" : "mapkit");
+      }
+    };
+    if (watch.source === "none") {
+      map.addEventListener?.("user-location-change", onMapkitLocation);
+    }
+
+    return () => {
+      watch.stop();
+      if (watch.source === "none") {
+        try {
+          map.removeEventListener?.("user-location-change", onMapkitLocation);
+        } catch {
+          // ignore
+        }
+      }
+      removeUserPuck();
+    };
+  }, [
+    followUserOnMap,
+    isNavigating,
+    locateMeEnabled,
+    mapInstanceRef,
+    mapReadyTick,
+    removeUserPuck,
+    routePlan,
+    upsertUserPuck,
+  ]);
+
+  useEffect(() => {
+    if (
+      shouldWatchYouBikeUserLocation({
+        locateMeEnabled,
+        isNavigating,
+      })
+    ) {
+      return;
+    }
     if (!routePlan || mapReadyTick === 0) {
       setLocationTracking(false);
       setTrackedUser(null);
@@ -880,50 +1061,35 @@ export function useYouBikeLayer({
       return;
     }
 
-    let lastLat = Number.NaN;
-    let lastLng = Number.NaN;
-    const readUserLocation = () => {
+    let lastPoint: GeoPoint | null = null;
+    const readUserLocation = (event?: unknown) => {
       const tracking = map.showsUserLocation || map.tracksUserLocation;
       setLocationTracking(tracking);
       if (!tracking) {
-        lastLat = Number.NaN;
-        lastLng = Number.NaN;
+        lastPoint = null;
         setTrackedUser(null);
         return;
       }
-      const coordinate = map.userLocation?.coordinate;
-      if (
-        !coordinate ||
-        !isValidCoordinate({
-          latitude: coordinate.latitude,
-          longitude: coordinate.longitude,
-        })
-      ) {
+      const point =
+        coordinateFromUserLocationEvent(event) ??
+        geoPointFromCoords(map.userLocation?.coordinate ?? {});
+      if (!point) {
         setTrackedUser(null);
         return;
       }
-      if (
-        Math.abs(coordinate.latitude - lastLat) < USER_LOCATION_DEDUP_DEG &&
-        Math.abs(coordinate.longitude - lastLng) < USER_LOCATION_DEDUP_DEG
-      ) {
-        return;
-      }
-      lastLat = coordinate.latitude;
-      lastLng = coordinate.longitude;
-      setTrackedUser({
-        latitude: coordinate.latitude,
-        longitude: coordinate.longitude,
-      });
+      if (!isDistinctUserLocation(lastPoint, point)) return;
+      lastPoint = point;
+      setTrackedUser(point);
     };
 
     readUserLocation();
     map.addEventListener?.("user-location-change", readUserLocation);
-    const timer = window.setInterval(readUserLocation, USER_LOCATION_POLL_MS);
+    const timer = window.setInterval(() => readUserLocation(), USER_LOCATION_POLL_MS);
     return () => {
       map.removeEventListener?.("user-location-change", readUserLocation);
       window.clearInterval(timer);
     };
-  }, [mapInstanceRef, mapReadyTick, routePlan]);
+  }, [isNavigating, locateMeEnabled, mapInstanceRef, mapReadyTick, routePlan]);
 
   const activeStepIndex = useMemo(() => {
     if (!locationTracking || !trackedUser || !routePlan) return null;

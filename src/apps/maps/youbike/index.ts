@@ -6,3 +6,4 @@ export * from "./nearestStations";
 export * from "./routePlan";
 export * from "./bikeRoute";
 export * from "./mapKitRoute";
+export * from "./locationWatch";

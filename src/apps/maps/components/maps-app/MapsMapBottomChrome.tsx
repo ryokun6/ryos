@@ -13,6 +13,7 @@ export interface MapsMapBottomChromeProps {
   zoomOutTitle: string;
   zoomInTitle: string;
   locateMeTitle: string;
+  locateMePressed?: boolean;
   placesTitle: string;
   canUseMap: boolean;
   isPlacesDrawerOpen: boolean;
@@ -33,6 +34,7 @@ export function MapsMapBottomChrome({
   zoomOutTitle,
   zoomInTitle,
   locateMeTitle,
+  locateMePressed = false,
   placesTitle,
   canUseMap,
   isPlacesDrawerOpen,
@@ -88,6 +90,7 @@ export function MapsMapBottomChrome({
           disabled={!canUseMap}
           title={locateMeTitle}
           aria-label={locateMeTitle}
+          aria-pressed={locateMePressed}
           className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
         >
           <NavigationArrow size={12} weight="fill" />

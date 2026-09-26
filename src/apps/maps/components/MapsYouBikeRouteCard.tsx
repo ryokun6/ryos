@@ -44,8 +44,10 @@ export interface MapsYouBikeRouteCardProps {
   activeStepIndex?: number | null;
   /** Live user point while Locate Me is tracking; used for remaining distance. */
   userLocation?: GeoPoint | null;
-  /** Enable map user-location tracking when starting navigation. */
-  onStartNavigation?: () => void;
+  /** Locate Me is on — keep the camera on the rider instead of framing each step. */
+  followUserLocation?: boolean;
+  /** Start / Stop Navigation so the map can start or tear down a GPS watch. */
+  onNavigatingChange?: (active: boolean) => void;
 }
 
 type StepProgress = "idle" | "past" | "current" | "later";
@@ -343,7 +345,8 @@ export function MapsYouBikeRouteCard({
   onSelectStep,
   activeStepIndex = null,
   userLocation = null,
-  onStartNavigation,
+  followUserLocation = false,
+  onNavigatingChange,
 }: MapsYouBikeRouteCardProps) {
   const { t } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
@@ -395,14 +398,15 @@ export function MapsYouBikeRouteCard({
     setIsNavigating(false);
     setManualIndex(0);
     cancel();
-  }, [plan, cancel]);
+    onNavigatingChange?.(false);
+  }, [plan, cancel, onNavigatingChange]);
 
   const handleSelectStep = useCallback(
     (step: YouBikeRouteStep, index: number) => {
       setSelectedIndex(index);
-      onSelectStep?.(step);
+      if (!followUserLocation) onSelectStep?.(step);
     },
-    [onSelectStep]
+    [followUserLocation, onSelectStep]
   );
 
   const handleStartNavigation = useCallback(() => {
@@ -412,29 +416,42 @@ export function MapsYouBikeRouteCard({
       gpsIndex: activeStepIndex,
       manualIndex: 0,
     });
-    // Speak/unlock in this tap before MapKit location. Enabling
+    // Speak/unlock in this tap before any location prompt. Enabling
     // showsUserLocation can present a permission dialog and end the
-    // iOS Safari gesture window Chat uses to start `/api/speech`.
+    // iOS Safari gesture window used to start speechSynthesis.
     speakStart(index);
-    onStartNavigation?.();
+    onNavigatingChange?.(true);
     setManualIndex(index);
     setSelectedIndex(index);
     setShowSteps(false);
     setIsNavigating(true);
     const step = steps[index];
-    if (step) onSelectStep?.(step);
-  }, [activeStepIndex, onSelectStep, onStartNavigation, speakStart, steps]);
+    if (step && !followUserLocation) onSelectStep?.(step);
+  }, [
+    activeStepIndex,
+    followUserLocation,
+    onNavigatingChange,
+    onSelectStep,
+    speakStart,
+    steps,
+  ]);
 
   const handleStopNavigation = useCallback(() => {
     cancel();
     setIsNavigating(false);
-  }, [cancel]);
+    onNavigatingChange?.(false);
+  }, [cancel, onNavigatingChange]);
 
   const handleClose = useCallback(() => {
     cancel();
     setIsNavigating(false);
+    onNavigatingChange?.(false);
     onClose();
-  }, [cancel, onClose]);
+  }, [cancel, onClose, onNavigatingChange]);
+
+  useEffect(() => {
+    return () => onNavigatingChange?.(false);
+  }, [onNavigatingChange]);
 
   const stepsRef = useRef(steps);
   const onSelectStepRef = useRef(onSelectStep);
@@ -442,10 +459,10 @@ export function MapsYouBikeRouteCard({
   onSelectStepRef.current = onSelectStep;
 
   useEffect(() => {
-    if (!isNavigating) return;
+    if (!isNavigating || followUserLocation) return;
     const step = stepsRef.current[focusedIndex];
     if (step) onSelectStepRef.current?.(step);
-  }, [focusedIndex, isNavigating]);
+  }, [focusedIndex, followUserLocation, isNavigating]);
 
   return (
     <AnimatePresence>
