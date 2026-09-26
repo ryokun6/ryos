@@ -50,11 +50,16 @@ import {
 import {
   clampMapSpanDegrees,
   defaultTaipeiMapRegion,
+  geoIpCityMapRegion,
   initialHomeMapRegion,
   initialMapFrameSpanDeg,
   readMapRegion,
   statusMessageKey,
 } from "./mapRegionUtils";
+import {
+  fetchApproximateCityLocation,
+  peekApproximateCityLocation,
+} from "../../utils/ipGeolocation";
 
 export type UseMapsAppControllerArgs = Pick<AppProps, "isWindowOpen">;
 
@@ -232,17 +237,19 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     if (mapInstanceRef.current) return;
     if (!mapSurfaceEl) return;
 
-    // Default region: Taipei city-wide. Used only when there is no persisted
-    // selected place, granted geolocation, or saved Home. Locate Me / Home
-    // start use the closer neighborhood span instead.
-    const taipei = defaultTaipeiMapRegion();
+    // Immediate city-wide boot: GeoIP if the hint already resolved,
+    // otherwise Taipei until first-open framing replaces it.
+    const geoHint = peekApproximateCityLocation();
+    const boot = geoHint
+      ? geoIpCityMapRegion(geoHint)
+      : defaultTaipeiMapRegion();
     const center = new mk.Coordinate(
-      taipei.center.latitude,
-      taipei.center.longitude
+      boot.center.latitude,
+      boot.center.longitude
     );
     const span = new mk.CoordinateSpan(
-      taipei.span.latitudeDelta,
-      taipei.span.longitudeDelta
+      boot.span.latitudeDelta,
+      boot.span.longitudeDelta
     );
     const region = new mk.CoordinateRegion(center, span);
 
@@ -959,6 +966,13 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     dispatchUi({ type: "setSelectedResultId", id: null });
   }, [selectedResultId, isPlaceSaved]);
 
+  // Prefetch GeoIP as soon as Maps is open so first-open framing (and the
+  // MapKit boot region) can use an approximate city instead of Taipei.
+  useEffect(() => {
+    if (!isWindowOpen) return;
+    void fetchApproximateCityLocation();
+  }, [isWindowOpen]);
+
   // On first map ready, frame the viewport so the user immediately sees
   // a useful region. Priority order:
   //   1. Persisted `selectedPlace` — re-drop / re-center on the open card
@@ -968,7 +982,8 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   //      the dedicated "Locate Me" button is the right place for that.
   //      Silent granted-GPS framing stays city-wide.
   //   3. The user's saved Home — neighborhood / street zoom around it
-  //   4. Otherwise, leave the map at the Taipei default region
+  //   4. Approximate GeoIP city (city-wide)
+  //   5. Otherwise, leave the map at the Taipei last-resort region
   // Guarded so it only fires once per live MapKit map (including after the
   // surface remounts from minimize): subsequent user-driven selections go
   // through `dropPinAt` / `focusSavedPlace` directly.
@@ -1021,7 +1036,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       map.setRegionAnimated(region, true);
     };
 
-    const frameAtHomeOrSkip = () => {
+    const frameAtHomeOrGeoIp = () => {
       if (cancelled) return;
       // Read the latest persisted home directly from the store rather
       // than the captured closure value — the persist hydration can land
@@ -1035,8 +1050,18 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
           focused.center.longitude,
           focused.span.latitudeDelta
         );
+        return;
       }
-      // No home set — leave the map at its Taipei default region.
+      void fetchApproximateCityLocation().then((geo) => {
+        if (cancelled) return;
+        if (!geo) return;
+        const city = geoIpCityMapRegion(geo);
+        frameAround(
+          city.center.latitude,
+          city.center.longitude,
+          initialMapFrameSpanDeg("geoip")
+        );
+      });
     };
 
     const tryUseCurrentLocation = (): boolean => {
@@ -1047,7 +1072,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
       const timer = window.setTimeout(() => {
         if (resolved) return;
         resolved = true;
-        frameAtHomeOrSkip();
+        frameAtHomeOrGeoIp();
       }, INITIAL_LOCATION_TIMEOUT_MS);
 
       navigator.geolocation.getCurrentPosition(
@@ -1065,7 +1090,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
           if (resolved) return;
           resolved = true;
           window.clearTimeout(timer);
-          frameAtHomeOrSkip();
+          frameAtHomeOrGeoIp();
         },
         { timeout: INITIAL_LOCATION_TIMEOUT_MS, maximumAge: 5 * 60 * 1000 }
       );
@@ -1075,7 +1100,8 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     // Probe the Permissions API first so we only call `getCurrentPosition`
     // when the user has already granted access in a previous session.
     // Browsers without `permissions.query` (older Safari) fall back to
-    // home framing; the explicit "Locate Me" button still works there.
+    // Home / GeoIP framing; the explicit "Locate Me" button still works
+    // there.
     const permissions = (
       typeof navigator !== "undefined"
         ? (navigator as Navigator & {
@@ -1095,18 +1121,18 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
           if (cancelled) return;
           if (result.state === "granted") {
             if (!tryUseCurrentLocation()) {
-              frameAtHomeOrSkip();
+              frameAtHomeOrGeoIp();
             }
             return;
           }
-          frameAtHomeOrSkip();
+          frameAtHomeOrGeoIp();
         })
         .catch(() => {
           if (cancelled) return;
-          frameAtHomeOrSkip();
+          frameAtHomeOrGeoIp();
         });
     } else {
-      frameAtHomeOrSkip();
+      frameAtHomeOrGeoIp();
     }
 
     return () => {

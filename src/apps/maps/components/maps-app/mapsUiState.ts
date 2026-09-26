@@ -108,12 +108,12 @@ export const FOCUS_PLACE_SPAN_DEG = 0.012;
 /** Same neighborhood span as place focus — Locate Me on / Home start camera. */
 export const LOCATE_ME_SPAN_DEG = FOCUS_PLACE_SPAN_DEG;
 
-// Wider span for the Taipei boot default and silent first-open framing
-// when geolocation is already granted. ~0.12° ≈ 13 km — city / metro.
+// Wider span for GeoIP city framing, silent granted-GPS first-open,
+// and the Taipei last-resort boot. ~0.12° ≈ 13 km — city / metro.
 // Home start and Locate Me use LOCATE_ME_SPAN_DEG instead.
 export const CITY_LEVEL_SPAN_DEG = 0.12;
 
-/** First-open camera when there is no selected place, Home, or granted geolocation. */
+/** Last-resort first-open camera when GeoIP has no usable city point. */
 export const DEFAULT_MAP_CENTER = {
   latitude: 25.03396,
   longitude: 121.56447,

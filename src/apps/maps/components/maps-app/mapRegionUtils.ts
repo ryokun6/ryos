@@ -56,15 +56,27 @@ export function initialHomeMapRegion(home: MapKitCoordinate): MapKitRegionLike {
   return locateMeFocusRegion(home);
 }
 
-export type InitialMapFrameTarget = "home" | "grantedLocation" | "defaultTaipei";
+export type InitialMapFrameTarget =
+  | "home"
+  | "grantedLocation"
+  | "geoip"
+  | "defaultTaipei";
 
-/** Home starts close; granted GPS / Taipei default stay city-wide. */
+/**
+ * Home starts close. Granted GPS, GeoIP city, and Taipei fallback stay
+ * city-wide so YouBike / metro overview is unchanged.
+ */
 export function initialMapFrameSpanDeg(target: InitialMapFrameTarget): number {
   return target === "home" ? LOCATE_ME_SPAN_DEG : CITY_LEVEL_SPAN_DEG;
 }
 
+/** Last-resort city-wide camera when GeoIP has no usable point. */
 export function defaultTaipeiMapRegion(): MapKitRegionLike {
   return squareMapRegion(DEFAULT_MAP_CENTER, CITY_LEVEL_SPAN_DEG);
+}
+
+export function geoIpCityMapRegion(center: MapKitCoordinate): MapKitRegionLike {
+  return squareMapRegion(center, CITY_LEVEL_SPAN_DEG);
 }
 
 export type LocateMeCameraMode = "focus" | "recenter" | "idle";

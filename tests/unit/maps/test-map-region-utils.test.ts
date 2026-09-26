@@ -9,6 +9,7 @@ import {
 } from "../../../src/apps/maps/components/maps-app/mapsUiState";
 import {
   defaultTaipeiMapRegion,
+  geoIpCityMapRegion,
   initialHomeMapRegion,
   initialMapFrameSpanDeg,
   locateMeCameraMode,
@@ -57,11 +58,19 @@ describe("locate / home camera spans", () => {
     });
   });
 
-  test("Home start uses the same closer span; Taipei / granted GPS stay city-wide", () => {
+  test("Home start uses the same closer span; GeoIP / Taipei / granted GPS stay city-wide", () => {
     expect(initialMapFrameSpanDeg("home")).toBe(LOCATE_ME_SPAN_DEG);
     expect(initialMapFrameSpanDeg("grantedLocation")).toBe(CITY_LEVEL_SPAN_DEG);
+    expect(initialMapFrameSpanDeg("geoip")).toBe(CITY_LEVEL_SPAN_DEG);
     expect(initialMapFrameSpanDeg("defaultTaipei")).toBe(CITY_LEVEL_SPAN_DEG);
     expect(initialHomeMapRegion(HOME)).toEqual(locateMeFocusRegion(HOME));
+    expect(geoIpCityMapRegion(HOME)).toEqual({
+      center: HOME,
+      span: {
+        latitudeDelta: CITY_LEVEL_SPAN_DEG,
+        longitudeDelta: CITY_LEVEL_SPAN_DEG,
+      },
+    });
     expect(defaultTaipeiMapRegion()).toEqual({
       center: DEFAULT_MAP_CENTER,
       span: {
@@ -103,7 +112,11 @@ describe("locate / home camera wiring", () => {
     expect(controller).toContain("initialHomeMapRegion");
     expect(controller).toContain("initialMapFrameSpanDeg");
     expect(controller).toContain('initialMapFrameSpanDeg("grantedLocation")');
+    expect(controller).toContain('initialMapFrameSpanDeg("geoip")');
     expect(controller).toContain("defaultTaipeiMapRegion");
+    expect(controller).toContain("geoIpCityMapRegion");
+    expect(controller).toContain("fetchApproximateCityLocation");
+    expect(controller).toContain("frameAtHomeOrGeoIp");
     expect(controller).not.toContain("frameAtCityLevel(home");
   });
 });

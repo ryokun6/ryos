@@ -127,6 +127,7 @@ graph LR
 | `/api/stocks` | Real-time stock quotes |
 | `/api/currency-rate` | Currency conversion rates |
 | `/api/mapkit-token` | MapKit JS token |
+| `/api/geo` | Approximate city for the request IP (Maps first-open camera) |
 | `/api/youbike/stations` | Taiwan YouBike 2.0 station overlay (cached official open data) |
 | `/api/youbike/route` | On-road YouBike bike-leg geometry (cached public OSRM bike profile) |
 | `/api/musickit-token` | MusicKit JS token |

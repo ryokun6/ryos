@@ -1,6 +1,7 @@
 import type { Redis } from "./redis.js";
 import { isPrivateOrReservedIp } from "./_ip.js";
 import { redisKeys, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
+import { parseIpGeolocationPoint } from "../../src/shared/ipGeolocation.js";
 
 /**
  * IP-based geolocation for self-hosted deployments (Coolify, Docker, plain
@@ -175,6 +176,59 @@ function geoIsUseful(geo: IpGeolocation | null | undefined): boolean {
   );
 }
 
+function headerValue(
+  headers: Record<string, string | string[] | undefined>,
+  name: string
+): string | undefined {
+  const raw = headers[name.toLowerCase()];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  try {
+    return decodeURIComponent(trimmed.replace(/\+/g, " "));
+  } catch {
+    return trimmed;
+  }
+}
+
+/**
+ * Platform geo hints already on the request (Cloudflare `CF-IP*`,
+ * Vercel `x-vercel-ip-*`). Passed to `resolveIpGeolocation` as `existing`
+ * so a complete header set skips the outbound ipwho.is call.
+ */
+export function ipGeolocationFromRequestHeaders(
+  headers: Record<string, string | string[] | undefined>
+): IpGeolocation | null {
+  const latitude =
+    headerValue(headers, "cf-iplatitude") ??
+    headerValue(headers, "x-vercel-ip-latitude");
+  const longitude =
+    headerValue(headers, "cf-iplongitude") ??
+    headerValue(headers, "x-vercel-ip-longitude");
+  const city =
+    headerValue(headers, "cf-ipcity") ??
+    headerValue(headers, "x-vercel-ip-city");
+  const region =
+    headerValue(headers, "cf-region") ??
+    headerValue(headers, "x-vercel-ip-country-region");
+  const countryRaw =
+    headerValue(headers, "cf-ipcountry") ??
+    headerValue(headers, "x-vercel-ip-country");
+  const country =
+    countryRaw && countryRaw !== "XX" && countryRaw !== "T1"
+      ? countryRaw
+      : undefined;
+
+  const geo: IpGeolocation = {};
+  if (latitude) geo.latitude = latitude;
+  if (longitude) geo.longitude = longitude;
+  if (city) geo.city = city;
+  if (region) geo.region = region;
+  if (country) geo.country = country;
+  return geoIsUseful(geo) ? geo : null;
+}
+
 /**
  * Resolve an IP-based approximate geolocation, falling back to a free public
  * provider when the platform-supplied geo (`existing`) is empty.
@@ -261,4 +315,5 @@ export const __INTERNAL = {
   isPrivateOrLocalIp,
   parseProviderResponse,
   getProviderUrl,
+  parseIpGeolocationPoint,
 };

@@ -19,6 +19,7 @@ import type {
   MapsSearchPlacesOutput,
   ServerToolContext,
 } from "./types.js";
+import { parseIpGeolocationPoint } from "../../../src/shared/ipGeolocation.js";
 
 const SEARCH_TIMEOUT_MS = 12_000;
 
@@ -100,18 +101,7 @@ function buildResult(
 function resolveFallbackNear(
   context: ServerToolContext
 ): { latitude: number; longitude: number } | null {
-  const geo = context.requestGeo;
-  if (!geo) return null;
-  const lat = typeof geo.latitude === "string" ? Number(geo.latitude) : geo.latitude;
-  const lng = typeof geo.longitude === "string" ? Number(geo.longitude) : geo.longitude;
-  if (typeof lat !== "number" || typeof lng !== "number") return null;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-  // Treat a 0,0 anchor (Null Island) as "no signal" — geo providers sometimes
-  // ship exactly that for unknown IPs and biasing every search toward the
-  // Gulf of Guinea is worse than no bias at all.
-  if (lat === 0 && lng === 0) return null;
-  return { latitude: lat, longitude: lng };
+  return parseIpGeolocationPoint(context.requestGeo);
 }
 
 export async function executeMapsSearchPlaces(

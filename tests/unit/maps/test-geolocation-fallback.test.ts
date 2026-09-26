@@ -1,5 +1,13 @@
 import { afterEach, describe, expect, mock, test } from "bun:test";
-import { __INTERNAL, resolveIpGeolocation } from "../../../api/_utils/_geolocation.js";
+import {
+  __INTERNAL,
+  ipGeolocationFromRequestHeaders,
+  resolveIpGeolocation,
+} from "../../../api/_utils/_geolocation.js";
+import {
+  buildGeoLookupResponse,
+  parseIpGeolocationPoint,
+} from "../../../src/shared/ipGeolocation";
 
 const { isPrivateOrLocalIp, parseProviderResponse, getProviderUrl } = __INTERNAL;
 const originalFetch = globalThis.fetch;
@@ -229,6 +237,87 @@ describe("geolocation fallback", () => {
           delete process.env.IP_GEOLOCATION_DISABLED;
         }
       }
+    });
+  });
+
+  describe("parseIpGeolocationPoint", () => {
+    test("accepts string or number coordinates", () => {
+      expect(
+        parseIpGeolocationPoint({ latitude: "25.03396", longitude: "121.56447" })
+      ).toEqual({ latitude: 25.03396, longitude: 121.56447 });
+      expect(
+        parseIpGeolocationPoint({ latitude: 37.7749, longitude: -122.4194 })
+      ).toEqual({ latitude: 37.7749, longitude: -122.4194 });
+    });
+
+    test("rejects Null Island, out-of-range, and incomplete pairs", () => {
+      expect(parseIpGeolocationPoint({ latitude: 0, longitude: 0 })).toBeNull();
+      expect(
+        parseIpGeolocationPoint({ latitude: 91, longitude: 0.1 })
+      ).toBeNull();
+      expect(parseIpGeolocationPoint({ latitude: 25 })).toBeNull();
+      expect(parseIpGeolocationPoint(null)).toBeNull();
+    });
+  });
+
+  describe("ipGeolocationFromRequestHeaders", () => {
+    test("reads Cloudflare CF-IP* hints", () => {
+      expect(
+        ipGeolocationFromRequestHeaders({
+          "cf-iplatitude": "25.0339",
+          "cf-iplongitude": "121.5645",
+          "cf-ipcity": "Taipei",
+          "cf-ipcountry": "TW",
+        })
+      ).toEqual({
+        latitude: "25.0339",
+        longitude: "121.5645",
+        city: "Taipei",
+        country: "TW",
+      });
+    });
+
+    test("reads Vercel x-vercel-ip-* hints and skips unknown country sentinels", () => {
+      expect(
+        ipGeolocationFromRequestHeaders({
+          "x-vercel-ip-latitude": "37.7749",
+          "x-vercel-ip-longitude": "-122.4194",
+          "x-vercel-ip-city": "San%20Francisco",
+          "x-vercel-ip-country": "XX",
+        })
+      ).toEqual({
+        latitude: "37.7749",
+        longitude: "-122.4194",
+        city: "San Francisco",
+      });
+    });
+
+    test("returns null when no platform geo headers are present", () => {
+      expect(ipGeolocationFromRequestHeaders({})).toBeNull();
+    });
+  });
+
+  describe("buildGeoLookupResponse", () => {
+    test("returns source ip for a usable point and none otherwise", () => {
+      expect(
+        buildGeoLookupResponse({
+          latitude: "48.8566",
+          longitude: "2.3522",
+          city: "Paris",
+          country: "FR",
+        })
+      ).toEqual({
+        latitude: 48.8566,
+        longitude: 2.3522,
+        city: "Paris",
+        country: "FR",
+        source: "ip",
+      });
+      expect(buildGeoLookupResponse({ latitude: 0, longitude: 0 })).toEqual({
+        latitude: null,
+        longitude: null,
+        source: "none",
+      });
     });
   });
 });
