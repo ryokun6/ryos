@@ -3489,13 +3489,21 @@
           "turn": "Vire {{direction}}",
           "turnPlain": "Vire"
         },
+        "navigationRegionLabel": "Navegação passo a passo",
         "routeRegionLabel": "Trajeto do YouBike",
         "routeSummary": "{{minutes}} min · {{distance}}",
         "routeTitle": "Trajeto do YouBike",
         "routing": "Buscando um trajeto do YouBike…",
         "showSteps": "Etapas",
+        "speech": {
+          "then": "Depois, {{label}}"
+        },
+        "startNavigation": "Iniciar Navegação",
         "stepAria": "Etapa {{index}}: {{label}}",
         "stepsRegionLabel": "Itinerário passo a passo",
+        "stopNavigation": "Parar Navegação",
+        "thenStep": "Depois",
+        "thenStepAria": "Depois, {{label}}",
         "warningNoBikes": "A estação de partida mais próxima pode não ter bicicletas no momento.",
         "warningNoDocks": "A estação de destino mais próxima pode não ter vagas disponíveis no momento."
       }

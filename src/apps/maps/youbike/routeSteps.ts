@@ -1,4 +1,9 @@
-import { isValidCoordinate, regionFittingPoints, type FittedMapRegion } from "./geo";
+import {
+  haversineMeters,
+  isValidCoordinate,
+  regionFittingPoints,
+  type FittedMapRegion,
+} from "./geo";
 import type {
   GeoPoint,
   YouBikeArrivalRole,
@@ -301,13 +306,18 @@ export const YOUBIKE_STEP_OFF_ROUTE_METERS = 80;
 const STEP_PROGRESS_TIE_METERS = 8;
 const METERS_PER_DEG_LAT = 111195;
 
-function distanceToSegmentMeters(user: GeoPoint, start: GeoPoint, end: GeoPoint): number {
+function projectUserOnSegment(
+  user: GeoPoint,
+  start: GeoPoint,
+  end: GeoPoint
+): { distance: number; t: number; length: number } {
   const midLat = ((start.latitude + end.latitude) / 2) * (Math.PI / 180);
   const metersPerDegLng = METERS_PER_DEG_LAT * Math.cos(midLat);
   const bx = (end.longitude - start.longitude) * metersPerDegLng;
   const by = (end.latitude - start.latitude) * METERS_PER_DEG_LAT;
   const ux = (user.longitude - start.longitude) * metersPerDegLng;
   const uy = (user.latitude - start.latitude) * METERS_PER_DEG_LAT;
+  const length = Math.hypot(bx, by);
   const len2 = bx * bx + by * by;
   let t = 0;
   if (len2 > 1) {
@@ -315,7 +325,15 @@ function distanceToSegmentMeters(user: GeoPoint, start: GeoPoint, end: GeoPoint)
     if (t < 0) t = 0;
     else if (t > 1) t = 1;
   }
-  return Math.hypot(ux - bx * t, uy - by * t);
+  return {
+    distance: Math.hypot(ux - bx * t, uy - by * t),
+    t,
+    length,
+  };
+}
+
+function distanceToSegmentMeters(user: GeoPoint, start: GeoPoint, end: GeoPoint): number {
+  return projectUserOnSegment(user, start, end).distance;
 }
 
 function distanceToStepMeters(user: GeoPoint, step: YouBikeRouteStep): number | null {
@@ -330,6 +348,38 @@ function distanceToStepMeters(user: GeoPoint, step: YouBikeRouteStep): number | 
     if (distance < best) best = distance;
   }
   return best;
+}
+
+/** Meters left on this step's path. Null when the user is unknown or off the step. */
+export function youbikeStepRemainingMeters(
+  step: Pick<YouBikeRouteStep, "location" | "path">,
+  user: GeoPoint | null
+): number | null {
+  if (!user || !isValidCoordinate(user)) return null;
+  const points = stepPoints(step);
+  if (points.length === 0) return null;
+  if (points.length === 1) return haversineMeters(user, points[0]!);
+
+  let bestDistance = Infinity;
+  let bestIndex = 0;
+  let bestT = 0;
+  let bestLength = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const projection = projectUserOnSegment(user, points[i - 1]!, points[i]!);
+    if (projection.distance < bestDistance) {
+      bestDistance = projection.distance;
+      bestIndex = i - 1;
+      bestT = projection.t;
+      bestLength = projection.length;
+    }
+  }
+  if (bestDistance > YOUBIKE_STEP_OFF_ROUTE_METERS) return null;
+
+  let remaining = (1 - bestT) * bestLength;
+  for (let i = bestIndex + 2; i < points.length; i += 1) {
+    remaining += haversineMeters(points[i - 1]!, points[i]!);
+  }
+  return remaining;
 }
 
 /**

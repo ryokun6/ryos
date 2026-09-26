@@ -3486,13 +3486,21 @@
           "turn": "向{{direction}}轉",
           "turnPlain": "轉彎"
         },
+        "navigationRegionLabel": "逐步導航",
         "routeRegionLabel": "YouBike 路線",
         "routeSummary": "{{minutes}} 分鐘 · {{distance}}",
         "routeTitle": "YouBike 路線",
         "routing": "正在尋找 YouBike 路線⋯",
         "showSteps": "步驟",
+        "speech": {
+          "then": "接著 {{label}}"
+        },
+        "startNavigation": "開始導航",
         "stepAria": "第 {{index}} 步：{{label}}",
         "stepsRegionLabel": "逐步導航路線",
+        "stopNavigation": "停止導航",
+        "thenStep": "接著",
+        "thenStepAria": "接著 {{label}}",
         "warningNoBikes": "最近的起點站目前可能沒有自行車。",
         "warningNoDocks": "最近的終點站目前可能沒有空位。"
       }

@@ -3486,13 +3486,21 @@
           "turn": "向{{direction}}转",
           "turnPlain": "转向"
         },
+        "navigationRegionLabel": "分段导航",
         "routeRegionLabel": "YouBike 路线",
         "routeSummary": "{{minutes}} 分钟 · {{distance}}",
         "routeTitle": "YouBike 路线",
         "routing": "正在查找 YouBike 路线…",
         "showSteps": "步骤",
+        "speech": {
+          "then": "然后 {{label}}"
+        },
+        "startNavigation": "开始导航",
         "stepAria": "步骤 {{index}}：{{label}}",
         "stepsRegionLabel": "逐向导航步骤",
+        "stopNavigation": "停止导航",
+        "thenStep": "然后",
+        "thenStepAria": "然后 {{label}}",
         "warningNoBikes": "最近的起点站目前可能没有单车。",
         "warningNoDocks": "最近的终点站目前可能没有空车位。"
       }

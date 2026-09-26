@@ -1,18 +1,26 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Bicycle, ListNumbers, PersonSimpleWalk, X } from "@phosphor-icons/react";
+import { Bicycle, ListNumbers, Path, PersonSimpleWalk, Stop, X } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, type Transition } from "motion/react";
 import { cn } from "@/lib/utils";
+import {
+  AQUA_ICON_BUTTON_PADDING_CLASS,
+  AQUA_ICON_BUTTON_PHOSPHOR_SIZE,
+  AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT,
+} from "@/lib/aquaIconButton";
 import { Button } from "@/components/ui/button";
 import {
   osCardClassName,
   osSubtleIconButtonClassName,
 } from "@/components/shared/osThemePrimitives";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import type { YouBikeRoutePlan, YouBikeRouteStep } from "../youbike";
+import { useYouBikeNavigationSpeech } from "../hooks/useYouBikeNavigationSpeech";
+import type { GeoPoint, YouBikeRoutePlan, YouBikeRouteStep } from "../youbike";
+import { youbikeNavigationFocusedIndex } from "../youbike/navigation";
 import {
   listYouBikeRouteSteps,
   localizeYouBikeStepLabel,
+  youbikeStepRemainingMeters,
 } from "../youbike/routeSteps";
 
 const STEPS_FADE_PX = 20;
@@ -32,6 +40,10 @@ export interface MapsYouBikeRouteCardProps {
   onSelectStep?: (step: YouBikeRouteStep) => void;
   /** Step the rider is on while Locate Me is tracking. Null leaves tap styling only. */
   activeStepIndex?: number | null;
+  /** Live user point while Locate Me is tracking; used for remaining distance. */
+  userLocation?: GeoPoint | null;
+  /** Enable map user-location tracking when starting navigation. */
+  onStartNavigation?: () => void;
 }
 
 type StepProgress = "idle" | "past" | "current" | "later";
@@ -143,6 +155,87 @@ function stepProgress(index: number, activeStepIndex: number | null): StepProgre
   return "later";
 }
 
+function YouBikeNavigationFocus({
+  current,
+  currentIndex,
+  upcoming,
+  remainingMeters,
+  onSelectCurrent,
+  onSelectUpcoming,
+}: {
+  current: YouBikeRouteStep;
+  currentIndex: number;
+  upcoming: YouBikeRouteStep | null;
+  remainingMeters: number | null;
+  onSelectCurrent: () => void;
+  onSelectUpcoming: () => void;
+}) {
+  const { t } = useTranslation();
+  const CurrentIcon = current.mode === "bike" ? Bicycle : PersonSimpleWalk;
+  const currentLabel = localizeYouBikeStepLabel(current, t);
+  const upcomingLabel = upcoming ? localizeYouBikeStepLabel(upcoming, t) : null;
+  const currentMeta = formatDistance(
+    remainingMeters ?? current.distanceMeters,
+    t
+  );
+
+  return (
+    <div
+      className="flex flex-col gap-1.5"
+      role="group"
+      aria-label={t("apps.maps.youbike.navigationRegionLabel", {
+        defaultValue: "Turn-by-turn navigation",
+      })}
+    >
+      <button
+        type="button"
+        aria-current="step"
+        aria-label={t("apps.maps.youbike.stepAria", {
+          defaultValue: "Step {{index}}: {{label}}",
+          index: currentIndex + 1,
+          label: `${currentLabel}. ${currentMeta}`,
+        })}
+        onClick={onSelectCurrent}
+        className={cn(
+          "flex w-full items-start gap-2.5 rounded-os px-1.5 py-1.5 text-left",
+          "bg-os-selection-bg text-os-selection-text",
+          "focus:outline-none focus-visible:ring-1"
+        )}
+      >
+        <CurrentIcon size={18} weight="fill" className="mt-0.5 shrink-0" />
+        <div className="min-w-0">
+          <div className="text-[15px] font-semibold leading-snug">
+            {currentLabel}
+          </div>
+          <div className="text-[11px] leading-snug opacity-80">{currentMeta}</div>
+        </div>
+      </button>
+      {upcoming && upcomingLabel && (
+        <button
+          type="button"
+          aria-label={t("apps.maps.youbike.thenStepAria", {
+            defaultValue: "Then {{label}}",
+            label: upcomingLabel,
+          })}
+          onClick={onSelectUpcoming}
+          className={cn(
+            "flex w-full items-start gap-2 rounded-os px-1.5 py-1 text-left",
+            "text-[11px] leading-snug text-os-text-secondary",
+            "hover:bg-os-selection-bg/15 focus:outline-none focus-visible:ring-1"
+          )}
+        >
+          <span className="shrink-0 font-medium text-os-text-secondary">
+            {t("apps.maps.youbike.thenStep", { defaultValue: "Then" })}
+          </span>
+          <span className="min-w-0 font-medium text-os-text-primary">
+            {upcomingLabel}
+          </span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 function YouBikeStepsList({
   steps,
   selectedIndex,
@@ -231,18 +324,61 @@ export function MapsYouBikeRouteCard({
   onClose,
   onSelectStep,
   activeStepIndex = null,
+  userLocation = null,
+  onStartNavigation,
 }: MapsYouBikeRouteCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isMacOSTheme, isWindowsTheme, isSystem7Theme, isWin98 } = useThemeFlags();
   const visible = !!plan || isRouting || !!error;
   const [showSteps, setShowSteps] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [manualIndex, setManualIndex] = useState(0);
   const steps = plan ? listYouBikeRouteSteps(plan) : [];
+  const focusedIndex = youbikeNavigationFocusedIndex({
+    stepCount: steps.length,
+    gpsIndex: activeStepIndex,
+    manualIndex,
+  });
+  const focusedStep = steps[focusedIndex] ?? null;
+  const upcomingStep = steps[focusedIndex + 1] ?? null;
+  const remainingMeters = focusedStep
+    ? youbikeStepRemainingMeters(focusedStep, userLocation)
+    : null;
+  const buttonVariant = isMacOSTheme ? "aqua" : "retro";
+
+  const labelForIndex = useCallback(
+    (index: number) => {
+      const step = steps[index];
+      return step ? localizeYouBikeStepLabel(step, t) : "";
+    },
+    [steps, t]
+  );
+  const thenPhrase = useCallback(
+    (label: string) =>
+      t("apps.maps.youbike.speech.then", {
+        defaultValue: "Then {{label}}",
+        label,
+      }),
+    [t]
+  );
+  const { speakStart, cancel } = useYouBikeNavigationSpeech({
+    enabled: isNavigating,
+    focusedIndex,
+    stepCount: steps.length,
+    remainingMeters,
+    language: i18n.language,
+    labelForIndex,
+    thenPhrase,
+  });
 
   useEffect(() => {
     setShowSteps(false);
     setSelectedIndex(null);
-  }, [plan]);
+    setIsNavigating(false);
+    setManualIndex(0);
+    cancel();
+  }, [plan, cancel]);
 
   const handleSelectStep = useCallback(
     (step: YouBikeRouteStep, index: number) => {
@@ -251,6 +387,45 @@ export function MapsYouBikeRouteCard({
     },
     [onSelectStep]
   );
+
+  const handleStartNavigation = useCallback(() => {
+    if (steps.length === 0) return;
+    const index = youbikeNavigationFocusedIndex({
+      stepCount: steps.length,
+      gpsIndex: activeStepIndex,
+      manualIndex: 0,
+    });
+    onStartNavigation?.();
+    setManualIndex(index);
+    setSelectedIndex(index);
+    setShowSteps(false);
+    setIsNavigating(true);
+    const step = steps[index];
+    if (step) onSelectStep?.(step);
+    speakStart(index);
+  }, [activeStepIndex, onSelectStep, onStartNavigation, speakStart, steps]);
+
+  const handleStopNavigation = useCallback(() => {
+    cancel();
+    setIsNavigating(false);
+  }, [cancel]);
+
+  const handleClose = useCallback(() => {
+    cancel();
+    setIsNavigating(false);
+    onClose();
+  }, [cancel, onClose]);
+
+  const stepsRef = useRef(steps);
+  const onSelectStepRef = useRef(onSelectStep);
+  stepsRef.current = steps;
+  onSelectStepRef.current = onSelectStep;
+
+  useEffect(() => {
+    if (!isNavigating) return;
+    const step = stepsRef.current[focusedIndex];
+    if (step) onSelectStepRef.current?.(step);
+  }, [focusedIndex, isNavigating]);
 
   return (
     <AnimatePresence>
@@ -315,7 +490,7 @@ export function MapsYouBikeRouteCard({
               </div>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className={cn(
                   "shrink-0 -mr-0.5 -mt-0.5 flex size-6 items-center justify-center rounded-full",
                   "focus:outline-none focus-visible:ring-1",
@@ -329,7 +504,25 @@ export function MapsYouBikeRouteCard({
               </button>
             </div>
 
-            {plan && steps.length > 0 && showSteps && (
+            {plan && focusedStep && isNavigating && (
+              <YouBikeNavigationFocus
+                current={focusedStep}
+                currentIndex={focusedIndex}
+                upcoming={upcomingStep}
+                remainingMeters={remainingMeters}
+                onSelectCurrent={() => handleSelectStep(focusedStep, focusedIndex)}
+                onSelectUpcoming={() => {
+                  if (!upcomingStep) return;
+                  if (activeStepIndex == null) {
+                    setManualIndex(focusedIndex + 1);
+                    setSelectedIndex(focusedIndex + 1);
+                  }
+                  handleSelectStep(upcomingStep, focusedIndex + 1);
+                }}
+              />
+            )}
+
+            {plan && steps.length > 0 && showSteps && !isNavigating && (
               <YouBikeStepsList
                 steps={steps}
                 selectedIndex={selectedIndex}
@@ -355,16 +548,58 @@ export function MapsYouBikeRouteCard({
               </div>
             )}
 
-            <div className="flex items-center justify-end gap-2">
-              {plan && steps.length > 0 && (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {plan && steps.length > 0 && isNavigating && (
                 <Button
                   type="button"
-                  variant={isMacOSTheme ? "aqua" : "retro"}
+                  variant={buttonVariant}
+                  size="sm"
+                  onClick={handleStopNavigation}
+                  className={AQUA_ICON_BUTTON_PADDING_CLASS}
+                >
+                  <Stop
+                    size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+                  />
+                  <span>
+                    {t("apps.maps.youbike.stopNavigation", {
+                      defaultValue: "Stop Navigation",
+                    })}
+                  </span>
+                </Button>
+              )}
+              {plan && steps.length > 0 && !isNavigating && (
+                <Button
+                  type="button"
+                  variant={buttonVariant}
+                  size="sm"
+                  onClick={handleStartNavigation}
+                  className={AQUA_ICON_BUTTON_PADDING_CLASS}
+                >
+                  <Path
+                    size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+                  />
+                  <span>
+                    {t("apps.maps.youbike.startNavigation", {
+                      defaultValue: "Start Navigation",
+                    })}
+                  </span>
+                </Button>
+              )}
+              {plan && steps.length > 0 && !isNavigating && (
+                <Button
+                  type="button"
+                  variant={buttonVariant}
                   size="sm"
                   aria-expanded={showSteps}
                   onClick={() => setShowSteps((open) => !open)}
+                  className={AQUA_ICON_BUTTON_PADDING_CLASS}
                 >
-                  <ListNumbers size={14} weight="bold" />
+                  <ListNumbers
+                    size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
+                  />
                   {showSteps
                     ? t("apps.maps.youbike.hideSteps", {
                         defaultValue: "Hide Steps",
@@ -376,9 +611,9 @@ export function MapsYouBikeRouteCard({
               )}
               <Button
                 type="button"
-                variant={isMacOSTheme ? "aqua" : "retro"}
+                variant={buttonVariant}
                 size="sm"
-                onClick={onClose}
+                onClick={handleClose}
               >
                 {t("apps.maps.youbike.done", { defaultValue: "Done" })}
               </Button>
