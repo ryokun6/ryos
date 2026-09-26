@@ -580,7 +580,7 @@ export function MapsYouBikeRouteCard({
                   <Square
                     className={AQUA_ICON_BUTTON_ICON_CLASS}
                     size={AQUA_ICON_BUTTON_PHOSPHOR_SIZE}
-                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT_ACTIVE}
+                    weight={AQUA_ICON_BUTTON_PHOSPHOR_WEIGHT}
                   />
                   <span>
                     {t("apps.maps.youbike.stopNavigation", {
