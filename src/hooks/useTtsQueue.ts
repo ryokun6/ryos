@@ -11,6 +11,7 @@ import {
   resumeAudioContext,
   unlockAudioFromGesture,
 } from "@/lib/audioContext";
+import { getSpeechPlaybackVolume } from "@/apps/control-panels/components/control-panels-app/ttsVoiceOptions";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
@@ -92,6 +93,17 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const ttsModelRef = useLatestRef(ttsModel);
   const ttsVoiceRef = useLatestRef(ttsVoice);
 
+  const resolvePlaybackVolume = (
+    nextSpeechVolume = speechVolumeRef.current,
+    nextMasterVolume = masterVolumeRef.current
+  ) =>
+    getSpeechPlaybackVolume(
+      nextSpeechVolume,
+      nextMasterVolume,
+      ttsModelRef.current,
+      ttsVoiceRef.current
+    );
+
   const duckingTokenRef = useRef<TtsDuckingToken | null>(null);
 
   // Subscribe to iPod/Karaoke playing state so ducking reacts when playback starts/stops
@@ -126,12 +138,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       }
       gainNodeRef.current = ctxRef.current.createGain();
-      gainNodeRef.current.gain.value =
-        speechVolumeRef.current * masterVolumeRef.current;
+      gainNodeRef.current.gain.value = resolvePlaybackVolume();
       gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
-  }, [masterVolumeRef, speechVolumeRef]);
+  }, [masterVolumeRef, speechVolumeRef, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Warm this queue's gain node inside a user gesture (Start / Then / Chat
@@ -148,7 +159,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // ignore
     }
     if (gainNodeRef.current) {
-      const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+      const targetVolume = resolvePlaybackVolume();
       gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
       gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
     }
@@ -161,7 +172,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     } catch {
       // ignore
     }
-  }, [ensureContext, masterVolumeRef, speechVolumeRef]);
+  }, [ensureContext, masterVolumeRef, speechVolumeRef, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Process pending requests up to the maximum parallel limit
@@ -303,7 +314,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           await resumeAudioContext({ allowRecreate: false });
           const ctx = ensureContext();
           if (gainNodeRef.current) {
-            const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+            const targetVolume = resolvePlaybackVolume();
             gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
             gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
           }
@@ -351,7 +362,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef, unlock]
+    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef, ttsModelRef, ttsVoiceRef, unlock]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
@@ -425,15 +436,20 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     };
   }, [stop]);
 
-  // Update gain when speechVolume or masterVolume changes (use ramping to avoid clicks)
+  // Update gain when speech/master volume or the active TTS voice changes
   useEffect(() => {
     if (gainNodeRef.current && ctxRef.current) {
       const ctx = ctxRef.current;
-      const targetVolume = speechVolume * masterVolume;
+      const targetVolume = getSpeechPlaybackVolume(
+        speechVolume,
+        masterVolume,
+        ttsModel,
+        ttsVoice
+      );
       gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, ctx.currentTime);
       gainNodeRef.current.gain.linearRampToValueAtTime(targetVolume, ctx.currentTime + 0.05);
     }
-  }, [speechVolume, masterVolume]);
+  }, [speechVolume, masterVolume, ttsModel, ttsVoice]);
 
   /**
    * Duck music and chat synth output while TTS is speaking.
