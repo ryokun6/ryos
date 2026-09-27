@@ -2,11 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { DEFAULT_ELEVENLABS_VOICE_ID } from "../../../api/_utils/voice";
 import {
   ELEVENLABS_TTS_VOICES,
+  getSpeechPlaybackVolume,
+  getTtsPlaybackGain,
   getTtsVoiceLabel,
+  RYO_PVC_PLAYBACK_GAIN,
+  RYO_PVC_VOICE_ID,
 } from "../../../src/apps/control-panels/components/control-panels-app/ttsVoiceOptions";
 import en from "../../../src/lib/locales/en/translation.json";
 
-const RYO_PVC_VOICE_ID = "OHP6tMHkOsRKrsDdbPah";
 const RYO_INSTANT_V4_VOICE_ID = "oYLmJyxUFvewUpYziJlr";
 
 describe("ElevenLabs TTS voice options", () => {
@@ -50,5 +53,19 @@ describe("ElevenLabs TTS voice options", () => {
       getTtsVoiceLabel(t, "elevenlabs", RYO_INSTANT_V4_VOICE_ID, "select")
     ).toBe("Ryo Instant v4");
     expect(getTtsVoiceLabel(t, "elevenlabs", null, "select")).toBe("select");
+  });
+
+  test("applies a PVC-only playback gain without changing other voices", () => {
+    expect(RYO_PVC_VOICE_ID).toBe("OHP6tMHkOsRKrsDdbPah");
+    expect(RYO_PVC_PLAYBACK_GAIN).toBe(0.6);
+    expect(getTtsPlaybackGain("elevenlabs", RYO_PVC_VOICE_ID)).toBe(0.6);
+    expect(getTtsPlaybackGain(null, null)).toBe(0.6);
+    expect(getTtsPlaybackGain("elevenlabs", null)).toBe(0.6);
+    expect(getTtsPlaybackGain("elevenlabs", RYO_INSTANT_V4_VOICE_ID)).toBe(1);
+    expect(getTtsPlaybackGain("openai", RYO_PVC_VOICE_ID)).toBe(1);
+    expect(getSpeechPlaybackVolume(2, 1, null, null)).toBe(1.2);
+    expect(getSpeechPlaybackVolume(2, 1, "elevenlabs", RYO_INSTANT_V4_VOICE_ID)).toBe(
+      2
+    );
   });
 });
