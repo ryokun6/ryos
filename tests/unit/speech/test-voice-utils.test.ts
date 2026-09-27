@@ -37,6 +37,8 @@ describe("voice utils", () => {
   });
 
   test("generateElevenLabsSpeech uses the default voice configuration", async () => {
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe("OHP6tMHkOsRKrsDdbPah");
+
     const audio = await generateElevenLabsSpeech({
       text: "hello world",
       apiKey: "test-elevenlabs-key",

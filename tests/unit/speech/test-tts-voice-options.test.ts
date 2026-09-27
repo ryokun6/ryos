@@ -10,7 +10,7 @@ const RYO_PVC_VOICE_ID = "OHP6tMHkOsRKrsDdbPah";
 const RYO_INSTANT_V4_VOICE_ID = "oYLmJyxUFvewUpYziJlr";
 
 describe("ElevenLabs TTS voice options", () => {
-  test("lists Ryo PVC and Instant v4 without changing the default ElevenLabs voice", () => {
+  test("lists Ryo PVC first and uses it as the default ElevenLabs voice", () => {
     expect(ELEVENLABS_TTS_VOICES[0]).toEqual({
       value: RYO_PVC_VOICE_ID,
       labelKey: "apps.control-panels.ttsVoices.ryoPvc",
@@ -26,9 +26,9 @@ describe("ElevenLabs TTS voice options", () => {
       "kAyjEabBEu68HYYYRAHR",
       "G0mlS0y8ByHjGAOxBgvV",
     ]);
-    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe("kAyjEabBEu68HYYYRAHR");
-    expect(DEFAULT_ELEVENLABS_VOICE_ID).not.toBe(RYO_PVC_VOICE_ID);
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe(RYO_PVC_VOICE_ID);
     expect(DEFAULT_ELEVENLABS_VOICE_ID).not.toBe(RYO_INSTANT_V4_VOICE_ID);
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).not.toBe("kAyjEabBEu68HYYYRAHR");
   });
 
   test("resolves the PVC and Instant v4 picker labels", () => {

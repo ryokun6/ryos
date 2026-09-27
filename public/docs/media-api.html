@@ -484,7 +484,7 @@
 <strong>OpenAI Options:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>voice</code></td><td><code>string</code></td><td><code>"alloy"</code></td><td>OpenAI voice name</td></tr><tr><td><code>speed</code></td><td><code>number</code></td><td><code>1.1</code></td><td>Speech speed multiplier</td></tr></tbody></table>
 <strong>ElevenLabs Options:</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>voice_id</code></td><td><code>string</code></td><td><code>"kAyjEabBEu68HYYYRAHR"</code></td><td>ElevenLabs voice ID</td></tr><tr><td><code>model_id</code></td><td><code>string</code></td><td><code>"eleven_turbo_v2_5"</code></td><td>ElevenLabs model</td></tr><tr><td><code>output_format</code></td><td><code>string</code></td><td><code>"mp3_44100_128"</code></td><td>Audio format</td></tr><tr><td><code>voice_settings</code></td><td><code>object</code></td><td>See below</td><td>Voice customization</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>voice_id</code></td><td><code>string</code></td><td><code>"OHP6tMHkOsRKrsDdbPah"</code></td><td>ElevenLabs voice ID</td></tr><tr><td><code>model_id</code></td><td><code>string</code></td><td><code>"eleven_turbo_v2_5"</code></td><td>ElevenLabs model</td></tr><tr><td><code>output_format</code></td><td><code>string</code></td><td><code>"mp3_44100_128"</code></td><td>Audio format</td></tr><tr><td><code>voice_settings</code></td><td><code>object</code></td><td>See below</td><td>Voice customization</td></tr></tbody></table>
 <strong>Voice Settings Object:</strong>
 <pre><code>{
   "stability": 0.3,
@@ -521,7 +521,7 @@
   -d '{
     "text": "Hello, welcome to ryOS!",
     "model": "elevenlabs",
-    "voice_id": "kAyjEabBEu68HYYYRAHR"
+    "voice_id": "OHP6tMHkOsRKrsDdbPah"
   }' \
   --output speech.mp3</code></pre>
 <strong>With OpenAI:</strong>
