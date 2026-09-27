@@ -2191,7 +2191,7 @@
         "showAll": "Mostra tutto"
       },
       "ttsModel": "Modello TTS",
-      "ttsModelDescription": "Provider text-to-speech",
+      "ttsModelDescription": "Solo per la chat di Ryo. Le altre app usano la voce di sistema.",
       "ttsVoice": "Voce TTS",
       "ttsVoices": {
         "alloy": "Alloy",

@@ -5,7 +5,12 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "../../helpers/test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "../../helpers/test-utils";
+import { RYO_CHAT_SPEECH_SOURCE } from "../../../api/_utils/speech-policy";
 
 describe("speech", () => {
   describe("HTTP Methods", () => {
@@ -69,6 +74,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: "Hello, this is a test.",
+          source: RYO_CHAT_SPEECH_SOURCE,
         }),
       });
       if (res.status === 200) {
@@ -108,6 +114,7 @@ describe("speech", () => {
         body: JSON.stringify({
           text: "Testing ElevenLabs TTS.",
           model: "elevenlabs",
+          source: RYO_CHAT_SPEECH_SOURCE,
         }),
       });
       expect([200, 429, 503]).toContain(res.status);
@@ -148,9 +155,98 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: "Testing default model.",
+          source: RYO_CHAT_SPEECH_SOURCE,
         }),
       });
       expect([200, 429, 503]).toContain(res.status);
+    });
+
+    test("Ryo chat can request PVC and Instant v4", async () => {
+      for (const voice_id of [
+        "OHP6tMHkOsRKrsDdbPah",
+        "oYLmJyxUFvewUpYziJlr",
+      ]) {
+        const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+          method: "POST",
+          headers: makeRateLimitBypassHeaders(),
+          body: JSON.stringify({
+            text: "Ryo chat voice variant.",
+            model: "elevenlabs",
+            voice_id,
+            source: RYO_CHAT_SPEECH_SOURCE,
+          }),
+        });
+        expect([200, 429, 503]).toContain(res.status);
+        if (res.status === 200) {
+          const contentType = res.headers.get("content-type") || "";
+          expect(contentType).toContain("audio");
+        }
+      }
+    });
+  });
+
+  describe("Ryo voice source gate", () => {
+    test("rejects default ElevenLabs / Ryo PVC without ryo-chat source", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "Should not speak as Ryo.",
+        }),
+      });
+      expect([403, 429]).toContain(res.status);
+      if (res.status === 403) {
+        const data = await res.json();
+        expect(data.error).toBe("ryo_voice_forbidden");
+      }
+    });
+
+    test("rejects explicit Ryo voice ids from non-chat sources", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "TextEdit should not use Ryo.",
+          model: "elevenlabs",
+          voice_id: "OHP6tMHkOsRKrsDdbPah",
+          source: "textedit",
+        }),
+      });
+      expect([403, 429]).toContain(res.status);
+      if (res.status === 403) {
+        const data = await res.json();
+        expect(data.error).toBe("ryo_voice_forbidden");
+        expect(data.source).toBe("textedit");
+      }
+    });
+
+    test("rejects ElevenLabs when source is omitted", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "No source flag.",
+          model: "elevenlabs",
+        }),
+      });
+      expect([403, 429]).toContain(res.status);
+      if (res.status === 403) {
+        const data = await res.json();
+        expect(data.error).toBe("ryo_voice_forbidden");
+      }
+    });
+
+    test("allows OpenAI without ryo-chat source", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "OpenAI is not a Ryo voice.",
+          model: "openai",
+          voice: "alloy",
+        }),
+      });
+      expect([200, 429]).toContain(res.status);
     });
   });
 
@@ -161,6 +257,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: "Rate limit test.",
+          source: RYO_CHAT_SPEECH_SOURCE,
         }),
       });
       expect([200, 429, 503]).toContain(res.status);
@@ -178,6 +275,7 @@ describe("speech", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: "CORS test.",
+          model: "openai",
         }),
       });
       const allowOrigin = res.headers.get("Access-Control-Allow-Origin");

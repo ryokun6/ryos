@@ -2189,7 +2189,7 @@
         "showAll": "모두 보기"
       },
       "ttsModel": "TTS 모델",
-      "ttsModelDescription": "텍스트 음성 변환 제공자",
+      "ttsModelDescription": "Ryo 채팅 전용. 다른 앱은 시스템 음성을 사용합니다.",
       "ttsVoice": "TTS 음성",
       "ttsVoices": {
         "alloy": "Alloy",

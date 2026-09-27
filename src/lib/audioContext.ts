@@ -118,7 +118,7 @@ const waitForRunningState = async (
 export type ResumeAudioContextOptions = {
   /**
    * When resume() does not reach `running`, close and replace the context.
-   * Chat / Maps TTS must pass `false`: `/api/speech` decode happens after the
+   * Chat TTS must pass `false`: `/api/speech` decode happens after the
    * tap, and a replacement context created outside the gesture stays silent
    * on iOS Safari. Gesture unlock (`unlockAudioFromGesture`) already warmed
    * the existing graph.

@@ -1,3 +1,4 @@
+/** All shipped ElevenLabs voices are Ryo. Non-chat features must not use them. */
 export const ELEVENLABS_TTS_VOICES = [
   { value: "OHP6tMHkOsRKrsDdbPah", labelKey: "apps.control-panels.ttsVoices.ryoPvc" },
   { value: "oYLmJyxUFvewUpYziJlr", labelKey: "apps.control-panels.ttsVoices.ryoInstantV4" },

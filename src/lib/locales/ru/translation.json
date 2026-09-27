@@ -2196,7 +2196,7 @@
         "showAll": "Показать все"
       },
       "ttsModel": "Модель TTS",
-      "ttsModelDescription": "Поставщик преобразования текста в речь",
+      "ttsModelDescription": "Только для чата Ryo. Другие приложения используют системный голос.",
       "ttsVoice": "Голос TTS",
       "ttsVoices": {
         "alloy": "Alloy",

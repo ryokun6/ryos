@@ -2189,7 +2189,7 @@
         "showAll": "すべてを表示"
       },
       "ttsModel": "TTS モデル",
-      "ttsModelDescription": "音声合成提供元",
+      "ttsModelDescription": "Ryo チャット専用。他のアプリはシステムの音声を使います。",
       "ttsVoice": "TTS 音声",
       "ttsVoices": {
         "alloy": "Alloy",

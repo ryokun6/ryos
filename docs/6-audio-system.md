@@ -256,7 +256,7 @@ Provides musical feedback for typing in the Chat app:
 
 ## Text-to-Speech (`useTtsQueue`)
 
-Provides gap-free TTS playback with intelligent queuing:
+Provides gap-free TTS playback with intelligent queuing. **Only Ryo chat** uses this hook (`source: "ryo-chat"`). Other speak features (Maps nav, Books, TextEdit, Calculator, desktop assistant) use browser `speechSynthesis` so Control Panels Default (ElevenLabs + Ryo PVC) cannot leak Ryo's voice.
 
 ### Features
 

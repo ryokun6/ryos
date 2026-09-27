@@ -2189,7 +2189,7 @@
         "showAll": "Alle einblenden"
       },
       "ttsModel": "TTS Modell",
-      "ttsModelDescription": "Text-zu-Sprache-Anbieter",
+      "ttsModelDescription": "Nur für Ryo-Chat. Andere Apps nutzen die Systemstimme.",
       "ttsVoice": "TTS Stimme",
       "ttsVoices": {
         "alloy": "Alloy",

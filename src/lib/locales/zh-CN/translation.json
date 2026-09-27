@@ -2189,7 +2189,7 @@
         "showAll": "显示全部"
       },
       "ttsModel": "TTS 模型",
-      "ttsModelDescription": "文本转语音服务商",
+      "ttsModelDescription": "仅用于 Ryo 聊天。其他应用使用系统语音。",
       "ttsVoice": "TTS 语音",
       "ttsVoices": {
         "alloy": "Alloy",

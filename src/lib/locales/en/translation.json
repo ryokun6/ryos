@@ -3380,7 +3380,7 @@
       "aiModelDescription": "Used in Chats, IE, and more",
       "default": "Default",
       "ttsModel": "TTS Model",
-      "ttsModelDescription": "Text-to-speech provider",
+      "ttsModelDescription": "Ryo chat only. Other apps use the system voice.",
       "openai": "OpenAI",
       "elevenlabs": "ElevenLabs",
       "ttsVoice": "TTS Voice",

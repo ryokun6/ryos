@@ -863,6 +863,8 @@ export default async function handler(
           chatId: parsedUpdate.chatId,
           action: "upload_voice",
         });
+        // Server-side Ryo AI voice reply (model-generated text, not a
+        // client-supplied /api/speech body). Same Ryo PVC default as chat.
         const voiceReplyAudio = await generateElevenLabsSpeech({
           text: outboundText,
         });

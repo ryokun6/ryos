@@ -3,6 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
+import { evaluateRyoVoiceGate } from "./_utils/speech-policy.js";
 import {
   DEFAULT_ELEVENLABS_MODEL_ID,
   DEFAULT_ELEVENLABS_VOICE_ID,
@@ -24,6 +25,12 @@ interface SpeechRequest {
   model_id?: string;
   output_format?: ElevenLabsOutputFormat;
   voice_settings?: ElevenLabsVoiceSettings;
+  /**
+   * Client-declared speech intent. Ryo ElevenLabs voices (including Control
+   * Panels Default → ElevenLabs + Ryo PVC) require `source: "ryo-chat"`.
+   * This flag is spoofable — first gate only, not a signed permit.
+   */
+  source?: string | null;
 }
 
 export default apiHandler<SpeechRequest>(
@@ -139,6 +146,7 @@ export default apiHandler<SpeechRequest>(
         model_id,
         output_format,
         voice_settings,
+        source,
       } = body ?? {};
 
       logger.info("Parsed request body", {
@@ -150,12 +158,31 @@ export default apiHandler<SpeechRequest>(
         speed,
         output_format,
         voice_settings,
+        source,
       });
 
       if (!text || typeof text !== "string" || text.trim().length === 0) {
         logger.error("'text' is required");
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "'text' is required" });
+        return;
+      }
+
+      const ryoVoiceGate = evaluateRyoVoiceGate({ model, voice_id, source });
+      if (!ryoVoiceGate.allowed) {
+        logger.warn("Rejected Ryo voice request", {
+          source: source ?? null,
+          model: model ?? null,
+          voice_id: voice_id ?? null,
+          username,
+          isAuthenticated,
+        });
+        logger.response(403, Date.now() - startTime);
+        res.status(403).json({
+          error: ryoVoiceGate.error,
+          message: ryoVoiceGate.message,
+          source: source ?? null,
+        });
         return;
       }
 

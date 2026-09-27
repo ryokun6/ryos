@@ -2191,7 +2191,7 @@
         "showAll": "Tout afficher"
       },
       "ttsModel": "Modèle TTS",
-      "ttsModelDescription": "Fournisseur de synthèse vocale",
+      "ttsModelDescription": "Réservé au chat Ryo. Les autres apps utilisent la voix système.",
       "ttsVoice": "Voix TTS",
       "ttsVoices": {
         "alloy": "Alloy",
