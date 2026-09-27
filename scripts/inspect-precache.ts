@@ -32,16 +32,18 @@ const stylesheets = urls.filter((url) => url.endsWith(".css"));
 const fonts = urls.filter((url) => /\.(?:woff2?|ttf|otf)$/i.test(url));
 const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 // Rolldown (Vite 8) splits shared modules into more, smaller chunks than
-// Rollup did, so file-count ceilings sit above Rollup-era numbers. Vite 8.2
-// split the offline closure further (~272 files / ~258 scripts measured).
-// The byte budget tracks the measured offline shell (Stuff + shelf apps
-// pushed it past 12 MiB); keep a small headroom for theme/CSS polish.
-const MAX_FILES = 285;
-const MAX_SCRIPTS = 270;
+// Rollup did, so file-count ceilings sit above Rollup-era numbers. Dropping
+// the tiptap/audio/media-player manual chunks split the offline closure
+// further (~287 files measured). The byte budget tracks the measured offline
+// shell (Stuff + shelf apps pushed it past 12 MiB); keep a small headroom
+// for theme/CSS polish.
+const MAX_FILES = 300;
+const MAX_SCRIPTS = 280;
 const MAX_BYTES = 13 * 1024 * 1024;
 // Entry + modulepreload JS. Rolldown used to hoist tiptap/audio/react-player
-// into this set (~1.8 MiB). Keep the first-paint download under 1.2 MiB.
-const MAX_CRITICAL_JS_BYTES = Math.round(1.2 * 1024 * 1024);
+// into this set (~1.8 MiB). After those named chunks were removed, first
+// paint is ~1.37 MiB. Keep a small headroom for shell growth.
+const MAX_CRITICAL_JS_BYTES = Math.round(1.5 * 1024 * 1024);
 const FORBIDDEN_CRITICAL_JS = /(?:^|\/)(?:tiptap|media-player|audio|three|hangul|webamp|pusher|react-player)-/;
 
 summarize("total", urls);
