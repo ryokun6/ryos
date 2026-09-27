@@ -346,7 +346,7 @@ Audio settings are managed via `useAudioSettingsStore` (Zustand with persistence
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `ttsModel` | null | TTS provider (openai, elevenlabs, null) |
+| `ttsModel` | null | TTS provider (`openai`, `elevenlabs`, or `null` = server default ElevenLabs / Ryo PVC) |
 | `ttsVoice` | null | Voice ID for selected provider |
 | `synthPreset` | "classic" | Chat synth preset name |
 
