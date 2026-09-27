@@ -9,8 +9,9 @@ import {
 } from "../../../api/_utils/voice";
 
 describe("voice utils", () => {
-  test("unset TTS model falls back to OpenAI, not ElevenLabs", () => {
-    expect(DEFAULT_TTS_MODEL).toBe("openai");
+  test("unset TTS model falls back to ElevenLabs (Ryo voice), not OpenAI", () => {
+    expect(DEFAULT_TTS_MODEL).toBe("elevenlabs");
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe("kAyjEabBEu68HYYYRAHR");
   });
 
   test("transcribeAudioBuffer uses the provided file metadata", async () => {
