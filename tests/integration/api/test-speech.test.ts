@@ -161,28 +161,41 @@ describe("speech", () => {
       expect([200, 429, 503]).toContain(res.status);
     });
 
-    test("Ryo chat can request PVC and Instant v4", async () => {
-      for (const voice_id of [
-        "OHP6tMHkOsRKrsDdbPah",
-        "oYLmJyxUFvewUpYziJlr",
-      ]) {
-        const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
-          method: "POST",
-          headers: makeRateLimitBypassHeaders(),
-          body: JSON.stringify({
-            text: "Ryo chat voice variant.",
-            model: "elevenlabs",
-            voice_id,
-            source: RYO_CHAT_SPEECH_SOURCE,
-          }),
-        });
-        expect([200, 429, 503]).toContain(res.status);
-        if (res.status === 200) {
-          const contentType = res.headers.get("content-type") || "";
-          expect(contentType).toContain("audio");
-        }
+    test("Ryo chat can request PVC", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "Ryo chat PVC.",
+          model: "elevenlabs",
+          voice_id: "OHP6tMHkOsRKrsDdbPah",
+          source: RYO_CHAT_SPEECH_SOURCE,
+        }),
+      });
+      expect([200, 429, 503]).toContain(res.status);
+      if (res.status === 200) {
+        const contentType = res.headers.get("content-type") || "";
+        expect(contentType).toContain("audio");
       }
-    });
+    }, 15_000);
+
+    test("Ryo chat can request Instant v4", async () => {
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          text: "Ryo chat Instant v4.",
+          model: "elevenlabs",
+          voice_id: "oYLmJyxUFvewUpYziJlr",
+          source: RYO_CHAT_SPEECH_SOURCE,
+        }),
+      });
+      expect([200, 429, 503]).toContain(res.status);
+      if (res.status === 200) {
+        const contentType = res.headers.get("content-type") || "";
+        expect(contentType).toContain("audio");
+      }
+    }, 15_000);
   });
 
   describe("Ryo voice source gate", () => {
