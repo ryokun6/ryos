@@ -1,4 +1,6 @@
 export const ELEVENLABS_TTS_VOICES = [
+  { value: "OHP6tMHkOsRKrsDdbPah", labelKey: "apps.control-panels.ttsVoices.ryoPvc" },
+  { value: "oYLmJyxUFvewUpYziJlr", labelKey: "apps.control-panels.ttsVoices.ryoInstantV4" },
   { value: "YC3iw27qriLq7UUaqAyi", labelKey: "apps.control-panels.ttsVoices.ryoV3" },
   { value: "kAyjEabBEu68HYYYRAHR", labelKey: "apps.control-panels.ttsVoices.ryoV2" },
   { value: "G0mlS0y8ByHjGAOxBgvV", labelKey: "apps.control-panels.ttsVoices.ryo" },
