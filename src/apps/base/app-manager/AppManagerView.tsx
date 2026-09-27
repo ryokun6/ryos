@@ -1,15 +1,13 @@
-import { memo, useCallback, useEffect } from "react";
+import { memo, Suspense, useCallback, useEffect } from "react";
 import type { ComponentType } from "react";
 import { MenuBar } from "@/components/layout/MenuBar";
 import { Desktop } from "@/components/layout/Desktop";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { Dock } from "@/components/layout/Dock";
-import { ExposeView } from "@/components/layout/ExposeView";
 import { getAppComponent } from "@/config/appRegistry";
 import type { AppId } from "@/config/appRegistry";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { SpotlightSearch } from "@/components/layout/SpotlightSearch";
-import { AppSwitcher } from "@/components/layout/AppSwitcher";
 import { DeferredAssistantOverlay } from "@/components/assistant/DeferredAssistantOverlay";
 import { AppErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DialogParentWindowContext } from "@/components/shared/DialogParentWindowContext";
@@ -28,6 +26,24 @@ import {
 import type { AppProps } from "../types";
 import type { AppManagerViewModel } from "./useAppManager";
 import { createClientLogger } from "@/utils/logger";
+import { safeLazy } from "@/utils/safeLazy";
+
+// Mission Control / Alt-Tab overlays are unused on first paint. Load them
+// through safeLazy so a failed chunk cannot take down DesktopErrorBoundary.
+const ExposeView = safeLazy(
+  () =>
+    import("@/components/layout/ExposeView").then((m) => ({
+      default: m.ExposeView,
+    })),
+  { name: "ExposeView" }
+);
+const AppSwitcher = safeLazy(
+  () =>
+    import("@/components/layout/AppSwitcher").then((m) => ({
+      default: m.AppSwitcher,
+    })),
+  { name: "AppSwitcher" }
+);
 
 const appManagerViewLog = createClientLogger("AppManagerView");
 
@@ -78,16 +94,20 @@ export function AppManagerView({
 
       <SpotlightSearch />
 
-      <ExposeView
-        isOpen={isExposeViewOpen}
-        onClose={() => setIsExposeViewOpen(false)}
-      />
+      <Suspense fallback={null}>
+        <ExposeView
+          isOpen={isExposeViewOpen}
+          onClose={() => setIsExposeViewOpen(false)}
+        />
+      </Suspense>
 
-      <AppSwitcher
-        isVisible={switcherVisible}
-        apps={switcherApps}
-        selectedIndex={switcherIndex}
-      />
+      <Suspense fallback={null}>
+        <AppSwitcher
+          isVisible={switcherVisible}
+          apps={switcherApps}
+          selectedIndex={switcherIndex}
+        />
+      </Suspense>
       <DeferredAssistantOverlay />
       <DesktopCornerMask />
     </>

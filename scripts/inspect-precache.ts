@@ -3,6 +3,7 @@ import path from "node:path";
 
 const DIST_ROOT = path.join(process.cwd(), "dist");
 const SERVICE_WORKER_PATH = path.join(DIST_ROOT, "sw.js");
+const INDEX_HTML_PATH = path.join(DIST_ROOT, "index.html");
 
 if (!existsSync(SERVICE_WORKER_PATH)) {
   console.error("[precache] dist/sw.js is missing; run bun run build first");
@@ -38,11 +39,41 @@ const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 const MAX_FILES = 285;
 const MAX_SCRIPTS = 270;
 const MAX_BYTES = 13 * 1024 * 1024;
+// Entry + modulepreload JS. Rolldown used to hoist tiptap/audio/react-player
+// into this set (~1.8 MiB). Keep the first-paint download under 1.2 MiB.
+const MAX_CRITICAL_JS_BYTES = Math.round(1.2 * 1024 * 1024);
+const FORBIDDEN_CRITICAL_JS = /(?:^|\/)(?:tiptap|media-player|audio|three|hangul|webamp|pusher|react-player)-/;
 
 summarize("total", urls);
 summarize("JavaScript", javascript);
 summarize("CSS", stylesheets);
 summarize("font binaries", fonts);
+
+function collectCriticalJsUrls(html: string): string[] {
+  const urls = new Set<string>();
+  for (const match of html.matchAll(
+    /<(?:link|script)\b[^>]*(?:rel="modulepreload"|type="module")[^>]*>/gi
+  )) {
+    const href = match[0].match(/\b(?:href|src)="([^"]+)"/i)?.[1];
+    if (href?.endsWith(".js")) {
+      urls.add(href.replace(/^\//, ""));
+    }
+  }
+  return [...urls];
+}
+
+const indexHtml = existsSync(INDEX_HTML_PATH)
+  ? readFileSync(INDEX_HTML_PATH, "utf8")
+  : "";
+const criticalJs = collectCriticalJsUrls(indexHtml);
+const criticalJsBytes = criticalJs.reduce(
+  (total, url) => total + fileBytes(url),
+  0
+);
+const forbiddenCriticalJs = criticalJs.filter((url) =>
+  FORBIDDEN_CRITICAL_JS.test(url)
+);
+summarize("critical first-paint JS", criticalJs);
 
 if (process.argv.includes("--list")) {
   for (const url of javascript) {
@@ -57,6 +88,22 @@ if (urls.length === 0) {
 
 if (fonts.length > 0) {
   console.error("[precache] Font binaries must load by active theme, not install");
+  process.exit(1);
+}
+
+if (forbiddenCriticalJs.length > 0) {
+  console.error(
+    "[precache] Heavy vendor chunks must not modulepreload at first paint:\n  " +
+      forbiddenCriticalJs.join("\n  ")
+  );
+  process.exit(1);
+}
+
+if (criticalJsBytes > MAX_CRITICAL_JS_BYTES) {
+  console.error(
+    "[precache] First-paint JS budget exceeded " +
+      `(${(criticalJsBytes / 1024).toFixed(1)} KiB > ${MAX_CRITICAL_JS_BYTES / 1024} KiB)`
+  );
   process.exit(1);
 }
 
