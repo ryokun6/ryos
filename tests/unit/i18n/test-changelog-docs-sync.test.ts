@@ -113,13 +113,7 @@ describe("changelog docs sync", () => {
     expect(septemberFeatured).toContain("<h3>YouBike overlay</h3>");
     expect(
       [...augustFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
-    ).toEqual([
-      "/docs-assets/changelog/2026-08-05-stuff-cutouts-16x9.webp",
-      "/docs-assets/changelog/2026-08-04-stuff-locations-16x9.webp",
-      "/docs-assets/changelog/2026-08-03-stuff-shelf-16x9.webp",
-      "/docs-assets/changelog/2026-08-02-stuff-drawer-16x9.webp",
-      "/docs-assets/changelog/2026-08-01-stuff-print-16x9.webp",
-    ]);
+    ).toEqual(["/docs-assets/changelog/2026-08-05-stuff-16x9.webp"]);
     expect(augustFeatured).toContain("<h3>Stuff</h3>");
 
     expect(
