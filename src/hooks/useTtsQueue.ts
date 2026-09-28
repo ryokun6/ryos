@@ -18,8 +18,10 @@ import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
+import { mintRyoSpeechPermit } from "@/utils/speechPermitClient";
 import {
   buildSpeechApiRequestBody,
+  requestResolvesToRyoVoice,
   type SpeechSource,
 } from "@/utils/speechPolicy";
 
@@ -90,6 +92,7 @@ export function useTtsQueue({
   const pendingRequestsRef = useRef<
     Array<{
       text: string;
+      messageId?: string;
       resolve: (result: ArrayBuffer | null) => void;
       reject: (error: Error) => void;
     }>
@@ -205,11 +208,37 @@ export function useTtsQueue({
         const controller = new AbortController();
         controllersRef.current.add(controller);
         try {
+          let permitId: string | undefined;
+          let contentHash: string | undefined;
+          if (requestResolvesToRyoVoice(ttsModelRef.current, ttsVoiceRef.current)) {
+            if (!request.messageId) {
+              log.warn("Refusing Ryo voice without an assistant message id");
+              request.resolve(null);
+              return;
+            }
+            const permit = await mintRyoSpeechPermit({
+              messageId: request.messageId,
+              text: request.text,
+              signal: controller.signal,
+            });
+            if (!permit) {
+              log.warn("Speech permit mint failed", {
+                messageId: request.messageId,
+              });
+              request.resolve(null);
+              return;
+            }
+            permitId = permit.permitId;
+            contentHash = permit.contentHash;
+          }
+
           const requestBody = buildSpeechApiRequestBody({
             text: request.text,
             source: sourceRef.current,
             ttsModel: ttsModelRef.current,
             ttsVoice: ttsVoiceRef.current,
+            permitId,
+            contentHash,
           });
           if ("error" in requestBody) {
             log.warn("Refusing Ryo voice for non-chat TTS source", {
@@ -262,9 +291,9 @@ export function useTtsQueue({
    * Queue a fetch request with parallel limit enforcement
    */
   const queuedFetch = useCallback(
-    (text: string): Promise<ArrayBuffer | null> => {
+    (text: string, messageId?: string): Promise<ArrayBuffer | null> => {
       return new Promise((resolve, reject) => {
-        pendingRequestsRef.current.push({ text, resolve, reject });
+        pendingRequestsRef.current.push({ text, messageId, resolve, reject });
         processPendingRequests();
       });
     },
@@ -276,7 +305,7 @@ export function useTtsQueue({
    * after whatever is already queued.
    */
   const speak = useCallback(
-    (text: string, onEnd?: () => void) => {
+    (text: string, onEnd?: () => void, options?: { messageId?: string }) => {
       if (!text || !text.trim()) {
         onEnd?.();
         return;
@@ -296,7 +325,7 @@ export function useTtsQueue({
       unlock();
 
       // Use queued fetch to limit parallel requests
-      const fetchPromise = queuedFetch(text.trim());
+      const fetchPromise = queuedFetch(text.trim(), options?.messageId);
 
       // Chain purely the *scheduling* to maintain correct order.
       scheduleChainRef.current = scheduleChainRef.current.then(async () => {
