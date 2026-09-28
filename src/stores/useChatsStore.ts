@@ -42,6 +42,7 @@ import {
 } from "@/api/rooms";
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 import { useAssistantStore } from "@/stores/useAssistantStore";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { clearAIConversationSessionCache } from "@/api/aiConversations";
 
 const chatsStoreLog = createClientLogger("ChatsStore");
@@ -221,6 +222,10 @@ const clearApiUnavailable = (key: string): void => {
  * Used when an authenticated request + refresh both fail with 401,
  * indicating the session is definitively invalid.
  */
+function disableChatSpeechOnAuthLoss() {
+  useAudioSettingsStore.getState().setSpeechEnabled(false);
+}
+
 function forceLogoutOnUnauthorized() {
   const store = useChatsStore.getState();
   if (!store.username) return;
@@ -228,6 +233,7 @@ function forceLogoutOnUnauthorized() {
   localStorage.removeItem(USERNAME_RECOVERY_KEY);
   useAssistantStore.getState().clearMessages();
   clearAIConversationSessionCache();
+  disableChatSpeechOnAuthLoss();
   useChatsStore.setState({
     aiMessages: [getInitialAiMessage()],
     username: null,
@@ -550,6 +556,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           if (wasAuthenticated && !authenticated) {
             useAssistantStore.getState().clearMessages();
             clearAIConversationSessionCache();
+            disableChatSpeechOnAuthLoss();
             set({
               isAuthenticated: false,
               aiMessages: [getInitialAiMessage()],
@@ -846,6 +853,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           resetRoomsFetchCache();
           useAssistantStore.getState().clearMessages();
           clearAIConversationSessionCache();
+          disableChatSpeechOnAuthLoss();
 
           set((state) => ({
             ...state,
@@ -899,6 +907,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           resetRoomsFetchCache();
           useAssistantStore.getState().clearMessages();
           clearAIConversationSessionCache();
+          disableChatSpeechOnAuthLoss();
 
           set((state) => ({
             ...state,

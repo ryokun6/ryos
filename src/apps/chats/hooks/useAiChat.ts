@@ -716,7 +716,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
     aiMessages,
     currentMessages: currentSdkMessages as UIMessage[],
     isLoading,
-    speechEnabled,
+    speechEnabled: speechEnabled && isAuthenticated,
   });
   speakFinalAssistantMessageRef.current = speakFinalAssistantMessage;
 

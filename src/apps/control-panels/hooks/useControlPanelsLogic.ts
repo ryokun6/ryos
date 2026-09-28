@@ -26,6 +26,7 @@ import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
 import { canAccessAiModel, getSelectableAiModels } from "@/types/aiModels";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "@/hooks/useAuth";
+import { requestSetChatSpeechEnabled } from "@/utils/chatSpeechAuth";
 import { toast } from "sonner";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useThemeStore } from "@/stores/useThemeStore";
@@ -762,7 +763,12 @@ export function useControlPanelsLogic({
   };
 
   const handleSpeechChange = (enabled: boolean) => {
-    setSpeechEnabled(enabled);
+    requestSetChatSpeechEnabled({
+      enabled,
+      isAuthenticated,
+      promptLogin,
+      setSpeechEnabled,
+    });
   };
 
   const handleBrowserTtsVoiceChange = (voiceURI: string | null) => {
@@ -1310,7 +1316,7 @@ export function useControlPanelsLogic({
     isClassicMacTheme,
     uiSoundsEnabled,
     handleUISoundsChange,
-    speechEnabled,
+    speechEnabled: speechEnabled && isAuthenticated,
     handleSpeechChange,
     browserTtsVoiceURI,
     handleBrowserTtsVoiceChange,

@@ -49,7 +49,7 @@ export default apiHandler<SpeechRequest>(
   {
     methods: ["POST"],
     parseJsonBody: true,
-    auth: "optional",
+    auth: "required",
     contentType: null,
   },
   async ({ req, res, redis, logger, startTime, body, user }) => {

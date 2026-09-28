@@ -149,7 +149,7 @@ export function useChatSpeechSync({
   // range will land on the wrong span.
   const speakAssistantMessageManually = useCallback(
     (messageId: string, fullSource: string, onAllDone?: () => void) => {
-      if (!fullSource) {
+      if (!speechEnabled || !fullSource) {
         onAllDone?.();
         return;
       }
@@ -193,7 +193,7 @@ export function useChatSpeechSync({
         enqueueHighlightSpeech(messageId, start, end, chunk, handleSegmentDone);
       });
     },
-    [enqueueHighlightSpeech, setCurrentHighlightSegment, stopTts]
+    [enqueueHighlightSpeech, setCurrentHighlightSegment, speechEnabled, stopTts]
   );
 
   const resetSpeechState = useCallback(() => {

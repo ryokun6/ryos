@@ -22,7 +22,7 @@ const bodySchema = z.object({
 export default apiHandler(
   {
     methods: ["POST"],
-    auth: "optional",
+    auth: "required",
     bodySchema,
   },
   async ({ req, res, redis, logger, startTime, body, user }) => {

@@ -1158,6 +1158,7 @@
         "settingsMasterVolumeSet": "Volume set to {{volume}}%",
         "settingsSpeechEnabled": "Text-to-speech turned on",
         "settingsSpeechDisabled": "Text-to-speech turned off",
+        "settingsSpeechRequiresLogin": "Sign in to turn on chat speech",
         "settingsCheckingForUpdates": "Checking for updates…",
         "launchedApp": "Opened {{appName}}",
         "createdDocument": "Created document: {{path}}",

@@ -339,7 +339,7 @@ Audio settings are managed via `useAudioSettingsStore` (Zustand with persistence
 | `uiSoundsEnabled` | true | Enable/disable UI sounds |
 | `terminalSoundsEnabled` | true | Enable/disable terminal sounds |
 | `typingSynthEnabled` | false | Enable/disable chat typing synthesis |
-| `speechEnabled` | false | Enable/disable voice input/output |
+| `speechEnabled` | false | Enable Ryo chat TTS (ElevenLabs). Enabling requires a signed-in user; the Chats / Control Panels Speech toggle opens the login dialog when logged out. Browser TTS in other apps does not use this flag. |
 | `keepTalkingEnabled` | true | Continue listening after speech |
 
 ### TTS Settings
