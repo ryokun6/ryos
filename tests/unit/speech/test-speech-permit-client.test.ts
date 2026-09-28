@@ -27,15 +27,13 @@ describe("speech permit client", () => {
 
   test("retries while the streaming draft is still catching up", async () => {
     const calls: string[] = [];
-    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       // Ignore leftover snapshot/auth/happy-dom fetches from earlier suites
-      // in the shared bun:test process.
+      // in the shared bun:test process. Do not return 200 {} — that poisons
+      // loadDefaultFiles' module cache and blanks later Books tests.
       if (!url.includes("/api/speech/permits")) {
-        return new Response(JSON.stringify({}), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return originalFetch(input, init);
       }
       const attempt = calls.length;
       calls.push("mint");
@@ -75,12 +73,9 @@ describe("speech permit client", () => {
 
   test("does not retry a forbidden-source mint", async () => {
     let calls = 0;
-    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (!String(input).includes("/api/speech/permits")) {
-        return new Response(JSON.stringify({}), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return originalFetch(input, init);
       }
       calls += 1;
       return new Response(JSON.stringify({ error: "ryo_voice_forbidden" }), {
