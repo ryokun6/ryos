@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -738,6 +739,30 @@ const { quotes, chart } = await response.json();</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
 <hr>
+<h2>IP Geolocation</h2>
+<p>Approximate city for the current request IP. Reuses the same Redis-cached <code>resolveIpGeolocation</code> path as chat, weather, and analytics (<code>ipwho.is</code> by default; override with <code>IP_GEOLOCATION_URL_TEMPLATE</code>). Cloudflare <code>CF-IP*</code> and Vercel <code>x-vercel-ip-*</code> headers are used when present so the outbound lookup can be skipped. Maps uses this for the first-open city-wide camera when there is no Home, selected place, or granted GPS.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/geo</code></td><td>Approximate city latitude / longitude for the request IP</td></tr></tbody></table>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "latitude": 37.7749,
+  "longitude": -122.4194,
+  "city": "San Francisco",
+  "country": "US",
+  "source": "ip"
+}</code></pre>
+<p>When the lookup has no usable point (private IP, disabled provider, Null Island):</p>
+<pre><code>{
+  "latitude": null,
+  "longitude": null,
+  "source": "none"
+}</code></pre>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>429</td><td>Rate limit exceeded</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
+<hr>
 <h2>YouBike Stations</h2>
 <p>Proxies the official YouBike 2.0 national dump (<code>station-yb2.json</code>, the same file the YouBike app loads). One source covers every city, including Taichung. The ~6MB payload is cached 120s (Redis + process memory) with a 20s fetch timeout. A viewport bbox selects intersecting coverage; results are then filtered to that bbox.</p>
 <h3>Endpoint</h3>
@@ -773,6 +798,31 @@ const { quotes, chart } = await response.json();</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>30 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>2000 requests</td><td>24 hours</td></tr></tbody></table>
 <p>The official YouBike app dump is the only source. Municipal portals for Taichung, New Taipei, Taoyuan, Hsinchu, Tainan, and Kaohsiung are dead or non-JSON and are not fetched.</p>
+<hr>
+<h2>YouBike Bike Route</h2>
+<p>Fallback for on-road YouBike bike geometry when MapKit JS <code>Directions.Transport.Cycling</code> (WWDC25) is missing or fails. Proxies the public FOSSGIS OSRM <strong>bike</strong> profile (no API key) with <code>steps=true</code> so turn-by-turn street names are available. Walk legs still use MapKit Walking. Results are cached in Redis for 30 minutes. Override the upstream URL with <code>YOUBIKE_BIKE_ROUTE_URL_TEMPLATE</code> (<code>{fromLat}</code> <code>{fromLng}</code> <code>{toLat}</code> <code>{toLng}</code>) if you self-host a bike router.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/youbike/route</code></td><td>On-road bike geometry between two Taiwan points</td></tr></tbody></table>
+<h3>Request</h3>
+<strong>Query Parameters:</strong>
+<table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>fromLat</code></td><td>number</td><td>Yes</td><td>Origin latitude</td></tr><tr><td><code>fromLng</code></td><td>number</td><td>Yes</td><td>Origin longitude</td></tr><tr><td><code>toLat</code></td><td>number</td><td>Yes</td><td>Destination latitude</td></tr><tr><td><code>toLng</code></td><td>number</td><td>Yes</td><td>Destination longitude</td></tr></tbody></table>
+<p>Both points must be inside the Taiwan gate. Hops longer than 50 km are rejected.</p>
+<h3>Response</h3>
+<strong>Success (200):</strong>
+<pre><code>{
+  "path": [
+    { "latitude": 25.03396, "longitude": 121.56447 },
+    { "latitude": 25.0341, "longitude": 121.5639 }
+  ],
+  "distanceMeters": 6464.4,
+  "durationSeconds": 1889,
+  "provider": "osrm-bike",
+  "cacheHit": true
+}</code></pre>
+<strong>Error Responses:</strong>
+<table><thead><tr><th>Status</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>invalid_coordinates</code>, <code>not_in_taiwan</code>, or <code>too_far</code></td></tr><tr><td>429</td><td>Rate limit exceeded</td></tr><tr><td>502</td><td>Upstream bike router failed or returned a non-road path</td></tr></tbody></table>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>20 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>400 requests</td><td>24 hours</td></tr></tbody></table>
 <hr>
 <h2>Apple Token APIs</h2>
 <p>Mint short-lived Apple-issued ES256 JWTs for client-side Apple SDKs. Both endpoints sign and cache a token in memory, returning the same <code>{ token, expiresAt }</code> shape and a <code>Cache-Control: private</code> header. They return <code>500</code> (with the missing env vars) when not configured.</p>

@@ -11,23 +11,41 @@ import {
   resumeAudioContext,
   unlockAudioFromGesture,
 } from "@/lib/audioContext";
+import { getSpeechPlaybackVolume } from "@/apps/control-panels/components/control-panels-app/ttsVoiceOptions";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useIpodStore } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
 import { checkOfflineAndShowError } from "@/utils/offline";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
+import { mintRyoSpeechPermit } from "@/utils/speechPermitClient";
+import {
+  buildSpeechApiRequestBody,
+  requestResolvesToRyoVoice,
+  type SpeechSource,
+} from "@/utils/speechPolicy";
 
 const log = createClientLogger("TTS");
+
+export type UseTtsQueueOptions = {
+  /**
+   * Speech intent sent to `/api/speech`. Ryo ElevenLabs voices (including
+   * Control Panels Default) are only accepted when this is `ryo-chat`.
+   */
+  source: SpeechSource;
+  endpoint?: string;
+};
 
 /**
  * Hook that turns short text chunks into speech and queues them in the same
  * `AudioContext` so that playback starts almost immediately and remains
- * gap-free. It is purposely transport-agnostic – just point it at any endpoint
- * that accepts `{ text: string }` in a POST body and returns an audio payload
- * (`audio/mpeg`, `audio/wav`, etc.).
+ * gap-free. Used only for in-OS Ryo chat AI output — other speak features
+ * use browser `speechSynthesis` so they cannot inherit Default ElevenLabs+Ryo.
  */
-export function useTtsQueue(endpoint: string = "/api/speech") {
+export function useTtsQueue({
+  source,
+  endpoint = "/api/speech",
+}: UseTtsQueueOptions) {
   // Lazily instantiated AudioContext shared by this hook instance
   const ctxRef = useRef<AudioContext | null>(null);
   // Track last AudioContext to detect context changes
@@ -74,6 +92,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const pendingRequestsRef = useRef<
     Array<{
       text: string;
+      messageId?: string;
       resolve: (result: ArrayBuffer | null) => void;
       reject: (error: Error) => void;
     }>
@@ -91,6 +110,18 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
   const ttsVoice = useAudioSettingsStore((s) => s.ttsVoice);
   const ttsModelRef = useLatestRef(ttsModel);
   const ttsVoiceRef = useLatestRef(ttsVoice);
+  const sourceRef = useLatestRef(source);
+
+  const resolvePlaybackVolume = (
+    nextSpeechVolume = speechVolumeRef.current,
+    nextMasterVolume = masterVolumeRef.current
+  ) =>
+    getSpeechPlaybackVolume(
+      nextSpeechVolume,
+      nextMasterVolume,
+      ttsModelRef.current,
+      ttsVoiceRef.current
+    );
 
   const duckingTokenRef = useRef<TtsDuckingToken | null>(null);
 
@@ -126,12 +157,11 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       }
       gainNodeRef.current = ctxRef.current.createGain();
-      gainNodeRef.current.gain.value =
-        speechVolumeRef.current * masterVolumeRef.current;
+      gainNodeRef.current.gain.value = resolvePlaybackVolume();
       gainNodeRef.current.connect(ctxRef.current.destination);
     }
     return ctxRef.current;
-  }, [masterVolumeRef, speechVolumeRef]);
+  }, [masterVolumeRef, speechVolumeRef, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Warm this queue's gain node inside a user gesture (Start / Then / Chat
@@ -148,7 +178,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // ignore
     }
     if (gainNodeRef.current) {
-      const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+      const targetVolume = resolvePlaybackVolume();
       gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
       gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
     }
@@ -161,7 +191,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     } catch {
       // ignore
     }
-  }, [ensureContext, masterVolumeRef, speechVolumeRef]);
+  }, [ensureContext, masterVolumeRef, speechVolumeRef, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Process pending requests up to the maximum parallel limit
@@ -178,32 +208,47 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         const controller = new AbortController();
         controllersRef.current.add(controller);
         try {
-          // Prepare request body with TTS settings
-          const requestBody: {
-            text: string;
-            model?: "openai" | "elevenlabs" | null;
-            voice?: string | null;
-            voice_id?: string | null;
-            speed?: number;
-            voice_settings?: {
-              stability?: number;
-              similarity_boost?: number;
-              use_speaker_boost?: boolean;
-              speed?: number;
-            };
-          } = {
-            text: request.text,
-            model: ttsModelRef.current, // Send null if null, let server decide
-          };
-
-          // Add model-specific settings
-          if (ttsModelRef.current === "elevenlabs") {
-            requestBody.voice_id = ttsVoiceRef.current; // Send null if null
-          } else if (ttsModelRef.current === "openai") {
-            // OpenAI settings
-            requestBody.voice = ttsVoiceRef.current; // Send null if null
+          let permitId: string | undefined;
+          let contentHash: string | undefined;
+          if (requestResolvesToRyoVoice(ttsModelRef.current, ttsVoiceRef.current)) {
+            if (!request.messageId) {
+              log.warn("Refusing Ryo voice without an assistant message id");
+              request.resolve(null);
+              return;
+            }
+            const permit = await mintRyoSpeechPermit({
+              messageId: request.messageId,
+              text: request.text,
+              signal: controller.signal,
+            });
+            if (!permit) {
+              log.warn("Speech permit mint failed", {
+                messageId: request.messageId,
+              });
+              request.resolve(null);
+              return;
+            }
+            permitId = permit.permitId;
+            contentHash = permit.contentHash;
           }
-          // If ttsModel is null, don't add voice settings - let server decide
+
+          const requestBody = buildSpeechApiRequestBody({
+            text: request.text,
+            source: sourceRef.current,
+            ttsModel: ttsModelRef.current,
+            ttsVoice: ttsVoiceRef.current,
+            permitId,
+            contentHash,
+          });
+          if ("error" in requestBody) {
+            log.warn("Refusing Ryo voice for non-chat TTS source", {
+              source: sourceRef.current,
+              model: ttsModelRef.current,
+              voice: ttsVoiceRef.current,
+            });
+            request.resolve(null);
+            return;
+          }
 
           const headers: Record<string, string> = {
             "Content-Type": "application/json",
@@ -240,15 +285,15 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
 
       executeRequest();
     }
-  }, [endpoint, ttsModelRef, ttsVoiceRef]);
+  }, [endpoint, sourceRef, ttsModelRef, ttsVoiceRef]);
 
   /**
    * Queue a fetch request with parallel limit enforcement
    */
   const queuedFetch = useCallback(
-    (text: string): Promise<ArrayBuffer | null> => {
+    (text: string, messageId?: string): Promise<ArrayBuffer | null> => {
       return new Promise((resolve, reject) => {
-        pendingRequestsRef.current.push({ text, resolve, reject });
+        pendingRequestsRef.current.push({ text, messageId, resolve, reject });
         processPendingRequests();
       });
     },
@@ -260,7 +305,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
    * after whatever is already queued.
    */
   const speak = useCallback(
-    (text: string, onEnd?: () => void) => {
+    (text: string, onEnd?: () => void, options?: { messageId?: string }) => {
       if (!text || !text.trim()) {
         onEnd?.();
         return;
@@ -275,13 +320,12 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
       // Signal that we are actively queueing again
       isStoppedRef.current = false;
 
-      // Chat speaker / Maps Start / Then all call speak() inside the tap.
-      // Unlock here (same helpers Chat already relies on) so the shared
-      // context + this queue's gain exist before `/api/speech` returns.
+      // Chat speaker / send call speak() inside the tap. Unlock here so the
+      // shared context + this queue's gain exist before `/api/speech` returns.
       unlock();
 
       // Use queued fetch to limit parallel requests
-      const fetchPromise = queuedFetch(text.trim());
+      const fetchPromise = queuedFetch(text.trim(), options?.messageId);
 
       // Chain purely the *scheduling* to maintain correct order.
       scheduleChainRef.current = scheduleChainRef.current.then(async () => {
@@ -303,7 +347,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
           await resumeAudioContext({ allowRecreate: false });
           const ctx = ensureContext();
           if (gainNodeRef.current) {
-            const targetVolume = speechVolumeRef.current * masterVolumeRef.current;
+            const targetVolume = resolvePlaybackVolume();
             gainNodeRef.current.gain.cancelScheduledValues(ctx.currentTime);
             gainNodeRef.current.gain.setValueAtTime(targetVolume, ctx.currentTime);
           }
@@ -351,7 +395,7 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
         }
       });
     },
-    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef, unlock]
+    [queuedFetch, ensureContext, speechVolumeRef, masterVolumeRef, ttsModelRef, ttsVoiceRef, unlock]
   );
 
   /** Cancel all in-flight requests and reset the queue so the next call starts immediately. */
@@ -425,15 +469,20 @@ export function useTtsQueue(endpoint: string = "/api/speech") {
     };
   }, [stop]);
 
-  // Update gain when speechVolume or masterVolume changes (use ramping to avoid clicks)
+  // Update gain when speech/master volume or the active TTS voice changes
   useEffect(() => {
     if (gainNodeRef.current && ctxRef.current) {
       const ctx = ctxRef.current;
-      const targetVolume = speechVolume * masterVolume;
+      const targetVolume = getSpeechPlaybackVolume(
+        speechVolume,
+        masterVolume,
+        ttsModel,
+        ttsVoice
+      );
       gainNodeRef.current.gain.setValueAtTime(gainNodeRef.current.gain.value, ctx.currentTime);
       gainNodeRef.current.gain.linearRampToValueAtTime(targetVolume, ctx.currentTime + 0.05);
     }
-  }, [speechVolume, masterVolume]);
+  }, [speechVolume, masterVolume, ttsModel, ttsVoice]);
 
   /**
    * Duck music and chat synth output while TTS is speaking.

@@ -78,6 +78,7 @@ graph LR
 | `/api/songs/` | Song library CRUD |
 | `/api/songs/[id]` | Individual song operations |
 | `/api/speech` | Text-to-speech |
+| `/api/speech/permits` | Mint a Ryo-chat speech permit |
 | `/api/audio-transcribe` | Speech-to-text |
 | `/api/youtube-search` | YouTube music search |
 | `/api/apple-music-artwork` | Apple Music artwork proxy |

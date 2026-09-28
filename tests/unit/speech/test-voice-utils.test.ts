@@ -9,8 +9,10 @@ import {
 } from "../../../api/_utils/voice";
 
 describe("voice utils", () => {
-  test("unset TTS model falls back to OpenAI, not ElevenLabs", () => {
-    expect(DEFAULT_TTS_MODEL).toBe("openai");
+  test("unset TTS model falls back to ElevenLabs (Ryo PVC voice), not OpenAI", () => {
+    expect(DEFAULT_TTS_MODEL).toBe("elevenlabs");
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe("OHP6tMHkOsRKrsDdbPah");
+    expect(DEFAULT_ELEVENLABS_MODEL_ID).toBe("eleven_turbo_v2_5");
   });
 
   test("transcribeAudioBuffer uses the provided file metadata", async () => {
@@ -37,6 +39,8 @@ describe("voice utils", () => {
   });
 
   test("generateElevenLabsSpeech uses the default voice configuration", async () => {
+    expect(DEFAULT_ELEVENLABS_VOICE_ID).toBe("OHP6tMHkOsRKrsDdbPah");
+
     const audio = await generateElevenLabsSpeech({
       text: "hello world",
       apiKey: "test-elevenlabs-key",

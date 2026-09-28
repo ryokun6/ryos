@@ -68,6 +68,7 @@ const { useAudioSettingsStore } = await import(
 const { useDisplaySettingsStore } = await import(
   "../../../src/stores/useDisplaySettingsStore"
 );
+const { useChatsStore } = await import("../../../src/stores/useChatsStore");
 
 const BASE_SNAPSHOT = {
   language: "en" as const,
@@ -600,6 +601,45 @@ describe("handleSettings applies only sanitized fields", () => {
     expect(addToolOutput.mock.calls[0][0]).not.toMatchObject({
       state: "output-error",
     });
+  });
+
+  test("refuses to enable speech when the user is logged out", async () => {
+    const { handleSettings } = await import(
+      "../../../src/apps/chats/tools/settingsHandler"
+    );
+    useChatsStore.setState({ isAuthenticated: false });
+
+    await handleSettings(
+      { speechEnabled: true },
+      "tc_speech_login",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setSpeechEnabled).not.toHaveBeenCalled();
+    expect(addToolOutput).toHaveBeenCalledTimes(1);
+    const payload = addToolOutput.mock.calls[0][0] as {
+      output?: string;
+      errorText?: string;
+    };
+    expect(
+      `${payload.output ?? ""} ${payload.errorText ?? ""}`
+    ).toMatch(/sign in|settingsSpeechRequiresLogin/i);
+  });
+
+  test("enables speech when the user is signed in", async () => {
+    const { handleSettings } = await import(
+      "../../../src/apps/chats/tools/settingsHandler"
+    );
+    useChatsStore.setState({ isAuthenticated: true });
+
+    await handleSettings(
+      { speechEnabled: true },
+      "tc_speech_ok",
+      { addToolOutput, launchApp: () => {}, detectUserOS: () => "mac" }
+    );
+
+    expect(setSpeechEnabled).toHaveBeenCalledWith(true);
+    useChatsStore.setState({ isAuthenticated: false });
   });
 
   test("checkForUpdates-only call does not touch persisted settings", async () => {

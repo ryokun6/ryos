@@ -22,6 +22,7 @@ import { parseLyricTimestamps, findCurrentLineIndex } from "@/utils/lyricsSearch
 import { shouldForceLyricsFetch } from "@/shared/media/lyricsFetchPolicy";
 import { canStartLyricsTranslation } from "@/shared/media/lyricsLifecycle";
 import type { ChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
+import { shouldSkipLyricCreditLine } from "@/shared/media/lyricCreditSkip";
 
 const lyricsLog = createClientLogger("Lyrics");
 
@@ -537,11 +538,14 @@ export function useLyrics(
         if (effectSongId !== currentSongIdRef.current) return;
         if (!json?.lyrics?.parsedLines?.length) throw new Error("No lyrics found");
 
-        const parsed: LyricLine[] = json.lyrics.parsedLines.map((line) => ({
-          startTimeMs: line.startTimeMs,
-          words: line.words,
-          wordTimings: line.wordTimings,
-        }));
+        const parsed: LyricLine[] = json.lyrics.parsedLines
+          .filter((line) => !shouldSkipLyricCreditLine(line.words))
+          .map((line) => ({
+            startTimeMs: line.startTimeMs,
+            words: line.words,
+            wordTimings: line.wordTimings,
+          }));
+        if (!parsed.length) throw new Error("No lyrics found");
 
         dispatch({
           type: "patch",

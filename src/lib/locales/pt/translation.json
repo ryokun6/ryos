@@ -1503,6 +1503,7 @@
         "settingsNoChanges": "Nenhuma alteração feita",
         "settingsSpeechDisabled": "Texto para fala desativado",
         "settingsSpeechEnabled": "Texto para fala ativado",
+        "settingsSpeechRequiresLogin": "Inicie sessão para ativar a fala do Chat",
         "settingsThemeChanged": "Tema alterado para {{theme}}",
         "settingsUiSoundsDisabled": "Sons da interface desativados",
         "settingsUiSoundsEnabled": "Sons da interface ativados",
@@ -2191,7 +2192,7 @@
         "showAll": "Mostrar Tudo"
       },
       "ttsModel": "Modelo TTS",
-      "ttsModelDescription": "Provedor de texto para fala",
+      "ttsModelDescription": "Somente no chat do Ryo. Os outros apps usam a voz do sistema.",
       "ttsVoice": "Voz TTS",
       "ttsVoices": {
         "alloy": "Alloy",
@@ -2202,6 +2203,8 @@
         "ryo": "Ryo",
         "ryoV2": "Ryo v2",
         "ryoV3": "Ryo v3",
+        "ryoInstantV4": "Ryo Instant v4",
+        "ryoPvc": "Ryo PVC",
         "shimmer": "Cintilação"
       },
       "ui": "UI",

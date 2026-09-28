@@ -75,6 +75,12 @@ describe("canonical Redis key registry", () => {
     expect(redisKeys.media.stuffShareLock("ShareABC")).toBe(
       "media:stuff:share:ShareABC:lock"
     );
+    expect(redisKeys.media.speechPermit("PermitABC")).toBe(
+      "media:speech:permit:PermitABC"
+    );
+    expect(redisKeys.media.speechDraft("deadbeef", "MsgId")).toBe(
+      "media:speech:draft:deadbeef:MsgId"
+    );
     expect(redisKeys.agent.cursorRunMeta("bc_AbC")).toBe(
       "agent:cursor:run:bc_AbC:meta"
     );

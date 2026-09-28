@@ -1090,6 +1090,47 @@ export async function commitAIConversationRegeneration(
  * (reset, regeneration, trimming) are detectable client-side from the
  * returned summary (`messageCount` / `oldestSeq` / conversation id).
  */
+/**
+ * Look up a stored assistant message by id across Ryo chat + desktop
+ * assistant channels without creating an empty conversation.
+ */
+export async function findAIConversationAssistantMessage({
+  redis,
+  username,
+  messageId,
+}: {
+  redis: Pick<AIConversationRedis, "get">;
+  username: string;
+  messageId: string;
+}): Promise<AIConversationMessage | null> {
+  for (const channel of ["chat", "assistant"] as const) {
+    try {
+      const document = await readConversation(redis, username, channel);
+      const message = document?.messages.find(
+        (candidate) =>
+          candidate.id === messageId && candidate.role === "assistant",
+      );
+      if (message) return message;
+    } catch (error) {
+      if (
+        error instanceof AIConversationError &&
+        error.code === "conversation_corrupt"
+      ) {
+        continue;
+      }
+      throw error;
+    }
+  }
+  return null;
+}
+
+/**
+ * Read the canonical conversation, optionally as a delta: with `afterSeq`
+ * only messages whose `seq` is greater are returned. Content updates re-mint
+ * `seq`, so deltas include in-place assistant updates; structural changes
+ * (reset, regeneration, trimming) are detectable client-side from the
+ * returned summary (`messageCount` / `oldestSeq` / conversation id).
+ */
 export async function getAIConversationSnapshot({
   redis,
   username,

@@ -50,6 +50,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "maps": { sectionNum: "2.26", docName: "maps" },
   "calculator": { sectionNum: "2.27", docName: "calculator" },
   "preview": { sectionNum: "2.28", docName: "preview" },
+  "stuff": { sectionNum: "2.29", docName: "stuff" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -329,6 +330,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
       minSize: { width: 240, height: 360 },
       maxSize: { width: 320, height: 520 },
     },
+    stuff: {
+      defaultSize: { width: 920, height: 580 },
+      minSize: { width: 560, height: 400 },
+    },
   };
 
   return configs[appId] || {
@@ -602,8 +607,9 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     contacts: "Address book with vCard import, Smart Groups, and cloud sync",
     books: "EPUB reader with a wooden bookshelf, page-turn reader, reading-progress sync, and Finder import",
     tv: "Channel-surfing YouTube TV with CRT effects, MTV synced lyrics, and AI-generated channels",
-    maps: "Apple MapKit search and pins; YouBike overlay in Taiwan; driving directions open in Apple Maps",
+    maps: "Apple MapKit search and pins; national Taiwan YouBike overlay; in-map YouBike directions and spoken navigation; driving directions open in Apple Maps",
     calculator: "Basic, scientific, and unit conversion calculator with theme-specific chrome and live currency rates",
+    stuff: "Wooden inventory shelf with barcodes, tags, locations, cutout covers, sharing, and print labels",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;

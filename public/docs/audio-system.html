@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -581,17 +584,13 @@ const MAX_CACHE_SIZE = isMobileDevice ? 15 : 30;</code></pre>
 <h3>Presets</h3>
 <table><thead><tr><th>Preset</th><th>Oscillator</th><th>Character</th></tr></thead><tbody><tr><td>Classic</td><td>Triangle</td><td>Warm, balanced</td></tr><tr><td>Ethereal</td><td>Sine</td><td>Soft, dreamy</td></tr><tr><td>Digital</td><td>Square</td><td>Sharp, electronic</td></tr><tr><td>Retro</td><td>Sawtooth</td><td>Vintage, buzzy</td></tr><tr><td>Off</td><td>-</td><td>Disabled</td></tr></tbody></table>
 <h2>Text-to-Speech (<code>useTtsQueue</code>)</h2>
-<p>Provides gap-free TTS playback with intelligent queuing:</p>
+<p>Provides gap-free TTS playback with intelligent queuing. <strong>Only Ryo chat</strong> uses this hook (<code>source: "ryo-chat"</code> plus a server-issued speech permit). Other speak features (Maps YouBike nav, Books, TextEdit, Calculator, desktop assistant) all go through the shared helpers in <code>@/utils/browserSpeech</code> (<code>createSpeechUtterance</code> / <code>getBrowserSpeechSynthesis</code>) so Control Panels Default (ElevenLabs + Ryo PVC) cannot leak Ryo's voice.</p>
 <h3>Features</h3>
-<ul><li><strong>Gap-Free Playback</strong>: Uses AudioContext timeline scheduling (<code>source.start(startTime)</code>)</li></ul><ul><li><strong>Parallel Fetching</strong>: Up to 3 concurrent TTS requests</li><li><strong>TTS Providers</strong>: OpenAI and ElevenLabs support</li><li><strong>Volume Control</strong>: Dedicated <code>speechVolume</code> with master multiplier</li><li><strong>Micro-Fades</strong>: 10ms fade-out before stopping to prevent clicks</li></ul>
+<ul><li><strong>Gap-Free Playback</strong>: Uses AudioContext timeline scheduling (<code>source.start(startTime)</code>)</li></ul><ul><li><strong>Parallel Fetching</strong>: Up to 3 concurrent TTS requests</li><li><strong>TTS Providers</strong>: OpenAI and ElevenLabs support. Server default is ElevenLabs (<code>eleven_turbo_v2_5</code>) with Ryo PVC (<code>OHP6tMHkOsRKrsDdbPah</code>). Control Panels lists Ryo PVC, Instant v4, v3, v2, and legacy Ryo; PVC playback gain is <code>0.6</code> so the hotter encode does not clip at the default speech volume.</li><li><strong>Volume Control</strong>: Dedicated <code>speechVolume</code> with master multiplier (PVC applies extra playback gain only at synthesis time)</li><li><strong>Micro-Fades</strong>: 10ms fade-out before stopping to prevent clicks</li></ul>
 <h3>Volume Ducking</h3>
 <p>Ducking is applied through <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioDucking.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/audioDucking.ts</a></code>, which sets transient <code>ttsMusicDuckingFactor</code> / <code>ttsChatSynthDuckingFactor</code> on <code>useAudioSettingsStore</code> while TTS is active (defaults restored to <code>1</code> when speech ends). iOS skips music ducking (<code>useTtsQueue.ts</code>).</p>
 <p>When TTS is speaking: <ul><li>iPod and Karaoke music playback volume reduced to 35% (non-iOS only)</li><li>Chat synth volume reduced to 60%</li><li>Original volumes restored when speech ends</li></ul></p>
-<pre><code>// Ducking example
-if (isSpeaking &amp;&amp; ipodIsPlaying &amp;&amp; !isIOS) {
-  const duckedIpod = originalVolume * 0.35;
-  setIpodVolumeGlobal(duckedIpod);
-}</code></pre>
+<p>Production ducking is <code>startTtsDucking</code> / <code>stopTtsDucking</code> in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/lib/audioDucking.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/lib/audioDucking.ts</a></code>, which writes those factors onto <code>useAudioSettingsStore</code> (<code>ttsMusicDuckingFactor</code>, <code>ttsChatSynthDuckingFactor</code>) rather than calling player volume setters directly.</p>
 <h2>Sound Recording</h2>
 <p>The Soundboard app provides audio recording via the <code>useAudioRecorder</code> hook:</p>
 <h3>Features</h3>
@@ -619,9 +618,9 @@ if (isSpeaking &amp;&amp; ipodIsPlaying &amp;&amp; !isIOS) {
 <h3>Volume Controls</h3>
 <table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>masterVolume</code></td><td>1.0</td><td>Global volume multiplier</td></tr><tr><td><code>uiVolume</code></td><td>1.0</td><td>Interface sounds volume</td></tr><tr><td><code>chatSynthVolume</code></td><td>2.0</td><td>Chat typing synthesis volume</td></tr><tr><td><code>speechVolume</code></td><td>2.0</td><td>TTS voice volume</td></tr><tr><td><code>ipodVolume</code></td><td>1.0</td><td>Music player volume</td></tr></tbody></table>
 <h3>Feature Toggles</h3>
-<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>uiSoundsEnabled</code></td><td>true</td><td>Enable/disable UI sounds</td></tr><tr><td><code>terminalSoundsEnabled</code></td><td>true</td><td>Enable/disable terminal sounds</td></tr><tr><td><code>typingSynthEnabled</code></td><td>false</td><td>Enable/disable chat typing synthesis</td></tr><tr><td><code>speechEnabled</code></td><td>false</td><td>Enable/disable voice input/output</td></tr><tr><td><code>keepTalkingEnabled</code></td><td>true</td><td>Continue listening after speech</td></tr></tbody></table>
+<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>uiSoundsEnabled</code></td><td>true</td><td>Enable/disable UI sounds</td></tr><tr><td><code>terminalSoundsEnabled</code></td><td>true</td><td>Enable/disable terminal sounds</td></tr><tr><td><code>typingSynthEnabled</code></td><td>false</td><td>Enable/disable chat typing synthesis</td></tr><tr><td><code>speechEnabled</code></td><td>false</td><td>Enable Ryo chat TTS (ElevenLabs). Enabling requires a signed-in user; the Chats / Control Panels Speech toggle opens the login dialog when logged out. Browser TTS in other apps does not use this flag.</td></tr><tr><td><code>keepTalkingEnabled</code></td><td>true</td><td>Continue listening after speech</td></tr></tbody></table>
 <h3>TTS Settings</h3>
-<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>ttsModel</code></td><td>null</td><td>TTS provider (openai, elevenlabs, null)</td></tr><tr><td><code>ttsVoice</code></td><td>null</td><td>Voice ID for selected provider</td></tr><tr><td><code>synthPreset</code></td><td>"classic"</td><td>Chat synth preset name</td></tr></tbody></table>
+<table><thead><tr><th>Setting</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>ttsModel</code></td><td>null</td><td>TTS provider (<code>openai</code>, <code>elevenlabs</code>, or <code>null</code> = server default ElevenLabs / Ryo PVC)</td></tr><tr><td><code>ttsVoice</code></td><td>null</td><td>Voice ID for selected provider (<code>null</code> resolves to Ryo PVC on ElevenLabs)</td></tr><tr><td><code>browserTtsVoiceURI</code></td><td>null</td><td>Browser <code>speechSynthesis</code> voice for non–Ryo-chat speak (Maps YouBike nav, Books, TextEdit, Calculator, assistant); not cloud-synced</td></tr><tr><td><code>synthPreset</code></td><td>"classic"</td><td>Chat synth preset name</td></tr></tbody></table>
 <h3>Persistence</h3>
 <p>All settings are persisted to localStorage via Zustand's persist middleware: <ul><li>Storage key: <code>ryos:audio-settings</code></li><li>Version: 1 (for migration support)</li></ul></p>
 <h3>Convenience Selectors</h3>

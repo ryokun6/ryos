@@ -10,6 +10,7 @@
  */
 
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useChatsStore } from "@/stores/useChatsStore";
 import {
   useLanguageStore,
   type LanguageCode,
@@ -288,15 +289,28 @@ export const handleSettings = async (
     log.debug("Master volume set", { masterVolume });
   }
 
-  // Speech enabled
+  // Speech enabled — Ryo chat TTS requires a signed-in user.
   if (speechEnabled !== undefined) {
-    audioSettingsStore.setSpeechEnabled(speechEnabled);
-    changes.push(
-      speechEnabled
-        ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
-        : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
-    );
-    log.debug("Speech setting changed", { speechEnabled });
+    if (speechEnabled && !useChatsStore.getState().isAuthenticated) {
+      const requiresLogin = i18n.t(
+        "apps.chats.toolCalls.settingsSpeechRequiresLogin"
+      );
+      changes.push(
+        requiresLogin &&
+          requiresLogin !== "apps.chats.toolCalls.settingsSpeechRequiresLogin"
+          ? requiresLogin
+          : "Sign in to turn on chat speech"
+      );
+      log.debug("Speech enable refused; user is not signed in");
+    } else {
+      audioSettingsStore.setSpeechEnabled(speechEnabled);
+      changes.push(
+        speechEnabled
+          ? i18n.t("apps.chats.toolCalls.settingsSpeechEnabled")
+          : i18n.t("apps.chats.toolCalls.settingsSpeechDisabled")
+      );
+      log.debug("Speech setting changed", { speechEnabled });
+    }
   }
 
   // UI sounds enabled

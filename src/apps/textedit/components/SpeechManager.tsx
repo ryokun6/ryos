@@ -1,6 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Editor } from "@tiptap/core";
-import { useTtsQueue } from "@/hooks/useTtsQueue";
+import { useTranslation } from "react-i18next";
+import {
+  createSpeechUtterance,
+  getBrowserSpeechSynthesis,
+  ryOSLocaleToSpeechLanguage,
+} from "@/utils/browserSpeech";
 import { speechHighlightKey } from "../extensions/SpeechHighlight";
 
 interface SpeechManagerProps {
@@ -13,107 +18,121 @@ interface SpeechManagerProps {
   }) => React.ReactNode;
 }
 
-export function SpeechManager({ editor, speechEnabled, children }: SpeechManagerProps) {
-  const { speak, stop, isSpeaking } = useTtsQueue();
-  const [isTtsLoading, setIsTtsLoading] = useState(false);
+type SpeakableBlock = { text: string; from: number; to: number };
 
-  // When speech starts, clear the loading state
-  useEffect(() => {
-    if (isSpeaking) {
-      setIsTtsLoading(false);
-    }
-  }, [isSpeaking]);
+/**
+ * TextEdit read-aloud uses browser `speechSynthesis` (same path as Maps nav,
+ * Books, Calculator, and the desktop assistant). The cloud TTS queue is
+ * reserved for in-OS Ryo chat so Default ElevenLabs + Ryo PVC cannot leak.
+ */
+export function SpeechManager({ editor, speechEnabled, children }: SpeechManagerProps) {
+  const { i18n } = useTranslation();
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const generationRef = useRef(0);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const highlightRange = useCallback(
+    (from: number, to: number) => {
+      if (!editor) return;
+      const { state, view } = editor;
+      const tr = state.tr.setMeta(speechHighlightKey, { range: { from, to } });
+      view.dispatch(tr);
+    },
+    [editor]
+  );
+
+  const clearHighlight = useCallback(() => {
+    if (!editor) return;
+    const { state, view } = editor;
+    const tr = state.tr.setMeta(speechHighlightKey, { clear: true });
+    view.dispatch(tr);
+  }, [editor]);
+
+  const stop = useCallback(() => {
+    generationRef.current += 1;
+    activeUtteranceRef.current = null;
+    getBrowserSpeechSynthesis()?.cancel();
+    setIsSpeaking(false);
+    clearHighlight();
+  }, [clearHighlight]);
+
+  useEffect(() => () => stop(), [stop]);
+
+  const speakBlocks = useCallback(
+    (blocks: SpeakableBlock[]) => {
+      const synth = getBrowserSpeechSynthesis();
+      if (!synth || blocks.length === 0) return;
+
+      const generation = ++generationRef.current;
+      const lang = ryOSLocaleToSpeechLanguage(i18n.language);
+
+      synth.cancel();
+      synth.resume();
+      synth.getVoices();
+
+      const speakAt = (index: number) => {
+        if (generation !== generationRef.current) return;
+        const block = blocks[index];
+        if (!block) {
+          activeUtteranceRef.current = null;
+          clearHighlight();
+          setIsSpeaking(false);
+          return;
+        }
+
+        highlightRange(block.from, block.to);
+        const utterance = createSpeechUtterance(block.text, {
+          lang,
+          voices: synth.getVoices(),
+        });
+        activeUtteranceRef.current = utterance;
+        utterance.onend = () => speakAt(index + 1);
+        utterance.onerror = () => speakAt(index + 1);
+        setIsSpeaking(true);
+        synth.speak(utterance);
+      };
+
+      speakAt(0);
+    },
+    [clearHighlight, highlightRange, i18n.language]
+  );
 
   const handleSpeak = useCallback(() => {
     if (!editor || !speechEnabled) return;
 
-    // Helper to highlight an editor range using the decoration plugin
-    const highlightRange = (from: number, to: number) => {
-      const { state, view } = editor;
-      const tr = state.tr.setMeta(speechHighlightKey, { range: { from, to } });
-      view.dispatch(tr);
-    };
-
-    // Helper to clear any existing highlight
-    const clearHighlight = () => {
-      const { state, view } = editor;
-      const tr = state.tr.setMeta(speechHighlightKey, { clear: true });
-      view.dispatch(tr);
-    };
-
-    // If currently speaking, clicking stops playback
     if (isSpeaking) {
       stop();
-      clearHighlight();
-      return;
-    }
-
-    // If we are already waiting for TTS response, cancel it on second click
-    if (isTtsLoading) {
-      stop();
-      setIsTtsLoading(false);
       return;
     }
 
     const { from, to, empty } = editor.state.selection;
 
     if (empty) {
-      // Collect all textblock nodes with their positions so we can highlight
-      const blocks: { text: string; from: number; to: number }[] = [];
+      const blocks: SpeakableBlock[] = [];
       editor.state.doc.descendants((node, pos) => {
         if (node.isTextblock && node.textContent.trim()) {
-          const from = pos + 1; // +1 to skip the opening tag
-          const to = pos + node.nodeSize - 1; // -1 to skip the closing tag
           blocks.push({
             text: node.textContent.trim(),
-            from,
-            to,
+            from: pos + 1,
+            to: pos + node.nodeSize - 1,
           });
         }
       });
-
       if (blocks.length === 0) return;
-
-      setIsTtsLoading(true);
-
-      // Queue every block immediately so network fetches start in parallel
-      blocks.forEach(({ text }, idx) => {
-        speak(text, () => {
-          const nextIdx = idx + 1;
-          if (nextIdx < blocks.length) {
-            const nextBlock = blocks[nextIdx];
-            clearHighlight();
-            highlightRange(nextBlock.from, nextBlock.to);
-          } else {
-            clearHighlight();
-          }
-        });
-      });
-
-      // Highlight the first block right away
-      const { from: firstFrom, to: firstTo } = blocks[0];
-      highlightRange(firstFrom, firstTo);
-    } else {
-      // Speak the selected text as-is
-      const textToSpeak = editor.state.doc.textBetween(from, to, "\n").trim();
-      if (textToSpeak) {
-        setIsTtsLoading(true);
-
-        // Highlight the selection
-        highlightRange(from, to);
-
-        speak(textToSpeak, () => {
-          clearHighlight();
-        });
-      }
+      speakBlocks(blocks);
+      return;
     }
-  }, [editor, speechEnabled, isSpeaking, isTtsLoading, speak, stop]);
+
+    const textToSpeak = editor.state.doc.textBetween(from, to, "\n").trim();
+    if (!textToSpeak) return;
+    speakBlocks([{ text: textToSpeak, from, to }]);
+  }, [editor, isSpeaking, speakBlocks, speechEnabled, stop]);
 
   return (
     <>
       {children({
         isSpeaking,
-        isTtsLoading,
+        isTtsLoading: false,
         handleSpeak,
       })}
     </>

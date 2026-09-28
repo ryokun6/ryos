@@ -256,14 +256,14 @@ Provides musical feedback for typing in the Chat app:
 
 ## Text-to-Speech (`useTtsQueue`)
 
-Provides gap-free TTS playback with intelligent queuing:
+Provides gap-free TTS playback with intelligent queuing. **Only Ryo chat** uses this hook (`source: "ryo-chat"` plus a server-issued speech permit). Other speak features (Maps YouBike nav, Books, TextEdit, Calculator, desktop assistant) all go through the shared helpers in `@/utils/browserSpeech` (`createSpeechUtterance` / `getBrowserSpeechSynthesis`) so Control Panels Default (ElevenLabs + Ryo PVC) cannot leak Ryo's voice.
 
 ### Features
 
 - **Gap-Free Playback**: Uses AudioContext timeline scheduling (`source.start(startTime)`)
 - **Parallel Fetching**: Up to 3 concurrent TTS requests
-- **TTS Providers**: OpenAI and ElevenLabs support
-- **Volume Control**: Dedicated `speechVolume` with master multiplier
+- **TTS Providers**: OpenAI and ElevenLabs support. Server default is ElevenLabs (`eleven_turbo_v2_5`) with Ryo PVC (`OHP6tMHkOsRKrsDdbPah`). Control Panels lists Ryo PVC, Instant v4, v3, v2, and legacy Ryo; PVC playback gain is `0.6` so the hotter encode does not clip at the default speech volume.
+- **Volume Control**: Dedicated `speechVolume` with master multiplier (PVC applies extra playback gain only at synthesis time)
 - **Micro-Fades**: 10ms fade-out before stopping to prevent clicks
 
 ### Volume Ducking
@@ -275,13 +275,7 @@ When TTS is speaking:
 - Chat synth volume reduced to 60%
 - Original volumes restored when speech ends
 
-```typescript
-// Ducking example
-if (isSpeaking && ipodIsPlaying && !isIOS) {
-  const duckedIpod = originalVolume * 0.35;
-  setIpodVolumeGlobal(duckedIpod);
-}
-```
+Production ducking is `startTtsDucking` / `stopTtsDucking` in `src/lib/audioDucking.ts`, which writes those factors onto `useAudioSettingsStore` (`ttsMusicDuckingFactor`, `ttsChatSynthDuckingFactor`) rather than calling player volume setters directly.
 
 ## Sound Recording
 
@@ -339,15 +333,16 @@ Audio settings are managed via `useAudioSettingsStore` (Zustand with persistence
 | `uiSoundsEnabled` | true | Enable/disable UI sounds |
 | `terminalSoundsEnabled` | true | Enable/disable terminal sounds |
 | `typingSynthEnabled` | false | Enable/disable chat typing synthesis |
-| `speechEnabled` | false | Enable/disable voice input/output |
+| `speechEnabled` | false | Enable Ryo chat TTS (ElevenLabs). Enabling requires a signed-in user; the Chats / Control Panels Speech toggle opens the login dialog when logged out. Browser TTS in other apps does not use this flag. |
 | `keepTalkingEnabled` | true | Continue listening after speech |
 
 ### TTS Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `ttsModel` | null | TTS provider (openai, elevenlabs, null) |
-| `ttsVoice` | null | Voice ID for selected provider |
+| `ttsModel` | null | TTS provider (`openai`, `elevenlabs`, or `null` = server default ElevenLabs / Ryo PVC) |
+| `ttsVoice` | null | Voice ID for selected provider (`null` resolves to Ryo PVC on ElevenLabs) |
+| `browserTtsVoiceURI` | null | Browser `speechSynthesis` voice for non–Ryo-chat speak (Maps YouBike nav, Books, TextEdit, Calculator, assistant); not cloud-synced |
 | `synthPreset` | "classic" | Chat synth preset name |
 
 ### Persistence

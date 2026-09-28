@@ -36,6 +36,7 @@ interface ChatsDialogsProps {
   setSaveFileName: (value: string) => void;
   isUsernameDialogOpen: boolean;
   setIsUsernameDialogOpen: (open: boolean) => void;
+  usernameDialogInitialTab: "login" | "signup";
   verifyUsernameInput: string;
   setVerifyUsernameInput: (value: string) => void;
   verifyPasswordInput: string;
@@ -88,6 +89,7 @@ export const ChatsDialogs = memo(function ChatsDialogs({
   setSaveFileName,
   isUsernameDialogOpen,
   setIsUsernameDialogOpen,
+  usernameDialogInitialTab,
   verifyUsernameInput,
   setVerifyUsernameInput,
   verifyPasswordInput,
@@ -166,7 +168,7 @@ export const ChatsDialogs = memo(function ChatsDialogs({
         onChange={setSaveFileName}
       />
       <LoginDialog
-        initialTab="signup"
+        initialTab={usernameDialogInitialTab}
         isOpen={isUsernameDialogOpen}
         onOpenChange={setIsUsernameDialogOpen}
         usernameInput={verifyUsernameInput}

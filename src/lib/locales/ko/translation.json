@@ -1501,6 +1501,7 @@
         "settingsNoChanges": "변경사항 없음",
         "settingsSpeechDisabled": "음성 합성 비활성화됨",
         "settingsSpeechEnabled": "음성 합성 활성화됨",
+        "settingsSpeechRequiresLogin": "채팅 음성을 켜려면 로그인",
         "settingsThemeChanged": "테마가 {{theme}}로 변경되었습니다",
         "settingsUiSoundsDisabled": "UI 사운드 비활성화됨",
         "settingsUiSoundsEnabled": "UI 사운드 활성화됨",
@@ -2189,7 +2190,7 @@
         "showAll": "모두 보기"
       },
       "ttsModel": "TTS 모델",
-      "ttsModelDescription": "텍스트 음성 변환 제공자",
+      "ttsModelDescription": "Ryo 채팅 전용. 다른 앱은 시스템 음성을 사용합니다.",
       "ttsVoice": "TTS 음성",
       "ttsVoices": {
         "alloy": "Alloy",
@@ -2200,6 +2201,8 @@
         "ryo": "Ryo",
         "ryoV2": "Ryo v2",
         "ryoV3": "Ryo v3",
+        "ryoInstantV4": "Ryo Instant v4",
+        "ryoPvc": "Ryo PVC",
         "shimmer": "쉬머"
       },
       "ui": "UI",
