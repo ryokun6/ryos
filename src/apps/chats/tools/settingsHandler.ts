@@ -292,7 +292,15 @@ export const handleSettings = async (
   // Speech enabled — Ryo chat TTS requires a signed-in user.
   if (speechEnabled !== undefined) {
     if (speechEnabled && !useChatsStore.getState().isAuthenticated) {
-      changes.push(i18n.t("apps.chats.toolCalls.settingsSpeechRequiresLogin"));
+      const requiresLogin = i18n.t(
+        "apps.chats.toolCalls.settingsSpeechRequiresLogin"
+      );
+      changes.push(
+        requiresLogin &&
+          requiresLogin !== "apps.chats.toolCalls.settingsSpeechRequiresLogin"
+          ? requiresLogin
+          : "Sign in to turn on chat speech"
+      );
       log.debug("Speech enable refused; user is not signed in");
     } else {
       audioSettingsStore.setSpeechEnabled(speechEnabled);

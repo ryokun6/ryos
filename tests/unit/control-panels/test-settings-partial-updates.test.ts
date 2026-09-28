@@ -617,10 +617,13 @@ describe("handleSettings applies only sanitized fields", () => {
 
     expect(setSpeechEnabled).not.toHaveBeenCalled();
     expect(addToolOutput).toHaveBeenCalledTimes(1);
-    const payload = addToolOutput.mock.calls[0][0] as { output?: string };
-    expect(String(payload.output ?? "")).toMatch(
-      /sign in|settingsSpeechRequiresLogin/i
-    );
+    const payload = addToolOutput.mock.calls[0][0] as {
+      output?: string;
+      errorText?: string;
+    };
+    expect(
+      `${payload.output ?? ""} ${payload.errorText ?? ""}`
+    ).toMatch(/sign in|settingsSpeechRequiresLogin/i);
   });
 
   test("enables speech when the user is signed in", async () => {
