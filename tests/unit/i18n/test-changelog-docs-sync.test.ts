@@ -6,6 +6,10 @@ const CHANGELOG_MD = "docs/9-changelog.md";
 const CHANGELOG_HTML = "public/docs/changelog.html";
 /** Curated major entries that must appear in both markdown source and static HTML. */
 const ANCHOR_PHRASES = [
+  "Ryo PVC speech",
+  "YouBike navigation",
+  "YouBike overlay",
+  "Stuff",
   "Internet Explorer Reader Mode",
   "Weather and location tools",
   "Save anywhere",
@@ -56,7 +60,7 @@ describe("changelog docs sync", () => {
     ]);
     const months = markdown.split(/^## /m).slice(1);
 
-    expect(months).toHaveLength(19);
+    expect(months).toHaveLength(21);
     for (const month of months) {
       const featured = month.split("<details>")[0] ?? "";
       const screenshots = [
@@ -82,14 +86,41 @@ describe("changelog docs sync", () => {
 
   test("deduplicates the June and July featured changes", async () => {
     const markdown = await readFile(CHANGELOG_MD, "utf-8");
+    const september =
+      markdown.split("## September 2026")[1]?.split("## August 2026")[0] ?? "";
+    const august =
+      markdown.split("## August 2026")[1]?.split("## July 2026")[0] ?? "";
     const july =
       markdown.split("## July 2026")[1]?.split("## June 2026")[0] ?? "";
     const june =
       markdown.split("## June 2026")[1]?.split("## May 2026")[0] ?? "";
+    const septemberFeatured = september.split("<details>")[0] ?? "";
+    const augustFeatured = august.split("<details>")[0] ?? "";
     const julyFeatured = july.split("<details>")[0] ?? "";
     const juneFeatured = june.split("<details>")[0] ?? "";
     const screenshotPattern =
       /src="(\/docs-assets\/changelog\/[^"]+\.webp)"/g;
+
+    expect(
+      [...septemberFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
+    ).toEqual([
+      "/docs-assets/changelog/2026-09-05-ryo-pvc-speech-16x9.webp",
+      "/docs-assets/changelog/2026-09-04-youbike-navigation-16x9.webp",
+      "/docs-assets/changelog/2026-09-03-youbike-overlay-16x9.webp",
+    ]);
+    expect(septemberFeatured).toContain("<h3>Ryo PVC speech</h3>");
+    expect(septemberFeatured).toContain("<h3>YouBike navigation</h3>");
+    expect(septemberFeatured).toContain("<h3>YouBike overlay</h3>");
+    expect(
+      [...augustFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
+    ).toEqual([
+      "/docs-assets/changelog/2026-08-05-stuff-cutouts-16x9.webp",
+      "/docs-assets/changelog/2026-08-04-stuff-locations-16x9.webp",
+      "/docs-assets/changelog/2026-08-03-stuff-shelf-16x9.webp",
+      "/docs-assets/changelog/2026-08-02-stuff-drawer-16x9.webp",
+      "/docs-assets/changelog/2026-08-01-stuff-print-16x9.webp",
+    ]);
+    expect(augustFeatured).toContain("<h3>Stuff</h3>");
 
     expect(
       [...julyFeatured.matchAll(screenshotPattern)].map((match) => match[1]),

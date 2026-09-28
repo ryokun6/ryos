@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -468,19 +471,19 @@
     <main class="content">
       <article>
         <h1>Media API</h1>
-<p>The Media API provides endpoints for text-to-speech synthesis, audio transcription, and YouTube music search. These endpoints power the audio-related features in ryOS applications like iPod, Karaoke, and voice input.</p>
+<p>The Media API provides endpoints for text-to-speech synthesis, audio transcription, and YouTube music search. <code>/api/speech</code> is used by in-OS Ryo chat; Maps, Books, TextEdit, Calculator, and the desktop assistant speak via browser <code>speechSynthesis</code>.</p>
 <p>All endpoints run on the standalone Bun server and implement rate limiting to prevent abuse.</p>
 <code>/api/speech</code> is implemented with the shared <code>apiHandler</code> utility. <code>/api/audio-transcribe</code> is a multipart upload route and still uses explicit body-parser/CORS handling.
 <hr>
 <h2>Text-to-Speech</h2>
 <p>Convert text to spoken audio using OpenAI or ElevenLabs voice synthesis.</p>
 <h3>Endpoint</h3>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/speech</code></td><td>Convert text to speech audio</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/speech</code></td><td>Convert text to speech audio</td></tr><tr><td>POST</td><td><code>/api/speech/permits</code></td><td>Mint a short-lived Ryo-chat speech permit bound to server-held assistant text</td></tr></tbody></table>
 <h3>Request</h3>
 <strong>Headers:</strong>
-<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Yes</td><td><code>application/json</code></td></tr><tr><td><code>Authorization</code></td><td>No</td><td><code>Bearer {token}</code> for authenticated requests</td></tr><tr><td><code>X-Username</code></td><td>No</td><td>Username for rate limit tracking</td></tr></tbody></table>
+<table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td>Yes</td><td><code>application/json</code></td></tr><tr><td><code>Authorization</code></td><td>Yes</td><td><code>Bearer {token}</code> (cookie session also accepted). Unauthenticated callers receive <code>401</code>.</td></tr><tr><td><code>X-Username</code></td><td>Yes</td><td>Username matching the token</td></tr></tbody></table>
 <strong>Body (JSON):</strong>
-<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>text</code></td><td><code>string</code></td><td>Yes</td><td>Text to convert to speech</td></tr><tr><td><code>model</code></td><td><code>"openai", "elevenlabs"</code></td><td>No</td><td>TTS provider (default: <code>"elevenlabs"</code>)</td></tr></tbody></table>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>text</code></td><td><code>string</code></td><td>Yes for OpenAI; optional for Ryo when <code>permitId</code> is set</td><td>Text to convert to speech. For Ryo / ElevenLabs, a mismatched <code>text</code> is refused — only the permit-bound assistant text is synthesized.</td></tr><tr><td><code>model</code></td><td><code>"openai", "elevenlabs"</code></td><td>No</td><td>TTS provider (default: <code>"elevenlabs"</code>)</td></tr><tr><td><code>source</code></td><td><code>string</code></td><td>For Ryo / ElevenLabs</td><td>Speech intent. Ryo ElevenLabs voices (including Default → Ryo PVC) require <code>"ryo-chat"</code>. OpenAI does not. <strong>This flag is client-supplied and spoofable</strong> — first gate only.</td></tr><tr><td><code>permitId</code></td><td><code>string</code></td><td>For Ryo / ElevenLabs</td><td>Opaque id from <code>POST /api/speech/permits</code>. Required for Ryo voices. The server synthesizes the bound text, not arbitrary client text.</td></tr><tr><td><code>contentHash</code></td><td><code>string</code></td><td>No</td><td>Optional SHA-256 of the cleaned permit text. Rejected on mismatch.</td></tr></tbody></table>
 <strong>OpenAI Options:</strong>
 <table><thead><tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr></thead><tbody><tr><td><code>voice</code></td><td><code>string</code></td><td><code>"alloy"</code></td><td>OpenAI voice name</td></tr><tr><td><code>speed</code></td><td><code>number</code></td><td><code>1.1</code></td><td>Speech speed multiplier</td></tr></tbody></table>
 <strong>ElevenLabs Options:</strong>
@@ -498,9 +501,37 @@
 <strong>Success (200):</strong>
 <p>Returns audio stream with headers:</p>
 <table><thead><tr><th>Header</th><th>Value</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td><code>audio/mpeg</code></td></tr><tr><td><code>Content-Length</code></td><td>Audio byte length</td></tr><tr><td><code>Cache-Control</code></td><td><code>no-store</code></td></tr></tbody></table>
+<strong>Unauthorized (401):</strong>
+<pre><code>{
+  "error": "Unauthorized - missing credentials"
+}</code></pre>
+<code>/api/speech</code> and <code>/api/speech/permits</code> require a signed-in user. Anonymous callers are rejected before synthesis, permit mint, or the Ryo source/permit gates. Browser <code>speechSynthesis</code> used by other apps does not call these endpoints and does not require login.
 <strong>Error (400):</strong>
 <pre><code>{
   "error": "'text' is required"
+}</code></pre>
+<strong>Forbidden (403) — Ryo voice without <code>source: "ryo-chat"</code>:</strong>
+<pre><code>{
+  "error": "ryo_voice_forbidden",
+  "message": "Ryo ElevenLabs voices are limited to Ryo chat speech. Set source to \"ryo-chat\" or use model \"openai\".",
+  "source": null
+}</code></pre>
+<strong>Forbidden (403) — Ryo voice without a valid speech permit:</strong>
+<pre><code>{
+  "error": "speech_permit_required",
+  "message": "A speech permit is required for Ryo ElevenLabs voices."
+}</code></pre>
+<p>Other permit failures use <code>speech_permit_invalid</code>, <code>speech_permit_expired</code>, <code>speech_permit_exhausted</code>, <code>speech_permit_owner_mismatch</code>, <code>speech_permit_text_mismatch</code>, or <code>speech_permit_hash_mismatch</code>.</p>
+<h3>Speech permits</h3>
+<code>POST /api/speech/permits</code> mints an opaque, server-held permit for a Ryo chat assistant chunk. Chat writes a short-lived speech draft while streaming and on turn complete; proactive greetings write a draft after persist. Mint verifies the requested text is a cleaned substring of that draft or of a stored assistant message, then stores the bound text. The chat client retries mint briefly on <code>404</code> / <code>speech_text_not_bound</code> while the streaming draft catches up. Permits last 5 minutes and may be used twice; consume is atomic so parallel <code>/api/speech</code> calls cannot exceed that reuse limit. A signed-in user is required (<code>user:&lt;username&gt;</code>). Anonymous callers are rejected with <code>401</code> before any permit or synthesis work. Permit mint is separately limited to 30 requests / minute.
+<strong>Body (JSON):</strong>
+<table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>messageId</code></td><td><code>string</code></td><td>Yes</td><td>Assistant message id from the Ryo chat stream</td></tr><tr><td><code>text</code></td><td><code>string</code></td><td>Yes</td><td>Speakable chunk. Must be part of the server-held assistant text.</td></tr><tr><td><code>source</code></td><td><code>string</code></td><td>Yes</td><td>Must be <code>"ryo-chat"</code></td></tr><tr><td><code>contentHash</code></td><td><code>string</code></td><td>No</td><td>SHA-256 of the cleaned chunk</td></tr></tbody></table>
+<strong>Success (200):</strong>
+<pre><code>{
+  "permitId": "uuid",
+  "contentHash": "hex sha-256",
+  "expiresInSeconds": 300,
+  "messageId": "assistant-message-id"
 }</code></pre>
 <strong>Rate Limit (429):</strong>
 <pre><code>{
@@ -513,20 +544,26 @@
 }</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>10 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>50 requests</td><td>24 hours</td></tr></tbody></table>
-<p>> Note: Authenticated admin users bypass rate limiting.</p>
+<p>> Note: The authenticated <code>ryo</code> account bypasses speech and permit rate limiting. Other users and admins do not.</p>
 <h3>Example</h3>
 <strong>Request:</strong>
 <pre><code>curl -X POST https://your-domain.com/api/speech \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer AUTH_TOKEN" \
+  -H "X-Username: your-username" \
   -d '{
     "text": "Hello, welcome to ryOS!",
     "model": "elevenlabs",
+    "source": "ryo-chat",
+    "permitId": "SPEECH_PERMIT_ID",
     "voice_id": "OHP6tMHkOsRKrsDdbPah"
   }' \
   --output speech.mp3</code></pre>
 <strong>With OpenAI:</strong>
 <pre><code>curl -X POST https://your-domain.com/api/speech \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer AUTH_TOKEN" \
+  -H "X-Username: your-username" \
   -d '{
     "text": "Hello, welcome to ryOS!",
     "model": "openai",

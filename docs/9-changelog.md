@@ -17,6 +17,71 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ---
 
+## September 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-09-05-ryo-pvc-speech-16x9.webp" alt="Ryo PVC speech in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ryo PVC speech</h3><p>Chats defaults to ElevenLabs Ryo PVC with Instant v4, and Ryo voices stay in Ryo chat.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-09-04-youbike-navigation-16x9.webp" alt="YouBike navigation in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>YouBike navigation</h3><p>Start and Stop spoken turn-by-turn guidance on in-map YouBike trips.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-09-03-youbike-overlay-16x9.webp" alt="YouBike overlay in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>YouBike overlay</h3><p>Live YouBike 2.0 stations cover Taiwan, including Taichung and other cities beyond Taipei.</p></div></article>
+</div>
+<details>
+<summary>More from this month (21)</summary>
+
+- **Ryo PVC speech**: default signed-in Ryo chat TTS to ElevenLabs Ryo PVC, add Instant v4, and play PVC a bit quieter so it does not clip.
+- Restrict Ryo ElevenLabs voices to Ryo chat so Maps, Books, and other speak features use browser speech.
+- **YouBike navigation**: Start / Stop Navigation on in-map trips with spoken turn prompts.
+- **YouBike overlay**: load the national YouBike 2.0 dump so stations appear in Taichung and other Taiwan cities, not only Taipei.
+- Keep Locate Me on as a continuous GPS watch; the first fix zooms to neighborhood scale, later ticks only recenter, and turning it off leaves zoom unchanged.
+- Zoom Home to neighborhood scale; GeoIP and the Taipei fallback stay city-wide.
+- Polish directions UI with a car icon, Title Case categories and step labels, and clearer YouBike arrival copy.
+- Swap Home / Work Set and Unset in the place-card More menu, and allow clearing those slots.
+- Add Chinese Zhuyin (Bopomofo) lyrics pronunciation after Pinyin in iPod and Karaoke.
+- Show the upcoming lyric after inter-line delay dots instead of leaving the finished line on screen.
+- Fix lyric ghosting when delay dots end, and fix Karaoke play/pause after returning from Cover Flow.
+- Hide copyright-disclaimer and standalone `詞：` / `词：` lyricist-credit lines from karaoke lyrics.
+- Keep iOS song add working; the auto-play restriction applies to playback only.
+- Recover TextEdit documents and binary files from content-addressed cloud blobs when local IndexedDB content was evicted.
+- Save files atomically, resume interrupted cloud uploads, and keep other sync work moving when one large upload fails.
+- Improve Books cloud-sync safety on first sync and when local EPUB blobs are missing.
+- Upgrade the AI SDK, keep gpt-6 as the default model, and reserve opus-5.5 for Ryo debug.
+- Update Ryo's chat persona for Taipei after leaving Cursor.
+- Fix the blank ryo.lu page in Internet Explorer.
+- Fix Aqua Dark Calculator convert-divider and unit-select gloss.
+- Refresh local build stamps and record the Electron git-dependency integrity hash.
+
+</details>
+
+## August 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-08-05-stuff-cutouts-16x9.webp" alt="Stuff cutout covers in the August 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Cutout covers</h3><p>Stuff items can sit as transparent cutouts, CD jewel cases, or framed product tiles.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-08-04-stuff-locations-16x9.webp" alt="Stuff locations and tags in the August 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Locations and tags</h3><p>Filter the shelf by place, multi-select tags, and status including sold nameplates.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-08-03-stuff-shelf-16x9.webp" alt="Stuff inventory in the August 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Stuff</h3><p>A wooden inventory shelf catalogs belongings with barcodes, sharing, and print labels.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-08-02-stuff-drawer-16x9.webp" alt="Stuff wood drawer in the August 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Wood AppDrawer</h3><p>Stuff (and Books-style chrome) can slide out a wooden detail drawer beside the shelf.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-08-01-stuff-print-16x9.webp" alt="Stuff print labels in the August 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Print labels</h3><p>Print item and tag barcodes so a later scan opens the thing or filters the shelf.</p></div></article>
+</div>
+<details>
+<summary>More from this month (16)</summary>
+
+- **Stuff**: add an inventory app with a wooden shelf, barcode scan, product lookup, public shares, and shelf import/export.
+- Add CD jewel-case covers, iTunes album lookup, and always-on default tags.
+- Add cutout covers with background removal and sold / for-sale / reserved nameplates.
+- Add item Locations and a multi-select Tags combobox; show Free for a zero price.
+- Add a Print menu for item and tag labels, plus Clear Shelf with confirmation.
+- Prevent duplicate tags and items when importing a shelf JSON.
+- Improve cover upload, paste, drop, and large-image compression.
+- Add wood and glass AppDrawer materials and use a Calendar-style wood drawer in Stuff.
+- Print ryOS IDs on Stuff labels so scans open items or filter by tag.
+- Polish Stuff shelf layout, scanner UX, hover cutouts, and localized defaults.
+- Fill the Stuff window width and fix the drawer ghost overlay.
+- Fix Stuff shared-link long-title overflow.
+- Re-fetch cover art and color on Karaoke/iPod clear-cache and lyrics search.
+- Fix dropdown radio-menu font size when Karaoke force-font is active.
+- Silence ZXing MultiFormatReader warning spam in the Stuff scanner.
+- Raise the PWA precache budget and pin happy-dom for speech/IndexedDB unit suites.
+
+</details>
+
 ## July 2026
 
 <div class="changelog-feature-grid">
@@ -27,7 +92,7 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-07-01-books-library-16x9.webp" alt="Books library in the July 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Books library</h3><p>A wooden EPUB shelf keeps imports, reading progress, and Meditations together.</p></div></article>
 </div>
 <details>
-<summary>More from this month (27)</summary>
+<summary>More from this month (30)</summary>
 
 - **Internet Explorer Reader Mode**: oversized modern pages (about 1 MB+) open as a lite article view with Open original, so heavy sites no longer freeze the shared desktop tab.
 - Add **runJs** chat tool: a QuickJS WASM sandbox runs pure ES2023 on the server and returns console output plus the completion value.
@@ -59,6 +124,9 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 - Fix Books read-aloud/Safari styling, font switching, line spacing, vertical layout glitches, and highlight flicker.
 - Polish Books customization panel, speech bar, and toolbar layout.
 - Use macOS 26 for the Apple terminology glossary.
+- Use Mac OS X 10.4 Tiger Widget Bar icons in Dashboard's add-widget strip and menu.
+- Enlarge Dashboard Widget Bar icons and tray height, then tighten tray padding.
+- Recover missing book blobs from cloud and stop false book-blob tombstones.
 
 </details>
 

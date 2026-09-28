@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overview - ryOS Docs</title>
+  <title>KOReader Progress Sync (kosync) - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <meta name="color-scheme" content="light dark">
   <script>
@@ -327,14 +327,14 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/overview" class="active">1. Overview</a>
+    <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
     <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
@@ -426,14 +426,14 @@
     <a href="/docs/icon-resources" class="nav-child ">7.3 Icon Resources</a>
   </div>
 </div>
-<div class="nav-group ">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
     <a href="/docs/api-reference" class="">8. API Reference</a>
   </button>
-  <div class="nav-children" style="display: none;">
+  <div class="nav-children" style="display: block;">
     <a href="/docs/chat-api" class="nav-child ">8.1 Chat API</a>
     <a href="/docs/song-api" class="nav-child ">8.2 Song API</a>
     <a href="/docs/media-api" class="nav-child ">8.3 Media API</a>
@@ -444,7 +444,7 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
-    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/kosync-api" class="nav-child active">8.11 KOReader Progress Sync (kosync)</a>
     <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
@@ -470,78 +470,40 @@
     
     <main class="content">
       <article>
-        <h1>Overview</h1>
-<p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 29 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
-<p>Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.</p>
-<style>
-.latest-changelog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0 24px; }
-.latest-changelog-card { display: flex; flex-direction: column; border: 1px solid var(--doc-border); border-radius: 12px; overflow: hidden; background: var(--doc-surface-alt); text-decoration: none; color: inherit; }
-.latest-changelog-card:hover { border-color: var(--doc-text-faint); }
-.latest-changelog-card img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
-.latest-changelog-card-copy { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
-.latest-changelog-card h3 { font-size: 14px; margin: 0 0 6px; }
-.latest-changelog-card p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
-.latest-changelog-card p.latest-changelog-card-label { color: var(--doc-text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
-.latest-changelog-card p.latest-changelog-card-cta { color: var(--doc-link); font-size: 11px; margin-top: auto; padding-top: 8px; }
-@media screen and (max-width: 768px) { .latest-changelog-grid { grid-template-columns: 1fr; gap: 14px; } .latest-changelog-card-copy { padding: 12px 14px 14px; } }
-</style>
-<div class="latest-changelog-grid">
-<a class="latest-changelog-card" href="/docs/changelog">
-<img src="/docs-assets/changelog/2026-09-05-ryo-pvc-speech-16x9.webp" alt="Ryo PVC speech in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy">
-<div class="latest-changelog-card-copy">
-<p class="latest-changelog-card-label">September 2026</p>
-<h3>Ryo PVC speech</h3>
-<p>Chats defaults to ElevenLabs Ryo PVC with Instant v4, and Ryo voices stay in Ryo chat.</p>
-<p class="latest-changelog-card-cta">See what's new →</p>
-</div>
-</a>
-<a class="latest-changelog-card" href="/docs/changelog">
-<img src="/docs-assets/changelog/2026-09-04-youbike-navigation-16x9.webp" alt="YouBike navigation in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy">
-<div class="latest-changelog-card-copy">
-<p class="latest-changelog-card-label">September 2026</p>
-<h3>YouBike navigation</h3>
-<p>Start and Stop spoken turn-by-turn guidance on in-map YouBike trips.</p>
-<p class="latest-changelog-card-cta">See what's new →</p>
-</div>
-</a>
-</div>
-<h2>Quick Start</h2>
-<table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
-<h2>Key Features</h2>
-<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> system7/System 7, macosx/Aqua, xp/XP, win98/98</li></ul><ul><li><strong><a href="/docs/apps">Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, Maps, Books (EPUB reader), Stuff (inventory shelf), and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading and cloud sync</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li><li><strong><a href="/docs/api-architecture">Cloud Sync</a>:</strong> Journal-based Cloud Sync v2 with per-key documents, realtime sync ops, lazy legacy import, and S3-compatible blob storage <!-- pragma: allowlist secret --></li><li><strong><a href="/docs/api-architecture">Unified API Layer</a>:</strong> Shared <code>apiHandler</code> + middleware utilities for consistent CORS, method routing, auth, and error handling</li><li><strong>Usage Analytics:</strong> Lightweight per-day API analytics with admin dashboard</li><li><strong>Runtime Reliability & Performance:</strong> App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing</li></ul>
-<h2>Tech Stack</h2>
-<table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash REST / standard), S3 compatible object storage</td></tr><tr><td>API Runtime</td><td>Standalone Bun server (Node-style handlers)</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher or local WebSocket (with Redis pub/sub fanout)</td></tr><tr><td>Package Manager</td><td>Bun (<code>bun@1.3.5</code> in <code>package.json</code>; CI/Docker currently use Bun 1.3.9)</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured)</td></tr><tr><td>Deployment</td><td>Docker / Coolify (standalone Bun server), Electron releases</td></tr></tbody></table>
-<h2>Project Structure</h2>
-<pre><code>├── api/              # Node-style API endpoints (standalone Bun server)
-│   └── _utils/       # Shared API utilities (api-handler, request-auth, redis, storage, realtime, analytics, etc.)
-├── index.html        # Vite entry / app shell
-├── electron/         # Electron main/preload/menu/updater
-├── public/           # Static assets
-├── tests/            # bun:test suites (unit/&lt;domain&gt;, integration/api, helpers)
-├── src/
-│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
-│   ├── apps/         # 29 app modules
-│   ├── components/   # Shared React components
-│   ├── config/       # App registry
-│   ├── hooks/        # ~75 custom hooks
-│   ├── lib/          # Libraries (including locales/)
-│   ├── lib/locales/  # i18n translation files (11 languages)
-│   ├── services/     # VFS and realtime service facades
-│   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 41 Zustand store modules
-│   ├── styles/       # CSS
-│   ├── sync/         # Cloud Sync v2 client engine
-│   ├── themes/       # 4 theme definitions
-│   ├── types/        # TypeScript types
-│   ├── utils/        # Utility functions
-│   └── workers/      # Web workers
-├── Dockerfile        # Coolify / GHCR image
-└── scripts/          # Build scripts</code></pre>
+        <h1>KOReader Progress Sync (kosync)</h1>
+<p>ryOS embeds a KOReader-compatible Progress Sync server so e-ink devices (and other kosync clients) can share reading progress with the Books app.</p>
+<h2>Endpoints</h2>
+<p>Base URL (set this as the custom sync server in KOReader):</p>
+<pre><code>https://&lt;your-ryos-host&gt;/api/kosync</code></pre>
+<table><thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/kosync/healthcheck</code></td><td><code>{ state: "OK" }</code></td></tr><tr><td>POST</td><td><code>/api/kosync/users/create</code></td><td>Register kosync credentials</td></tr><tr><td>GET</td><td><code>/api/kosync/users/auth</code></td><td>Validate <code>X-Auth-User</code> + <code>X-Auth-Key</code></td></tr><tr><td>PUT</td><td><code>/api/kosync/syncs/progress</code></td><td>Upsert progress</td></tr><tr><td>GET</td><td><code>/api/kosync/syncs/progress/:document</code></td><td>Fetch progress</td></tr></tbody></table>
+<p>Protocol details match the <a href="https://github.com/koreader/koreader-sync-server">official koreader-sync-server</a>: JSON bodies, <code>Accept: application/vnd.koreader.v1+json</code>, and MD5 password keys.</p>
+<h2>Setup in KOReader</h2>
+<ol><li>Sign in to ryOS (web) at least once with your account — that syncs an MD5</li></ol>
+   of your password for KOReader auth.
+<ol><li>Open <strong>Progress Sync</strong> plugin settings.</li><li>Set <strong>Custom sync server</strong> to <code>https://&lt;host&gt;/api/kosync</code>.</li><li><strong>Register</strong> or <strong>Login</strong> with the <strong>same username and password</strong> as ryOS.</li></ol>
+   KOReader sends <code>md5(password)</code>; the server matches it to your ryOS password.
+<ol><li>Prefer <strong>filename</strong> document matching when the EPUB basename matches the</li></ol>
+   file in ryOS <code>/Books/</code> (e.g. <code>Meditations - Marcus Aurelius.epub</code>).
+   Binary (partial MD5) matching also works once Books has hashed the file.
+<h2>Auth notes</h2>
+<p>Kosync uses your <strong>ryOS account password</strong> (via MD5 on the wire, same as the official KOReader protocol). Signing in, registering, or changing your password on ryOS refreshes the kosync key. There is no separate sync password. Registration from KOReader requires an existing ryOS account that has signed in at least once.</p>
+<h2>How it bridges to Books</h2>
+<p>Books keeps <strong>two locators</strong> for the same reading position:</p>
+<table><thead><tr><th>Field</th><th>Used by</th><th>Purpose</th></tr></thead><tbody><tr><td><code>cfi</code></td><td>ryOS Books (epub.js)</td><td>Native EPUB CFI for precise restore in the browser</td></tr><tr><td><code>kosyncProgress</code></td><td>CrossPoint / KOReader KOSync</td><td>KO-style XPath (<code>/body/DocFragment[N]/body/.../text()[N].offset</code>)</td></tr><tr><td><code>percentage</code></td><td>Both (fallback)</td><td>Approximate 0..1 progress when XPath/CFI conversion fails</td></tr></tbody></table>
+<strong>Restore precedence in Books:</strong> <code>cfi</code> → converted <code>kosyncProgress</code> → <code>percentage</code>.
+<strong>KOSync <code>progress</code> field:</strong> emits <code>kosyncProgress</code> when available. Never sends
+an EPUB CFI as CrossPoint <code>progress</code> (CrossPoint cannot navigate CFIs). When no
+valid XPath exists, ryOS emits a numeric placeholder (<code>round(percentage × 10000)</code>)
+and CrossPoint falls back to byte-weighted percentage.
+<p>Conversion between CFI and XPath is <strong>best-effort</strong> in the browser (UTF-16 CFI offsets vs Unicode codepoint XPath offsets; sanitizer/DOM differences). Stale XPath is cleared when relocation cannot re-derive it from the current CFI. <ul><li>Progress is stored in Redis under <code>integration:kosync:…</code> (kosync-native).</li></ul><ul><li>On PUT, the server also writes Cloud Sync v2</li></ul>   <code>bookshelf/progress:&lt;path&gt;</code> so logged-in Books clients receive the update.   CrossPoint XPath is preserved in <code>kosyncProgress</code>; percentage remains for fallback. <ul><li>KOSync clients do not send reading timestamps. To prevent a delayed retry</li></ul>   from rolling back a newer Books update, a lower PUT is treated as a   successful no-op when Books changed after the client's previous accepted   PUT. Equal or forward progress is still accepted. <ul><li>On GET, kosync-native progress is merged with Books bookshelf progress</li></ul>   (newer <code>timestamp</code> wins). On equal timestamp and percentage, a record with   valid native KO XPath is preferred over a percentage placeholder. <ul><li>Document IDs resolve to <code>/Books/….epub</code> via:<ol><li>cached docpath mapping</li><li>synced <code>bookshelf/docmap:&lt;path&gt;</code> (<code>filenameMd5</code> / <code>partialMd5</code>)</li><li>filename MD5 of files in the user's <code>files/item:/Books/…</code> sync KV</li></ol></li></ul></p>
+<h2>CrossPoint / hardware verification</h2>
+<p>After deploying, open one real EPUB on ryOS Books and on CrossPoint firmware: <ol><li>Read a few pages on Books, wait for sync, confirm CrossPoint lands on the</li></ol>    same visible sentence (not only the displayed percentage). <ol><li>Advance on CrossPoint, sync, reopen the book in Books and confirm the same</li></ol>    sentence restores via <code>kosyncProgress</code>. <ol><li>If XPath conversion fails for a title, both sides should still move roughly</li></ol>    via <code>percentage</code> (byte-weighted on CrossPoint vs epub.js locations in Books).</p>
+<p>Optional developer check: build the crossmux simulator (<code>simulator/</code> in the crossmux repo) and verify generated XPaths resolve through <code>ProgressMapper</code>. Monitor CrossPoint heap during sync to confirm no firmware RAM regression.</p>
       </article>
       
       <nav class="nav">
-        <span></span>
-        <a href="/docs/architecture">Architecture & Build →</a>
+        <a href="/docs/api-design-guide">← ryOS API Design Guide</a>
+        <a href="/docs/opds-api">Books OPDS Catalog →</a>
       </nav>
       
     </main>

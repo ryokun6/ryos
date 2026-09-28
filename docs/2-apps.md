@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 28 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 29 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-viewer`, and Virtual PC is registered as `pc`.
 
@@ -33,7 +33,8 @@ Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-
 | [Calendar](/docs/calendar) | iCal-style calendar with month, week, and day views, todos, and cloud sync | Productivity |
 | [Contacts](/docs/contacts) | Address book with vCard import, Smart Groups, and cloud sync | Productivity |
 | [Dashboard](/docs/dashboard) | Tiger-style widget overlay with clock, calendar, weather, stocks, iPod, translation, dictionary, sticky notes, aquarium, and terrarium | Utilities |
-| [Maps](/docs/maps) | Apple MapKit search and pins; YouBike overlay in Taiwan; driving directions open in Apple Maps | Utilities |
+| [Maps](/docs/maps) | Apple MapKit search and pins; national Taiwan YouBike overlay; in-map YouBike directions and spoken navigation; driving directions open in Apple Maps | Utilities |
+| [Stuff](/docs/stuff) | Wooden inventory shelf with barcodes, tags, locations, cutout covers, sharing, and print labels | Productivity |
 | [Calculator](/docs/calculator) | Basic, scientific, and unit conversion calculator | Utilities |
 | [Admin](/docs/admin) | Admin-only panel for users, chat-room moderation, song library, server health, and Cursor agent telemetry | System |
 

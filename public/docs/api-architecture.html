@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -593,7 +596,7 @@ import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</c
 <h3>Authentication APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/auth/register</code></td><td>POST</td><td>Create user + issue session cookie</td></tr><tr><td><code>/api/auth/login</code></td><td>POST</td><td>Login with password</td></tr><tr><td><code>/api/auth/logout</code></td><td>POST</td><td>Logout current session</td></tr><tr><td><code>/api/auth/logout-all</code></td><td>POST</td><td>Logout all sessions</td></tr><tr><td><code>/api/auth/session</code></td><td>GET</td><td>Restore session from httpOnly cookie</td></tr><tr><td><code>/api/auth/token/verify</code></td><td>POST</td><td>Verify token</td></tr><tr><td><code>/api/auth/token/refresh</code></td><td>POST</td><td>Refresh session cookie</td></tr><tr><td><code>/api/auth/password/check</code></td><td>GET</td><td>Check if password set</td></tr><tr><td><code>/api/auth/password/set</code></td><td>POST</td><td>Set or update password</td></tr><tr><td><code>/api/auth/tokens</code></td><td>GET</td><td>List active tokens</td></tr><tr><td><code>/api/auth/recovery/request</code></td><td>POST</td><td>Request account recovery code</td></tr><tr><td><code>/api/auth/recovery/reset</code></td><td>POST</td><td>Reset password with recovery code</td></tr><tr><td><code>/api/auth/email/set</code></td><td>POST</td><td>Set recovery email</td></tr><tr><td><code>/api/auth/email/verify</code></td><td>POST</td><td>Verify recovery email</td></tr><tr><td><code>/api/auth/email/remove</code></td><td>POST</td><td>Remove recovery email</td></tr><tr><td><code>/api/auth/email/status</code></td><td>GET</td><td>Read recovery email status</td></tr><tr><td><code>/api/auth/account/delete</code></td><td>POST</td><td>Delete authenticated account</td></tr></tbody></table>
 <h3>Core APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>POST</td><td>AI chat with streaming and tool calling</td></tr><tr><td><code>/api/speech</code></td><td>POST</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>POST</td><td>Speech-to-text (Whisper)</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/chat</code></td><td>POST</td><td>AI chat with streaming and tool calling</td></tr><tr><td><code>/api/speech</code></td><td>POST</td><td>Text-to-speech synthesis</td></tr><tr><td><code>/api/speech/permits</code></td><td>POST</td><td>Mint a short-lived Ryo-chat speech permit</td></tr><tr><td><code>/api/audio-transcribe</code></td><td>POST</td><td>Speech-to-text (Whisper)</td></tr></tbody></table>
 <h3>Media APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/songs</code></td><td>GET, POST, DELETE</td><td>Song list and batch operations</td></tr><tr><td><code>/api/songs/[id]</code></td><td>GET, POST, DELETE</td><td>Single song CRUD + lyrics</td></tr><tr><td><code>/api/youtube-search</code></td><td>POST</td><td>YouTube video search</td></tr><tr><td><code>/api/parse-title</code></td><td>POST</td><td>YouTube title parsing</td></tr></tbody></table>
 <h3>AI Generation APIs</h3>
@@ -610,7 +613,7 @@ import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</c
 <h3>Analytics & TV APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/analytics/events</code></td><td>POST</td><td>Record lightweight client analytics events</td></tr><tr><td><code>/api/tv/create-channel</code></td><td>POST</td><td>AI-assisted TV channel creation</td></tr><tr><td><code>/api/currency-rate</code></td><td>GET</td><td>Currency conversion rates</td></tr></tbody></table>
 <h3>Cloud Sync APIs</h3>
-<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/sync/v2/ops</code></td><td>POST</td><td>Apply a batch of sync ops (per-key last-writer-wins)</td></tr><tr><td><code>/api/sync/v2/changes</code></td><td>GET</td><td>Journal ops after the client cursor (<code>?since=</code>)</td></tr><tr><td><code>/api/sync/v2/snapshot</code></td><td>GET</td><td>Full key-value sync state + current cursor</td></tr><tr><td><code>/api/sync/v2/blobs</code></td><td>POST</td><td>Batched content-addressed blob prepare/dedupe + download signing</td></tr><tr><td><code>/api/sync/auto-sync-preference</code></td><td>GET, PUT</td><td>Cross-device Auto Sync toggle</td></tr><tr><td><code>/api/cron/sync-maintenance</code></td><td>GET</td><td>Cron: content-addressed blob GC + user-record healing (<code>CRON_SECRET</code>)</td></tr></tbody></table>
+<table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/sync/v2/ops</code></td><td>POST</td><td>Apply a batch of sync ops (per-key last-writer-wins)</td></tr><tr><td><code>/api/sync/v2/changes</code></td><td>GET</td><td>Journal ops after the client cursor (<code>?since=</code>)</td></tr><tr><td><code>/api/sync/v2/snapshot</code></td><td>GET</td><td>Full key-value sync state + current cursor</td></tr><tr><td><code>/api/sync/v2/blobs</code></td><td>POST</td><td>Batched content-addressed blob prepare/dedupe + download signing</td></tr><tr><td><code>/api/sync/v2/blob-upload</code></td><td>POST, PUT</td><td>Fresh authenticated proxy instruction + blob upload</td></tr><tr><td><code>/api/sync/auto-sync-preference</code></td><td>GET, PUT</td><td>Cross-device Auto Sync toggle</td></tr><tr><td><code>/api/cron/sync-maintenance</code></td><td>GET</td><td>Cron: content-addressed blob GC + user-record healing (<code>CRON_SECRET</code>)</td></tr></tbody></table>
 <h3>Telegram APIs</h3>
 <table><thead><tr><th>Endpoint</th><th>Methods</th><th>Purpose</th></tr></thead><tbody><tr><td><code>/api/telegram/link/create</code></td><td>POST</td><td>Create Telegram bot link</td></tr><tr><td><code>/api/telegram/link/disconnect</code></td><td>POST</td><td>Disconnect Telegram bot</td></tr><tr><td><code>/api/telegram/link/status</code></td><td>GET</td><td>Check Telegram link status</td></tr><tr><td><code>/api/telegram/heartbeat-settings</code></td><td>GET, POST</td><td>Read/update Telegram heartbeat DM settings</td></tr><tr><td><code>/api/webhooks/telegram</code></td><td>POST</td><td>Telegram bot webhook handler</td></tr><tr><td><code>/api/cron/telegram-heartbeat</code></td><td>GET</td><td>Scheduled Telegram heartbeat</td></tr></tbody></table>
 <h3>Utility APIs</h3>
@@ -621,18 +624,22 @@ import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</c
 <p>Client-side API access is centralized in <code>src/api/</code>: <ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/core.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/core.ts</a></code> - shared request wrapper, auth headers, error normalization</li></ul><ul><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/auth.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/auth.ts</a></code> - login/register/token verification/logout flows</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/rooms.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/rooms.ts</a></code> - room, message, and presence operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/admin.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/admin.ts</a></code> - admin actions and dashboard operations (incl. analytics)</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/songs.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/songs.ts</a></code> - song CRUD/import operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/listen.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/listen.ts</a></code> - listen-together session flows</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/telegram.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/telegram.ts</a></code> - Telegram bot linking and status operations</li><li><code><a href="https://github.com/ryokun6/ryos/blob/main/src/api/irc.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/api/irc.ts</a></code> - IRC server registry operations</li></ul></p>
 <h2>AI Provider Abstraction</h2>
 <p>Model IDs and metadata are defined in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/shared/aiModels.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/shared/aiModels.ts</a></code>. Server provider wiring is in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_aiModels.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/_aiModels.ts</a></code>.</p>
-<h3>Supported Models (AI SDK 6.0)</h3>
-<p>The API uses Vercel AI SDK 6.0 with structured outputs for type-safe responses.</p>
-<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-5.5</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3-flash, gemini-3.1-pro-preview</td><td>Image generation, title parsing</td></tr></tbody></table>
+<h3>Supported Models (AI SDK 7)</h3>
+<p>The API uses Vercel AI SDK 7 with structured outputs for type-safe responses.</p>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-6 (gpt-6-astra, default), gpt-5.5</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6), opus-5.5 (claude-opus-5-5, ryo + debug)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3-flash, gemini-3.1-pro-preview</td><td>Image generation, title parsing</td></tr></tbody></table>
 <strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
 <pre><code>// api/_utils/_aiModels.ts
 export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
   switch (model) {
+    case "gpt-6":
+      return openai("gpt-6-astra");
     case "gpt-5.5":
       return openai("gpt-5.5");
     case "sonnet-4.6":
       return anthropic("claude-sonnet-4-6");
+    case "opus-5.5":
+      return anthropic("claude-opus-5-5");
     case "gemini-3-flash":
       return google("gemini-3-flash-preview");
     case "gemini-3.1-pro-preview":

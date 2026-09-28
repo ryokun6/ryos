@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child active">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -559,6 +562,24 @@
 <h3>Error Responses</h3>
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request body</code></td><td>Missing or invalid parameters</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Invalid auth token pair when headers are provided</td></tr><tr><td>403</td><td><code>Unauthorized host</code></td><td>Host header not in allowlist</td></tr><tr><td>405</td><td><code>Method not allowed</code></td><td>Non-POST request</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code></td><td>Rate limit exceeded</td></tr><tr><td>500</td><td><code>Failed to generate response</code></td><td>AI generation error</td></tr><tr><td>502</td><td><code>The model did not return an image</code></td><td>Image generation failed</td></tr></tbody></table>
 <hr>
+<h2>Stuff Cover Background Removal</h2>
+<p>Removes the background from a Stuff inventory cover image and returns a shelf-ready transparent PNG cutout (grounded subject, transparent alpha) for shelf display.</p>
+<h3>Endpoint</h3>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/stuff/remove-background</code></td><td>Edit cover image → transparent PNG</td></tr></tbody></table>
+<h3>Request</h3>
+<pre><code>{
+  imageBase64: string;  // raw base64 or data-URL payload (max ~4 MB decoded)
+  mediaType: string;    // image/png | image/jpeg | image/webp | image/gif
+}</code></pre>
+<p>Auth is <strong>required</strong> (cookie session or <code>Authorization</code> + <code>X-Username</code>).</p>
+<h3>Response</h3>
+<p>Binary PNG (<code>Content-Type: image/png</code>) with alpha. On failure, JSON <code>{ error: string }</code>.</p>
+<p>The Stuff client stores the result with <code>coverPresentation: "cutout"</code> (transparent stage + drop shadow). Shelf JSON export/import and public shares preserve that field; transparent PNG/WebP covers also auto-detect as cutouts at display time when the flag is unset.</p>
+<h3>Rate Limits</h3>
+<table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>10/hour</td><td>1 hour</td></tr><tr><td><code>ryo</code></td><td>Bypass</td><td>—</td></tr></tbody></table>
+<h3>Model</h3>
+<p>OpenAI <code>gpt-image-1</code> via official OpenAI SDK <code>images.edit</code> (<code>background: "transparent"</code>, <code>output_format: "png"</code>). Multipart upload uses <code>toFile</code> so the image part includes a filename (required by <code>/v1/images/edits</code>). The edit prompt asks for a shelf-ready cutout (grounded pose, subject near the bottom of the frame) rather than a floating mid-frame knock-out.</p>
+<hr>
 <h2>Internet Explorer Generator</h2>
 <p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>
 <h3>Endpoint</h3>
@@ -586,7 +607,7 @@
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>3 requests</td><td>1 minute</td></tr><tr><td>Budget</td><td>10 requests</td><td>5 hours</td></tr></tbody></table>
 <h3>Supported Models</h3>
-<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gpt-5.5</code> (default)</td><td>OpenAI</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr></tbody></table>
+<table><thead><tr><th>Model</th><th>Provider</th></tr></thead><tbody><tr><td><code>gpt-6</code> (default, API: <code>gpt-6-astra</code>)</td><td>OpenAI</td></tr><tr><td><code>gpt-5.5</code></td><td>OpenAI</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td></tr><tr><td><code>opus-5.5</code> (API: <code>claude-opus-5-5</code>, ryo + debug only)</td><td>Anthropic</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td></tr></tbody></table>
 <h3>Design Guidelines</h3>
 <p>The AI applies different design principles based on the target year:</p>
 <strong>Future Years</strong> (after current year):

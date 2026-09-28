@@ -397,7 +397,7 @@ Desktop shortcuts support:
 
 ## Cloud Sync
 
-The cloud sync system (Cloud Sync v2, `/api/sync/v2/*`) persists file metadata and content (documents, images, applets, trash) across devices as a per-user key → document map. It also syncs **calendar** events, **contacts**, **stickies**, **songs**, **videos**, **custom wallpapers**, and **settings** from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.
+The cloud sync system (Cloud Sync v2, `/api/sync/v2/*`) persists file metadata and content (documents, images, applets, trash, **books**, **Stuff** covers) across devices as a per-user key → document map. It also syncs **calendar** events, **contacts**, **stickies**, **songs**, **videos**, **custom wallpapers**, **Stuff** items/tags/locations, and **settings** from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket. File saves are catalog-first with content-addressed blob upload; missing local bytes can rehydrate from cloud.
 
 ### Per-Key Documents
 
@@ -408,6 +408,8 @@ The files codec (`src/sync/codecs.ts`) decomposes file state into per-key docume
 | `files/item:{path}` | File/folder metadata (`FileSystemItem`) |
 | `files/doc:{uuid}` | TextEdit document contents (from IndexedDB `documents`) |
 | `images/item:{key}`, `trash/item:{key}`, `applets/item:{key}`, `wallpapers/item:{key}` | Binary content references; the bytes are content-addressed blobs in object storage (`sync/{username}/blobs/{sha256}.gz`), uploaded and deduped by sha256 via a batched `POST /api/sync/v2/blobs` |
+| `books/item:{uuid}` | EPUB library metadata; book bytes are content-addressed blobs under `/Books` |
+| `stuff/item:{id}`, `stuff/tag:{id}`, `stuff/location:{id}` | Stuff inventory metadata; covers use `stuff-images/item:{id}` blob refs |
 
 ### Deletions
 
