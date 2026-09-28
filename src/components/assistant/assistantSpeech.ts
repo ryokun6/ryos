@@ -7,6 +7,7 @@
  */
 
 import {
+  createSilentUnlockUtterance,
   createSpeechUtterance,
   getBrowserSpeechSynthesis,
   ryOSLocaleToSpeechLanguage,
@@ -141,8 +142,7 @@ export function primeAssistantSpeech(): void {
   // next gesture instead.
   if (synth.pending) return;
 
-  const utterance = new SpeechSynthesisUtterance(" ");
-  utterance.volume = 0;
+  const utterance = createSilentUnlockUtterance();
   utterance.onstart = () => {
     synthesisUnlocked = true;
   };

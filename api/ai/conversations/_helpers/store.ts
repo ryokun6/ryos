@@ -1124,6 +1124,13 @@ export async function findAIConversationAssistantMessage({
   return null;
 }
 
+/**
+ * Read the canonical conversation, optionally as a delta: with `afterSeq`
+ * only messages whose `seq` is greater are returned. Content updates re-mint
+ * `seq`, so deltas include in-place assistant updates; structural changes
+ * (reset, regeneration, trimming) are detectable client-side from the
+ * returned summary (`messageCount` / `oldestSeq` / conversation id).
+ */
 export async function getAIConversationSnapshot({
   redis,
   username,
@@ -1182,7 +1189,7 @@ export function getAIProactiveGreetingEligibility(
   now = Date.now(),
 ): AIProactiveGreetingEligibility {
   if (document.messages.length === 0) {
-    return { eligible: true; mode: "fresh" };
+    return { eligible: true, mode: "fresh" };
   }
 
   const last = document.messages[document.messages.length - 1];

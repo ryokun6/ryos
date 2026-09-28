@@ -32,11 +32,27 @@ describe("Ryo ElevenLabs voice call-site audit", () => {
       "../../../src/components/assistant/assistantSpeech.ts",
     ];
 
+    const speakFiles = [
+      "../../../src/apps/textedit/components/SpeechManager.tsx",
+      "../../../src/apps/maps/hooks/useYouBikeNavigationSpeech.ts",
+      "../../../src/apps/books/hooks/useBooksSpeech.ts",
+      "../../../src/apps/books/components/BooksReaderPane.tsx",
+      "../../../src/apps/calculator/utils/calculatorSpeech.ts",
+      "../../../src/components/assistant/assistantSpeech.ts",
+    ];
+
     for (const file of files) {
       const source = readSrc(file);
       expect(source).not.toMatch(/from ["']@\/hooks\/useTtsQueue["']/);
       expect(source).not.toMatch(/["']\/api\/speech["']/);
       expect(source).toContain("browserSpeech");
+    }
+
+    for (const file of speakFiles) {
+      const source = readSrc(file);
+      expect(source).toContain("createSpeechUtterance");
+      expect(source).toContain("getBrowserSpeechSynthesis");
+      expect(source).not.toContain("new SpeechSynthesisUtterance");
     }
 
     const assistantHook = readSrc(

@@ -305,6 +305,17 @@ export function getBrowserSpeechSynthesis(): SpeechSynthesis | null {
   return window.speechSynthesis ?? null;
 }
 
+/**
+ * Zero-volume utterance used only to unlock `speechSynthesis` from a user
+ * gesture (iOS Safari). Real spoken content still goes through
+ * {@link createSpeechUtterance}.
+ */
+export function createSilentUnlockUtterance(): SpeechSynthesisUtterance {
+  const utterance = new SpeechSynthesisUtterance(" ");
+  utterance.volume = 0;
+  return utterance;
+}
+
 export interface CreateSpeechUtteranceOptions {
   /** BCP 47 utterance language (see {@link ryOSLocaleToSpeechLanguage}). */
   lang: string;
