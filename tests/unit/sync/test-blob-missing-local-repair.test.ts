@@ -119,7 +119,9 @@ describe("cloud sync blob missing-local repair", () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/snapshot")) return Response.json({ seq: 2, entries });
-      const index = url.endsWith("/0.gz") ? 0 : 1;
+      const match = url.match(/example\.test\/(\d)\.gz/);
+      if (!match) return Response.json({});
+      const index = Number(match[1]);
       counts[index]++;
       if (index === 1 && fail) return new Response(null, { status: 404 });
       return new Response(payloads[index]);
