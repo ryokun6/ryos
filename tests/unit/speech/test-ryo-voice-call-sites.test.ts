@@ -15,8 +15,10 @@ describe("Ryo ElevenLabs voice call-site audit", () => {
 
     const queue = readSrc("../../../src/hooks/useTtsQueue.ts");
     expect(queue).toContain("buildSpeechApiRequestBody");
+    expect(queue).toContain("mintRyoSpeechPermit");
     expect(queue).toContain("source: SpeechSource");
     expect(queue).toContain("/api/speech");
+    expect(chat).toContain("messageId");
   });
 
   test("non-chat speak paths use browser speechSynthesis, not useTtsQueue", () => {
@@ -56,9 +58,13 @@ describe("Ryo ElevenLabs voice call-site audit", () => {
   test("server ElevenLabs synthesis stays on /api/speech and Telegram Ryo AI replies", () => {
     const speechApi = readSrc("../../../api/speech.ts");
     expect(speechApi).toContain("evaluateRyoVoiceGate");
+    expect(speechApi).toContain("consumeSpeechPermit");
     expect(speechApi).toContain("generateElevenLabsSpeech");
     expect(speechApi).toContain("ryoVoiceGate.error");
     expect(speechApi).toContain('status(403)');
+
+    const permits = readSrc("../../../api/speech/permits.ts");
+    expect(permits).toContain("mintSpeechPermit");
 
     const telegram = readSrc("../../../api/webhooks/telegram.ts");
     expect(telegram).toContain("generateElevenLabsSpeech");
