@@ -7,7 +7,20 @@ export type MintedSpeechPermit = {
   messageId: string;
 };
 
-const MINT_RETRY_DELAYS_MS = [0, 160, 320];
+/** Brief backoff while `/api/chat` flushes the streaming speech draft. */
+export const MINT_RETRY_DELAYS_MS = [0, 160, 320] as const;
+
+/**
+ * Mint failures that mean "the server-held text is not ready yet", not
+ * "this chunk is forbidden". Retry these during streaming.
+ */
+export function isRetryableSpeechPermitMintFailure(
+  status: number,
+  error?: string | null
+): boolean {
+  if (status === 404) return true;
+  return status === 403 && error === "speech_text_not_bound";
+}
 
 async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   if (ms <= 0) return;
@@ -76,8 +89,16 @@ export async function mintRyoSpeechPermit(input: {
         }
         return null;
       }
-      if (res.status !== 404) {
-        console.error("Speech permit mint failed", await res.text());
+      const payload = (await res.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (
+        !isRetryableSpeechPermitMintFailure(
+          res.status,
+          typeof payload?.error === "string" ? payload.error : null
+        )
+      ) {
+        console.error("Speech permit mint failed", payload ?? res.status);
         return null;
       }
     } catch (err) {

@@ -2,7 +2,10 @@ import { z } from "zod";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { waitUntil } from "../../../_utils/_background.js";
+import { getClientIp } from "../../../_utils/_rate-limit.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
+import { resolveSpeechOwner } from "../../../_utils/speech-permit.js";
+import { upsertSpeechDraft } from "../../../_utils/speech-permit-store.js";
 import { loadRyoMemoryContext } from "../../../_utils/ryo-conversation.js";
 import { PROACTIVE_GREETING_INSTRUCTIONS } from "../../../_utils/_aiPrompts.js";
 import { getStoredUserTimeZone } from "../../../_utils/auth/_user-record.js";
@@ -221,6 +224,14 @@ Generate ONE short proactive greeting. Pick one interesting angle from the conte
           operationId,
         })
       );
+      // Same speech-draft owner as /api/chat so speaker-button / first-play
+      // mint works immediately, not only after conversation-store lookup.
+      await upsertSpeechDraft({
+        redis,
+        owner: resolveSpeechOwner({ username, ip: getClientIp(req) }),
+        messageId: storedGreeting.id,
+        text: greeting,
+      });
 
       logger.response(200, Date.now() - startTime);
       res.status(200).json({

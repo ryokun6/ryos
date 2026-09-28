@@ -1,9 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
 
 function readSrc(relativeFromTests: string): string {
   return readFileSync(resolve(import.meta.dir, relativeFromTests), "utf8");
+}
+
+function walkSourceFiles(root: string): string[] {
+  const files: string[] = [];
+  const visit = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      const stat = statSync(path);
+      if (stat.isDirectory()) {
+        visit(path);
+        continue;
+      }
+      if (path.endsWith(".ts") || path.endsWith(".tsx")) {
+        files.push(path);
+      }
+    }
+  };
+  visit(root);
+  return files;
 }
 
 describe("Ryo ElevenLabs voice call-site audit", () => {
@@ -63,6 +82,15 @@ describe("Ryo ElevenLabs voice call-site audit", () => {
     expect(assistantHook).toContain("speakAssistantText");
   });
 
+  test("only @/utils/browserSpeech constructs SpeechSynthesisUtterance", () => {
+    const srcRoot = resolve(import.meta.dir, "../../../src");
+    const offenders = walkSourceFiles(srcRoot).filter((file) => {
+      if (file.endsWith(`${join("utils", "browserSpeech.ts")}`)) return false;
+      return readFileSync(file, "utf8").includes("new SpeechSynthesisUtterance");
+    });
+    expect(offenders.map((file) => relative(srcRoot, file))).toEqual([]);
+  });
+
   test("TextEdit read-aloud speaks via createSpeechUtterance", () => {
     const speech = readSrc("../../../src/apps/textedit/components/SpeechManager.tsx");
     expect(speech).toContain("createSpeechUtterance");
@@ -85,5 +113,11 @@ describe("Ryo ElevenLabs voice call-site audit", () => {
     const telegram = readSrc("../../../api/webhooks/telegram.ts");
     expect(telegram).toContain("generateElevenLabsSpeech");
     expect(telegram).toContain("Server-side Ryo AI voice reply");
+
+    const greeting = readSrc(
+      "../../../api/ai/conversations/[channel]/greeting.ts"
+    );
+    expect(greeting).toContain("upsertSpeechDraft");
+    expect(greeting).toContain("resolveSpeechOwner");
   });
 });
