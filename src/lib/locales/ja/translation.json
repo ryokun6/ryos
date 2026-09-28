@@ -1501,6 +1501,7 @@
         "settingsNoChanges": "変更なし",
         "settingsSpeechDisabled": "音声読み上げを無効にしました",
         "settingsSpeechEnabled": "音声読み上げを有効にしました",
+        "settingsSpeechRequiresLogin": "チャット音声をオンにするにはサインイン",
         "settingsThemeChanged": "テーマを{{theme}}に変更しました",
         "settingsUiSoundsDisabled": "UIサウンドを無効にしました",
         "settingsUiSoundsEnabled": "UIサウンドを有効にしました",

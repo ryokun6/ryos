@@ -1503,6 +1503,7 @@
         "settingsNoChanges": "Nenhuma alteração feita",
         "settingsSpeechDisabled": "Texto para fala desativado",
         "settingsSpeechEnabled": "Texto para fala ativado",
+        "settingsSpeechRequiresLogin": "Inicie sessão para ativar a fala do Chat",
         "settingsThemeChanged": "Tema alterado para {{theme}}",
         "settingsUiSoundsDisabled": "Sons da interface desativados",
         "settingsUiSoundsEnabled": "Sons da interface ativados",

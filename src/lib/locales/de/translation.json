@@ -1501,6 +1501,7 @@
         "settingsNoChanges": "Keine Änderungen",
         "settingsSpeechDisabled": "Sprachausgabe deaktiviert",
         "settingsSpeechEnabled": "Sprachausgabe aktiviert",
+        "settingsSpeechRequiresLogin": "Anmelden, um die Chat-Sprachausgabe zu aktivieren",
         "settingsThemeChanged": "Thema wurde auf {{theme}} geändert",
         "settingsUiSoundsDisabled": "Bediengeräusche deaktiviert",
         "settingsUiSoundsEnabled": "Bediengeräusche aktiviert",

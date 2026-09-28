@@ -1505,6 +1505,7 @@
         "settingsNoChanges": "Изменений нет",
         "settingsSpeechDisabled": "Синтез речи отключен",
         "settingsSpeechEnabled": "Синтез речи включен",
+        "settingsSpeechRequiresLogin": "Войдите, чтобы включить речь в чате",
         "settingsThemeChanged": "Тема изменена на {{theme}}",
         "settingsUiSoundsDisabled": "Звуковые эффекты интерфейса выключены",
         "settingsUiSoundsEnabled": "Звуковые эффекты интерфейса включены",
