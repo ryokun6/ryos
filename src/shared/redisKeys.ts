@@ -195,6 +195,15 @@ export const redisKeys = {
     songContent: (songId: string) => songKey(songId, "content"),
     /** Catalog version stamp (max updatedAt) for O(1) poll probes. */
     songsVersion: () => redisKey("media", "song", "version"),
+    /**
+     * Short-lived speakable draft for a Ryo assistant message (streaming or
+     * persisted). `ownerHash` is SHA-256 of `user:<username>` or `anon:<ip>`.
+     */
+    speechDraft: (ownerHash: string, messageId: string) =>
+      redisKeyCaseSensitive("media", "speech", "draft", ownerHash, messageId),
+    /** Opaque single-message speech permit. Server holds the bound text. */
+    speechPermit: (permitId: string) =>
+      redisKeyCaseSensitive("media", "speech", "permit", permitId),
   },
   cache: {
     appleArtwork: (catalogId: string) =>

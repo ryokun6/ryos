@@ -3,7 +3,15 @@ import { openai } from "@ai-sdk/openai";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
-import { evaluateRyoVoiceGate } from "./_utils/speech-policy.js";
+import {
+  evaluateRyoVoiceGate,
+  requestResolvesToRyoVoice,
+} from "./_utils/speech-policy.js";
+import { consumeSpeechPermit } from "./_utils/speech-permit-store.js";
+import {
+  SPEECH_PERMIT_ERRORS,
+  resolveSpeechOwner,
+} from "./_utils/speech-permit.js";
 import {
   DEFAULT_ELEVENLABS_MODEL_ID,
   DEFAULT_ELEVENLABS_VOICE_ID,
@@ -16,7 +24,7 @@ import {
 } from "./_utils/voice.js";
 
 interface SpeechRequest {
-  text: string;
+  text?: string;
   voice?: string | null;
   speed?: number;
   // New ElevenLabs-specific options
@@ -28,9 +36,13 @@ interface SpeechRequest {
   /**
    * Client-declared speech intent. Ryo ElevenLabs voices (including Control
    * Panels Default → ElevenLabs + Ryo PVC) require `source: "ryo-chat"`.
-   * This flag is spoofable — first gate only, not a signed permit.
+   * This flag is spoofable — first gate only. Permits are the binding layer.
    */
   source?: string | null;
+  /** Opaque id from POST /api/speech/permits. Required for Ryo voices. */
+  permitId?: string | null;
+  /** Optional SHA-256 of the cleaned permit text. */
+  contentHash?: string | null;
 }
 
 export default apiHandler<SpeechRequest>(
@@ -40,7 +52,7 @@ export default apiHandler<SpeechRequest>(
     auth: "optional",
     contentType: null,
   },
-  async ({ req, res, logger, startTime, body, user }) => {
+  async ({ req, res, redis, logger, startTime, body, user }) => {
     const username = user?.username ?? null;
     const isAuthenticated = !!user;
     const isAuthenticatedRyo = isAuthenticated && username === "ryo";
@@ -147,6 +159,8 @@ export default apiHandler<SpeechRequest>(
         output_format,
         voice_settings,
         source,
+        permitId,
+        contentHash,
       } = body ?? {};
 
       logger.info("Parsed request body", {
@@ -159,9 +173,13 @@ export default apiHandler<SpeechRequest>(
         output_format,
         voice_settings,
         source,
+        hasPermit: Boolean(permitId),
       });
 
-      if (!text || typeof text !== "string" || text.trim().length === 0) {
+      let synthesisText = typeof text === "string" ? text.trim() : "";
+      const hasPermitId = typeof permitId === "string" && permitId.trim().length > 0;
+
+      if (!synthesisText && !hasPermitId) {
         logger.error("'text' is required");
         logger.response(400, Date.now() - startTime);
         res.status(400).json({ error: "'text' is required" });
@@ -186,6 +204,49 @@ export default apiHandler<SpeechRequest>(
         return;
       }
 
+      if (requestResolvesToRyoVoice(model, voice_id)) {
+        if (!permitId || typeof permitId !== "string") {
+          logger.warn("Rejected Ryo voice request without permit", {
+            source: source ?? null,
+            username,
+            isAuthenticated,
+          });
+          logger.response(403, Date.now() - startTime);
+          res.status(403).json({
+            error: SPEECH_PERMIT_ERRORS.required,
+            message: "A speech permit is required for Ryo ElevenLabs voices.",
+          });
+          return;
+        }
+
+        const permit = await consumeSpeechPermit({
+          redis,
+          owner: resolveSpeechOwner({ username, ip: getClientIp(req) }),
+          permitId,
+          text: synthesisText || null,
+          contentHash: contentHash ?? null,
+        });
+        if (!permit.ok) {
+          logger.warn("Rejected Ryo voice permit", {
+            error: permit.error,
+            username,
+            isAuthenticated,
+          });
+          logger.response(permit.status, Date.now() - startTime);
+          res.status(permit.status).json({
+            error: permit.error,
+            message: permit.message,
+          });
+          return;
+        }
+        synthesisText = permit.text;
+      } else if (!synthesisText) {
+        logger.error("'text' is required");
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "'text' is required" });
+        return;
+      }
+
       let audioData: ArrayBuffer;
       let mimeType = "audio/mpeg";
 
@@ -200,7 +261,7 @@ export default apiHandler<SpeechRequest>(
 
         const elevenlabsVoiceId = voice_id || DEFAULT_ELEVENLABS_VOICE_ID;
         audioData = await generateElevenLabsSpeech({
-          text: text.trim(),
+          text: synthesisText,
           voiceId: elevenlabsVoiceId,
           modelId: model_id || DEFAULT_ELEVENLABS_MODEL_ID,
           outputFormat: output_format,
@@ -214,7 +275,7 @@ export default apiHandler<SpeechRequest>(
         const openaiVoice = voice || DEFAULT_OPENAI_TTS_VOICE;
         const { audio } = await generateSpeech({
           model: openai.speech("tts-1"),
-          text: text.trim(),
+          text: synthesisText,
           voice: openaiVoice,
           outputFormat: "mp3",
           speed: speed ?? DEFAULT_OPENAI_TTS_SPEED,

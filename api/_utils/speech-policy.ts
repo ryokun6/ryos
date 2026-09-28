@@ -3,8 +3,8 @@
  *
  * Ryo-labeled ElevenLabs voices (PVC, Instant v4, v3, v2, legacy) may only be
  * synthesized for in-OS Ryo chat AI output. `/api/speech` treats the client
- * `source` field as a first gate — it is spoofable and is NOT a signed permit.
- * See the follow-up design in the restricting-Ryo-voices PR.
+ * `source` field as a first gate — it is spoofable. Ryo synthesis also
+ * requires a server-issued speech permit bound to stored/draft assistant text.
  */
 
 import { DEFAULT_TTS_MODEL } from "./voice.js";

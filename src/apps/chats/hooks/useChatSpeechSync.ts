@@ -98,14 +98,18 @@ export function useChatSpeechSync({
         }, 80);
       }
 
-      speak(cleaned, () => {
-        const queueIndex = highlightQueueRef.current.indexOf(segment);
-        if (queueIndex !== -1) {
-          highlightQueueRef.current.splice(queueIndex, 1);
-        }
-        setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
-        onComplete?.();
-      });
+      speak(
+        cleaned,
+        () => {
+          const queueIndex = highlightQueueRef.current.indexOf(segment);
+          if (queueIndex !== -1) {
+            highlightQueueRef.current.splice(queueIndex, 1);
+          }
+          setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
+          onComplete?.();
+        },
+        { messageId }
+      );
     },
     [setCurrentHighlightSegment, speak]
   );

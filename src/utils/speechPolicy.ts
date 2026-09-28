@@ -4,9 +4,8 @@
  * Mirrors `api/_utils/speech-policy.ts`. Keep the voice-id list and gate
  * rules in sync — `tests/unit/speech/test-speech-policy.test.ts` asserts it.
  *
- * `source: "ryo-chat"` is a first-layer gate, not a signed permit. Anyone
- * who can POST `/api/speech` can spoof it. Follow-up: bind Ryo synthesis to
- * a server-issued speech session for a specific assistant message.
+ * `source: "ryo-chat"` is a first-layer gate. Ryo ElevenLabs synthesis also
+ * requires a server-issued speech permit bound to chat assistant text.
  */
 
 import { ELEVENLABS_TTS_VOICES } from "@/apps/control-panels/components/control-panels-app/ttsVoiceOptions";
@@ -49,6 +48,8 @@ export type SpeechApiRequestBody = {
   model?: "openai" | "elevenlabs" | null;
   voice?: string | null;
   voice_id?: string | null;
+  permitId?: string;
+  contentHash?: string;
 };
 
 export type SpeechApiRequestBuild =
@@ -65,6 +66,8 @@ export function buildSpeechApiRequestBody(input: {
   source: string;
   ttsModel: SpeechTtsModel;
   ttsVoice: string | null;
+  permitId?: string;
+  contentHash?: string;
 }): SpeechApiRequestBuild {
   if (requestResolvesToRyoVoice(input.ttsModel, input.ttsVoice)) {
     if (input.source !== RYO_CHAT_SPEECH_SOURCE) {
@@ -82,6 +85,12 @@ export function buildSpeechApiRequestBody(input: {
     body.voice_id = input.ttsVoice;
   } else if (input.ttsModel === "openai") {
     body.voice = input.ttsVoice;
+  }
+  if (input.permitId) {
+    body.permitId = input.permitId;
+  }
+  if (input.contentHash) {
+    body.contentHash = input.contentHash;
   }
 
   return body;
