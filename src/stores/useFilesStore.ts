@@ -121,6 +121,26 @@ let cachedAppletsData: { applets: FileSystemItemData[] } | null = null;
 let fileSystemDataPromise: Promise<FileSystemData> | null = null;
 let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null;
 
+function isUsableFileSystemData(data: unknown): data is FileSystemData {
+  if (!data || typeof data !== "object") return false;
+  const candidate = data as Partial<FileSystemData>;
+  return (
+    Array.isArray(candidate.directories) &&
+    Array.isArray(candidate.files) &&
+    candidate.files.length > 0
+  );
+}
+
+/** Clear the default-library JSON cache. Shared bun:test processes can otherwise
+ *  keep an empty tree from a mocked fetch and skip seeding Books / Downloads. */
+export function resetFileSystemDataCacheForTests(): void {
+  cachedFileSystemData = null;
+  cachedAppletsData = null;
+  fileSystemDataPromise = null;
+  appletsDataPromise = null;
+  preloadStarted = false;
+}
+
 // Preload status tracking
 let preloadStarted = false;
 
@@ -174,7 +194,10 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       const data = await res.json();
-      cachedFileSystemData = data as FileSystemData;
+      if (!isUsableFileSystemData(data)) {
+        return { directories: [], files: [] };
+      }
+      cachedFileSystemData = data;
       return cachedFileSystemData;
     } catch (err) {
       console.error("Failed to load filesystem.json", err);

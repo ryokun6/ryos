@@ -13,10 +13,10 @@ function EmptyLazyFallback() {
  * parse error). Without this, React.lazy() rejects and any parent error
  * boundary unmounts — for DesktopErrorBoundary that is a black #000 page.
  */
-export async function resolveLazyModule<T extends ComponentType<unknown>>(
+export async function resolveLazyModule<T extends ComponentType<any>>(
   loader: () => Promise<{ default: T }>,
   name: string
-): Promise<{ default: T | typeof EmptyLazyFallback }> {
+): Promise<{ default: T }> {
   try {
     return await loader();
   } catch (error) {
@@ -24,13 +24,13 @@ export async function resolveLazyModule<T extends ComponentType<unknown>>(
       errorName: error instanceof Error ? error.name : typeof error,
       errorMessage: error instanceof Error ? error.message : String(error),
     });
-    return { default: EmptyLazyFallback };
+    return { default: EmptyLazyFallback as unknown as T };
   }
 }
 
-export function safeLazy<T extends ComponentType<unknown>>(
+export function safeLazy<T extends ComponentType<any>>(
   loader: () => Promise<{ default: T }>,
   options: { name: string }
-): LazyExoticComponent<ComponentType<unknown>> {
+): LazyExoticComponent<T> {
   return lazy(() => resolveLazyModule(loader, options.name));
 }

@@ -34,4 +34,15 @@ describe("PWA startup policy", () => {
     expect(config).toContain('"fonts/fonts.css"');
     expect(config).not.toContain('"fonts/*.woff2"');
   });
+
+  test("caches hashed /assets/ bundles longer than one day", () => {
+    const config = readFileSync(
+      path.join(ROOT, "vite.config.ts"),
+      "utf8"
+    );
+    expect(config).toContain("/\\/assets\\/.+\\.js(?:\\?.*)?$/i");
+    expect(config).toContain("/\\/assets\\/.+\\.css(?:\\?.*)?$/i");
+    expect(config).toContain("60 * 60 * 24 * 30");
+    expect(config).toContain("content-hashed");
+  });
 });

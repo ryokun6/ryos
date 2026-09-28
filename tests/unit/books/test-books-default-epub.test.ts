@@ -23,7 +23,9 @@ Object.defineProperty(globalThis, "localStorage", {
 const { readBookBlobContent } = await import(
   "../../../src/services/vfs/FileContentRepository"
 );
-const { useFilesStore } = await import("../../../src/stores/useFilesStore");
+const { resetFileSystemDataCacheForTests, useFilesStore } = await import(
+  "../../../src/stores/useFilesStore"
+);
 const { dbOperations, STORES } = await import("../../../src/utils/indexedDB");
 const { ensureFileContentLoaded } = await import("../../../src/stores/useFilesStore");
 
@@ -48,6 +50,7 @@ async function deleteRyOsDatabase(): Promise<void> {
 
 beforeEach(async () => {
   bookAssetFetchCount = 0;
+  resetFileSystemDataCacheForTests();
   await deleteRyOsDatabase();
   useFilesStore.setState({
     items: {},

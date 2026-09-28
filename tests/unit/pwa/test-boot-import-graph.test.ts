@@ -81,6 +81,18 @@ const FORBIDDEN_BOOT_MODULES: Array<{ target: string; reason: string }> = [
     reason:
       "pulls @ai-sdk/react — a failed lazy import was taking down DesktopErrorBoundary",
   },
+  {
+    target: "dialogs/BootScreen",
+    reason: "reset/restore overlay — lazily mounted from App",
+  },
+  {
+    target: "layout/ExposeView",
+    reason: "Mission Control overlay — lazily mounted from AppManagerView",
+  },
+  {
+    target: "layout/AppSwitcher",
+    reason: "Alt-Tab overlay — lazily mounted from AppManagerView",
+  },
 ];
 
 describe("boot import graph", () => {
@@ -112,6 +124,22 @@ describe("boot import graph", () => {
     const config = await Bun.file("vite.config.ts").text();
     expect(config).not.toMatch(/["']@ai-sdk\/react["']\s*:\s*["']ai-sdk["']/);
     expect(config).not.toMatch(/\bai:\s*["']ai-sdk["']/);
+  });
+
+  test("vite does not force deferred editor/audio/player packages into manual chunks", async () => {
+    // Same Rolldown colocation trap as the AI SDK: a named vendor bucket
+    // steals shared helpers, then the entry / ui-core statically import the
+    // whole ~900KB editor/audio/player graph at first paint.
+    const config = await Bun.file("vite.config.ts").text();
+    expect(config).not.toMatch(/tone:\s*["']audio["']/);
+    expect(config).not.toMatch(/["']wavesurfer\.js["']\s*:\s*["']audio["']/);
+    expect(config).not.toMatch(
+      /["']audio-buffer-utils["']\s*:\s*["']audio["']/
+    );
+    expect(config).not.toMatch(
+      /["']react-player["']\s*:\s*["']media-player["']/
+    );
+    expect(config).not.toMatch(/["']@tiptap\/[^"']+["']\s*:\s*["']tiptap["']/);
   });
 
   test("boot-reachable source files must not runtime-import AI SDK packages", () => {

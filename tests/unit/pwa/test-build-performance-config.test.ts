@@ -48,6 +48,9 @@ describe("build performance configuration", () => {
     expect(inspector).toContain("MAX_FILES");
     expect(inspector).toContain("MAX_SCRIPTS");
     expect(inspector).toContain("MAX_BYTES");
+    expect(inspector).toContain("MAX_CRITICAL_JS_BYTES");
+    expect(inspector).toContain("FORBIDDEN_CRITICAL_JS");
+    expect(inspector).toContain("critical first-paint JS");
     expect(workflow).toContain("Type check, build, and inspect precache");
     expect(workflow).toContain("run: bun run build");
   });

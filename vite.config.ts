@@ -130,15 +130,17 @@ function collectPrecacheExclusionsPlugin() {
  * - ui-core: Radix primitives, loaded early. ui-form was merged into ui-core
  *   to eliminate a circular chunk dependency (ui-form -> ui-core -> ui-form)
  *   that caused a TDZ crash in Vite 6.4.x.
- * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
- * - media-player: shared by iPod and Videos apps
  * - hangul: Korean romanization, only needed for lyrics
  * - Do NOT put `ai` / `@ai-sdk/react` in a manual chunk. Rolldown colocates
  *   React (+ jsx-runtime) into that chunk, then the entry / zustand / dock
  *   import React from it. The AI SDK then modulepreloads at boot; a parse or
  *   TDZ failure in that chunk blacks the page (html/body are `#000`).
- * - tiptap: rich text editor, deferred until TextEdit opens. @tiptap/pm is
- *   excluded because it only exports subpaths and has no main entry point.
+ * - Do NOT put `tone` / `wavesurfer.js` / `audio-buffer-utils` (`audio`),
+ *   `react-player` (`media-player`), or `@tiptap/*` (`tiptap`) in a manual
+ *   chunk. Rolldown colocates shared helpers into those vendor buckets, then
+ *   the entry / ui-core statically import them — Vite emits ~900KB of
+ *   `<link rel="modulepreload">` for editor/audio/player code on first paint.
+ *   Dynamic import() already code-splits those libraries per app.
  * - three: 3D rendering, deferred until shader wallpapers / Synth need it
  * - motion / zustand / pusher / webamp: see comments at their use sites
  */
@@ -156,19 +158,7 @@ const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
   "@radix-ui/react-switch": "ui-core",
   "@radix-ui/react-checkbox": "ui-core",
   "@radix-ui/react-tabs": "ui-core",
-  tone: "audio",
-  "wavesurfer.js": "audio",
-  "audio-buffer-utils": "audio",
-  "react-player": "media-player",
   "hangul-romanization": "hangul",
-  "@tiptap/core": "tiptap",
-  "@tiptap/react": "tiptap",
-  "@tiptap/starter-kit": "tiptap",
-  "@tiptap/extension-table": "tiptap",
-  "@tiptap/extension-list": "tiptap",
-  "@tiptap/extension-text-align": "tiptap",
-  "@tiptap/extensions": "tiptap",
-  "@tiptap/suggestion": "tiptap",
   three: "three",
   motion: "motion",
   zustand: "zustand",
@@ -607,8 +597,20 @@ export default defineConfig({
             options: {
               cacheName: "js-resources",
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24, // 1 day
+                maxEntries: 150,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days — content-hashed
+              },
+            },
+          },
+          {
+            // Hashed CSS under /assets/ — same immutable-filename story as JS
+            urlPattern: /\/assets\/.+\.css(?:\?.*)?$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "css-resources",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days — content-hashed
               },
             },
           },

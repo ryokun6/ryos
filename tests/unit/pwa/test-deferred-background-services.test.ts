@@ -44,6 +44,15 @@ describe("deferred authenticated background services", () => {
     expect(view).toContain("<DeferredAssistantOverlay />");
     expect(view).not.toContain('import("@/components/assistant/AssistantOverlay")');
     expect(view).not.toContain("lazy(() =>");
+    expect(view).toContain('import("@/components/layout/ExposeView")');
+    expect(view).toContain('import("@/components/layout/AppSwitcher")');
+    expect(view).toContain("safeLazy");
+    expect(view).not.toMatch(
+      /^import \{ ExposeView \} from ["']@\/components\/layout\/ExposeView["'];?$/m
+    );
+    expect(view).not.toMatch(
+      /^import \{ AppSwitcher \} from ["']@\/components\/layout\/AppSwitcher["'];?$/m
+    );
 
     const deferred = readFileSync(
       path.join(ROOT, "src/components/assistant/DeferredAssistantOverlay.tsx"),
@@ -52,6 +61,15 @@ describe("deferred authenticated background services", () => {
     expect(deferred).toContain("safeLazy");
     expect(deferred).toContain("AssistantOverlayBoundary");
     expect(deferred).toContain('import("./AssistantOverlay")');
+  });
+
+  test("keeps the boot screen off the App static graph", () => {
+    const appSource = readFileSync(path.join(ROOT, "src/App.tsx"), "utf8");
+    expect(appSource).toContain("safeLazy");
+    expect(appSource).toContain('import("./components/dialogs/BootScreen")');
+    expect(appSource).not.toMatch(
+      /^import \{ BootScreen \} from ["'].*BootScreen["'];?$/m
+    );
   });
 
   test("loads idle-only warmers through dynamic imports", () => {

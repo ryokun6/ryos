@@ -6,8 +6,8 @@ import { Toaster } from "./components/ui/sonner";
 import { toast } from "@/hooks/useToast";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
-import { BootScreen } from "./components/dialogs/BootScreen";
 import { getNextBootMessage, clearNextBootMessage, isBootDebugMode } from "./utils/bootMessage";
+import { safeLazy } from "./utils/safeLazy";
 import { AnyApp } from "./apps/base/types";
 import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -41,6 +41,16 @@ const DebugLogOverlay = lazy(() =>
   import("@/components/debug/DebugLogOverlay").then((m) => ({
     default: m.DebugLogOverlay,
   }))
+);
+
+// Boot screen is only shown after reset / restore / format. Keep it off the
+// static entry graph so first paint does not parse the dialog tree.
+const BootScreen = safeLazy(
+  () =>
+    import("./components/dialogs/BootScreen").then((m) => ({
+      default: m.BootScreen,
+    })),
+  { name: "BootScreen" }
 );
 
 // Convert registry to array
@@ -273,17 +283,19 @@ export function App() {
   if (showBootScreen) {
     return (
       <>
-        <BootScreen
-          isOpen={true}
-          onOpenChange={() => {}}
-          title={bootScreenMessage || t("common.system.systemRestoring")}
-          debugMode={bootDebugMode}
-          onBootComplete={() => {
-            appShellLog.debug("Boot screen completed");
-            clearNextBootMessage();
-            setShowBootScreen(false);
-          }}
-        />
+        <Suspense fallback={null}>
+          <BootScreen
+            isOpen={true}
+            onOpenChange={() => {}}
+            title={bootScreenMessage || t("common.system.systemRestoring")}
+            debugMode={bootDebugMode}
+            onBootComplete={() => {
+              appShellLog.debug("Boot screen completed");
+              clearNextBootMessage();
+              setShowBootScreen(false);
+            }}
+          />
+        </Suspense>
         <DesktopCornerMask />
       </>
     );

@@ -3,7 +3,7 @@ import { beforeEach, afterEach, describe, expect, test, spyOn } from "bun:test";
 import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { resetPersistWritesForTests, settleAllPersistWrites } from "../../../src/utils/persistWriteQueue";
 import { dbOperations, ensureIndexedDBInitialized, STORES } from "../../../src/utils/indexedDB";
-import { useFilesStore, type FileSystemItem } from "../../../src/stores/useFilesStore";
+import { resetFileSystemDataCacheForTests, useFilesStore, type FileSystemItem } from "../../../src/stores/useFilesStore";
 import { useChatsStore } from "../../../src/stores/useChatsStore";
 import { readFileMutations, readFileMutationContent, withRemoteFileChanges } from "../../../src/sync/fileMutationJournal";
 import { saveVfsFile } from "../../../src/services/vfs/FileSaveTransaction";
@@ -20,14 +20,32 @@ const originalCloud = useCloudSyncStore.getState();
 const account = "transaction-test";
 const item = (extension = "md"): FileSystemItem => ({ path: `/saved.${extension}`, name: `saved.${extension}`, uuid: "saved-content", isDirectory: false, status: "active", modifiedAt: 1 });
 const response = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+const seededRoots: Record<string, FileSystemItem> = {
+  "/Downloads": {
+    path: "/Downloads",
+    name: "Downloads",
+    isDirectory: true,
+    type: "directory",
+    icon: "/icons/default/downloads.png",
+    status: "active",
+  },
+};
+const passthroughDefaultLibraryFetch = async (input: RequestInfo | URL) => {
+  const url = String(input);
+  if (url.includes("/data/filesystem.json") || url.includes("/data/applets.json")) {
+    return new Response("not found", { status: 404 });
+  }
+  return response({ authenticated: true, username: account, directories: [], files: [] });
+};
 async function replay(engine: CloudSyncEngine) {
   await (engine as unknown as { replayFileMutations(): Promise<void> }).replayFileMutations();
 }
 beforeEach(async () => {
   resetPersistWritesForTests();
+  resetFileSystemDataCacheForTests();
   resetFakeIndexedDB();
-  globalThis.fetch = (async () => response({ authenticated: true, username: account, directories: [], files: [] })) as typeof fetch;
-  withRemoteFileChanges(() => useFilesStore.setState({ items: {}, libraryState: "loaded" }));
+  globalThis.fetch = passthroughDefaultLibraryFetch as typeof fetch;
+  withRemoteFileChanges(() => useFilesStore.setState({ items: { ...seededRoots }, libraryState: "loaded" }));
   useChatsStore.setState({ username: account });
   useCloudSyncStore.setState({ autoSyncEnabled: true, syncFiles: true });
   await settleAllPersistWrites();
@@ -38,6 +56,7 @@ afterEach(() => {
   useChatsStore.setState(originalChats);
   useCloudSyncStore.setState(originalCloud);
   resetPersistWritesForTests();
+  resetFileSystemDataCacheForTests();
   globalThis.fetch = originalFetch;
 });
 
@@ -217,7 +236,15 @@ describe("paired content replay", () => {
   test("failed binary upload cannot publish its catalog or remove the queued bytes", async () => {
     await saveVfsFile(item("epub"), new Blob(["epub bytes"]));
     const urls: string[] = [];
-    globalThis.fetch = (async input => { urls.push(String(input)); return response({ error: "storage unavailable" }, 400); }) as typeof fetch;
+    globalThis.fetch = (async input => {
+      const url = String(input);
+      // Track only the blob upload this test owns. Leftover snapshot/ops
+      // fetches from earlier suites in the shared bun:test process still
+      // get 400 so they cannot apply an empty catalog, but they must not
+      // fail the assertion.
+      if (url.includes("/blobs")) urls.push(url);
+      return response({ error: "storage unavailable" }, 400);
+    }) as typeof fetch;
     const engine = await CloudSyncEngine.create(account);
     try {
       await expect(replay(engine)).rejects.toThrow("storage unavailable");
@@ -244,6 +271,10 @@ describe("independent file uploads", () => {
       let unavailable = true;
       let attempts = 0;
       globalThis.fetch = (async (input, init) => {
+        const url = String(input);
+        if (url.includes("/data/filesystem.json") || url.includes("/data/applets.json")) {
+          return new Response("not found", { status: 404 });
+        }
         if (!init?.body) return response({ authenticated: true, username: account, directories: [], files: [] });
         const body = JSON.parse(String(init.body));
         if (String(input).endsWith("/blobs")) {

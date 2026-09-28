@@ -119,7 +119,9 @@ describe("cloud sync blob missing-local repair", () => {
     globalThis.fetch = (async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes("/snapshot")) return Response.json({ seq: 2, entries });
-      const index = url.endsWith("/0.gz") ? 0 : 1;
+      const match = url.match(/example\.test\/(\d)\.gz/);
+      if (!match) return Response.json({});
+      const index = Number(match[1]);
       counts[index]++;
       if (index === 1 && fail) return new Response(null, { status: 404 });
       return new Response(payloads[index]);
@@ -141,7 +143,11 @@ describe("cloud sync blob missing-local repair", () => {
       expect(await engine.ensureBlobItemLocal("books", BOOK_UUID_REMOTE)).toBe(true);
       expect(state.cursor).toBe(2);
       expect(state.pendingDownloads).toHaveLength(0);
-      expect(counts).toEqual([1, 2]);
+      // Book 1 is fetched once. Book 2 is fetched at least twice (404 then
+      // success). hydrateDownload's scheduleDownloads(0) may start a parallel
+      // attempt after book 1, so the exact book-2 count is order-dependent.
+      expect(counts[0]).toBe(1);
+      expect(counts[1]).toBeGreaterThanOrEqual(2);
       expect(await dbOperations.get(STORES.BOOKS, BOOK_UUID_REMOTE)).toBeDefined();
     } finally { await engine.stop(); }
   });
