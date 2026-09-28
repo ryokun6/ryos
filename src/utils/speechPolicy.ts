@@ -24,7 +24,7 @@ export function isRyoElevenLabsVoiceId(
   voiceId: string | null | undefined
 ): boolean {
   if (!voiceId) return false;
-  return RYO_ELEVENLABS_VOICE_IDS.includes(voiceId);
+  return (RYO_ELEVENLABS_VOICE_IDS as readonly string[]).includes(voiceId);
 }
 
 /** Unset Control Panels Default resolves to ElevenLabs + Ryo PVC on the server. */
