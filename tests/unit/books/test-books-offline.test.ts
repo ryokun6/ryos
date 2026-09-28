@@ -31,6 +31,7 @@ const {
   ensureFileContentLoaded,
   warmPendingBookContent,
   clearWarmedBookPaths,
+  resetFileSystemDataCacheForTests,
 } = await import("../../../src/stores/useFilesStore");
 const { dbOperations, STORES } = await import("../../../src/utils/indexedDB");
 
@@ -68,6 +69,7 @@ beforeEach(async () => {
   networkAvailable = true;
   setNavigatorOnLine(true);
   clearWarmedBookPaths();
+  resetFileSystemDataCacheForTests();
   await deleteRyOsDatabase();
   useFilesStore.setState({
     items: {},
