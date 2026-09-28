@@ -27,26 +27,9 @@ export const APPLE_MUSIC_ID_REGEX = /^am:[A-Za-z0-9._-]{1,64}$/;
 
 /**
  * Prefixes to skip when parsing lyrics (credits, production info, etc.)
- * Must match client-side parser (krcParser.ts) for consistent line counts
+ * Shared with client translation pairing (`lyricCreditSkip.ts`) for consistent line counts
  */
-export const SKIP_PREFIXES = [
-  "作词", "作曲", "编曲", "制作", "发行", "出品", "监制", "策划", "统筹",
-  "录音", "混音", "母带", "和声", "合声", "合声编写", "版权", "吉他", "贝斯", "鼓", "键盘",
-  "企划", "词：", "詞：", "词曲：", "詞曲：", "曲", "男：", "女：", "合：", "OP", "SP", "TME享有",
-  "日文词",
-  "【未经著作权人许可", "【未經著作權人許可",
-  "Produced", "Composed", "Arranged", "Mixed", "Lyrics", "Keyboard",
-  "Guitar", "Bass", "Drum", "Vocal", "Original Publisher", "Sub-publisher",
-  "Electric Piano", "Synth by", "Recorded by", "Mixed by", "Mastered by",
-  "Produced by", "Composed by", "Digital Editing by", "Mix Assisted by",
-  "Mix by", "Mix Engineer", "Background vocals", "Background vocals by",
-  "Chorus by", "Percussion by", "String by", "Harp by", "Piano by",
-  "Piano Arranged by", "Written by", "Additional Production by",
-  "Synthesizer", "Programming", "Background Vocals", "Recording Engineer",
-  "Digital Editing", "Digital Edited", "Sessions", "Original publisher",
-  "Original Lyrics", "Korean Lyrics", "All Instruments by", "Additional Drums",
-  "Digital editing by"
-] as const;
+export { LYRIC_CREDIT_SKIP_PREFIXES as SKIP_PREFIXES } from "../../src/shared/media/lyricCreditSkip.js";
 
 // =============================================================================
 // Schemas

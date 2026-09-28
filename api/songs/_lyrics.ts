@@ -6,7 +6,9 @@
 
 import { openai } from "@ai-sdk/openai";
 import { Converter } from "opencc-js";
-import { SKIP_PREFIXES } from "./_constants.js";
+import {
+  shouldSkipLyricCreditLine,
+} from "../../src/shared/media/lyricCreditSkip.js";
 import {
   base64ToUtf8,
   logInfo,
@@ -148,42 +150,16 @@ export function extractChineseFromKrcLanguage(krc: string): string[] | null {
 // Line Filtering
 // =============================================================================
 
-/** Treat full-width (：) and half-width (:) colons the same for metadata prefix matching */
-function normalizeColonsForPrefixMatch(s: string): string {
-  return s.replace(/\uFF1A/g, ":");
-}
-
 /**
  * Check if a line should be skipped (credits, metadata, etc.)
  */
 export function shouldSkipLine(text: string, title?: string, artist?: string): boolean {
   const trimmed = text.trim();
 
-  if (trimmed.includes("\uFF1A")) {
+  if (shouldSkipLyricCreditLine(trimmed)) {
     return true;
   }
 
-  if (trimmed.includes(" - ")) {
-    return true;
-  }
-
-  const lineForPrefix = normalizeColonsForPrefixMatch(trimmed);
-
-  if (
-    SKIP_PREFIXES.some((prefix) =>
-      lineForPrefix.startsWith(normalizeColonsForPrefixMatch(prefix)),
-    )
-  ) {
-    return true;
-  }
-  
-  if (
-    (trimmed.startsWith("(") && trimmed.endsWith(")")) ||
-    (trimmed.startsWith("（") && trimmed.endsWith("）"))
-  ) {
-    return true;
-  }
-  
   if (title && artist) {
     const titleArtist = `${title} - ${artist}`;
     const artistTitle = `${artist} - ${title}`;
@@ -211,6 +187,41 @@ export function shouldSkipLine(text: string, title?: string, artist?: string): b
   }
   
   return false;
+}
+
+/**
+ * Drop credit / metadata lines from already-parsed lyrics (including stale cache).
+ */
+export function filterSkippedLyricLines<T extends { words: string }>(
+  lines: readonly T[],
+  title?: string,
+  artist?: string
+): T[] {
+  return lines.filter((line) => !shouldSkipLine(line.words, title, artist));
+}
+
+const LRC_TIMED_LINE_REGEX = /^\[(\d{1,2}):(\d{1,2})\.(\d{2,3})\](.*)$/;
+
+/**
+ * Drop credit / metadata lines from a stored translation LRC so pairing
+ * stays aligned with {@link filterSkippedLyricLines}.
+ */
+export function filterLrcCreditLines(
+  lrc: string,
+  title?: string,
+  artist?: string
+): string {
+  const kept: string[] = [];
+  for (const raw of lrc.split("\n")) {
+    const line = raw.trim();
+    if (!line) continue;
+    const match = line.match(LRC_TIMED_LINE_REGEX);
+    if (!match) continue;
+    const text = match[4].trim();
+    if (!text || shouldSkipLine(text, title, artist)) continue;
+    kept.push(line);
+  }
+  return kept.join("\n");
 }
 
 // =============================================================================

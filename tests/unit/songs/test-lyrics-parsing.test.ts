@@ -1,6 +1,14 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseKrcToLines, parseLrcToLines } from "../../../api/songs/_lyrics";
+import {
+  filterLrcCreditLines,
+  filterSkippedLyricLines,
+  parseKrcToLines,
+  parseLrcToLines,
+  shouldSkipLine,
+} from "../../../api/songs/_lyrics";
+import { shouldSkipLyricCreditLine } from "../../../src/shared/media/lyricCreditSkip";
+import { parseLrcToTranslations } from "../../../src/utils/chunkedStream";
 import { ApiRequestError } from "../../../src/api/core";
 import {
   getLyricsErrorMessage,
@@ -95,6 +103,118 @@ describe("lyrics prefix filtering", () => {
         startTimeMs: "5000",
         words: "这首歌提到著作权只是歌词",
       },
+    ]);
+  });
+
+  test("skips Traditional lyricist credit 詞：吳俊霖 as a whole line", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]詞：吳俊霖",
+        "[00:02.00]夏夜裡的晚風",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "2000",
+        words: "夏夜裡的晚風",
+      },
+    ]);
+  });
+
+  test("skips Traditional lyricist credit in KRC word-timed lines", () => {
+    const lines = parseKrcToLines(
+      [
+        "[0,2000]<0,400,0>詞：<400,800,0>吳俊霖",
+        "[2000,2000]<0,500,0>夏夜裡的晚風",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "2000",
+        words: "夏夜裡的晚風",
+        wordTimings: [
+          { text: "夏夜裡的晚風", startTimeMs: 0, durationMs: 500 },
+        ],
+      },
+    ]);
+  });
+
+  test("skips Simplified lyricist credit 词：某某 as a whole line", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]词：某某",
+        "[00:02.00]夏夜里的晚风",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "2000",
+        words: "夏夜里的晚风",
+      },
+    ]);
+  });
+
+  test("skips 詞/词 credits with half-width colon and optional whitespace", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]詞:吳俊霖",
+        "[00:02.00]词 : 某某",
+        "[00:03.00]作詞：吳俊霖",
+        "[00:04.00]夏夜裡的晚風",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "4000",
+        words: "夏夜裡的晚風",
+      },
+    ]);
+  });
+
+  test("skips Traditional 作詞 and Simplified 作词 credit lines", () => {
+    expect(shouldSkipLine("作詞：吳俊霖")).toBe(true);
+    expect(shouldSkipLine("作词：某某")).toBe(true);
+    expect(shouldSkipLyricCreditLine("詞：吳俊霖")).toBe(true);
+    expect(shouldSkipLyricCreditLine("词：某某")).toBe(true);
+  });
+
+  test("drops stale cached parsed lines that still include lyricist credits", () => {
+    const kept = filterSkippedLyricLines([
+      { startTimeMs: "0", words: "詞：吳俊霖" },
+      { startTimeMs: "1000", words: "词：某某" },
+      { startTimeMs: "2000", words: "夏夜裡的晚風" },
+    ]);
+
+    expect(kept).toEqual([
+      { startTimeMs: "2000", words: "夏夜裡的晚風" },
+    ]);
+  });
+
+  test("drops matching credit lines from cached translation LRC", () => {
+    const filtered = filterLrcCreditLines(
+      [
+        "[00:00.00]Lyrics: Wu Junlin",
+        "[00:02.00]The evening breeze on a summer night",
+      ].join("\n"),
+    );
+
+    expect(filtered).toBe("[00:02.00]The evening breeze on a summer night");
+  });
+
+  test("parseLrcToTranslations skips lyricist credit translations", () => {
+    const translations = parseLrcToTranslations(
+      [
+        "[00:00.00]Lyrics: Wu Junlin",
+        "[00:02.00]The evening breeze on a summer night",
+      ].join("\n"),
+    );
+
+    expect(translations).toEqual([
+      "The evening breeze on a summer night",
     ]);
   });
 

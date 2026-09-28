@@ -6,6 +6,7 @@
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
+import { shouldSkipLyricCreditLine } from "@/shared/media/lyricCreditSkip";
 
 // =============================================================================
 // Constants
@@ -974,7 +975,10 @@ export function parseLrcToTranslations(lrc: string): string[] {
   for (const line of lrc.split("\n")) {
     const match = line.trim().match(lineRegex);
     if (match) {
-      lines.push(match[4].trim());
+      const text = match[4].trim();
+      if (text && !shouldSkipLyricCreditLine(text)) {
+        lines.push(text);
+      }
     }
   }
 
