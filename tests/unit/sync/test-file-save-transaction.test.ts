@@ -219,13 +219,11 @@ describe("paired content replay", () => {
     const urls: string[] = [];
     globalThis.fetch = (async input => {
       const url = String(input);
-      // Count only the blob upload this test owns. Leftover snapshot/ops
-      // fetches from earlier suites in the shared bun:test process must not
-      // fail the assertion or look like a catalog publish.
-      if (!url.includes("/blobs")) {
-        return response({ authenticated: true, username: account, directories: [], files: [], ok: true, seq: 0, entries: {} });
-      }
-      urls.push(url);
+      // Track only the blob upload this test owns. Leftover snapshot/ops
+      // fetches from earlier suites in the shared bun:test process still
+      // get 400 so they cannot apply an empty catalog, but they must not
+      // fail the assertion.
+      if (url.includes("/blobs")) urls.push(url);
       return response({ error: "storage unavailable" }, 400);
     }) as typeof fetch;
     const engine = await CloudSyncEngine.create(account);
