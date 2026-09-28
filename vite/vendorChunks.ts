@@ -12,12 +12,14 @@
  *
  * Boot (loaded immediately):
  * - react: react, react-dom, scheduler, jsx-runtime, use-sync-external-store
- * - ui-core: Radix primitives. ui-form was merged into ui-core to eliminate a
- *   circular chunk dependency (ui-form -> ui-core -> ui-form) that caused a
- *   TDZ crash in Vite 6.4.x.
+ * - ui-core: Radix primitives used by the shell (menu bar, dock, boot dialogs)
+ *   plus the Radix internals they share with ui-extra.
  * - motion / zustand: see comments at their use sites
  *
  * Lazy (only fetched when a feature needs them):
+ * - ui-extra: Radix primitives only used inside apps. It imports ui-core but
+ *   never the reverse; the old manualChunks split (ui-form) formed a cycle
+ *   and hit a TDZ crash in Vite 6.4.x, which priority ordering prevents.
  * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
  * - media-player: shared by iPod and Videos apps
  * - hangul: Korean romanization, only needed for lyrics
@@ -50,18 +52,28 @@ export const VENDOR_CHUNK_GROUPS: ReadonlyArray<{
       "@radix-ui/react-dialog",
       "@radix-ui/react-dropdown-menu",
       "@radix-ui/react-menubar",
-      "@radix-ui/react-scroll-area",
-      "@radix-ui/react-tooltip",
       "@radix-ui/react-label",
-      "@radix-ui/react-select",
       "@radix-ui/react-slider",
-      "@radix-ui/react-switch",
-      "@radix-ui/react-checkbox",
       "@radix-ui/react-tabs",
+      // Imported directly by the shell; otherwise ui-extra would claim them
+      // as dependencies of select / tooltip.
+      "@radix-ui/react-slot",
+      "@radix-ui/react-visually-hidden",
     ],
   },
   { name: "motion", boot: true, packages: ["motion"] },
   { name: "zustand", boot: true, packages: ["zustand"] },
+  {
+    name: "ui-extra",
+    boot: false,
+    packages: [
+      "@radix-ui/react-scroll-area",
+      "@radix-ui/react-tooltip",
+      "@radix-ui/react-select",
+      "@radix-ui/react-switch",
+      "@radix-ui/react-checkbox",
+    ],
+  },
   {
     name: "audio",
     boot: false,
