@@ -71,6 +71,7 @@ export function ChatsAppComponent({
           setSaveFileName={c.setSaveFileName}
           isUsernameDialogOpen={c.isUsernameDialogOpen}
           setIsUsernameDialogOpen={c.setIsUsernameDialogOpen}
+          usernameDialogInitialTab={c.usernameDialogInitialTab}
           verifyUsernameInput={c.verifyUsernameInput}
           setVerifyUsernameInput={c.setVerifyUsernameInput}
           verifyPasswordInput={c.verifyPasswordInput}

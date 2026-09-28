@@ -1505,6 +1505,7 @@
         "settingsNoChanges": "Изменений нет",
         "settingsSpeechDisabled": "Синтез речи отключен",
         "settingsSpeechEnabled": "Синтез речи включен",
+        "settingsSpeechRequiresLogin": "Войдите, чтобы включить речь в чате",
         "settingsThemeChanged": "Тема изменена на {{theme}}",
         "settingsUiSoundsDisabled": "Звуковые эффекты интерфейса выключены",
         "settingsUiSoundsEnabled": "Звуковые эффекты интерфейса включены",
@@ -2196,7 +2197,7 @@
         "showAll": "Показать все"
       },
       "ttsModel": "Модель TTS",
-      "ttsModelDescription": "Поставщик преобразования текста в речь",
+      "ttsModelDescription": "Только для чата Ryo. Другие приложения используют системный голос.",
       "ttsVoice": "Голос TTS",
       "ttsVoices": {
         "alloy": "Alloy",

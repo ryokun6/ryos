@@ -51,6 +51,12 @@ import {
 } from "./ai/conversations/_helpers/store.js";
 import { broadcastAIConversationUpdate } from "./ai/conversations/_helpers/realtime.js";
 import { resolveAIAttachmentsForModel } from "./ai/attachments/_helpers/store.js";
+import { getAssistantVisibleText } from "../src/apps/chats/utils/aiMessageText.js";
+import {
+  upsertSpeechDraft,
+  writeSpeechDraftFromTextStream,
+} from "./_utils/speech-permit-store.js";
+import { resolveSpeechOwner } from "./_utils/speech-permit.js";
 type SystemState = RyoConversationSystemState;
 
 
@@ -625,13 +631,38 @@ export default apiHandler<{
 
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
     const originalMessages = modelConversationMessages;
+    const lastOriginalMessage = originalMessages.at(-1);
+    const speechMessageId =
+      lastOriginalMessage?.role === "assistant"
+        ? lastOriginalMessage.id
+        : crypto.randomUUID();
+    const speechOwner = resolveSpeechOwner({ username, ip });
+    waitUntil(
+      writeSpeechDraftFromTextStream({
+        redis,
+        owner: speechOwner,
+        messageId: speechMessageId,
+        textStream: result.textStream,
+      }).catch((error) => {
+        logError("Failed to write streaming speech draft", error);
+      })
+    );
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       originalMessages,
-      generateMessageId: () => crypto.randomUUID(),
+      generateMessageId: () => speechMessageId,
       consumeSseStream: consumeStream,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {
         try {
+          const speakable = getAssistantVisibleText(responseMessage);
+          if (speakable) {
+            await upsertSpeechDraft({
+              redis,
+              owner: speechOwner,
+              messageId: responseMessage.id || speechMessageId,
+              text: speakable,
+            });
+          }
           if (!storedConversation || !isAuthenticated || !username) {
             return;
           }

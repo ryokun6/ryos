@@ -1503,6 +1503,7 @@
         "settingsNoChanges": "No se realizaron cambios",
         "settingsSpeechDisabled": "Texto a voz deshabilitado",
         "settingsSpeechEnabled": "Texto a voz habilitado",
+        "settingsSpeechRequiresLogin": "Inicia sesión para activar la voz del chat",
         "settingsThemeChanged": "Tema cambiado a {{theme}}",
         "settingsUiSoundsDisabled": "Sonidos de la interfaz desactivados",
         "settingsUiSoundsEnabled": "Sonidos de la interfaz activados",
@@ -2191,7 +2192,7 @@
         "showAll": "Mostrar todo"
       },
       "ttsModel": "Modelo TTS",
-      "ttsModelDescription": "Proveedor de texto a voz",
+      "ttsModelDescription": "Solo para el chat de Ryo. Las demás apps usan la voz del sistema.",
       "ttsVoice": "Voz TTS",
       "ttsVoices": {
         "alloy": "Alloy",

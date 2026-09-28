@@ -46,7 +46,7 @@ export function useChatsAppController({
   const aiMessageCount = useChatsStore((state) => state.aiMessages.length);
 
   const authResult = useAuth();
-  const { promptSetUsername } = authResult;
+  const { promptSetUsername, promptLogin } = authResult;
 
   const chatRoomResult = useChatRoom(isWindowOpen ?? false, promptSetUsername);
 
@@ -87,6 +87,7 @@ export function useChatsAppController({
   const {
     username,
     isAuthenticated,
+    usernameDialogInitialTab,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
     newUsername,
@@ -438,6 +439,7 @@ export function useChatsAppController({
         onClearChats={handleOpenClearDialog}
         onSaveTranscript={handleSaveTranscript}
         onSetUsername={promptSetUsername}
+        onLogin={promptLogin}
         onToggleSidebar={toggleSidebarVisibility}
         isSidebarVisible={sidebarVisibleBool}
         onAddRoom={promptAddRoom}
@@ -482,6 +484,7 @@ export function useChatsAppController({
       handleOpenClearDialog,
       handleSaveTranscript,
       promptSetUsername,
+      promptLogin,
       toggleSidebarVisibility,
       sidebarVisibleBool,
       promptAddRoom,
@@ -621,6 +624,7 @@ export function useChatsAppController({
     handleSaveSubmit,
     saveFileName,
     setSaveFileName,
+    usernameDialogInitialTab,
     isUsernameDialogOpen,
     setIsUsernameDialogOpen,
     verifyUsernameInput,

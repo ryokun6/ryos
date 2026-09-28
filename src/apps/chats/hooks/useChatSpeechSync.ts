@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { UIMessage } from "@ai-sdk/react";
 import type { AIChatMessage } from "@/types/chat";
 import { useTtsQueue } from "@/hooks/useTtsQueue";
+import { RYO_CHAT_SPEECH_SOURCE } from "@/utils/speechPolicy";
 import { cleanTextForSpeech } from "../utils/textForSpeech";
 import { getAssistantVisibleText } from "../utils/aiMessageText";
 import { clearTtsHighlight } from "../utils/ttsHighlight";
@@ -30,7 +31,9 @@ export function useChatSpeechSync({
   const [highlightSegment, setHighlightSegment] =
     useState<ChatHighlightSegment | null>(null);
   const highlightSegmentRef = useRef<ChatHighlightSegment | null>(null);
-  const { speak, stop: stopTts, isSpeaking } = useTtsQueue();
+  const { speak, stop: stopTts, isSpeaking } = useTtsQueue({
+    source: RYO_CHAT_SPEECH_SOURCE,
+  });
 
   const setCurrentHighlightSegment = useCallback(
     (segment: ChatHighlightSegment | null) => {
@@ -95,14 +98,18 @@ export function useChatSpeechSync({
         }, 80);
       }
 
-      speak(cleaned, () => {
-        const queueIndex = highlightQueueRef.current.indexOf(segment);
-        if (queueIndex !== -1) {
-          highlightQueueRef.current.splice(queueIndex, 1);
-        }
-        setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
-        onComplete?.();
-      });
+      speak(
+        cleaned,
+        () => {
+          const queueIndex = highlightQueueRef.current.indexOf(segment);
+          if (queueIndex !== -1) {
+            highlightQueueRef.current.splice(queueIndex, 1);
+          }
+          setCurrentHighlightSegment(highlightQueueRef.current[0] || null);
+          onComplete?.();
+        },
+        { messageId }
+      );
     },
     [setCurrentHighlightSegment, speak]
   );
@@ -142,7 +149,7 @@ export function useChatSpeechSync({
   // range will land on the wrong span.
   const speakAssistantMessageManually = useCallback(
     (messageId: string, fullSource: string, onAllDone?: () => void) => {
-      if (!fullSource) {
+      if (!speechEnabled || !fullSource) {
         onAllDone?.();
         return;
       }
@@ -186,7 +193,7 @@ export function useChatSpeechSync({
         enqueueHighlightSpeech(messageId, start, end, chunk, handleSegmentDone);
       });
     },
-    [enqueueHighlightSpeech, setCurrentHighlightSegment, stopTts]
+    [enqueueHighlightSpeech, setCurrentHighlightSegment, speechEnabled, stopTts]
   );
 
   const resetSpeechState = useCallback(() => {

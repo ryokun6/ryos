@@ -256,7 +256,7 @@ Provides musical feedback for typing in the Chat app:
 
 ## Text-to-Speech (`useTtsQueue`)
 
-Provides gap-free TTS playback with intelligent queuing:
+Provides gap-free TTS playback with intelligent queuing. **Only Ryo chat** uses this hook (`source: "ryo-chat"` plus a server-issued speech permit). Other speak features (Maps YouBike nav, Books, TextEdit, Calculator, desktop assistant) all go through the shared helpers in `@/utils/browserSpeech` (`createSpeechUtterance` / `getBrowserSpeechSynthesis`) so Control Panels Default (ElevenLabs + Ryo PVC) cannot leak Ryo's voice.
 
 ### Features
 
@@ -339,7 +339,7 @@ Audio settings are managed via `useAudioSettingsStore` (Zustand with persistence
 | `uiSoundsEnabled` | true | Enable/disable UI sounds |
 | `terminalSoundsEnabled` | true | Enable/disable terminal sounds |
 | `typingSynthEnabled` | false | Enable/disable chat typing synthesis |
-| `speechEnabled` | false | Enable/disable voice input/output |
+| `speechEnabled` | false | Enable Ryo chat TTS (ElevenLabs). Enabling requires a signed-in user; the Chats / Control Panels Speech toggle opens the login dialog when logged out. Browser TTS in other apps does not use this flag. |
 | `keepTalkingEnabled` | true | Continue listening after speech |
 
 ### TTS Settings

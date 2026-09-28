@@ -80,8 +80,10 @@ export const useAudioSettingsStore = create<AudioSettingsState>()(
       speechEnabled: false,
       keepTalkingEnabled: true,
 
-      // null = Control Panels "Default" → `/api/speech` uses DEFAULT_TTS_MODEL (ElevenLabs / Ryo PVC).
-      // Persisted "openai" is left alone.
+      // null = Control Panels "Default" → Ryo chat `/api/speech` uses DEFAULT_TTS_MODEL
+      // (ElevenLabs / Ryo PVC). Non-chat speak paths use browser speechSynthesis
+      // and ignore this field so Default cannot leak Ryo's voice. Persisted
+      // "openai" is left alone.
       ttsModel: null,
       ttsVoice: null,
       browserTtsVoiceURI: null,

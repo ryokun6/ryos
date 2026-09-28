@@ -17,6 +17,7 @@ import { ShortcutHint } from "@/components/shared/menubar/ShortcutHint";
 import { MENUBAR_SEPARATOR_CLASS } from "@/components/shared/menubar/menubarStyles";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslation } from "react-i18next";
+import { requestSetChatSpeechEnabled } from "@/utils/chatSpeechAuth";
 import { TelegramLinkDialog } from "@/components/dialogs/TelegramLinkDialog";
 import {
   useNotificationPermission,
@@ -48,6 +49,7 @@ interface ChatsMenuBarProps {
   onResetFontSize: () => void;
   username?: string | null;
   isAuthenticated?: boolean;
+  onLogin?: () => void;
   onVerifyToken: () => void;
   isVerifyDialogOpen: boolean;
   setVerifyDialogOpen: (open: boolean) => void;
@@ -95,6 +97,7 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
   onResetFontSize,
   username,
   isAuthenticated,
+  onLogin,
   onVerifyToken,
   isVerifyDialogOpen,
   setVerifyDialogOpen,
@@ -352,8 +355,15 @@ export const ChatsMenuBar = memo(function ChatsMenuBar({
             ))}
             <MenubarSeparator className={MENUBAR_SEPARATOR_CLASS} />
             <MenubarCheckboxItem
-              checked={speechEnabled}
-              onCheckedChange={(checked) => setSpeechEnabled(checked)}
+              checked={Boolean(speechEnabled && isAuthenticated)}
+              onCheckedChange={(checked) =>
+                requestSetChatSpeechEnabled({
+                  enabled: checked,
+                  isAuthenticated: Boolean(isAuthenticated),
+                  promptLogin: onLogin ?? onSetUsername,
+                  setSpeechEnabled,
+                })
+              }
               className="text-md h-6 px-3"
             >
               {t("apps.chats.menu.chatSpeech")}

@@ -1501,6 +1501,7 @@
         "settingsNoChanges": "没有变更",
         "settingsSpeechDisabled": "语音朗读已关闭",
         "settingsSpeechEnabled": "已启用语音朗读",
+        "settingsSpeechRequiresLogin": "登录以启用聊天语音",
         "settingsThemeChanged": "主题已变更为{{theme}}",
         "settingsUiSoundsDisabled": "用户界面声音已禁用",
         "settingsUiSoundsEnabled": "用户界面声音已启用",
@@ -2189,7 +2190,7 @@
         "showAll": "显示全部"
       },
       "ttsModel": "TTS 模型",
-      "ttsModelDescription": "文本转语音服务商",
+      "ttsModelDescription": "仅用于 Ryo 聊天。其他应用使用系统语音。",
       "ttsVoice": "TTS 语音",
       "ttsVoices": {
         "alloy": "Alloy",

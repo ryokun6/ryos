@@ -1503,6 +1503,7 @@
         "settingsNoChanges": "Aucune modification",
         "settingsSpeechDisabled": "Synthèse vocale désactivée",
         "settingsSpeechEnabled": "Synthèse vocale activée",
+        "settingsSpeechRequiresLogin": "Connectez-vous pour activer la synthèse vocale des discussions",
         "settingsThemeChanged": "Thème changé en {{theme}}",
         "settingsUiSoundsDisabled": "Sons de l’interface désactivés",
         "settingsUiSoundsEnabled": "Sons de l’interface activés",
@@ -2191,7 +2192,7 @@
         "showAll": "Tout afficher"
       },
       "ttsModel": "Modèle TTS",
-      "ttsModelDescription": "Fournisseur de synthèse vocale",
+      "ttsModelDescription": "Réservé au chat Ryo. Les autres apps utilisent la voix système.",
       "ttsVoice": "Voix TTS",
       "ttsVoices": {
         "alloy": "Alloy",

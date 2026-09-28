@@ -1501,6 +1501,7 @@
         "settingsNoChanges": "変更なし",
         "settingsSpeechDisabled": "音声読み上げを無効にしました",
         "settingsSpeechEnabled": "音声読み上げを有効にしました",
+        "settingsSpeechRequiresLogin": "チャット音声をオンにするにはサインイン",
         "settingsThemeChanged": "テーマを{{theme}}に変更しました",
         "settingsUiSoundsDisabled": "UIサウンドを無効にしました",
         "settingsUiSoundsEnabled": "UIサウンドを有効にしました",
@@ -2189,7 +2190,7 @@
         "showAll": "すべてを表示"
       },
       "ttsModel": "TTS モデル",
-      "ttsModelDescription": "音声合成提供元",
+      "ttsModelDescription": "Ryo チャット専用。他のアプリはシステムの音声を使います。",
       "ttsVoice": "TTS 音声",
       "ttsVoices": {
         "alloy": "Alloy",
