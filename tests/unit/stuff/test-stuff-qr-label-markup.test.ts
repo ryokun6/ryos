@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -8,9 +8,23 @@ import {
   renderStuffIdQrSvg,
 } from "../../../src/apps/stuff/utils/printLabels";
 
+let registeredDomForSuite = false;
 if (typeof document === "undefined") {
   GlobalRegistrator.register();
+  registeredDomForSuite = true;
 }
+
+afterAll(async () => {
+  // The detached roots leave React scheduler work queued; let it run while
+  // `window` still exists.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  // happy-dom replaces File/FormData/Blob globally; leaving it registered
+  // breaks later suites that rely on Bun's implementations. Only tear down
+  // the DOM this suite created.
+  if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
+    await GlobalRegistrator.unregister();
+  }
+});
 
 function describeSvg(markup: string) {
   const host = document.createElement("div");
