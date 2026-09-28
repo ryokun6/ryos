@@ -71,6 +71,8 @@ import {
   buildChineseLyricsVariants,
   buildChineseTextVariants,
   buildChineseTranslationVariantsFromKrc,
+  filterLrcCreditLines,
+  filterSkippedLyricLines,
   getTranslationSystemPrompt,
   streamTranslation,
 } from "./_lyrics.js";
@@ -150,10 +152,10 @@ function getParsedLyrics(
   title?: string,
   artist?: string
 ) {
-  return (
+  const lines =
     lyrics.parsedLinesByLanguage?.[language] ??
-    parseLyricsContent(lyrics, title, artist, language)
-  );
+    parseLyricsContent(lyrics, title, artist, language);
+  return filterSkippedLyricLines(lines, title, artist);
 }
 
 // =============================================================================
@@ -604,12 +606,15 @@ export default apiHandler<Record<string, unknown>>(
           // Include translation info if requested
           if (translateTo && parsedLines.length > 0) {
             const totalLines = parsedLines.length;
-            const translationLrc =
+            const rawTranslationLrc =
               song.translations?.[translateTo] ??
               (requestedChineseTarget
                 ? song.translations?.[requestedChineseTarget] ??
                   chineseTranslationVariants[requestedChineseTarget]
                 : undefined);
+            const translationLrc = rawTranslationLrc
+              ? filterLrcCreditLines(rawTranslationLrc, lyricsTitle, lyricsArtist)
+              : undefined;
             const hasTranslation = Boolean(translationLrc);
             
             response.translation = {
@@ -784,8 +789,15 @@ export default apiHandler<Record<string, unknown>>(
         if (translateTo) {
           const totalLines = parsedLines.length;
           const chineseTarget = getChineseLyricsLanguage(translateTo);
-          const translationLrc = chineseTarget
+          const rawTranslationLrc = chineseTarget
             ? chineseTranslationVariants[chineseTarget]
+            : undefined;
+          const translationLrc = rawTranslationLrc
+            ? filterLrcCreditLines(
+                rawTranslationLrc,
+                lyricsSource.title,
+                lyricsSource.artist
+              )
             : undefined;
           const hasTranslation = Boolean(translationLrc);
           
@@ -916,7 +928,11 @@ export default apiHandler<Record<string, unknown>>(
             );
           }
           return jsonResponse({
-            translation: cachedTranslation,
+            translation: filterLrcCreditLines(
+              cachedTranslation,
+              song.lyricsSource?.title || song.title,
+              song.lyricsSource?.artist || song.artist
+            ),
             cached: true,
           });
         }
@@ -1078,7 +1094,11 @@ export default apiHandler<Record<string, unknown>>(
           logger.info("Returning cached translation via SSE");
           sendSSEResponse(res, effectiveOrigin, {
             type: "cached",
-            translation: cachedTranslation,
+            translation: filterLrcCreditLines(
+              cachedTranslation,
+              song.lyricsSource?.title || song.title,
+              song.lyricsSource?.artist || song.artist
+            ),
           });
           return;
         }
