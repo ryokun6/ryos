@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -489,8 +492,10 @@ from a cleared conversation returns <code>409 conversation_changed</code>.
 <table><thead><tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>model</code></td><td>string</td><td>No</td><td>Override the AI model (takes precedence over body parameter)</td></tr></tbody></table>
 <h3>Body</h3>
 <pre><code>interface ChatRequest {
-  // AI model to use (optional, defaults to "gpt-5.5")
+  // AI model to use (optional, defaults to "gpt-6")
   model?: SupportedModel;
+  // Required together with the ryo auth account to call opus-5.5
+  debugMode?: boolean;
   
   // Optional proactive greeting mode (non-streaming JSON response)
   proactiveGreeting?: boolean;
@@ -645,10 +650,10 @@ data: {"type":"finish","finishReason":"stop"}</code></pre>
 }</code></pre>
 <h2>AI Models</h2>
 <h3>Supported Models</h3>
-<table><thead><tr><th>Model ID</th><th>Provider</th><th>Underlying Model</th></tr></thead><tbody><tr><td><code>gpt-5.5</code></td><td>OpenAI</td><td>gpt-5.5 (default)</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td><td>claude-sonnet-4-6</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td><td>gemini-3-flash-preview</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td><td>gemini-3.1-pro-preview</td></tr></tbody></table>
+<table><thead><tr><th>Model ID</th><th>Provider</th><th>Underlying Model</th></tr></thead><tbody><tr><td><code>gpt-6</code></td><td>OpenAI</td><td>gpt-6-astra (default)</td></tr><tr><td><code>gpt-5.5</code></td><td>OpenAI</td><td>gpt-5.5</td></tr><tr><td><code>sonnet-4.6</code></td><td>Anthropic</td><td>claude-sonnet-4-6</td></tr><tr><td><code>opus-5.5</code></td><td>Anthropic</td><td>claude-opus-5-5 (ryo + debug only)</td></tr><tr><td><code>gemini-3-flash</code></td><td>Google</td><td>gemini-3-flash-preview</td></tr><tr><td><code>gemini-3.1-pro-preview</code></td><td>Google</td><td>gemini-3.1-pro-preview</td></tr></tbody></table>
 <h3>Model Selection</h3>
 <pre><code>// Priority: Query param &gt; Body param &gt; Default
-const model = queryModel || bodyModel || "gpt-5.5";</code></pre>
+const model = queryModel || bodyModel || "gpt-6";</code></pre>
 <h2>Rate Limiting</h2>
 <table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>15 messages</td><td>5 hours</td></tr><tr><td>Anonymous</td><td>3 messages</td><td>24 hours</td></tr></tbody></table>
 <p>Anonymous users are identified by IP address. The special user "ryo" (with valid token) has unlimited access.</p>
@@ -837,7 +842,7 @@ function ChatComponent() {
       'X-Username': username
     },
     body: {
-      model: 'gpt-5.5',
+      model: 'gpt-6',
       systemState: { /* ... */ }
     }
   });

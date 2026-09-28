@@ -54,15 +54,52 @@ For each section, launch a Task with:
 
 ### 3. Capture Changelog Screenshots
 
-Featured cards need an exactly **1280×720 WebP** in `public/docs-assets/changelog/`, named `YYYY-MM-NN-slug-16x9.webp`. Capture from the running app:
+Featured cards need an exactly **1280×720 WebP** in `public/docs-assets/changelog/`, named `YYYY-MM-NN-slug-16x9.webp`. Quality bar: menubar labels (`Maps`, `Stuff`, `Internet Explorer`) must look as crisp as an existing July shot such as `2026-07-08-ie-reader-mode-16x9.webp`. Do **not** ship a card that has horizontal scan-line / chroma-smear artifacts.
 
-1. Start `bun run dev`, then screenshot with Playwright (`playwright-core` is in node_modules; Chrome at `/usr/bin/google-chrome-stable`) using a `1280x720` viewport, `deviceScaleFactor: 1`. Open the relevant app/pane (`http://localhost:5173/<app-id>` launches an app directly) and wait ~20s for boot + entrance animations.
-2. Stage the shot deliberately:
-   - **Center the main window** in the frame, between the menubar (~30px) and the top of the dock — the window must NOT overlap the dock. Drag its title bar with `page.mouse` — the window root is `[data-window-instance-id]` and the drag handle is its `.title-bar` child; compute the delta from the window's `getBoundingClientRect()` to `(1280 - width) / 2` horizontally and `menubar + (dockTop - menubar - height) / 2` vertically, and move in ~10 steps so the drag registers.
-   - **Keep the desktop clean**: no extra windows, dialogs, or launch toasts (let them time out before capturing). Default desktop icons and the dock are fine.
-   - **Keep the default shuffle wallpaper** (a fresh profile picks a random nature wallpaper per load). If the shuffle lands on something too busy or low-contrast behind the window, just re-run the capture for a new roll rather than pinning a wallpaper.
-3. Convert: `sharp(png).webp({ quality: 80 }).toFile(...)` and verify metadata is 1280×720.
-4. The Vite watcher ignores `public/**` — restart the dev server before visually verifying new assets, or they 200 with the SPA HTML fallback.
+#### Capture (Playwright + Chrome)
+
+1. Start `bun run dev`. Screenshot with Playwright (`playwright-core` in node_modules; Chrome at `/usr/bin/google-chrome-stable`). Viewport **1280×720**, **`deviceScaleFactor: 1` only** (never 2). Open `http://localhost:5173/<app-id>?_ryo=1` (bare `/<app-id>` is OG share HTML and will redirect off-localhost). Wait ~20s for boot + entrance animations.
+2. Stage the shot:
+   - **One window**, sized to fit the frame. Several apps default larger than the usable area (Stuff is 920×580) and will overlap the dock — `updateInstanceWindowState` to ~720–800×440–480 before centering.
+   - **Center** it between the menubar (~30px) and the **top of the dock**. Drag `[data-window-instance-id] .title-bar` with `page.mouse` (~10 steps). The window must not overlap the dock.
+   - **Clean desktop**: close extra instances; disable the desktop assistant (`useAssistantStore.getState().setEnabled(false)`); hide toasts. Default desktop icons and the dock are fine.
+   - **Wallpaper**: default shuffle is a random nature photo. **Re-roll** (new profile, or `setWallpaper` to another nature still such as `/wallpapers/photos/nature/water.jpg`) if the roll is speckled, grainy, snowy, or low-contrast. Aqua glass menubars are translucent — busy texture behind them looks like interlace even in the PNG. July Books/IE use a smooth water or sunset field; match that, do not pin a branded/custom wallpaper.
+3. Freeze motion, then screenshot **PNG only** — never `screenshot({ type: "webp" })` and never let Playwright write a lossy WebP:
+   ```ts
+   await page.addStyleTag({
+     content: `*,*::before,*::after{animation:none!important;transition:none!important;}`,
+   });
+   const png = await page.screenshot({
+     type: "png",
+     animations: "disabled",
+     caret: "hide",
+     scale: "css",
+   });
+   ```
+   Keep the raw PNG until the WebP passes the quality gate below. If the PNG menubar is already smeared, fix capture (animations, wallpaper, window size) — do not encode a dirty PNG.
+
+#### Encode (sharp)
+
+Default `sharp(png).webp({ quality: 80 })` is **wrong** for these cards. It enables chroma smart-subsample and crushes flat UI / dark frames (a Sound pane became ~41KB) into horizontal scan lines. Convert the PNG with:
+
+```ts
+await sharp(png).webp({
+  quality: 90,
+  lossless: false,
+  nearLossless: true,
+  smartSubsample: false, // required — never omit
+  effort: 6,
+}).toFile(dest);
+```
+
+If a 2× nearest-neighbor crop of the menubar is still softer than July, use `sharp(png).webp({ lossless: true, effort: 6 })`. A few hundred KB per card is fine. Verify metadata is 1280×720.
+
+#### Quality gate (required before commit)
+
+1. Crop the **output WebP** menubar (`extract` y=0..28, ~420×28) and upscale 2× with `kernel: "nearest"`. Compare to the same crop from `2026-07-08-ie-reader-mode-16x9.webp` and from the raw PNG.
+2. Labels (`Maps`, `Stuff`, `System Preferences`, `Internet Explorer`) must be readable with **no** horizontal scan lines or chroma fringing.
+3. If the WebP crop is worse than the PNG, the bug is encode — raise to lossless. If the PNG crop is already dirty, recapture.
+4. The Vite watcher ignores `public/**` — restart the dev server before loading new assets in the browser, or they 200 with the SPA HTML fallback.
 
 ### 4. Generate HTML
 
@@ -119,7 +156,8 @@ git diff docs/ public/docs/ tests/
 
 ## Notes
 
-- **Changelog**: `9-changelog.md` is hand-curated (featured cards + screenshots + monthly bullets). `generate-changelog.ts` only exists to bootstrap a missing file from git history; never run it with `--force` (and avoid `generate:docs:full`, which does) over curated content
+- **Changelog**: `9-changelog.md` is hand-curated (featured cards + screenshots + monthly bullets). `generate-changelog.ts` only exists to bootstrap a missing file from git history; never run it with `--force` (and avoid `generate:docs:full`, which does) over curated content. Screenshot encode: near-lossless WebP, `smartSubsample: false` — see §3; do not ship scan-line artifacts
+
 - **App docs**: Individual app pages (`2.1`, `2.2`, … one per registered app) are auto-generated via `generate-app-docs.ts` — do NOT hand-edit them. The count tracks `appRegistry`, so the range grows as apps are added
 - **One-shot generation**: `bun run generate:docs` runs `generate-app-docs.ts` → `generate-docs.ts`; the changelog md is left untouched
 - **Preserve structure**: Keep headings, mermaid diagrams, formatting

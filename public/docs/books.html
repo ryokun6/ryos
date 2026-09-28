@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -485,7 +488,7 @@ To begin, launch the Books app from the ryOS App Launcher. If your library is em
 <h3>Key Actions</h3>
 <ul><li><strong>Opening a Book:</strong> Click any book cover on the shelf. The interface will zoom into the cover and transition into the reader view.</li><li><strong>Navigating Pages:</strong> Click the left or right edges of the page to turn. Alternatively, use the <strong>Left/Right Arrow keys</strong> on your keyboard or swipe gestures on touch-enabled devices.</li><li><strong>Adjusting the View:</strong> Use the <strong>View</strong> menu to change the theme (Light, Sepia, Dark), modify font sizes, or switch between single and double-column layouts.</li><li><strong>Returning to Shelf:</strong> Click the "Back" or "Close" button in the navigation bar to trigger the reverse zoom animation and return to your collection.</li></ul>
 <h3>Tips & Shortcuts</h3>
-<ul><li><strong>Automatic Bookmarks:</strong> You never need to manually save your place. Books remembers your exact progress and will return you to the same page next time you open the app.</li><li><strong>Responsive Resizing:</strong> If you prefer a "paperback" feel, resize the window to a narrower width; the reader will automatically switch to a single-column layout.</li></ul>
+<ul><li><strong>Automatic Bookmarks:</strong> You never need to manually save your place. Books remembers your exact progress and will return you to the same page next time you open the app.</li><li><strong>Responsive Resizing:</strong> If you prefer a "paperback" feel, resize the window to a narrower width; the reader will automatically switch to a single-column layout.</li><li><strong>KOReader Sync:</strong> Sign in to ryOS once, then point KOReader’s Progress Sync custom server at <code>https://&lt;host&gt;/api/kosync</code> and use your ryOS username/password. Keep EPUB filenames identical under <code>/Books</code>. See <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/8.11-kosync-api.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">docs/8.11-kosync-api.md</a></code>.</li><li><strong>OPDS Catalog:</strong> Point an e-reader's OPDS client at <code>https://&lt;host&gt;/api/opds</code> and use your ryOS username/password to browse and download synced <code>/Books</code> EPUBs. See <code><a href="https://github.com/ryokun6/ryos/blob/main/docs/8.12-opds-api.md" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">docs/8.12-opds-api.md</a></code>.</li></ul>
 <h2>Technical Details</h2>
 <h3>Window Configuration</h3>
 <ul><li><strong>Default Size:</strong> 720×560px</li><li><strong>Minimum Size:</strong> 420×360px</li></ul>

@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -523,12 +526,12 @@ S3_ACCESS_KEY_ID=your-access-key
 S3_SECRET_ACCESS_KEY=your-secret-key
 S3_FORCE_PATH_STYLE=true   # required for MinIO and some providers
 STORAGE_CLIENT_UPLOAD=proxy  # optional: route browser uploads through the API (use when bucket CORS is unavailable, e.g. local dev on Hetzner)</code></pre>
-<h4>Bucket CORS (required for Cloud Sync)</h4>
-<p>Cloud Sync uploads and downloads use <strong>presigned URLs</strong> opened directly in the browser. The object storage bucket must allow cross-origin <code>PUT</code>, <code>GET</code>, and <code>HEAD</code> from your app origins. Without this, sync fails with errors like “Upload failed before an HTTP response was received”.</p>
+<h4>Bucket CORS (required for direct browser transfers)</h4>
+<p>Cloud Sync normally opens presigned URLs directly in the browser. The object storage bucket must allow cross-origin <code>PUT</code>, <code>GET</code>, and <code>HEAD</code> from your app origins for that path to work.</p>
 <p>Apply the repo helper (reads <code>.env.local</code> / env vars):</p>
 <pre><code>bun run scripts/configure-s3-cors.ts</code></pre>
 <p>It allows local dev origins (<code>http://localhost:5173</code>, etc.), <code>APP_PUBLIC_ORIGIN</code>, and any explicit entries in <code>API_ALLOWED_ORIGINS</code> (wildcard patterns such as <code>*.example.com</code> are skipped — list concrete origins in <code>S3_CORS_EXTRA_ORIGINS</code> instead).</p>
-<p>If presigned browser uploads still fail (some S3-compatible providers do not return CORS headers on presigned <code>PUT</code> responses), set <code>STORAGE_CLIENT_UPLOAD=proxy</code> so uploads go through <code>/api/sync/v2/blob-upload</code> instead of directly to object storage. <!-- pragma: allowlist secret --></p>
+<p>If a presigned upload expires or fails because of browser CORS/network policy, Cloud Sync retries that blob once through an authenticated <code>/api/sync/v2/blob-upload</code> proxy. Set <code>STORAGE_CLIENT_UPLOAD=proxy</code> to use the proxy for every initial upload instead of waiting for the automatic fallback. <!-- pragma: allowlist secret --></p>
 <p>Example manual CORS rule (Hetzner, MinIO, AWS S3, R2, etc.):</p>
 <pre><code>&lt;CORSConfiguration&gt;
   &lt;CORSRule&gt;
@@ -571,7 +574,7 @@ S3_SECRET_ACCESS_KEY=your-secret-key</code></pre>
 <p>The repository ships with a <code>.github/workflows/build-and-deploy.yml</code> workflow: <ol><li>On <strong>pull requests</strong>, CI runs <code>bun run test:unit</code> and <code>bun run build</code>.</li></ol><ol><li>On <strong>pushes to <code>main</code></strong>, CI builds/pushes the GHCR image (which runs <code>bun run build</code> in Docker) and triggers the Coolify deploy webhook.</li></ol></p>
 <p>Configure <code>COOLIFY_WEBHOOK_URL</code> and <code>COOLIFY_TOKEN</code> in GitHub Actions secrets.</p>
 <p>To wire it up: <ol><li>In Coolify, open your application → <strong>Webhooks</strong> → copy the <strong>Deploy webhook URL</strong> (it looks like <code>https://coolify.example.com/api/v1/deploy?uuid=&lt;resource-uuid&gt;</code>) and the <strong>API token</strong>.</li></ol><ol><li>In GitHub, open <strong>Settings → Secrets and variables → Actions → New repository secret</strong> and add:<ul><li><code>COOLIFY_WEBHOOK_URL</code> — the deploy webhook URL</li><li><code>COOLIFY_TOKEN</code> — the Coolify API token (sent as <code>Authorization: Bearer ...</code>)</li></ul></li><li>Optional: under <strong>Variables</strong>, set <code>COOLIFY_APP_URL</code> to your public app URL so it shows up on the GitHub deployment timeline.</li><li>Optional: in Coolify, disable the built-in Git auto-deploy so the webhook from GitHub Actions is the single source of truth.</li></ol></p>
-<p>The workflow also exposes a manual <code>workflow_dispatch</code> trigger with a <code>force_deploy</code> input that appends <code>force=true</code> to the webhook URL (useful when only environment variables changed).</p>
+<p>The workflow POSTs to <code>COOLIFY_WEBHOOK_URL</code> (Coolify's <code>/api/v1/deploy</code> is POST-only; GET returns HTTP 405). It also exposes a manual <code>workflow_dispatch</code> trigger with a <code>force_deploy</code> input that appends <code>force=true</code> to the webhook URL (useful when only environment variables changed).</p>
 <hr>
 <h2>8) VPS + systemd example</h2>
 <p>Example unit file:</p>

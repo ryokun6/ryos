@@ -376,6 +376,7 @@
     <a href="/docs/maps" class="nav-child ">2.26 Maps</a>
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
+    <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -443,6 +444,8 @@
     <a href="/docs/ai-generation-apis" class="nav-child ">8.8 AI Endpoints</a>
     <a href="/docs/utility-apis" class="nav-child ">8.9 Utility APIs</a>
     <a href="/docs/api-design-guide" class="nav-child ">8.10 ryOS API Design Guide</a>
+    <a href="/docs/kosync-api" class="nav-child ">8.11 KOReader Progress Sync (kosync)</a>
+    <a href="/docs/opds-api" class="nav-child ">8.12 Books OPDS Catalog</a>
   </div>
 </div>
 <div class="nav-group">
@@ -709,10 +712,10 @@ fileStore.createAlias(
 );</code></pre>
 <p>Desktop shortcuts support: <ul><li>App shortcuts (launches the app)</li><li>File shortcuts (opens the target file)</li><li>Theme-specific visibility (<code>hiddenOnThemes</code>)</li></ul></p>
 <h2>Cloud Sync</h2>
-<p>The cloud sync system (Cloud Sync v2, <code>/api/sync/v2/*</code>) persists file metadata and content (documents, images, applets, trash) across devices as a per-user key → document map. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket.</p>
+<p>The cloud sync system (Cloud Sync v2, <code>/api/sync/v2/*</code>) persists file metadata and content (documents, images, applets, trash, <strong>books</strong>, <strong>Stuff</strong> covers) across devices as a per-user key → document map. It also syncs <strong>calendar</strong> events, <strong>contacts</strong>, <strong>stickies</strong>, <strong>songs</strong>, <strong>videos</strong>, <strong>custom wallpapers</strong>, <strong>Stuff</strong> items/tags/locations, and <strong>settings</strong> from their respective stores, enabling backup and real-time sync via Pusher or local WebSocket. File saves are catalog-first with content-addressed blob upload; missing local bytes can rehydrate from cloud.</p>
 <h3>Per-Key Documents</h3>
 <p>The files codec (<code><a href="https://github.com/ryokun6/ryos/blob/main/src/sync/codecs.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/sync/codecs.ts</a></code>) decomposes file state into per-key documents:</p>
-<table><thead><tr><th>Key</th><th>Contents</th></tr></thead><tbody><tr><td><code>files/item:{path}</code></td><td>File/folder metadata (<code>FileSystemItem</code>)</td></tr><tr><td><code>files/doc:{uuid}</code></td><td>TextEdit document contents (from IndexedDB <code>documents</code>)</td></tr><tr><td><code>images/item:{key}</code>, <code>trash/item:{key}</code>, <code>applets/item:{key}</code>, <code>wallpapers/item:{key}</code></td><td>Binary content references; the bytes are content-addressed blobs in object storage (<code>sync/{username}/blobs/{sha256}.gz</code>), uploaded and deduped by sha256 via a batched <code>POST /api/sync/v2/blobs</code></td></tr></tbody></table>
+<table><thead><tr><th>Key</th><th>Contents</th></tr></thead><tbody><tr><td><code>files/item:{path}</code></td><td>File/folder metadata (<code>FileSystemItem</code>)</td></tr><tr><td><code>files/doc:{uuid}</code></td><td>TextEdit document contents (from IndexedDB <code>documents</code>)</td></tr><tr><td><code>images/item:{key}</code>, <code>trash/item:{key}</code>, <code>applets/item:{key}</code>, <code>wallpapers/item:{key}</code></td><td>Binary content references; the bytes are content-addressed blobs in object storage (<code>sync/{username}/blobs/{sha256}.gz</code>), uploaded and deduped by sha256 via a batched <code>POST /api/sync/v2/blobs</code></td></tr><tr><td><code>books/item:{uuid}</code></td><td>EPUB library metadata; book bytes are content-addressed blobs under <code>/Books</code></td></tr><tr><td><code>stuff/item:{id}</code>, <code>stuff/tag:{id}</code>, <code>stuff/location:{id}</code></td><td>Stuff inventory metadata; covers use <code>stuff-images/item:{id}</code> blob refs</td></tr></tbody></table>
 <h3>Deletions</h3>
 <p>When items are deleted (trash, empty trash, etc.), the sync engine uploads tombstone ops for the affected keys. Deletions are inferred from shadow-map keys that are missing locally, corroborated by deletion markers (path/id → timestamp) kept in <code>useCloudSyncStore</code>. This enables correct handling of deletes across devices and safe recreation of items after deletion.</p>
 <h3>Conflict Resolution</h3>
