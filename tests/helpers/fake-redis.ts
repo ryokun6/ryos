@@ -305,10 +305,79 @@ export class FakeRedis {
     return next;
   }
 
+  private consumeSpeechPermitScript(
+    key: string | undefined,
+    args: string[]
+  ): string {
+    if (!key) throw new Error("FakeRedis.eval: missing speech permit key");
+    const owner = args[0] ?? "";
+    const now = Number(args[1] ?? 0);
+    const contentHash = args[2] ?? "";
+    const clientText = args[3] ?? "";
+    const raw = this.kv.get(key);
+    if (raw == null) {
+      return JSON.stringify({ ok: false, error: "speech_permit_invalid" });
+    }
+    let decoded: {
+      owner?: string;
+      messageId?: string;
+      text?: string;
+      contentHash?: string;
+      usesRemaining?: number;
+      expiresAt?: number;
+    };
+    try {
+      decoded = typeof raw === "string" ? JSON.parse(raw) : raw;
+    } catch {
+      return JSON.stringify({ ok: false, error: "speech_permit_invalid" });
+    }
+    if (!decoded || typeof decoded !== "object") {
+      return JSON.stringify({ ok: false, error: "speech_permit_invalid" });
+    }
+    const expiresAt = Number(decoded.expiresAt) || 0;
+    if (expiresAt <= now) {
+      this.delSync(key);
+      return JSON.stringify({ ok: false, error: "speech_permit_expired" });
+    }
+    if (decoded.owner !== owner) {
+      return JSON.stringify({
+        ok: false,
+        error: "speech_permit_owner_mismatch",
+      });
+    }
+    let uses = Number(decoded.usesRemaining) || 0;
+    if (uses <= 0) {
+      return JSON.stringify({ ok: false, error: "speech_permit_exhausted" });
+    }
+    if (contentHash && decoded.contentHash !== contentHash) {
+      return JSON.stringify({
+        ok: false,
+        error: "speech_permit_hash_mismatch",
+      });
+    }
+    if (clientText && decoded.text !== clientText) {
+      return JSON.stringify({
+        ok: false,
+        error: "speech_permit_text_mismatch",
+      });
+    }
+    uses -= 1;
+    decoded.usesRemaining = uses;
+    const ttl = Math.max(1, Math.ceil((expiresAt - now) / 1000));
+    this.setSync(key, decoded, { ex: ttl });
+    return JSON.stringify({
+      ok: true,
+      text: decoded.text,
+      messageId: decoded.messageId,
+      contentHash: decoded.contentHash,
+    });
+  }
+
   /**
    * Minimal Lua eval supporting:
    * - INCREMENT_WITH_TTL_SCRIPT (INCR + conditional EXPIRE)
    * - compare-and-delete lock release (GET token then DEL)
+   * - CONSUME_SPEECH_PERMIT_SCRIPT (atomic Ryo speech permit decrement)
    */
   async eval<T = unknown>(
     script: string,
@@ -387,6 +456,12 @@ export class FakeRedis {
         return this.delSync(key) as T;
       }
       return 0 as T;
+    }
+    if (script.includes("ryos:speech-permit-consume-v1")) {
+      return this.consumeSpeechPermitScript(
+        keys[0],
+        args.map(String)
+      ) as T;
     }
     throw new Error(
       `FakeRedis.eval: unsupported script: ${script.slice(0, 80)}...`

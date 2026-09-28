@@ -466,5 +466,108 @@ describe("speech", () => {
         expect(data.error).toBe("ryo_voice_forbidden");
       }
     });
+
+    test("synthesizes permit-bound text when client omits text", async () => {
+      const { minted, mintRes, headers } = await seedDraftAndMintPermit({
+        text: "Permit-only bound assistant line.",
+      });
+      expect(mintRes.status).toBe(200);
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          source: RYO_CHAT_SPEECH_SOURCE,
+          model: "elevenlabs",
+          permitId: minted!.permitId,
+          contentHash: minted!.contentHash,
+        }),
+      });
+      expect(res.status).not.toBe(403);
+      expect([200, 429, 503]).toContain(res.status);
+      if (res.status === 200) {
+        const buffer = await res.arrayBuffer();
+        expect(buffer.byteLength).toBeGreaterThan(0);
+      }
+    }, 15_000);
+
+    test("rejects mismatched client text and keeps the permit usable", async () => {
+      const { minted, mintRes, headers } = await seedDraftAndMintPermit({
+        text: "Bound assistant line stays on the permit.",
+      });
+      expect(mintRes.status).toBe(200);
+      const mismatch = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          text: "Different client-supplied text.",
+          source: RYO_CHAT_SPEECH_SOURCE,
+          model: "elevenlabs",
+          permitId: minted!.permitId,
+        }),
+      });
+      expect([403, 429]).toContain(mismatch.status);
+      if (mismatch.status === 403) {
+        const data = await mismatch.json();
+        expect(data.error).toBe("speech_permit_text_mismatch");
+      }
+    });
+
+    test("rejects a permit from a different anon owner", async () => {
+      const { minted, mintRes } = await seedDraftAndMintPermit({
+        text: "Owner-bound assistant line.",
+      });
+      expect(mintRes.status).toBe(200);
+      const otherHeaders = makeRateLimitBypassHeaders();
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers: otherHeaders,
+        body: JSON.stringify({
+          text: "Owner-bound assistant line.",
+          source: RYO_CHAT_SPEECH_SOURCE,
+          model: "elevenlabs",
+          permitId: minted!.permitId,
+        }),
+      });
+      expect([403, 429]).toContain(res.status);
+      if (res.status === 403) {
+        const data = await res.json();
+        expect(data.error).toBe("speech_permit_owner_mismatch");
+      }
+    });
+
+    test("rejects an exhausted permit", async () => {
+      const headers = makeRateLimitBypassHeaders();
+      const ip = headers["X-Forwarded-For"] ?? "127.0.0.1";
+      const owner = resolveSpeechOwner({ username: null, ip });
+      const permitId = crypto.randomUUID();
+      const text = "Already used up.";
+      await putSpeechPermitRecord({
+        redis: createRedis(),
+        permitId,
+        record: {
+          owner,
+          messageId: crypto.randomUUID(),
+          text,
+          contentHash: hashSpeechText(text),
+          usesRemaining: 0,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 60_000,
+        },
+      });
+      const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          text,
+          source: RYO_CHAT_SPEECH_SOURCE,
+          permitId,
+        }),
+      });
+      expect([403, 429]).toContain(res.status);
+      if (res.status === 403) {
+        const data = await res.json();
+        expect(data.error).toBe("speech_permit_exhausted");
+      }
+    });
   });
 });

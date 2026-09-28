@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import {
   consumeSpeechPermit,
+  getSpeechDraft,
   mintSpeechPermit,
   putSpeechPermitRecord,
   upsertSpeechDraft,
+  writeSpeechDraftFromTextStream,
 } from "../../../api/_utils/speech-permit-store";
 import {
   SPEECH_PERMIT_ERRORS,
@@ -332,5 +334,98 @@ describe("speech permit store", () => {
       source: RYO_CHAT_SPEECH_SOURCE,
     });
     expect(minted.ok).toBe(true);
+  });
+
+  test("exhausts a permit after two successful consumes", async () => {
+    const db = createTypedRedis();
+    const owner = "user:frank";
+    const messageId = "msg-exhaust";
+    const text = "Two uses then stop.";
+    await upsertSpeechDraft({ redis: db, owner, messageId, text });
+    const minted = await mintSpeechPermit({
+      redis: db,
+      owner,
+      messageId,
+      text,
+      source: RYO_CHAT_SPEECH_SOURCE,
+    });
+    expect(minted.ok).toBe(true);
+    if (!minted.ok) return;
+
+    const first = await consumeSpeechPermit({
+      redis: db,
+      owner,
+      permitId: minted.permitId,
+    });
+    const second = await consumeSpeechPermit({
+      redis: db,
+      owner,
+      permitId: minted.permitId,
+    });
+    const third = await consumeSpeechPermit({
+      redis: db,
+      owner,
+      permitId: minted.permitId,
+    });
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    expect(third).toMatchObject({
+      ok: false,
+      error: SPEECH_PERMIT_ERRORS.exhausted,
+    });
+  });
+
+  test("atomic consume allows at most SPEECH_PERMIT_MAX_USES successes", async () => {
+    const db = createTypedRedis();
+    const owner = "user:gina";
+    const messageId = "msg-parallel";
+    const text = "Parallel consume bound line.";
+    await upsertSpeechDraft({ redis: db, owner, messageId, text });
+    const minted = await mintSpeechPermit({
+      redis: db,
+      owner,
+      messageId,
+      text,
+      source: RYO_CHAT_SPEECH_SOURCE,
+    });
+    expect(minted.ok).toBe(true);
+    if (!minted.ok) return;
+
+    const results = await Promise.all(
+      Array.from({ length: SPEECH_PERMIT_MAX_USES + 2 }, () =>
+        consumeSpeechPermit({
+          redis: db,
+          owner,
+          permitId: minted.permitId,
+        })
+      )
+    );
+    const successes = results.filter((result) => result.ok);
+    const exhausted = results.filter(
+      (result) => !result.ok && result.error === SPEECH_PERMIT_ERRORS.exhausted
+    );
+    expect(successes).toHaveLength(SPEECH_PERMIT_MAX_USES);
+    expect(exhausted.length).toBeGreaterThan(0);
+    if (successes[0]?.ok) {
+      expect(successes[0].text).toBe(text);
+    }
+  });
+
+  test("writeSpeechDraftFromTextStream flushes the full assistant stream", async () => {
+    const db = createTypedRedis();
+    const owner = "anon:198.51.100.9";
+    const messageId = "msg-stream-draft";
+    async function* chunks() {
+      yield "Hello ";
+      yield "from Ryo.";
+    }
+    await writeSpeechDraftFromTextStream({
+      redis: db,
+      owner,
+      messageId,
+      textStream: chunks(),
+    });
+    const draft = await getSpeechDraft({ redis: db, owner, messageId });
+    expect(draft?.text).toBe("Hello from Ryo.");
   });
 });
