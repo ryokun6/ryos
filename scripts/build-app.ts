@@ -52,3 +52,15 @@ if (precacheExitCode !== 0) {
   );
   process.exit(1);
 }
+
+const bootInspection = Bun.spawn(["bun", "run", "inspect:boot"], {
+  cwd: process.cwd(),
+  env: buildEnvironment,
+  stdout: "inherit",
+  stderr: "inherit",
+});
+const bootExitCode = await bootInspection.exited;
+if (bootExitCode !== 0) {
+  console.error(`[build] boot bundle inspection failed with exit code ${bootExitCode}`);
+  process.exit(1);
+}

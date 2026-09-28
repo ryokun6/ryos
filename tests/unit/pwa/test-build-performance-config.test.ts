@@ -23,6 +23,21 @@ describe("build performance configuration", () => {
     expect(runner.indexOf("failedJobs.length")).toBeLessThan(
       runner.indexOf('["bun", "run", "inspect:precache"]')
     );
+    expect(packageJson.scripts["inspect:boot"]).toBe(
+      "bun run scripts/inspect-boot-bundle.ts"
+    );
+    expect(runner.indexOf('["bun", "run", "inspect:precache"]')).toBeLessThan(
+      runner.indexOf('["bun", "run", "inspect:boot"]')
+    );
+  });
+
+  test("enforces the boot JavaScript budget in the CI build", () => {
+    const inspector = readFileSync(
+      path.join(ROOT, "scripts/inspect-boot-bundle.ts"),
+      "utf8"
+    );
+    expect(inspector).toContain("MAX_BOOT_GZIP_BYTES");
+    expect(inspector).toContain("Lazy vendor chunks are on the boot path");
   });
 
   test("enables incremental project-reference caches", () => {
