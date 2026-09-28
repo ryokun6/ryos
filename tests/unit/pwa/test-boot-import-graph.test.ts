@@ -114,6 +114,17 @@ describe("boot import graph", () => {
     expect(config).not.toMatch(/\bai:\s*["']ai-sdk["']/);
   });
 
+  test("client code does not import react-dom/server", () => {
+    // The boot `react` vendor chunk captures every react-dom module, so a
+    // server-renderer import anywhere (even in a lazy app) ships ~420 KB of
+    // renderer to every visitor. Render to a detached root instead.
+    const serverImport =
+      /(?:^|\n)\s*(?:import|export)\s+(?!type\b)[^"'()]*?from\s*["']react-dom\/server(?:\.[\w]+)?["']|import\(\s*["']react-dom\/server/;
+    const offenders = [...new Bun.Glob("src/**/*.{ts,tsx,js,jsx}").scanSync(".")]
+      .filter((file) => serverImport.test(readFileSync(file, "utf-8")));
+    expect(offenders).toEqual([]);
+  });
+
   test("boot-reachable source files must not runtime-import AI SDK packages", () => {
     // A runtime `from "ai"` / `@ai-sdk/*` on the static boot graph pulls the
     // SDK (and, after the 7.0.113 bump, MCP-app code) into the entry evaluate

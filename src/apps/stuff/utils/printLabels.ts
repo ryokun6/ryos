@@ -1,5 +1,6 @@
 import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { flushSync } from "react-dom";
+import { createRoot } from "react-dom/client";
 import { QRCodeSVG } from "qrcode.react";
 import i18n from "@/lib/i18n";
 import type { StuffItem, StuffTag } from "../types";
@@ -133,20 +134,31 @@ export async function renderStuffIdBarcodeSvg(
   return renderBarcodeSvg(encodeStuffId(kind, id), "CODE128");
 }
 
-/** Square QR for ryOS Stuff ids (detail panel + print labels). */
+/**
+ * Square QR for ryOS Stuff ids (print labels). Rendered with the client
+ * renderer that is already loaded; `react-dom/server` would add the whole
+ * server renderer to the bundle.
+ */
 export function renderStuffIdQrSvg(
   kind: StuffLabelKind,
   id: string,
   size = 128
 ): string {
-  return renderToStaticMarkup(
-    createElement(QRCodeSVG, {
-      value: encodeStuffId(kind, id),
-      size,
-      level: "M",
-      includeMargin: true,
-    })
-  );
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  flushSync(() => {
+    root.render(
+      createElement(QRCodeSVG, {
+        value: encodeStuffId(kind, id),
+        size,
+        level: "M",
+        includeMargin: true,
+      })
+    );
+  });
+  const markup = container.innerHTML;
+  root.unmount();
+  return markup;
 }
 
 export function itemToLabelTarget(item: StuffItem): StuffLabelTarget {

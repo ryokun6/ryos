@@ -24,6 +24,10 @@ describe("generate-docs inline code path links", () => {
       fullPath: "docs/7.2-i18n.md",
       matchedText: "docs/7.2-i18n.md",
     });
+    expect(resolveInlineCodePath("vite/vendorChunks.ts")).toEqual({
+      fullPath: "vite/vendorChunks.ts",
+      matchedText: "vite/vendorChunks.ts",
+    });
   });
 
   test("resolves app-relative component paths with app context", () => {

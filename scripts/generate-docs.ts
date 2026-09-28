@@ -22,7 +22,7 @@ interface CodePathReference {
 }
 
 const REPO_ROOT_CODE_PATH_RE =
-  /((?:src|api|scripts|docs|public|tests|\.cursor)\/[a-zA-Z0-9_\-/.]+\.(?:tsx?|jsx?|json|css|html|md|sh|mdc))/;
+  /((?:src|api|scripts|docs|public|tests|vite|\.cursor)\/[a-zA-Z0-9_\-/.]+\.(?:tsx?|jsx?|json|css|html|md|sh|mdc))/;
 const ROOT_EMBED_PATH_RE = /^(\/embed\/[a-zA-Z0-9_\-/.]+\.html)$/;
 const RELATIVE_CODE_PATH_RE =
   /([a-zA-Z0-9_\-/]+)\/([a-zA-Z0-9_\-/.]+\.(?:tsx?|jsx?|json|css|html|md|sh|mdc))/;

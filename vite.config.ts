@@ -8,6 +8,7 @@ import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy";
 import { optimizePhosphorImports } from "./vite/optimizePhosphorImports";
+import { vendorCodeSplittingGroups } from "./vite/vendorChunks";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -121,60 +122,6 @@ function collectPrecacheExclusionsPlugin() {
     },
   };
 }
-
-/**
- * Vendor package → manual chunk assignment (used by the function-form
- * `manualChunks` below). Mirrors the previous object-form mapping:
- *
- * - react: loaded immediately
- * - ui-core: Radix primitives, loaded early. ui-form was merged into ui-core
- *   to eliminate a circular chunk dependency (ui-form -> ui-core -> ui-form)
- *   that caused a TDZ crash in Vite 6.4.x.
- * - audio: heavy audio libs, deferred until Soundboard/iPod/Synth opens
- * - media-player: shared by iPod and Videos apps
- * - hangul: Korean romanization, only needed for lyrics
- * - Do NOT put `ai` / `@ai-sdk/react` in a manual chunk. Rolldown colocates
- *   React (+ jsx-runtime) into that chunk, then the entry / zustand / dock
- *   import React from it. The AI SDK then modulepreloads at boot; a parse or
- *   TDZ failure in that chunk blacks the page (html/body are `#000`).
- * - tiptap: rich text editor, deferred until TextEdit opens. @tiptap/pm is
- *   excluded because it only exports subpaths and has no main entry point.
- * - three: 3D rendering, deferred until shader wallpapers / Synth need it
- * - motion / zustand / pusher / webamp: see comments at their use sites
- */
-const MANUAL_CHUNK_BY_PACKAGE: Record<string, string> = {
-  react: "react",
-  "react-dom": "react",
-  "@radix-ui/react-dialog": "ui-core",
-  "@radix-ui/react-dropdown-menu": "ui-core",
-  "@radix-ui/react-menubar": "ui-core",
-  "@radix-ui/react-scroll-area": "ui-core",
-  "@radix-ui/react-tooltip": "ui-core",
-  "@radix-ui/react-label": "ui-core",
-  "@radix-ui/react-select": "ui-core",
-  "@radix-ui/react-slider": "ui-core",
-  "@radix-ui/react-switch": "ui-core",
-  "@radix-ui/react-checkbox": "ui-core",
-  "@radix-ui/react-tabs": "ui-core",
-  tone: "audio",
-  "wavesurfer.js": "audio",
-  "audio-buffer-utils": "audio",
-  "react-player": "media-player",
-  "hangul-romanization": "hangul",
-  "@tiptap/core": "tiptap",
-  "@tiptap/react": "tiptap",
-  "@tiptap/starter-kit": "tiptap",
-  "@tiptap/extension-table": "tiptap",
-  "@tiptap/extension-list": "tiptap",
-  "@tiptap/extension-text-align": "tiptap",
-  "@tiptap/extensions": "tiptap",
-  "@tiptap/suggestion": "tiptap",
-  three: "three",
-  motion: "motion",
-  zustand: "zustand",
-  "pusher-js": "pusher",
-  webamp: "webamp",
-};
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -834,25 +781,10 @@ export default defineConfig({
   build: {
     // Target modern browsers for smaller bundles
     target: 'es2022',
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        // Function form (instead of the object form) so that ONLY modules of
-        // the listed packages are assigned to these chunks. With the object
-        // form, rollup hoisted shared virtual helpers (e.g. Vite's preload
-        // helper) into manual chunks like "media-player", which made the
-        // entry chunk statically import react-player & co. at boot just to
-        // reach the ~1KB helper.
-        manualChunks: (id: string) => {
-          // Pin Vite's virtual preload helper (needed by the entry and every
-          // dynamic import site) to its own tiny chunk; otherwise rollup
-          // co-locates it with an arbitrary vendor chunk, forcing that whole
-          // chunk to load at boot.
-          if (id.includes("vite/preload-helper")) return "preload-helper";
-          const match = id.match(
-            /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)\//
-          );
-          if (!match) return undefined;
-          return MANUAL_CHUNK_BY_PACKAGE[match[1]];
+        codeSplitting: {
+          groups: vendorCodeSplittingGroups(),
         },
       },
     },
