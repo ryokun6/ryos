@@ -30,10 +30,10 @@ const seededRoots: Record<string, FileSystemItem> = {
     status: "active",
   },
 };
-const passthroughDefaultLibraryFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+const passthroughDefaultLibraryFetch = async (input: RequestInfo | URL) => {
   const url = String(input);
   if (url.includes("/data/filesystem.json") || url.includes("/data/applets.json")) {
-    return originalFetch(input, init);
+    return new Response("not found", { status: 404 });
   }
   return response({ authenticated: true, username: account, directories: [], files: [] });
 };
@@ -273,7 +273,7 @@ describe("independent file uploads", () => {
       globalThis.fetch = (async (input, init) => {
         const url = String(input);
         if (url.includes("/data/filesystem.json") || url.includes("/data/applets.json")) {
-          return originalFetch(input, init);
+          return new Response("not found", { status: 404 });
         }
         if (!init?.body) return response({ authenticated: true, username: account, directories: [], files: [] });
         const body = JSON.parse(String(init.body));
