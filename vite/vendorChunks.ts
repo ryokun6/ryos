@@ -108,7 +108,7 @@ const NODE_MODULE_PACKAGE_RE =
   /node_modules[\\/](?:\.(?:pnpm|bun)[\\/][^\\/]+[\\/]node_modules[\\/])?(@[^\\/]+[\\/][^\\/]+|[^\\/]+)[\\/]/;
 
 export function packageNameOf(id: string): string | undefined {
-  return id.match(NODE_MODULE_PACKAGE_RE)?.[1]?.replace("\\", "/");
+  return id.match(NODE_MODULE_PACKAGE_RE)?.[1]?.replaceAll("\\", "/");
 }
 
 export type VendorCodeSplittingGroup = {
