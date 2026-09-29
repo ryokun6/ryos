@@ -454,10 +454,15 @@
     <a href="/docs/changelog" class="">9. Changelog</a>
   </div>
 </div>
-<div class="nav-group">
-  <div class="nav-toggle nav-no-toggle">
-    <span class="nav-spacer"></span>
+<div class="nav-group expanded">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <path d="M2 0v8l4-4z"/>
+    </svg>
     <a href="/docs/privacy" class="active">10. Privacy Policy</a>
+  </button>
+  <div class="nav-children" style="display: block;">
+    <a href="/docs/subtitles-privacy" class="nav-child ">10.1 ryOS Subtitles Privacy Policy</a>
   </div>
 </div>
 <div class="nav-group">
@@ -472,6 +477,7 @@
       <article>
         <h1>Privacy Policy</h1>
 <p>ryOS is a web-based desktop environment that runs almost entirely in your browser. This policy explains what data ryOS handles, why, where it is stored, who it may be shared with, and the rights you have over it. It is written to align with the EU/UK General Data Protection Regulation (GDPR) and similar privacy laws.</p>
+<p>For the Chrome extension, see the separate <a href="/docs/subtitles-privacy">ryOS Subtitles Privacy Policy</a>.</p>
 <em>Last updated: June 2026.</em>
 <hr>
 <h2>Data controller and contact</h2>
@@ -539,7 +545,7 @@
       
       <nav class="nav">
         <a href="/docs/changelog">← Changelog</a>
-        <a href="/docs/terms">Terms of Service →</a>
+        <a href="/docs/subtitles-privacy">ryOS Subtitles Privacy Policy →</a>
       </nav>
       
     </main>
