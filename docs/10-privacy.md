@@ -2,6 +2,8 @@
 
 ryOS is a web-based desktop environment that runs almost entirely in your browser. This policy explains what data ryOS handles, why, where it is stored, who it may be shared with, and the rights you have over it. It is written to align with the EU/UK General Data Protection Regulation (GDPR) and similar privacy laws.
 
+For the Chrome extension, see the separate [ryOS Subtitles Privacy Policy](/docs/subtitles-privacy).
+
 *Last updated: June 2026.*
 
 ---
