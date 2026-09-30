@@ -17,7 +17,7 @@ import type { DesktopItemId } from "./desktopTypes";
 export interface DesktopIconGridProps {
   isWindowsTheme: boolean;
   isMacOSTheme: boolean;
-  isDesktopApp: boolean;
+  hasWindowChrome: boolean;
   currentTheme: string;
   macintoshHdName: string;
   trashName: string;
@@ -228,7 +228,7 @@ const DesktopTrashIcon = memo(function DesktopTrashIcon({
 export const DesktopIconGrid = memo(function DesktopIconGrid({
   isWindowsTheme,
   isMacOSTheme,
-  isDesktopApp,
+  hasWindowChrome,
   currentTheme,
   macintoshHdName,
   trashName,
@@ -268,7 +268,7 @@ export const DesktopIconGrid = memo(function DesktopIconGrid({
               // Add extra top padding for desktop traffic lights on Windows themes
               height:
                 "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
-              paddingTop: isDesktopApp ? 36 : undefined,
+              paddingTop: hasWindowChrome ? 36 : undefined,
               paddingLeft: "calc(0.25rem + env(safe-area-inset-left, 0px))",
               paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",

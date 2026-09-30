@@ -40,13 +40,13 @@ export function Desktop(props: DesktopProps) {
       />
       <DesktopDynamicWallpaper />
       <DesktopDragRegion
-        isDesktopApp={d.isDesktopApp}
+        hasWindowChrome={d.hasWindowChrome}
         isWindowsTheme={d.isWindowsTheme}
       />
       <DesktopIconGrid
         isWindowsTheme={d.isWindowsTheme}
         isMacOSTheme={d.isMacOSTheme}
-        isDesktopApp={d.isDesktopApp}
+        hasWindowChrome={d.hasWindowChrome}
         currentTheme={d.currentTheme}
         macintoshHdName={d.macintoshHdName}
         trashName={d.trashName}

@@ -29,7 +29,7 @@ import {
   type SelectionPoint,
 } from "@/utils/selection";
 import type { MenuItem } from "@/components/ui/right-click-menu";
-import { isDesktop } from "@/utils/platform";
+import { hasDesktopWindowChrome } from "@/utils/platform";
 import { getWallpaperStyles } from "./desktopWallpaperUtils";
 import { openDesktopAlias } from "./openDesktopAlias";
 import {
@@ -98,7 +98,7 @@ export function useDesktop({
     isSystem7Theme,
   } = useThemeFlags();
 
-  const isDesktopApp = isDesktop();
+  const hasWindowChrome = hasDesktopWindowChrome();
 
   const launchApp = useLaunchApp();
 
@@ -761,7 +761,7 @@ export function useDesktop({
       setContextMenuShortcutPath(null);
       clearSelection();
     },
-    isDesktopApp,
+    hasWindowChrome,
     isWindowsTheme,
     isMacOSTheme,
     currentTheme,

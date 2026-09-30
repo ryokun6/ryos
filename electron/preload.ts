@@ -2,6 +2,11 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
 contextBridge.exposeInMainWorld("ryosDesktop", {
   platform: process.platform,
+  capabilities: {
+    windowChrome: true,
+    windowShortcuts: true,
+    selfUpdate: true,
+  },
   isFullscreen: () =>
     ipcRenderer.invoke("ryos-desktop:is-fullscreen") as Promise<boolean>,
   onFullscreenChange: (callback: (fullscreen: boolean) => void) => {

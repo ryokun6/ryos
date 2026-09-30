@@ -13,7 +13,7 @@ import { useSpotlightSearch } from "@/hooks/useSpotlightSearch";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { isDesktop, isDesktopWindows } from "@/utils/platform";
+import { hasDesktopWindowChrome, isDesktopWindows } from "@/utils/platform";
 import { onExposeToggle } from "@/utils/appEventBus";
 import {
   buildGroupedResults,
@@ -190,8 +190,8 @@ export function useSpotlightSearchController() {
       ? `fixed z-[10004] right-2 ${useTwoColumn ? "w-[380px]" : "w-[260px]"}`
       : "fixed z-[10004] w-[320px]";
 
-  const isDesktopApp = isDesktop();
-  const isDesktopMacMenubar = isDesktopApp && !isDesktopWindows() && isMac;
+  const isDesktopMacMenubar =
+    hasDesktopWindowChrome() && !isDesktopWindows() && isMac;
   const menubarTop = isDesktopMacMenubar
     ? "32px"
     : "var(--os-metrics-menubar-height, 25px)";

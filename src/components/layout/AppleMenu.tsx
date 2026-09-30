@@ -19,7 +19,7 @@ import { useRyosFullscreen } from "@/hooks/useRyosFullscreen";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useAppStore, RecentDocument } from "@/stores/useAppStore";
 import { useAuth } from "@/hooks/useAuth";
-import { isDesktop } from "@/utils/platform";
+import { getDesktopCapabilities } from "@/utils/platform";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { getTranslatedAppName } from "@/utils/i18n";
@@ -114,7 +114,7 @@ export function AppleMenu() {
   } = useAuth();
 
   const isLoggedIn = !!(username && isAuthenticated);
-  const isDesktopApp = isDesktop();
+  const canSelfUpdate = getDesktopCapabilities().selfUpdate;
 
   const handleAppClick = (appId: string) => {
     launchApp(appId as AppId);
@@ -174,7 +174,7 @@ export function AppleMenu() {
           </MenubarItem>
 
           {/* Native desktop shell auto-update (Electron). Web has no shell to update. */}
-          {isDesktopApp && (
+          {canSelfUpdate && (
             <MenubarItem
               onClick={() => {
                 void window.ryosDesktop?.checkForUpdates();

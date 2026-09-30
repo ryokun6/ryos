@@ -1,3 +1,5 @@
+import { getDesktopCapabilities } from "@/utils/platform";
+
 export const RYOS_DESKTOP_RELEASE_BASE_URL =
   "https://github.com/ryokun6/ryos/releases/download";
 
@@ -28,7 +30,7 @@ function getDesktopDownloadRuntimeInfo(): DesktopDownloadRuntimeInfo {
     platform: nav?.platform ?? null,
     userAgent: nav?.userAgent ?? null,
     desktopPlatform:
-      typeof window === "undefined"
+      typeof window === "undefined" || !getDesktopCapabilities().selfUpdate
         ? null
         : window.ryosDesktop?.platform ?? null,
     maxTouchPoints: nav?.maxTouchPoints ?? null,

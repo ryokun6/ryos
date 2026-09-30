@@ -16,7 +16,7 @@
  * the web instead.
  */
 
-import { isDesktop } from "./platform";
+import { getDesktopCapabilities } from "./platform";
 
 export type ShortcutPlatform = "mac" | "other";
 
@@ -119,7 +119,11 @@ export const SHORTCUTS: Record<ShortcutId, ShortcutDef> = {
  * platform, then `navigator` hints. Defaults to "other" (Ctrl) when unknown.
  */
 export function getShortcutPlatform(): ShortcutPlatform {
-  if (typeof window !== "undefined" && window.ryosDesktop?.platform) {
+  if (
+    typeof window !== "undefined" &&
+    window.ryosDesktop?.platform &&
+    getDesktopCapabilities().windowChrome
+  ) {
     return window.ryosDesktop.platform === "darwin" ? "mac" : "other";
   }
   const nav =
@@ -136,7 +140,7 @@ export function getShortcutPlatform(): ShortcutPlatform {
 function resolveEnv(env?: ShortcutEnv): Required<ShortcutEnv> {
   return {
     platform: env?.platform ?? getShortcutPlatform(),
-    electron: env?.electron ?? isDesktop(),
+    electron: env?.electron ?? getDesktopCapabilities().windowShortcuts,
   };
 }
 

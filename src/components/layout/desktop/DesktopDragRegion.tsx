@@ -1,15 +1,15 @@
 import type { CSSProperties } from "react";
 
 interface DesktopDragRegionProps {
-  isDesktopApp: boolean;
+  hasWindowChrome: boolean;
   isWindowsTheme: boolean;
 }
 
 export function DesktopDragRegion({
-  isDesktopApp,
+  hasWindowChrome,
   isWindowsTheme,
 }: DesktopDragRegionProps) {
-  if (!isDesktopApp || !isWindowsTheme) {
+  if (!hasWindowChrome || !isWindowsTheme) {
     return null;
   }
 
