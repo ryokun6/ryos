@@ -3,7 +3,7 @@ import type { AppId } from "@/config/appRegistry";
 import type { SwitcherApp } from "@/components/layout/AppSwitcher";
 import { requestCloseWindow } from "@/utils/windowUtils";
 import { toggleSpotlightSearch } from "@/utils/appEventBus";
-import { isDesktop } from "@/utils/platform";
+import { getDesktopCapabilities } from "@/utils/platform";
 import { getShortcutPlatform } from "@/utils/shortcuts";
 import type { useAppStore } from "@/stores/useAppStore";
 import type { SwitcherAction } from "./types";
@@ -104,7 +104,11 @@ export function useAppManagerKeyboardShortcuts(
       // shortcuts (⌘W / Ctrl+W to close, ⌘M / Ctrl+M to minimize). On the web
       // these combos are reserved by the browser, so the Alt-based fallbacks
       // below are used instead.
-      if (isDesktop() && !e.altKey && !e.shiftKey) {
+      if (
+        getDesktopCapabilities().windowShortcuts &&
+        !e.altKey &&
+        !e.shiftKey
+      ) {
         const isMac = getShortcutPlatform() === "mac";
         const cmdKey = isMac ? e.metaKey : e.ctrlKey;
         const strayCmd = isMac ? e.ctrlKey : e.metaKey;

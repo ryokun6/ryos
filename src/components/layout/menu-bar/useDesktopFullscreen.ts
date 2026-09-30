@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
-import { isDesktop } from "@/utils/platform";
+import { hasDesktopWindowChrome } from "@/utils/platform";
 
 let cachedDesktopFullscreen: boolean | null = null;
 
 export function useDesktopFullscreen(): boolean {
-  const isDesktopApp = isDesktop();
+  const hasWindowChrome = hasDesktopWindowChrome();
   const [isFullscreen, setIsFullscreen] = useState(
     () => cachedDesktopFullscreen ?? false
   );
 
   useEffect(() => {
-    if (!isDesktopApp || !window.ryosDesktop) {
+    if (!hasWindowChrome || !window.ryosDesktop) {
       return;
     }
 
@@ -35,7 +35,7 @@ export function useDesktopFullscreen(): boolean {
     return () => {
       dispose?.();
     };
-  }, [isDesktopApp]);
+  }, [hasWindowChrome]);
 
   return isFullscreen;
 }

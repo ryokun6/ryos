@@ -84,10 +84,39 @@ export type RyosDesktopChatNotificationEvent =
   | { type: "message-deleted"; roomId: string; messageId: string };
 
 /**
+ * Host-shell features the renderer may rely on. Any shell that injects
+ * `window.ryosDesktop` (Electron, the iOS WKWebView wrapper, …) should declare
+ * these explicitly; an omitted key means the shell does not provide it.
+ */
+export interface RyosDesktopCapabilities {
+  /**
+   * Frameless native desktop window: macOS traffic lights inset over the
+   * menubar, CSS `-webkit-app-region: drag` areas, double-click to maximize,
+   * and fullscreen change events.
+   */
+  windowChrome?: boolean;
+  /**
+   * ⌘/Ctrl+W and ⌘/Ctrl+M reach the renderer (the host does not reserve them),
+   * so the real command-modifier window shortcuts are active and advertised.
+   */
+  windowShortcuts?: boolean;
+  /**
+   * The shell is a downloadable desktop build that updates itself via
+   * `checkForUpdates` / `quitAndInstall` (desktop download/update prompts apply).
+   */
+  selfUpdate?: boolean;
+}
+
+/**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop).
  */
 export interface RyosDesktopApi {
   platform: NodeJS.Platform;
+  /**
+   * Declared shell features. Electron builds that predate this field omit it;
+   * see `resolveDesktopCapabilities` for the fallback.
+   */
+  capabilities?: RyosDesktopCapabilities;
   isFullscreen: () => Promise<boolean>;
   onFullscreenChange: (callback: (fullscreen: boolean) => void) => () => void;
   toggleMaximize: () => Promise<void>;

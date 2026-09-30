@@ -13,7 +13,7 @@ import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
-import { isDesktop } from "./utils/platform";
+import { getDesktopCapabilities } from "./utils/platform";
 import {
   onDesktopUpdate,
   type DesktopUpdateResult,
@@ -183,7 +183,7 @@ export function App() {
   // For desktop shell: only show on updates (not first time)
   useEffect(() => {
     const desktopDownloadTarget = getSupportedDesktopDownloadTarget();
-    const isInDesktop = isDesktop();
+    const isInDesktop = getDesktopCapabilities().selfUpdate;
     appShellLog.debug("Evaluating desktop update prompt", {
       hasDesktopDownloadTarget: !!desktopDownloadTarget,
       isInDesktop,

@@ -7,7 +7,7 @@ import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useWallpaperMenubarText } from "@/hooks/useWallpaperMenubarText";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { isDesktop, isDesktopWindows } from "@/utils/platform";
+import { hasDesktopWindowChrome, isDesktopWindows } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ScrollableMenuWrapper } from "./ScrollableMenuWrapper";
 import { FinderAppMenu } from "./FinderAppMenu";
@@ -20,6 +20,7 @@ import { ExposeButton } from "./ExposeButton";
 import { SpotlightMenuBarButton } from "./SpotlightMenuBarButton";
 import { useDesktopFullscreen } from "./useDesktopFullscreen";
 import { shouldShowDesktopDragDebugZone } from "./desktopDragDebug";
+import { getMenubarWindowChromeLayout } from "./menubarWindowChrome";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
 const dragRegionStyle = { WebkitAppRegion: "drag" } as CSSProperties;
@@ -45,18 +46,21 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
   const { textColor: glassMenubarText, tone: glassMenubarTone } =
     useWallpaperMenubarText(isAquaGlass);
   const isPhone = useIsPhone();
-  const isDesktopApp = isDesktop();
+  const hasWindowChrome = hasDesktopWindowChrome();
   const showDesktopDragDebugZone = shouldShowDesktopDragDebugZone({
-    isDesktopApp,
+    isDesktopApp: hasWindowChrome,
     debugMode,
     showResizers,
   });
   const isFullscreen = useDesktopFullscreen();
-
-  const isWindowsPlatform = isDesktopWindows();
-  const isDesktopMacMenubar =
-    isDesktopApp && !isWindowsPlatform && isMacTheme;
-  const needsTrafficLightClearance = isDesktopMacMenubar && !isFullscreen;
+  const { showWindowDragRegion, needsTrafficLightClearance } =
+    getMenubarWindowChromeLayout({
+      hasWindowChrome,
+      isPhone,
+      isWindowsPlatform: isDesktopWindows(),
+      isMacTheme,
+      isFullscreen,
+    });
   const menuBarHeight = needsTrafficLightClearance
     ? "32px"
     : "var(--os-metrics-menubar-height)";
@@ -125,7 +129,7 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
           {hasActiveApp ? children : <DefaultMenuItems />}
         </Menubar>
       </ScrollableMenuWrapper>
-      {isDesktopApp && (
+      {showWindowDragRegion && (
         <div
           className="flex-1"
           style={{
