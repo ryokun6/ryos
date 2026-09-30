@@ -38,6 +38,7 @@ import { useDockContextMenus } from "./useDockContextMenus";
 import { useDockDragDrop } from "./useDockDragDrop";
 import { createDockTrashHandlers } from "./dockTrashHandlers";
 import { DockDivider } from "./DockDivider";
+import { safeAreaInsetPadding } from "../menu-bar/menubarEdgePadding";
 import { useDockIconHover } from "./useDockIconHover";
 import { useDockMagnification } from "./useDockMagnification";
 import {
@@ -767,7 +768,13 @@ export function MacDock() {
       <div
         className="flex w-full items-end justify-center"
         style={{
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          // Real safe-area insets only. The dock is centered and capped at
+          // min(92%, 980px), so it does not sit on the viewport edge; a 12px
+          // floor would shrink that cap on desktop where the inset is 0.
+          // 92% of this box equals today's 92vw when the insets are 0.
+          paddingBottom: safeAreaInsetPadding("bottom"),
+          paddingLeft: safeAreaInsetPadding("left"),
+          paddingRight: safeAreaInsetPadding("right"),
         }}
       >
         <motion.div
@@ -793,7 +800,7 @@ export function MacDock() {
               "var(--os-color-dock-shadow, 0 2px 8px rgba(0, 0, 0, 0.15))",
             height: scaledDockHeight,
             padding: `${scaledVerticalPadding}px ${scaledPadding}px`,
-            maxWidth: "min(92vw, 980px)",
+            maxWidth: "min(92%, 980px)",
             transformOrigin: "center bottom",
             borderRadius: "0px",
             overflowX: isPhone ? "auto" : "visible",
