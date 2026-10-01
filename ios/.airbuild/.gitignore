@@ -1,0 +1,4 @@
+# What under .airbuild/ stays out of Airbuild builds and moves. Like the
+# rest of this directory, this file is Airbuild's, not the repository's.
+artifacts/
+worktree/

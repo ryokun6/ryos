@@ -64,6 +64,7 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 ```
 ├── api/              # API route handlers (Node-style, served by the standalone Bun server)
 ├── electron/         # Electron shell, menu, preload, and updater
+├── ios/              # Native iOS WKWebView shell (Xcode project, see ios/README.md)
 ├── public/           # Static assets (icons, wallpapers, sounds, fonts)
 ├── scripts/          # Build + maintenance + standalone API runner
 ├── tests/            # Bun test suites (unit/<domain>, integration/api, helpers)

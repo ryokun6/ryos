@@ -1,0 +1,12 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Airbuild is ready" : {
+
+    },
+    "Tap count: %lld" : {
+
+    }
+  },
+  "version" : "1.0"
+}
