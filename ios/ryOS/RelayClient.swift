@@ -77,6 +77,14 @@ final class RelayClient {
             // Worker fallback: it cannot see our cookies, so the session
             // travels in the body (worker contract only).
             request.setValue(cookie, forHTTPHeaderField: "X-Ryos-Auth")
+        } else {
+            // The relay's CORS gate requires an Origin it recognizes, and
+            // URLSession never sends one on its own — without this header
+            // every native registration is answered 403 and the device
+            // token never lands in the relay's store (found via the
+            // closed-app push test, 2026-10-01). Web-origin is the value
+            // the relay already allowlists for its own front-end.
+            request.setValue("https://os.ryo.lu", forHTTPHeaderField: "Origin")
         }
         request.httpBody = body
         URLSession.shared.dataTask(with: request).resume()
@@ -88,6 +96,7 @@ final class RelayClient {
             probe.httpMethod = "POST"
             probe.timeoutInterval = 15
             probe.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            probe.setValue("https://os.ryo.lu", forHTTPHeaderField: "Origin")
             probe.httpBody = body
             URLSession.shared.dataTask(with: probe) { [weak self] _, response, _ in
                 guard let self, let http = response as? HTTPURLResponse, http.statusCode == 200 else { return }
