@@ -26,10 +26,6 @@ struct ShellWebView: UIViewRepresentable {
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
-        // WebKit pauses page media the moment the app backgrounds unless this
-        // is set; it is what lets the webview-side audio (iPod, karaoke,
-        // YouTube embeds) keep playing behind the shell's audio session.
-        config.allowsBackgroundMediaPlayback = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
