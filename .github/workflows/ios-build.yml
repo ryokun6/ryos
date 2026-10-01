@@ -1,0 +1,102 @@
+name: iOS shell
+
+# The Swift shell under ios/ cannot build on the Linux jobs. Compile it
+# unsigned against the iOS 27.1 SDK, and run CodeQL's Swift autobuild exactly as code scanning's
+# default setup does (default setup only scans Swift on pushes to main, so a
+# broken autobuild would otherwise surface only after merge). Results are not
+# uploaded: default setup owns code scanning uploads for this repo.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-shell-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (unsigned, iOS ${{ matrix.sdk }} SDK)
+    # The iOS 27 SDKs ship only on the xcode-27 image (preview, beta Xcodes).
+    runs-on: xcode-27
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        sdk: ["27.1"]
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Select an Xcode that ships the iOS ${{ matrix.sdk }} SDK
+        env:
+          WANT_SDK: iphoneos${{ matrix.sdk }}
+        run: |
+          for app in /Applications/Xcode*.app; do
+            [ -L "$app" ] && continue
+            dev="$app/Contents/Developer"
+            sdks=$(DEVELOPER_DIR="$dev" xcodebuild -showsdks 2>/dev/null | grep -oE 'iphoneos[0-9.]+' | sort -u | tr '\n' ' ')
+            echo "$app: $sdks"
+            if [ -z "${selected:-}" ] && grep -qw "$WANT_SDK" <<< "$sdks"; then selected="$dev"; fi
+          done
+          if [ -z "${selected:-}" ]; then
+            echo "::error::No installed Xcode on this runner ships the $WANT_SDK SDK"
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$selected" >> "$GITHUB_ENV"
+          DEVELOPER_DIR="$selected" xcodebuild -version
+
+      - name: Build app and tests
+        run: |
+          xcodebuild build-for-testing \
+            -project ryOS.xcodeproj \
+            -scheme ryOS \
+            -configuration Debug \
+            -sdk iphoneos${{ matrix.sdk }} \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+  codeql-swift-autobuild:
+    name: CodeQL Swift autobuild (no upload)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: swift
+          build-mode: autobuild
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:swift"
+          upload: never

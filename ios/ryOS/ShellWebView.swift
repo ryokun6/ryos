@@ -55,7 +55,6 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     func attach(_ webView: WKWebView) {
         self.webView = webView
-        SessionCookieReader.shared.refresh(from: webView.configuration.websiteDataStore.httpCookieStore)
 
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -86,10 +85,6 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     // MARK: WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        SessionCookieReader.shared.refresh(from: webView.configuration.websiteDataStore.httpCookieStore)
-    }
-
     func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,
@@ -115,6 +110,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
             handleInvoke(id: id, name: body["name"] as? String ?? "", args: body["args"])
         case "boot-finished":
             shell?.reportBootFinished()
+            ShellRouter.shared.markPageReady()
         case "app-active":
             ShellRouter.shared.firePendingRoom()
         default:
@@ -182,9 +178,6 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
             self.shell?.updateNotificationState(state)
             if state.isAuthenticated { self.requestNotificationPermissionIfNeeded() }
         }
-        SessionCookieReader.shared.refresh(
-            from: webView?.configuration.websiteDataStore.httpCookieStore ?? WKWebsiteDataStore.default().httpCookieStore
-        )
     }
 
     private func requestNotificationPermissionIfNeeded() {

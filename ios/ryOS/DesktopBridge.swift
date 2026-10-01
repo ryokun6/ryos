@@ -32,9 +32,17 @@ enum DesktopBridge {
         if (payload.ok) p.resolve(payload.value);
         else p.reject(new Error(String(payload.value)));
       };
+      // A notification tap can arrive before the web client subscribes (cold
+      // launch); hold the room until the first open-room listener registers.
+      var pendingOpenRoom = { has: false, roomId: null };
       function register(name, cb) {
         var key = name + ':' + (++cbN);
         callbacks.set(key, { name: name, cb: cb });
+        if (name === 'openChatRoomFromNotification' && pendingOpenRoom.has) {
+          var roomId = pendingOpenRoom.roomId;
+          pendingOpenRoom = { has: false, roomId: null };
+          setTimeout(function () { try { cb(roomId); } catch (e) {} }, 0);
+        }
         return function () { callbacks.delete(key); };
       }
       window.ryosDesktop = {
@@ -66,11 +74,14 @@ enum DesktopBridge {
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
       };
       window.__ryosEmitOpenRoom = function (roomId) {
+        var delivered = false;
         callbacks.forEach(function (entry) {
           if (entry.name === 'openChatRoomFromNotification') {
+            delivered = true;
             try { entry.cb(roomId); } catch (e) {}
           }
         });
+        if (!delivered) pendingOpenRoom = { has: true, roomId: roomId };
       };
       window.__ryosBootPainted = function () { return bootPainted; };
       var bootPainted = false;
