@@ -82,7 +82,28 @@ function callsOf(method: string) {
   return calls.filter((call) => call[0] === method).map((call) => call.slice(1));
 }
 
-afterAll(() => {
+/**
+ * Other suites in the same Bun process leave transports requesting playback;
+ * MediaCore would seed them as active (sending `setAudioActive(true)` before
+ * the test starts recording), so every transport and the session start idle.
+ */
+function resetMediaTransports() {
+  useIpodStore.setState({ isPlaying: false, playbackRequested: false });
+  useKaraokeStore.setState({ isPlaying: false, playbackRequested: false });
+  useVideoStore.setState({ isPlaying: false, playbackRequested: false });
+  useTvStore.setState({ isPlaying: false, playbackRequested: false });
+  useAppStore.setState({ instances: {} });
+  publishTvNowPlaying(null);
+  resetNativeMediaSession();
+}
+
+afterAll(async () => {
+  // The stores above import useFilesStore, whose first hydration fetches the
+  // default library (with a delayed retry) in the background.
+  const { settleFilesRehydrationTasks } = await import(
+    "../../../src/stores/useFilesStore"
+  );
+  await settleFilesRehydrationTasks();
   removeBridge();
   if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
@@ -243,6 +264,7 @@ describe("MediaCore → native session", () => {
 
   beforeEach(() => {
     installBridge();
+    resetMediaTransports();
     useIpodStore.setState({
       tracks: [
         {
@@ -260,9 +282,6 @@ describe("MediaCore → native session", () => {
       elapsedTime: 0,
       totalTime: 213,
     });
-    useVideoStore.setState({ isPlaying: false, playbackRequested: false });
-    useTvStore.setState({ isPlaying: false, playbackRequested: false });
-    useAppStore.setState({ instances: {} });
     cleanup = initMediaCoreRuntime();
     calls = [];
   });
@@ -438,6 +457,7 @@ describe("lock-screen remote commands", () => {
 
   test("MediaCore routes lock-screen commands to the iPod store transport", () => {
     installBridge();
+    resetMediaTransports();
     useIpodStore.setState({
       tracks: [{ id: "s1", url: "https://youtu.be/s1", title: "Song" }],
       librarySource: "youtube",
@@ -475,7 +495,7 @@ describe("Karaoke start regression (iOS session released mid-start)", () => {
 
   beforeEach(() => {
     installBridge();
-    resetNativeMediaSession();
+    resetMediaTransports();
     const tracks = [
       { id: "k1", url: "https://youtu.be/k1", title: "Song One" },
       { id: "k2", url: "https://youtu.be/k2", title: "Song Two" },

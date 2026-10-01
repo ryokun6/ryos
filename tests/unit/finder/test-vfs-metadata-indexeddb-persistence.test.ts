@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { installTestLocalStorage } from "../../setup";
 import {
   resetPersistWritesForTests,
@@ -15,7 +15,29 @@ const resetDb = () =>
     request.onblocked = () => resolve();
   });
 
+/**
+ * `onRehydrateStorage` fetches the default library without awaiting it. A
+ * relative URL throws under happy-dom's `about:blank`, and `abortableFetch`
+ * retries that ~500ms later — inside whichever suite runs next, where the
+ * retry hits that suite's fetch mock (extra requests, a cached bogus
+ * filesystem.json). HTTP errors are not retried, so fail it immediately.
+ */
+const originalFetch = globalThis.fetch;
+
+afterEach(async () => {
+  const { settleFilesRehydrationTasks } = await import(
+    "../../../src/stores/useFilesStore"
+  );
+  await settleFilesRehydrationTasks();
+  globalThis.fetch = originalFetch;
+});
+
 beforeEach(async () => {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (url.startsWith("/data/")) return new Response(null, { status: 404 });
+    return originalFetch(input, init);
+  }) as typeof fetch;
   // A disposed DOM fixture can strand another suite's IDB promises forever.
   // Reset the adapters before installing an independent factory for this test.
   resetPersistWritesForTests();
@@ -24,10 +46,18 @@ beforeEach(async () => {
   // into this store instance and may still have a debounced write in flight.
   // Settle those writes first: an in-flight transaction blocks deleteDatabase
   // (resetDb resolves on `blocked`, silently keeping the stale rows).
-  const { useFilesStore } = await import("../../../src/stores/useFilesStore");
+  const { useFilesStore, settleFilesRehydrationTasks } = await import(
+    "../../../src/stores/useFilesStore"
+  );
+  // The store's first import auto-hydrates and may still be initializing the
+  // default library, which would replace the items this test rehydrates.
+  await settleFilesRehydrationTasks();
   useFilesStore.setState({ items: {}, libraryState: "uninitialized" });
   await settleAllPersistWrites();
   resetPersistWritesForTests();
+  // Drop whatever that initialization persisted so hydration reads the
+  // legacy localStorage snapshot the test seeds.
+  resetFakeIndexedDB();
   installTestLocalStorage();
   localStorage.clear();
   await resetDb();

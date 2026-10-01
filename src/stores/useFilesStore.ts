@@ -124,6 +124,13 @@ let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null
 // Preload status tracking
 let preloadStarted = false;
 
+const pendingRehydrationTasks = new Set<Promise<unknown>>();
+
+function trackRehydrationTask(task: Promise<unknown>): void {
+  pendingRehydrationTasks.add(task);
+  void task.finally(() => pendingRehydrationTasks.delete(task));
+}
+
 function withRequiredRootDirectories(data: FileSystemData): FileSystemData {
   const directories = [...data.directories];
 
@@ -154,6 +161,12 @@ export function preloadFileSystemData(): void {
   loadDefaultApplets();
 }
 
+function isFileSystemData(value: unknown): value is FileSystemData {
+  if (!value || typeof value !== "object") return false;
+  const data = value as Partial<FileSystemData>;
+  return Array.isArray(data.directories) && Array.isArray(data.files);
+}
+
 // Function to load default files from JSON (with caching)
 async function loadDefaultFiles(): Promise<FileSystemData> {
   // Return cached data immediately if available
@@ -173,8 +186,11 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
         timeout: 15000,
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
-      const data = await res.json();
-      cachedFileSystemData = data as FileSystemData;
+      const data: unknown = await res.json();
+      if (!isFileSystemData(data)) {
+        throw new Error("filesystem.json has an unexpected shape");
+      }
+      cachedFileSystemData = data;
       return cachedFileSystemData;
     } catch (err) {
       console.error("Failed to load filesystem.json", err);
@@ -2059,14 +2075,16 @@ export const useFilesStore = create<FilesStoreState>()(
           if (state.libraryState === "uninitialized") {
             // For new users: initializeLibrary handles everything including
             // creating directories and desktop shortcuts in proper order
-            Promise.resolve(state.initializeLibrary()).catch((err) =>
-              console.error("Files initialization failed on rehydrate", err)
+            trackRehydrationTask(
+              Promise.resolve(state.initializeLibrary()).catch((err) =>
+                console.error("Files initialization failed on rehydrate", err)
+              )
             );
           } else {
             // For existing users: sync root directories and ensure desktop shortcuts
             // This handles cases where new apps are added in updates
             // Also register default files for lazy loading (uses cached JSON)
-            Promise.all([
+            trackRehydrationTask(Promise.all([
               loadDefaultFiles().then((data) => {
                 registerFilesForLazyLoad(data.files, state.items);
               }),
@@ -2084,13 +2102,24 @@ export const useFilesStore = create<FilesStoreState>()(
                   "Files root directory sync failed on rehydrate",
                   err
                 )
-            );
+            ));
           }
         };
       },
     }
   )
 );
+
+/**
+ * Wait for the default-library work `onRehydrateStorage` starts in the
+ * background (it fetches `/data/*.json` and rewrites root items), so tests
+ * don't race it or leak it into later suites.
+ */
+export async function settleFilesRehydrationTasks(): Promise<void> {
+  while (pendingRehydrationTasks.size > 0) {
+    await Promise.allSettled(Array.from(pendingRehydrationTasks));
+  }
+}
 
 /**
  * Scalar trash-count selector for shell chrome (Dock). Uses the path-query
