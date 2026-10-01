@@ -22,6 +22,7 @@ import type {
 } from "@/utils/desktopChatNotificationPolicy";
 import {
   getDesktopChatNotificationRendererMode,
+  shouldSendDesktopChatNotificationState,
   shouldUseRendererChatNotificationFallback,
 } from "@/utils/desktopChatNotificationPolicy";
 import type { RyosDesktopChatNotificationEvent } from "@/types/ryos-desktop";
@@ -94,6 +95,7 @@ export function useBackgroundChatNotifications() {
   const [desktopNotificationMode, setDesktopNotificationMode] = useState<
     DesktopChatNotificationRendererMode
   >("unknown");
+  const [shellWantsState, setShellWantsState] = useState(false);
   const isRendererBackgroundMode = shouldUseRendererChatNotificationFallback({
     isBackgroundMode,
     desktopNotificationMode,
@@ -176,6 +178,8 @@ export function useBackgroundChatNotifications() {
   );
   const latestDesktopStateRef =
     useRef<DesktopChatNotificationState>(desktopState);
+  const sentDesktopStateRef = useRef<DesktopChatNotificationState | null>(null);
+  const configGenerationRef = useRef(0);
 
   useEffect(() => {
     latestDesktopStateRef.current = desktopState;
@@ -290,6 +294,9 @@ export function useBackgroundChatNotifications() {
 
   useEffect(() => {
     const desktop = getDesktopChatNotificationApi();
+    configGenerationRef.current += 1;
+    setShellWantsState(false);
+    sentDesktopStateRef.current = null;
     if (!desktop?.configureChatNotifications) {
       setDesktopNotificationMode("renderer");
       return;
@@ -303,13 +310,16 @@ export function useBackgroundChatNotifications() {
 
     let cancelled = false;
     setDesktopNotificationMode("unknown");
+    const configuredState = latestDesktopStateRef.current;
     void desktop
       .configureChatNotifications(
         buildDesktopChatNotificationConfig(),
-        latestDesktopStateRef.current
+        configuredState
       )
       .then((result) => {
         if (cancelled) return;
+        sentDesktopStateRef.current = configuredState;
+        setShellWantsState(shouldSendDesktopChatNotificationState(result));
         setDesktopNotificationMode(
           getDesktopChatNotificationRendererMode(result) ?? "renderer"
         );
@@ -324,8 +334,20 @@ export function useBackgroundChatNotifications() {
     };
   }, [isAuthenticated, username]);
 
+  // Keep the shell's copy of the chat state fresh whenever it accepted the
+  // config — not only once it manages notifications — so e.g. the iOS shell's
+  // push registration tracks the room list after the initial (often empty)
+  // configure call.
   useEffect(() => {
-    if (desktopNotificationMode !== "managed") {
+    // Signing out reconfigures (stops) the shell in this same commit, before
+    // `shellWantsState` resets, so gate on the auth state directly.
+    if (!username || !isAuthenticated) {
+      return;
+    }
+    if (!shellWantsState && desktopNotificationMode !== "managed") {
+      return;
+    }
+    if (sentDesktopStateRef.current === desktopState) {
       return;
     }
 
@@ -334,17 +356,28 @@ export function useBackgroundChatNotifications() {
       return;
     }
 
+    const generation = configGenerationRef.current;
+    sentDesktopStateRef.current = desktopState;
     void desktop
       .updateChatNotificationState(desktopState)
       .then((result) => {
-        if (getDesktopChatNotificationRendererMode(result) !== "managed") {
-          setDesktopNotificationMode("renderer");
-        }
+        if (generation !== configGenerationRef.current) return;
+        setShellWantsState(shouldSendDesktopChatNotificationState(result));
+        setDesktopNotificationMode(
+          getDesktopChatNotificationRendererMode(result) ?? "renderer"
+        );
       })
       .catch(() => {
+        if (generation !== configGenerationRef.current) return;
         setDesktopNotificationMode("renderer");
       });
-  }, [desktopNotificationMode, desktopState]);
+  }, [
+    desktopNotificationMode,
+    desktopState,
+    isAuthenticated,
+    shellWantsState,
+    username,
+  ]);
 
   useEffect(() => {
     if (isBackgroundMode) {

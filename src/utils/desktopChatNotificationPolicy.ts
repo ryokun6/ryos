@@ -223,6 +223,16 @@ export function getDesktopChatNotificationRendererMode(
   return result.managed && result.ready ? "managed" : "renderer";
 }
 
+/**
+ * Whether the shell accepted the chat-notification config and should keep
+ * receiving `updateChatNotificationState`, even before (or without) taking
+ * over notifications: Electron starts its service with `ready: false`, and
+ * the iOS shell never becomes ready but registers the rooms for APNs push.
+ */
+export function shouldSendDesktopChatNotificationState(value: unknown): boolean {
+  return sanitizeDesktopChatNotificationManageResult(value)?.managed === true;
+}
+
 export function shouldUseRendererChatNotificationFallback(params: {
   isBackgroundMode: boolean;
   desktopNotificationMode: DesktopChatNotificationRendererMode;
