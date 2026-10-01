@@ -18,6 +18,8 @@ import { OfflineIndicator } from "./OfflineIndicator";
 import { getAppName } from "./menuBarUtils";
 import { getAppletDisplayInfo } from "./getAppletDisplayInfo";
 import { useTaskbarOverflow } from "./useTaskbarOverflow";
+import { edgeChromeHorizontalPadding } from "./menubarEdgePadding";
+import { useDisplayCornerFloor } from "@/hooks/useDisplayCornerFloor";
 
 export interface WindowsTaskbarProps {
   apps: AnyApp[];
@@ -46,6 +48,7 @@ export function WindowsTaskbar({
     overflowTaskbarIds,
     allTaskbarIds,
   } = useTaskbarOverflow(instances, true);
+  const cornerFloor = useDisplayCornerFloor();
 
     const isWinXp = currentTheme === "xp";
     const isWin98 = currentTheme === "win98";
@@ -71,8 +74,14 @@ export function WindowsTaskbar({
         className="absolute left-0 right-0 flex items-center h-[30px]"
         style={{
           bottom: "env(safe-area-inset-bottom, 0px)",
-          paddingLeft: "env(safe-area-inset-left, 0px)",
-          paddingRight: "env(safe-area-inset-right, 0px)",
+          paddingLeft: edgeChromeHorizontalPadding({
+            side: "left",
+            cornerFloor,
+          }),
+          paddingRight: edgeChromeHorizontalPadding({
+            side: "right",
+            cornerFloor,
+          }),
         }}
       >
           {/* Start Button */}
