@@ -26,6 +26,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ryOS uses your location to show maps and weather widgets.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
