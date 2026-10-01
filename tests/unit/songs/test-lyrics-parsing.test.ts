@@ -205,6 +205,58 @@ describe("lyrics prefix filtering", () => {
     expect(filtered).toBe("[00:02.00]The evening breeze on a summer night");
   });
 
+  test("skips Rhythm Programming credit lines including colon and case variants", () => {
+    const lines = parseLrcToLines(
+      [
+        "[00:01.00]Rhythm Programming",
+        "[00:02.00]Rhythm Programming: John Doe",
+        "[00:03.00]Rhythm Programming：Jane Doe",
+        "[00:04.00]rhythm programming",
+        "[00:05.00]Actual lyric line",
+      ].join("\n"),
+    );
+
+    expect(lines).toEqual([
+      {
+        startTimeMs: "5000",
+        words: "Actual lyric line",
+      },
+    ]);
+    expect(shouldSkipLyricCreditLine("Rhythm Programming")).toBe(true);
+    expect(shouldSkipLyricCreditLine("rhythm programming: John Doe")).toBe(true);
+    expect(shouldSkipLine("Rhythm Programming：Jane Doe")).toBe(true);
+  });
+
+  test("drops stale cached Rhythm Programming lines and paired translations", () => {
+    const kept = filterSkippedLyricLines([
+      { startTimeMs: "0", words: "Rhythm Programming" },
+      { startTimeMs: "1000", words: "rhythm programming: John Doe" },
+      { startTimeMs: "2000", words: "Actual lyric line" },
+    ]);
+
+    expect(kept).toEqual([
+      { startTimeMs: "2000", words: "Actual lyric line" },
+    ]);
+
+    expect(
+      filterLrcCreditLines(
+        [
+          "[00:00.00]Rhythm Programming",
+          "[00:02.00]The evening breeze on a summer night",
+        ].join("\n"),
+      )
+    ).toBe("[00:02.00]The evening breeze on a summer night");
+
+    expect(
+      parseLrcToTranslations(
+        [
+          "[00:00.00]Rhythm Programming: John Doe",
+          "[00:02.00]The evening breeze on a summer night",
+        ].join("\n"),
+      )
+    ).toEqual(["The evening breeze on a summer night"]);
+  });
+
   test("parseLrcToTranslations skips lyricist credit translations", () => {
     const translations = parseLrcToTranslations(
       [

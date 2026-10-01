@@ -21,7 +21,7 @@ export const LYRIC_CREDIT_SKIP_PREFIXES = [
   "Mix by", "Mix Engineer", "Background vocals", "Background vocals by",
   "Chorus by", "Percussion by", "String by", "Harp by", "Piano by",
   "Piano Arranged by", "Written by", "Additional Production by",
-  "Synthesizer", "Programming", "Background Vocals", "Recording Engineer",
+  "Synthesizer", "Programming", "Rhythm Programming", "Background Vocals", "Recording Engineer",
   "Digital Editing", "Digital Edited", "Sessions", "Original publisher",
   "Original Lyrics", "Korean Lyrics", "All Instruments by", "Additional Drums",
   "Digital editing by",
@@ -42,17 +42,24 @@ function escapeRegExp(value: string): string {
 export function lineStartsWithCreditPrefix(line: string, prefix: string): boolean {
   const normLine = normalizeColonsForPrefixMatch(line);
   const normPrefix = normalizeColonsForPrefixMatch(prefix);
-  if (normLine.startsWith(normPrefix)) {
+  // Multi-word English credits vary in casing (`Rhythm Programming` / `rhythm programming`).
+  // Keep short labels like `OP` / `SP` case-sensitive to avoid matching "opening" / "spin".
+  const ignoreCase = /\s/.test(normPrefix);
+  const lineCmp = ignoreCase ? normLine.toLowerCase() : normLine;
+  const prefixCmp = ignoreCase ? normPrefix.toLowerCase() : normPrefix;
+  if (lineCmp.startsWith(prefixCmp)) {
     return true;
   }
   if (!normPrefix.endsWith(":")) {
     return false;
   }
-  const label = normPrefix.slice(0, -1);
+  const label = prefixCmp.slice(0, -1);
   if (!label) {
     return false;
   }
-  return new RegExp(`^${escapeRegExp(label)}\\s*:\\s*`).test(normLine);
+  return new RegExp(`^${escapeRegExp(label)}\\s*:\\s*`, ignoreCase ? "i" : undefined).test(
+    normLine
+  );
 }
 
 /**
