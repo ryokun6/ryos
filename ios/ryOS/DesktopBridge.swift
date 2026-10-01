@@ -64,11 +64,6 @@ enum DesktopBridge {
         quitAndInstall: function () { return invoke('quitAndInstall'); },
         onUpdateStatus: function () { return function () {}; },
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
-        setAudioActive: function (active) { return invoke('setAudioActive', { active: !!active }); },
-        setNowPlaying: function (info) { return invoke('setNowPlaying', { info: info || null }); },
-        updatePlayback: function (positionSeconds, rate) {
-          return invoke('updatePlayback', { positionSeconds: positionSeconds, rate: rate });
-        },
       };
       window.__ryosEmitOpenRoom = function (roomId) {
         callbacks.forEach(function (entry) {
@@ -77,7 +72,6 @@ enum DesktopBridge {
           }
         });
       };
-      window.__ryosDesktopRemoteCommand = function (command) {};
       window.__ryosBootPainted = function () { return bootPainted; };
       var bootPainted = false;
       function reportBoot() {

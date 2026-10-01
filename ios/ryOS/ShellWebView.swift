@@ -26,10 +26,6 @@ struct ShellWebView: UIViewRepresentable {
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
-        // WebKit pauses page media the moment the app backgrounds unless this
-        // is set; it is what lets the webview-side audio (iPod, karaoke,
-        // YouTube embeds) keep playing behind the shell's audio session.
-        config.allowsBackgroundMediaPlayback = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
@@ -38,15 +34,6 @@ struct ShellWebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
-        MediaHapticsController.shared.onRemoteCommand = { [weak webView] command in
-            guard let webView else { return }
-            let safe = command.replacingOccurrences(of: "\\", with: "\\\\")
-                .replacingOccurrences(of: "\"", with: "\\\"")
-            webView.evaluateJavaScript(
-                "window.__ryosDesktopRemoteCommand && window.__ryosDesktopRemoteCommand(\"\(safe)\")",
-                completionHandler: nil
-            )
-        }
         ShellRouter.shared.attach(webView)
         webView.load(URLRequest(url: ShellViewModel.origin))
         return webView
@@ -168,38 +155,11 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
                 MediaHapticsController.shared.playHaptic(pattern)
             }
             reply(id, true)
-        case "setAudioActive":
-            let active = (args as? [String: Any])?["active"] as? Bool ?? false
-            MediaHapticsController.shared.setAudioActive(active)
-            reply(id, true)
-        case "setNowPlaying":
-            handleNowPlaying(args as? [String: Any])
-            reply(id, true)
         case "getLocationPermissionStatus":
             reply(id, LocationPermissionController.shared.webStatus)
-        case "updatePlayback":
-            let a = args as? [String: Any]
-            MediaHapticsController.shared.updatePlayback(
-                positionSeconds: a?["positionSeconds"] as? Double ?? 0,
-                rate: a?["rate"] as? Double ?? 0
-            )
-            reply(id, true)
         default:
             reply(id, NSNull())
         }
-    }
-
-    private func handleNowPlaying(_ args: [String: Any]?) {
-        let raw = args?["info"]
-        if raw == nil || raw is NSNull {
-            MediaHapticsController.shared.setNowPlaying(nil)
-            return
-        }
-        guard let dict = raw as? [String: Any],
-              let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
-              let info = try? JSONDecoder().decode(NowPlayingInfo.self, from: data)
-        else { return }
-        MediaHapticsController.shared.setNowPlaying(info)
     }
 
     private func handleShowNotification(_ args: [String: Any]?) {

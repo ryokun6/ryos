@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { track } from "@/utils/analytics";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
+import { hasNativeHaptics, playHaptic } from "@/utils/nativeShellBridge";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useLyrics } from "@/hooks/useLyrics";
@@ -131,12 +132,17 @@ export function useIpodLogic({
   const { play: playScrollSoundSource } = useSound(Sounds.IPOD_CLICK_WHEEL);
   const lastScrollSoundAtRef = useRef<number | null>(null);
   const playScrollSound = useCallback(() => {
+    playHaptic("selection");
     const now = Date.now();
     if (!shouldPlayIpodWheelSound(lastScrollSoundAtRef.current, now)) return;
     lastScrollSoundAtRef.current = now;
     void playScrollSoundSource();
   }, [playScrollSoundSource]);
-  const vibrate = useVibration(100, 50);
+  const vibrateWeb = useVibration(100, 50);
+  const vibrate = useCallback(() => {
+    if (hasNativeHaptics()) playHaptic("rigid");
+    else vibrateWeb();
+  }, [vibrateWeb]);
   const isOffline = useOffline();
   const translatedHelpItems = useTranslatedHelpItems("ipod", helpItems);
 
