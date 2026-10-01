@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Webamp from "webamp";
 import type { LoadedURLTrack } from "webamp";
@@ -15,7 +15,10 @@ import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
 import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
-import { updateNativeMediaSource } from "@/shared/media/nativeMediaSession";
+import {
+  type NativeMediaSourceControls,
+  updateNativeMediaSource,
+} from "@/shared/media/nativeMediaSession";
 import { WINAMP_ANALYTICS, track } from "@/utils/analytics";
 
 const MAIN_WINDOW_WIDTH = 275;
@@ -286,6 +289,20 @@ export function WinampAppComponent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWindowOpen, instanceId, handleClose, syncMediaState]);
 
+  const nativeControls = useMemo<NativeMediaSourceControls>(
+    () => ({
+      play: () => {
+        webampRef.current?.play();
+        syncMediaState();
+      },
+      pause: () => {
+        webampRef.current?.pause();
+        syncMediaState();
+      },
+    }),
+    [syncMediaState]
+  );
+
   useEffect(() => {
     const sourceId = `winamp:${instanceId}`;
     const title = currentTrackInfo?.metaData.title;
@@ -306,8 +323,9 @@ export function WinampAppComponent({
             }
           : null,
       positionSeconds: null,
+      controls: nativeControls,
     });
-  }, [instanceId, isPlaying, isWindowOpen, currentTrackInfo]);
+  }, [instanceId, isPlaying, isWindowOpen, currentTrackInfo, nativeControls]);
 
   useEffect(
     () => () => updateNativeMediaSource(`winamp:${instanceId}`, null),

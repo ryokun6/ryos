@@ -32,7 +32,12 @@ const {
   setNativeNowPlaying,
   updateNativePlayback,
 } = await import("../../../src/utils/nativeShellBridge");
-const { resetNativeMediaSession, updateNativeMediaSource } = await import(
+const {
+  handleNativeRemoteCommand,
+  installNativeRemoteCommandHandler,
+  resetNativeMediaSession,
+  updateNativeMediaSource,
+} = await import(
   "../../../src/shared/media/nativeMediaSession"
 );
 const { useIpodStore } = await import("../../../src/stores/useIpodStore");
@@ -323,5 +328,132 @@ describe("MediaCore → native session", () => {
     expect(callsOf("setNowPlaying").at(-1)).toEqual([
       { title: "Video", album: "RyoTV" },
     ]);
+  });
+});
+
+describe("lock-screen remote commands", () => {
+  let controlCalls: string[] = [];
+
+  function source(id: string, playing: boolean, controllable = true) {
+    updateNativeMediaSource(id, {
+      playing,
+      nowPlaying: { title: id },
+      positionSeconds: 0,
+      controls: controllable
+        ? {
+            play: () => controlCalls.push(`${id}:play`),
+            pause: () => controlCalls.push(`${id}:pause`),
+          }
+        : undefined,
+    });
+  }
+
+  beforeEach(() => {
+    resetNativeMediaSession();
+    controlCalls = [];
+  });
+  afterEach(() => resetNativeMediaSession());
+
+  test("toggle pauses a playing owner and plays a paused one", () => {
+    source("a", true);
+    expect(handleNativeRemoteCommand("toggle-play-pause")).toBe(true);
+    expect(controlCalls).toEqual(["a:pause"]);
+
+    source("a", false);
+    expect(handleNativeRemoteCommand("toggle-play-pause")).toBe(true);
+    expect(controlCalls).toEqual(["a:pause", "a:play"]);
+  });
+
+  test("play and pause target the most recently started source", () => {
+    source("a", true);
+    source("b", true);
+    handleNativeRemoteCommand("pause");
+    source("a", false);
+    source("b", false);
+    handleNativeRemoteCommand("play");
+    expect(controlCalls).toEqual(["b:pause", "b:play"]);
+  });
+
+  test("pause falls back to other playing sources when the owner can't be paused", () => {
+    source("a", true);
+    source("b", true, false);
+    expect(handleNativeRemoteCommand("pause")).toBe(true);
+    expect(controlCalls).toEqual(["a:pause"]);
+  });
+
+  test("is a safe no-op without sources, controls, or a known command", () => {
+    expect(handleNativeRemoteCommand("toggle-play-pause")).toBe(false);
+    expect(handleNativeRemoteCommand("pause")).toBe(false);
+    expect(handleNativeRemoteCommand("skip")).toBe(false);
+    expect(handleNativeRemoteCommand(undefined)).toBe(false);
+
+    source("a", false, false);
+    expect(handleNativeRemoteCommand("play")).toBe(false);
+
+    updateNativeMediaSource("throws", {
+      playing: true,
+      nowPlaying: { title: "x" },
+      positionSeconds: 0,
+      controls: {
+        pause: () => {
+          throw new Error("boom");
+        },
+      },
+    });
+    expect(handleNativeRemoteCommand("pause")).toBe(false);
+  });
+
+  test("install assigns over the shell no-op and restores it idempotently", () => {
+    const shellNoop = () => {};
+    window.__ryosDesktopRemoteCommand = shellNoop;
+
+    const uninstall = installNativeRemoteCommandHandler();
+    const uninstallAgain = installNativeRemoteCommandHandler();
+    const handler = window.__ryosDesktopRemoteCommand;
+    expect(handler).not.toBe(shellNoop);
+
+    source("a", true);
+    handler?.("toggle-play-pause");
+    expect(controlCalls).toEqual(["a:pause"]);
+
+    uninstall();
+    uninstallAgain();
+    expect(window.__ryosDesktopRemoteCommand).not.toBe(handler);
+    expect(() => window.__ryosDesktopRemoteCommand?.("pause")).not.toThrow();
+    expect(controlCalls).toEqual(["a:pause"]);
+    delete window.__ryosDesktopRemoteCommand;
+  });
+
+  test("MediaCore routes lock-screen commands to the iPod store transport", () => {
+    installBridge();
+    useIpodStore.setState({
+      tracks: [{ id: "s1", url: "https://youtu.be/s1", title: "Song" }],
+      librarySource: "youtube",
+      currentSongId: "s1",
+      isPlaying: false,
+      playbackRequested: false,
+    });
+    useAppStore.setState({
+      instances: {
+        "1": { instanceId: "1", appId: "ipod", isOpen: true, createdAt: 0 },
+      } as never,
+    });
+    const cleanup = initMediaCoreRuntime();
+    try {
+      useIpodStore.getState().setIsPlaying(true);
+      useIpodStore.getState().confirmPlayback();
+
+      window.__ryosDesktopRemoteCommand?.("toggle-play-pause");
+      expect(useIpodStore.getState().isPlaying).toBe(false);
+      expect(useIpodStore.getState().playbackRequested).toBe(false);
+
+      window.__ryosDesktopRemoteCommand?.("play");
+      expect(useIpodStore.getState().playbackRequested).toBe(true);
+    } finally {
+      cleanup();
+      useAppStore.setState({ instances: {} });
+      removeBridge();
+    }
+    expect(() => window.__ryosDesktopRemoteCommand?.("pause")).not.toThrow();
   });
 });

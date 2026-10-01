@@ -4,6 +4,8 @@
  * runtime, so it shares that module's lazy-loading constraints.
  *
  * A paused player keeps its lock-screen entry only while its window is open.
+ * Also installs the lock-screen remote-command handler, so it is in place as
+ * soon as MediaCore boots.
  */
 import type { RyosNowPlayingInfo } from "@/types/ryos-desktop";
 import type { AppId } from "@/config/appRegistry";
@@ -18,7 +20,9 @@ import {
 } from "@/utils/coverArt";
 import type { MediaAppId } from "./nowPlayingStore";
 import {
+  type NativeMediaSourceControls,
   type NativeMediaSourceState,
+  installNativeRemoteCommandHandler,
   updateNativeMediaSource,
 } from "./nativeMediaSession";
 import { getTvNowPlaying, subscribeTvNowPlaying } from "./tvNowPlaying";
@@ -130,10 +134,21 @@ const readVideosNowPlaying = memoNowPlaying(
   }
 );
 
+function transportControls(
+  getSetIsPlaying: () => (playing: boolean) => void
+): NativeMediaSourceControls {
+  return {
+    play: () => getSetIsPlaying()(true),
+    pause: () => getSetIsPlaying()(false),
+  };
+}
+
 interface NativeBinding {
   appId: MediaAppId;
   subscribe: (listener: () => void) => () => void;
   read: () => { playing: boolean; position: number };
+  /** Same store transport the app's own play/pause button drives. */
+  controls: NativeMediaSourceControls;
   nowPlaying: NowPlayingReader;
 }
 
@@ -146,6 +161,7 @@ const bindings: NativeBinding[] = [
       return { playing: s.isPlaying, position: s.elapsedTime };
     },
     nowPlaying: readIpodNowPlaying,
+    controls: transportControls(() => useIpodStore.getState().setIsPlaying),
   },
   {
     appId: "karaoke",
@@ -155,6 +171,7 @@ const bindings: NativeBinding[] = [
       return { playing: s.isPlaying, position: s.elapsedTime };
     },
     nowPlaying: readKaraokeNowPlaying,
+    controls: transportControls(() => useKaraokeStore.getState().setIsPlaying),
   },
   {
     appId: "videos",
@@ -164,6 +181,7 @@ const bindings: NativeBinding[] = [
       return { playing: s.isPlaying, position: s.playedSeconds };
     },
     nowPlaying: readVideosNowPlaying,
+    controls: transportControls(() => useVideoStore.getState().setIsPlaying),
   },
   {
     appId: "tv",
@@ -180,6 +198,7 @@ const bindings: NativeBinding[] = [
       return { playing: s.isPlaying, position: s.playedSeconds };
     },
     nowPlaying: getTvNowPlaying,
+    controls: transportControls(() => useTvStore.getState().setIsPlaying),
   },
 ];
 
@@ -199,6 +218,7 @@ function readSourceState(binding: NativeBinding): NativeMediaSourceState {
     playing,
     nowPlaying: visible ? binding.nowPlaying() : null,
     positionSeconds: position,
+    controls: binding.controls,
   };
 }
 
@@ -218,6 +238,8 @@ export function initNativeMediaCoreSync(): () => void {
     syncBinding(binding);
     return binding.subscribe(() => syncBinding(binding));
   });
+
+  unsubscribers.push(installNativeRemoteCommandHandler());
 
   let lastInstances = useAppStore.getState().instances;
   unsubscribers.push(

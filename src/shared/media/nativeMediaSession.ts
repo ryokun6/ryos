@@ -11,7 +11,10 @@
  *
  * Imports no app stores so it stays cheap to load from anywhere.
  */
-import type { RyosNowPlayingInfo } from "@/types/ryos-desktop";
+import type {
+  RyosNowPlayingInfo,
+  RyosRemoteCommand,
+} from "@/types/ryos-desktop";
 import {
   sanitizeNowPlayingInfo,
   setNativeAudioActive,
@@ -25,6 +28,13 @@ export interface NativeMediaSourceState {
   nowPlaying: RyosNowPlayingInfo | null;
   /** Current position, or null when the source can't report one. */
   positionSeconds: number | null;
+  /** Lock-screen remote control hooks; omit when the source can't be controlled. */
+  controls?: NativeMediaSourceControls;
+}
+
+export interface NativeMediaSourceControls {
+  play?: () => void;
+  pause?: () => void;
 }
 
 interface TrackedSource extends NativeMediaSourceState {
@@ -145,8 +155,77 @@ export function updateNativeMediaSource(
     nowPlayingKey,
     positionSeconds,
     startedSeq,
+    controls: state.controls,
   });
   sync();
+}
+
+function runControl(control: (() => void) | undefined): boolean {
+  if (typeof control !== "function") return false;
+  try {
+    control();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Route a lock-screen command to the source that owns the native session.
+ * `pause` also falls back to any other playing source so audio can always be
+ * stopped from the lock screen. Returns whether a source handled it.
+ */
+export function handleNativeRemoteCommand(command: unknown): boolean {
+  if (!isNativeRemoteCommand(command)) return false;
+  const owner = pickOwner()?.[1] ?? null;
+  const action =
+    command === "toggle-play-pause"
+      ? owner?.playing
+        ? "pause"
+        : "play"
+      : command;
+
+  if (action === "play") {
+    return runControl(owner?.controls?.play);
+  }
+
+  if (owner?.playing && runControl(owner.controls?.pause)) return true;
+  let handled = false;
+  for (const source of sources.values()) {
+    if (source !== owner && source.playing) {
+      handled = runControl(source.controls?.pause) || handled;
+    }
+  }
+  return handled;
+}
+
+const REMOTE_COMMANDS: ReadonlySet<string> = new Set<RyosRemoteCommand>([
+  "toggle-play-pause",
+  "play",
+  "pause",
+]);
+
+function isNativeRemoteCommand(value: unknown): value is RyosRemoteCommand {
+  return typeof value === "string" && REMOTE_COMMANDS.has(value);
+}
+
+function remoteCommandHandler(command: RyosRemoteCommand): void {
+  handleNativeRemoteCommand(command);
+}
+
+/**
+ * Assign the web client's handler over the shell-injected no-op
+ * `window.__ryosDesktopRemoteCommand`. Idempotent; the returned cleanup
+ * restores a no-op only if our handler is still installed.
+ */
+export function installNativeRemoteCommandHandler(): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.__ryosDesktopRemoteCommand = remoteCommandHandler;
+  return () => {
+    if (window.__ryosDesktopRemoteCommand === remoteCommandHandler) {
+      window.__ryosDesktopRemoteCommand = () => {};
+    }
+  };
 }
 
 /** Drop every source and clear the shell's session (only sends what was set). */
