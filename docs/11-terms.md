@@ -2,13 +2,15 @@
 
 These Terms of Service ("Terms") govern your use of ryOS, a web-based desktop environment, as hosted at `os.ryo.lu`. By using ryOS you agree to these Terms. If you do not agree, please do not use the service.
 
-*Last updated: June 2026.*
+*Last updated: October 1, 2026.*
 
 ---
 
 ## 1. The service
 
 ryOS is a browser-based, retro-styled desktop environment offering apps such as a file manager, text editor, chat, media players, and more. Most features run locally in your browser; some features rely on servers and third-party providers (see the [Privacy Policy](/docs/privacy)).
+
+ryOS is also available as a native iPhone app, **ryOS Mobile**, which runs the same desktop in a native shell. These Terms apply to your use of the app as part of the service.
 
 ryOS is provided as a creative and experimental project. Features may change, break, or be removed at any time without notice.
 

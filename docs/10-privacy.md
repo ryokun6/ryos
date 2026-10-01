@@ -4,7 +4,7 @@ ryOS is a web-based desktop environment that runs almost entirely in your browse
 
 For the Chrome extension, see the separate [ryOS Subtitles Privacy Policy](/docs/subtitles-privacy).
 
-*Last updated: June 2026.*
+*Last updated: October 1, 2026.*
 
 ---
 
@@ -23,6 +23,7 @@ For privacy questions, data-subject requests, or complaints, contact **support@r
 - The only cookie ryOS sets is a functional, `HttpOnly` authentication cookie used after you log in.
 - First-party, privacy-conscious usage analytics are collected to keep the system running and improve it. Chat message contents are **not** collected by analytics.
 - You can export, reset, or delete your data at any time from **Control Panels**.
+- The ryOS Mobile iPhone app adds only the notification feature described below; it collects nothing else.
 
 ---
 
@@ -95,6 +96,24 @@ When you use AI features (such as Chats with Ryo, AI-generated applets, Internet
 
 ---
 
+## Notifications on the iPhone app (ryOS Mobile)
+
+ryOS is also available as a native iPhone app, **ryOS Mobile**. It is a shell around the same web desktop: everything inside the app is covered by the sections above, and the app adds no analytics, advertising, or tracking of its own.
+
+The one feature the app adds is chat notifications while the app is closed. When you sign in to ryOS inside the app and allow notifications, the app registers with the ryOS notification service (part of this service). Registration sends:
+
+- your username and sign-in state,
+- the list of chat rooms you're in,
+- an Apple push token identifying your device for notifications,
+- your ryOS sign-in session (so the service can check your chat rooms on your behalf), and
+- the app version.
+
+The service uses this for one purpose: checking your chat rooms for new messages and sending them to your device as push notifications. Message contents are read at the moment of checking and delivered as the notification text; no messages are stored. A small marker per device and room (the time of the last message seen) prevents duplicate notifications.
+
+You can stop notifications at any time by turning them off for ryOS in iOS Settings, or by signing out of ryOS in the app — signing out also deletes the device's registration. You can also ask us to remove a registration by emailing **support@ryo.lu**. Deleting the app removes all data it keeps on the device.
+
+---
+
 ## Third-party services and processors
 
 Depending on which features you use and how the instance is configured, ryOS may send data to the following third-party services. They act as processors for the corresponding feature:
@@ -106,6 +125,7 @@ Depending on which features you use and how the instance is configured, ryOS may
 | YouTube | Video metadata and playback (iPod, Videos, TV) |
 | Apple MapKit / MusicKit | Maps place search and Apple Music playback |
 | Pusher | Real-time chat rooms and presence |
+| Apple Push Notification service (APNs) | Delivering chat notifications to the ryOS Mobile app |
 | Telegram | Optional account linking |
 | IP geolocation provider (e.g. `ipwho.is`) | Coarse country lookup for analytics |
 | Google Fonts | Loading fonts |
@@ -162,6 +182,7 @@ ryOS is not directed to children under the age required for valid consent in the
 - **Local data** persists in your browser until you clear it or reset ryOS.
 - **Analytics metrics** expire automatically on a rolling window (approximately 90 days).
 - **Account and synced data** persist while your account exists and are removed when you delete your account.
+- **Notification registrations** for the ryOS Mobile app are kept while notifications are on and deleted when you sign out in the app or ask us to.
 
 ---
 
