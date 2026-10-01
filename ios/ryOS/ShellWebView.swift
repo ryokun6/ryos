@@ -27,9 +27,14 @@ struct ShellWebView: UIViewRepresentable {
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+        // WebKit pauses page media the moment the app backgrounds unless this
+        // is set; it is what lets the webview-side audio (iPod, karaoke,
+        // YouTube embeds) keep playing behind the shell's audio session.
+        config.allowsBackgroundMediaPlayback = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.scrollView.isScrollEnabled = false
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
@@ -51,7 +56,7 @@ struct ShellWebView: UIViewRepresentable {
     func updateUIView(_ webView: WKWebView, context: Context) {}
 }
 
-final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     private weak var shell: ShellViewModel?
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
@@ -72,6 +77,23 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "ryos.pathmonitor"))
+    }
+
+    // MARK: WKUIDelegate
+
+    /// Geolocation: the web client's navigator.geolocation asks route here.
+    /// Answered from the app's Core Location permission; the first ask triggers
+    /// the system when-in-use dialog (the native prompt, never a custom one).
+    func webView(
+        _ webView: WKWebView,
+        requestGeolocationPermissionForOrigin origin: WKSecurityOrigin,
+        initiatedByFrame frame: WKFrameInfo,
+        decisionHandler: @escaping (WKPermissionDecision) -> Void
+    ) {
+        LocationPermissionController.shared.handleWebAsk(
+            origin: origin.protocol + "://" + origin.host,
+            decide: decisionHandler
+        )
     }
 
     // MARK: WKNavigationDelegate
@@ -159,6 +181,8 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         case "setNowPlaying":
             handleNowPlaying(args as? [String: Any])
             reply(id, true)
+        case "getLocationPermissionStatus":
+            reply(id, LocationPermissionController.shared.webStatus)
         case "updatePlayback":
             let a = args as? [String: Any]
             MediaHapticsController.shared.updatePlayback(
