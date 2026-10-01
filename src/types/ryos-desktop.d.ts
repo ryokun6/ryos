@@ -204,9 +204,14 @@ export interface RyosDesktopApi {
   updatePlayback?: (positionSeconds: number, rate: number) => void;
 }
 
+/** Lock-screen commands the iOS shell (build 7+) forwards to the web client. */
+export type RyosRemoteCommand = "toggle-play-pause" | "play" | "pause";
+
 declare global {
   interface Window {
     ryosDesktop?: RyosDesktopApi;
+    /** Injected as a no-op by the iOS shell; the web client assigns its handler over it. */
+    __ryosDesktopRemoteCommand?: (command: RyosRemoteCommand) => void;
   }
 }
 
