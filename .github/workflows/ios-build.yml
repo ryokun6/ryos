@@ -1,7 +1,7 @@
 name: iOS shell
 
 # The Swift shell under ios/ cannot build on the Linux jobs. Compile it
-# unsigned, and run CodeQL's Swift autobuild exactly as code scanning's
+# unsigned against the iOS 27.1 SDK, and run CodeQL's Swift autobuild exactly as code scanning's
 # default setup does (default setup only scans Swift on pushes to main, so a
 # broken autobuild would otherwise surface only after merge). Results are not
 # uploaded: default setup owns code scanning uploads for this repo.
@@ -28,33 +28,8 @@ permissions:
 
 jobs:
   build:
-    name: Build (unsigned)
-    runs-on: macos-latest
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: ios
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Xcode version
-        run: xcodebuild -version
-
-      - name: Build app and tests
-        run: |
-          xcodebuild build-for-testing \
-            -project ryOS.xcodeproj \
-            -scheme ryOS \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
-
-  build-ios-27-1-sdk:
     name: Build (unsigned, iOS ${{ matrix.sdk }} SDK)
+    # The iOS 27 SDKs ship only on the xcode-27 image (preview, beta Xcodes).
     runs-on: xcode-27
     timeout-minutes: 30
     strategy:

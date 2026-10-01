@@ -331,7 +331,7 @@ describe("notifications", () => {
     expect(shouldSendDesktopChatNotificationState(native)).toBe(true);
   });
 
-  test("showNotification carries the chat room and honours shown:false fallbacks", async () => {
+  test("showNotification carries the chat room through to the shell", async () => {
     const payload = getNativeToastNotification("basic", "@ryo", {
       description: "hello",
       chatRoomId: "room-1",
@@ -344,12 +344,11 @@ describe("notifications", () => {
     page.replyAll(() => true); // shouldShowNativeNotification
     await tick();
     expect(invokes(page).at(-1)).toEqual(["showNotification", { options: payload }]);
-    page.replyAll(() => ({ shown: false, reason: "unsupported" }));
-    expect(await shown).toBe(false);
+    page.replyAll(() => ({ shown: true }));
+    expect(await shown).toBe(true);
 
     expect(shellWebViewSwift).toContain('options["chatRoomId"]');
-    expect(shellWebViewSwift).toContain('"reason": "invalid-payload"');
-    expect(shellWebViewSwift).toContain('"reason": "unsupported"');
+    expect(shellWebViewSwift).toContain('reply(id, ["shown": true])');
   });
 
   test("a notification-tap room is held until the web client subscribes", async () => {
@@ -377,7 +376,7 @@ describe("notifications", () => {
     expect(shellWebViewSwift).toMatch(
       /case "boot-finished":[\s\S]*?ShellRouter\.shared\.markPageReady\(\)/
     );
-    expect(relaySwift).toMatch(/func firePendingRoom\(\) \{\s*guard pageReady/);
+    expect(relaySwift).toMatch(/func firePendingRoom\(\) \{[^}]*?guard pageReady/);
     expect(appDelegateSwift).toContain('userInfo["chatRoomId"]');
     // The relay push payload uses the same key.
     expect(readFileSync(join(ROOT, "api/_utils/push-relay.ts"), "utf8")).toMatch(

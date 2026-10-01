@@ -16,11 +16,6 @@ struct ShellNotificationState: Codable {
     var chatsOpen: Bool
     var currentRoomId: String?
     var rooms: [ShellRoom]?
-
-    static let signedOut = ShellNotificationState(
-        username: nil, isAuthenticated: false, chatsOpen: false,
-        currentRoomId: nil, rooms: nil
-    )
 }
 
 struct ShellRoom: Codable {
@@ -52,7 +47,10 @@ final class ShellViewModel: ObservableObject {
     @Published var splashVisible: Bool
 
     // Freshest state the web client reported through the bridge.
-    var notificationState = ShellNotificationState.signedOut
+    var notificationState = ShellNotificationState(
+        username: nil, isAuthenticated: false, chatsOpen: false,
+        currentRoomId: nil, rooms: nil
+    )
 
     var signedInUsername: String? {
         notificationState.isAuthenticated ? notificationState.username : nil
@@ -76,10 +74,8 @@ final class ShellViewModel: ObservableObject {
         }
     }
 
-    /// The web client told us its state changed (`configureChatNotifications`
-    /// / `updateChatNotificationState`); remember it and register the device
-    /// with the relay once we have an APNs token. Sign-out needs no
-    /// unregister: the server drops devices whose session was signed out.
+    /// The web client told us its state changed; remember it and register
+    /// the device with the relay once we have an APNs token.
     func updateNotificationState(_ state: ShellNotificationState) {
         let wasSignedIn = notificationState.isAuthenticated
         notificationState = state

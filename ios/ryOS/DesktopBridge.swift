@@ -47,7 +47,6 @@ enum DesktopBridge {
       }
       window.ryosDesktop = {
         platform: 'ios',
-        capabilities: { windowChrome: false, windowShortcuts: false, selfUpdate: false },
         isFullscreen: function () { return invoke('isFullscreen'); },
         onFullscreenChange: function () { return function () {}; },
         toggleMaximize: function () { return invoke('toggleMaximize'); },
@@ -89,8 +88,6 @@ enum DesktopBridge {
         });
         if (!delivered) pendingOpenRoom = { has: true, roomId: roomId };
       };
-      // Lock-screen commands: MediaHapticsController evaluates this; the web
-      // client (MediaCore) assigns its handler over the no-op.
       window.__ryosDesktopRemoteCommand = function (command) {};
       window.__ryosBootPainted = function () { return bootPainted; };
       var bootPainted = false;

@@ -7,8 +7,8 @@ final class ShellRouter {
 
     private var pendingRoomId: String?
     private weak var webView: WKWebView?
-    /// The current page has booted (`boot-finished`), so its injected bridge
-    /// exists and will hold the room until the web client subscribes.
+    /// Set on `boot-finished`: the page and its injected bridge exist, and the
+    /// bridge holds the room until the web client subscribes.
     private var pageReady = false
 
     func attach(_ webView: WKWebView) {
@@ -25,15 +25,10 @@ final class ShellRouter {
         firePendingRoom()
     }
 
-    /// A navigation or WebContent crash replaces the page (and its bridge).
-    func markPageUnloaded() {
-        pageReady = false
-    }
-
     /// Called when a notification is tapped (app cold or backgrounded) and
-    /// once the web client is ready to receive the room id. A cold-launch tap
-    /// arrives before the page loads, so it stays queued until boot.
+    /// once the web client is ready to receive the room id.
     func firePendingRoom() {
+        // A cold-launch tap arrives before the page loads; keep it queued.
         guard pageReady, let webView, let roomId = pendingRoomId else { return }
         pendingRoomId = nil
         let escaped = roomId
