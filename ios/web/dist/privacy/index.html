@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — ryOS for iPhone</title>
+<meta name="description" content="How ryOS for iPhone handles your data: what the app and its notification relay process, and how it relates to the ryOS web privacy policy.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23072b1f'/%3E%3Cellipse cx='32' cy='30' rx='20' ry='16' fill='%2334d1ff'/%3E%3Cellipse cx='22' cy='26' rx='7' ry='5' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#072b1f"/><ellipse cx="32" cy="30" rx="20" ry="16" fill="#34d1ff"/><ellipse cx="22" cy="26" rx="7" ry="5" fill="#ffffff"/></svg>
+    <div class="wordmark">ryOS <small>for iPhone · Privacy Policy</small></div>
+  </header>
+
+  <main class="page">
+    <h1>Privacy Policy</h1>
+    <p class="lede">ryOS for iPhone is a native shell around the ryOS web desktop. This page covers what the iPhone app itself and its notification relay handle. Everything inside the desktop is covered by the <a href="https://os.ryo.lu/docs/privacy">ryOS privacy policy</a> — the app and the web service are run by the same person, Ryo Lu, under the same standards.</p>
+
+    <section>
+      <h2>What data the app handles</h2>
+      <p>The app collects nothing on its own and shows no ads, no analytics, and no tracking. To deliver chat notifications while the app is closed, it sends the following to the ryOS notification relay (a small server run by us):</p>
+      <ul>
+        <li>your ryOS username and whether you're signed in,</li>
+        <li>the list of chat rooms you're in,</li>
+        <li>an Apple push token that identifies your device for notifications,</li>
+        <li>your ryOS sign-in session (so the relay can check your chat rooms on your behalf), and</li>
+        <li>the app version.</li>
+      </ul>
+      <p>Only the last two are stored on the device longer than a moment; the session exists there only as part of your normal ryOS sign-in inside the app.</p>
+    </section>
+
+    <section>
+      <h2>What the notification relay stores and why</h2>
+      <p>The relay keeps, per device: the push token, your username, your chat room list, and a copy of your ryOS session. It uses them for one purpose — checking your chat rooms for new messages every couple of minutes and sending them to your phone as push notifications. Message text is read only at that moment of checking; the relay keeps no messages. It stores a small marker per device and room (the time of the last message it saw) so it doesn't notify you about the same message twice.</p>
+    </section>
+
+    <section>
+      <h2>The desktop inside the app</h2>
+      <p>The ryOS desktop you use inside the app is the same web service as <a href="https://os.ryo.lu">os.ryo.lu</a>. Your account, chat messages, files, AI features and the optional analytics described there are handled by the web service under its own <a href="https://os.ryo.lu/docs/privacy">privacy policy</a>. The iPhone app adds nothing on top of that except the notification relay described above.</p>
+    </section>
+
+    <section>
+      <h2>Third parties</h2>
+      <p>The app itself shares data with no one except the two services named here: the ryOS web service and the ryOS notification relay. Delivery of notifications goes through Apple's push service, which receives the message content Apple needs to display it. A full list of the web service's providers (AI features, text-to-speech, realtime chat and others) is in the <a href="https://os.ryo.lu/docs/privacy">ryOS privacy policy</a>.</p>
+    </section>
+
+    <section>
+      <h2>Stopping notifications and deletion</h2>
+      <p>Turning off notifications for ryOS in iOS Settings, or signing out of ryOS in the desktop, stops the relay from sending notifications. To have your device's entry removed from the relay completely, email <a href="mailto:support@os.ryo.lu">support@os.ryo.lu</a> from the email associated with your Apple Developer contact or include your ryOS username, and it will be deleted. Deleting your ryOS account removes your data on the web service as described in the web privacy policy.</p>
+    </section>
+
+    <section>
+      <h2>Consent</h2>
+      <p>The app asks before it sends you any notification, and only starts the relay after you sign in. You can withdraw that consent at any time: deny notifications in iOS Settings, or sign out inside the app. Everything else the app does — loading the desktop from cache, showing it — involves no personal data beyond what the web service already handles.</p>
+    </section>
+
+    <section>
+      <h2>Children</h2>
+      <p>ryOS is not directed to children under the age required for valid consent in their jurisdiction. We do not knowingly collect personal data from children below that age.</p>
+    </section>
+
+    <section>
+      <h2>Changes and contact</h2>
+      <p>This policy may change as the app does; the date below always reflects the current version. For questions about privacy in the iPhone app: <a href="mailto:support@os.ryo.lu">support@os.ryo.lu</a>.</p>
+      <p class="fine">Data controller: Ryo Lu. Last updated: October 1, 2026.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div>© 2026 Ryo Lu</div>
+    <nav class="links" aria-label="Footer">
+      <a href="/">Home</a>
+      <a href="/support/">Support</a>
+      <a href="https://os.ryo.lu">ryOS on the web</a>
+    </nav>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+version: 3
+signing:
+  bundles:
+    - com.ryo.lu.ryos
+build:
+  script: |
+    rm -rf -- .airbuild/artifacts/ryOS.xcarchive
+
+    # App icon: AppIconSource.png is the transparent master (the ryOS web
+    # client's Electron icon, kept as the single source per design). iOS
+    # rejects alpha in catalog icons, so composite it onto opaque black
+    # (the manifest's background color) before archiving.
+    swift scripts/make-icon.swift
+
+    airbuild-xcode archive \
+      -project ryOS.xcodeproj \
+      -scheme ryOS \
+      -archivePath .airbuild/artifacts/ryOS.xcarchive
+  artifact:
+    path: .airbuild/artifacts/ryOS.xcarchive
+
+test:
+  app:
+    script: |
+      airbuild-xcode test \
+        -project ryOS.xcodeproj \
+        -scheme ryOS \
+        -resultBundlePath .airbuild/artifacts/TestResults.xcresult \
+        $additional_options
+    outputs:
+      - .airbuild/artifacts/TestResults.xcresult

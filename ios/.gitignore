@@ -1,0 +1,9 @@
+.DS_Store
+build/
+*.xcuserstate
+xcuserdata/
+ryos-web/
+
+# The root .gitignore ignores every `dist`; the shell's marketing microsite is
+# hand-written source, not build output.
+!web/dist/

@@ -1,0 +1,119 @@
+/* ryOS for iPhone — shared styles. One deliberate scheme (desktop green),
+   paper text, one blue accent from the Chats bubble. No webfonts, no
+   external requests. */
+
+:root {
+  --green: #0a3d2c;        /* meadow green, from the ryOS desktop wallpaper */
+  --green-deep: #072b1f;
+  --paper: #f4f1e4;        /* warm paper type on green */
+  --paper-dim: #cfd8cb;    /* secondary text */
+  --ink: #101418;          /* ink on paper surfaces */
+  --blue: #1a47b8;         /* accent — the Chats bubble blue */
+  --blue-light: #a9c4ff;   /* links on green (AA) */
+  --card: #ffffff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--green);
+  color: var(--paper);
+  font-family: -apple-system, "SF Pro", "Segoe UI", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.wrap { max-width: 62ch; margin: 0 auto; padding: 0 22px; }
+
+a { color: var(--blue-light); }
+a:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--blue-light);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Header */
+.top {
+  display: flex; align-items: center; gap: 12px;
+  padding: 26px 0 8px;
+}
+.mark { width: 34px; height: 34px; flex: none; }
+.wordmark { font-size: 19px; font-weight: 650; letter-spacing: -0.01em; }
+.wordmark small { font-weight: 500; color: var(--paper-dim); font-size: 14px; margin-left: 8px; }
+
+/* Hero */
+.hero { padding: 34px 0 10px; }
+.hero h1 {
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  max-width: 18ch;
+}
+.hero p.sub { margin-top: 16px; max-width: 46ch; color: var(--paper-dim); }
+
+.shot { margin: 34px 0 8px; max-width: 320px; }
+.shot img {
+  width: 100%; height: auto; display: block;
+  border-radius: 28px;
+  border: 1px solid rgba(244, 241, 228, 0.18);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+}
+.shot figcaption { margin-top: 10px; font-size: 13.5px; color: var(--paper-dim); }
+
+/* Highlights */
+.highlights { padding: 34px 0 6px; }
+.highlight { margin-top: 22px; }
+.highlight h2 {
+  font-size: 1.12rem; font-weight: 650; letter-spacing: -0.01em;
+  color: var(--paper);
+}
+.highlight p { color: var(--paper-dim); max-width: 52ch; }
+
+/* Download + footer */
+.download { padding: 30px 0 8px; font-size: 1.05rem; font-weight: 600; }
+
+footer {
+  margin-top: 40px;
+  padding: 22px 0 34px;
+  border-top: 1px solid rgba(244, 241, 228, 0.16);
+  font-size: 14.5px;
+  color: var(--paper-dim);
+}
+footer .links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 6px; }
+
+/* Pages (support / privacy) */
+.page { padding: 26px 0 10px; }
+.page h1 {
+  font-size: clamp(1.7rem, 5vw, 2.4rem);
+  font-weight: 700; letter-spacing: -0.02em; line-height: 1.12;
+}
+.page .lede { margin-top: 12px; color: var(--paper-dim); max-width: 52ch; }
+.page section { margin-top: 30px; }
+.page h2 { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.01em; }
+.page p, .page li { color: var(--paper-dim); margin-top: 10px; max-width: 60ch; }
+.page ul { padding-left: 20px; }
+.page strong { color: var(--paper); font-weight: 600; }
+
+.faq dt {
+  margin-top: 22px; font-weight: 650; color: var(--paper);
+  font-size: 1.02rem;
+}
+.faq dd { color: var(--paper-dim); max-width: 60ch; }
+
+.contact {
+  margin-top: 26px;
+  background: var(--card); color: var(--ink);
+  border-radius: 14px; padding: 18px 20px;
+  max-width: 46ch;
+}
+.contact a { color: var(--blue); font-weight: 600; }
+.contact p { color: var(--ink); margin: 0; }
+
+.fine { margin-top: 34px; font-size: 13.5px; color: var(--paper-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
