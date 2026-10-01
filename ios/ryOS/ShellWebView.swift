@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import Network
+import AVFoundation
 
 /// WKWebView shell around https://os.ryo.lu. The web client detects the
 /// injected `window.ryosDesktop` bridge (the same contract the Electron
@@ -32,6 +33,10 @@ struct ShellWebView: UIViewRepresentable {
         // route for webview shells; guarded in case the key ever disappears.
         if config.responds(to: Selector(("allowsBackgroundMediaPlayback"))) {
             config.setValue(true, forKey: "allowsBackgroundMediaPlayback")
+            let echoed = (try? config.value(forKey: "allowsBackgroundMediaPlayback")) as? Bool
+            NSLog("[ryos-diag] background-media KVC echoed: %@ (iOS %@)", echoed.map { String($0) } ?? "nil", ProcessInfo.processInfo.operatingSystemVersionString)
+        } else {
+            NSLog("[ryos-diag] background-media key absent from configuration")
         }
 
         let webView = WKWebView(frame: .zero, configuration: config)
@@ -42,6 +47,18 @@ struct ShellWebView: UIViewRepresentable {
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
         MediaHapticsController.shared.onRemoteCommand = { [weak webView] command in
+            // When the native player owns playback, transport commands act on
+            // it directly; queue-level commands still reach the page.
+            if NativePlayerController.shared.ownsSource {
+                switch command {
+                case "toggle-play-pause":
+                    NativePlayerController.shared.togglePlayPause()
+                case "play": NativePlayerController.shared.resume()
+                case "pause": NativePlayerController.shared.pause()
+                default: break
+                }
+                return
+            }
             guard let webView else { return }
             let safe = command.replacingOccurrences(of: "\\", with: "\\\\")
                 .replacingOccurrences(of: "\"", with: "\\\"")
@@ -59,6 +76,22 @@ struct ShellWebView: UIViewRepresentable {
 }
 
 final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+    /// Logs the page's media state at backgrounding time, so a "stopped when
+    /// backgrounded" report shows whether WebKit paused media or the page did.
+    func logBackgroundState() {
+        guard let webView else { return }
+        let session = AVAudioSession.sharedInstance()
+        NSLog("[ryos-diag] willResignActive: session category=%@ active=%@ otherAudible=%@",
+              session.category.rawValue,
+              session.isOtherAudioPlaying ? "n/a" : String(session.isOtherAudioPlaying),
+              String(session.isOtherAudioPlaying))
+        webView.evaluateJavaScript(
+            "JSON.stringify({vis: document.visibilityState, playing: Array.from(document.querySelectorAll('audio,video,iframe')).filter(function(e){return !!(e.paused===false)}).length, yt: !!document.querySelector('iframe[src*=youtube]')})",
+            completionHandler: { res, err in
+                NSLog("[ryos-diag] page state at background: %@", (err != nil ? String(describing: err) : (res as? String ?? "nil")))
+            }
+        )
+    }
     private weak var shell: ShellViewModel?
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
@@ -71,6 +104,10 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     func attach(_ webView: WKWebView) {
         self.webView = webView
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleWillResignActive),
+            name: UIApplication.willResignActiveNotification, object: nil
+        )
         SessionCookieReader.shared.refresh(from: webView.configuration.websiteDataStore.httpCookieStore)
 
         pathMonitor.pathUpdateHandler = { [weak self] path in
@@ -82,6 +119,8 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         }
         pathMonitor.start(queue: DispatchQueue(label: "ryos.pathmonitor"))
     }
+
+    @objc private func handleWillResignActive() { logBackgroundState() }
 
     // MARK: WKUIDelegate
 
@@ -178,6 +217,20 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         case "setNowPlaying":
             handleNowPlaying(args as? [String: Any])
             reply(id, true)
+        case "playNativeMedia":
+            handleNativeMedia(args as? [String: Any])
+            reply(id, true)
+        case "stopNativeMedia":
+            NativePlayerController.shared.stop()
+            reply(id, true)
+        case "nativePlaybackCommand":
+            // Transport for handed-over media: play/pause/seek run on the
+            // player itself; queue-level commands (next/previous) stay with
+            // the web client.
+            if let command = (args as? [String: Any])?["command"] as? String {
+                handleNativePlaybackCommand(command, args as? [String: Any])
+            }
+            reply(id, true)
         case "getLocationPermissionStatus":
             reply(id, LocationPermissionController.shared.webStatus)
         case "updatePlayback":
@@ -203,6 +256,28 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
               let info = try? JSONDecoder().decode(NowPlayingInfo.self, from: data)
         else { return }
         MediaHapticsController.shared.setNowPlaying(info)
+    }
+
+    private func handleNativeMedia(_ args: [String: Any]?) {
+        guard let raw = (args as? [String: Any])?["source"],
+              let data = try? JSONSerialization.data(withJSONObject: raw, options: []),
+              let source = try? JSONDecoder().decode(NativeMediaSource.self, from: data)
+        else { return }
+        NativePlayerController.shared.play(source: source)
+    }
+
+    private func handleNativePlaybackCommand(_ command: String, _ args: [String: Any]?) {
+        let player = NativePlayerController.shared
+        switch command {
+        case "play": player.resume()
+        case "pause": player.pause()
+        case "seek":
+            if let seconds = (args as? [String: Any])?["positionSeconds"] as? Double {
+                player.seek(to: seconds)
+            }
+        default:
+            break
+        }
     }
 
     private func handleShowNotification(_ args: [String: Any]?) {
