@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Webamp from "webamp";
+import type { LoadedURLTrack } from "webamp";
 import { WinampMenuBar } from "./WinampMenuBar";
 import { AppProps } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
@@ -13,7 +14,8 @@ import type { Track } from "@/shared/media/library";
 import { YouTubeMedia } from "../utils/youtubeMedia";
 import { WEBAMP_SKINS } from "../skins";
 import { useTranslation } from "react-i18next";
-import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { parseYouTubeVideoId, youtubeThumbnailUrl } from "@/utils/youtubeUrl";
+import { updateNativeMediaSource } from "@/shared/media/nativeMediaSession";
 import { WINAMP_ANALYTICS, track } from "@/utils/analytics";
 
 const MAIN_WINDOW_WIDTH = 275;
@@ -48,6 +50,8 @@ export function WinampAppComponent({
   const webampElRef = useRef<HTMLElement | null>(null);
   const [currentSkinUrl, setCurrentSkinUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTrackInfo, setCurrentTrackInfo] =
+    useState<LoadedURLTrack | null>(null);
   const [isShuffleEnabled, setIsShuffleEnabled] = useState(false);
   const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
 
@@ -255,11 +259,16 @@ export function WinampAppComponent({
       }
       syncMediaState();
     });
-    const unsubscribeTrackChange = webamp.onTrackDidChange(syncMediaState);
+    const unsubscribeTrackChange = webamp.onTrackDidChange((trackInfo) => {
+      setCurrentTrackInfo(trackInfo);
+      syncMediaState();
+    });
     const mediaStateInterval = window.setInterval(syncMediaState, 750);
 
     return () => {
       unsubscribeTrackChange();
+      setCurrentTrackInfo(null);
+      setIsPlaying(false);
       clearInterval(mediaStateInterval);
       webampElRef.current = null;
       if (webampRef.current) {
@@ -276,6 +285,34 @@ export function WinampAppComponent({
     // remains synced without re-running on unrelated UI changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWindowOpen, instanceId, handleClose, syncMediaState]);
+
+  useEffect(() => {
+    const sourceId = `winamp:${instanceId}`;
+    const title = currentTrackInfo?.metaData.title;
+    const videoId = currentTrackInfo
+      ? parseYouTubeVideoId(currentTrackInfo.url.replace(/^youtube:/, ""))
+      : null;
+    updateNativeMediaSource(sourceId, {
+      playing: isPlaying,
+      nowPlaying:
+        isWindowOpen && title
+          ? {
+              title,
+              artist: currentTrackInfo?.metaData.artist ?? undefined,
+              album: currentTrackInfo?.metaData.album ?? undefined,
+              artworkUrl:
+                currentTrackInfo?.metaData.albumArtUrl ??
+                (videoId ? youtubeThumbnailUrl(videoId, "hqdefault") : undefined),
+            }
+          : null,
+      positionSeconds: null,
+    });
+  }, [instanceId, isPlaying, isWindowOpen, currentTrackInfo]);
+
+  useEffect(
+    () => () => updateNativeMediaSource(`winamp:${instanceId}`, null),
+    [instanceId]
+  );
 
   // Update z-index based on foreground state
   useEffect(() => {

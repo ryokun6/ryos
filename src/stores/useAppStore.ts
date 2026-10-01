@@ -10,6 +10,7 @@ import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
 import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
 import { createClientLogger } from "@/utils/logger";
+import { playHaptic } from "@/utils/nativeShellBridge";
 import { getRestorablePreviewInitialData } from "@/types/appInitialData";
 export type { AIModel } from "@/types/aiModels";
 
@@ -405,6 +406,7 @@ const createUseAppStore = () =>
             openWindowCount: get().instanceOrder.length,
             hasInitialData: initialData !== undefined,
           });
+          playHaptic("soft");
         }
         return createdId;
       },
@@ -480,6 +482,7 @@ const createUseAppStore = () =>
             appId: inst.appId,
             openWindowCount: Object.keys(instances).length,
           });
+          playHaptic("light");
           appStoreLog.debug("Closed app instance", {
             appId: inst.appId,
             instanceId,
