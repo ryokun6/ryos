@@ -43,6 +43,11 @@ final class MediaHapticsController {
                 installRemoteCommands()
             }
         } else if audioConfigured {
+            // Native-owned playback always beats a web-side release: if the
+            // shell is playing media itself (handed over via playNativeMedia),
+            // a stale web report of "nothing playing" must not tear the
+            // session down under it.
+            guard !NativePlayerController.shared.ownsSource else { return }
             // Mirror the web client's release grace (its MediaCore handoff
             // can briefly report no active source): delay the one destructive
             // call so a source that returns within the window never tears the
