@@ -7,6 +7,7 @@
 import { deleteAllUserTokens } from "../_utils/auth/index.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { buildClearAuthCookie } from "../_utils/_cookie.js";
+import { removeAllUserPushDevices } from "../_utils/push-relay.js";
 
 export default apiHandler(
   {
@@ -17,6 +18,7 @@ export default apiHandler(
   async ({ res, redis, logger, startTime, user }): Promise<void> => {
     const username = user?.username || "";
     const deletedCount = await deleteAllUserTokens(redis, username);
+    await removeAllUserPushDevices(redis, username);
 
     res.setHeader("Set-Cookie", buildClearAuthCookie());
     logger.info("Logged out from all devices", { username, deletedCount });
