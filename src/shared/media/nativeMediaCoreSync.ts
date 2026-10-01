@@ -146,7 +146,7 @@ function transportControls(
 interface NativeBinding {
   appId: MediaAppId;
   subscribe: (listener: () => void) => () => void;
-  read: () => { playing: boolean; position: number };
+  read: () => { playing: boolean; requested: boolean; position: number };
   /** Same store transport the app's own play/pause button drives. */
   controls: NativeMediaSourceControls;
   nowPlaying: NowPlayingReader;
@@ -158,7 +158,11 @@ const bindings: NativeBinding[] = [
     subscribe: (listener) => useIpodStore.subscribe(listener),
     read: () => {
       const s = useIpodStore.getState();
-      return { playing: s.isPlaying, position: s.elapsedTime };
+      return {
+        playing: s.isPlaying,
+        requested: s.playbackRequested,
+        position: s.elapsedTime,
+      };
     },
     nowPlaying: readIpodNowPlaying,
     controls: transportControls(() => useIpodStore.getState().setIsPlaying),
@@ -168,7 +172,11 @@ const bindings: NativeBinding[] = [
     subscribe: (listener) => useKaraokeStore.subscribe(listener),
     read: () => {
       const s = useKaraokeStore.getState();
-      return { playing: s.isPlaying, position: s.elapsedTime };
+      return {
+        playing: s.isPlaying,
+        requested: s.playbackRequested,
+        position: s.elapsedTime,
+      };
     },
     nowPlaying: readKaraokeNowPlaying,
     controls: transportControls(() => useKaraokeStore.getState().setIsPlaying),
@@ -178,7 +186,11 @@ const bindings: NativeBinding[] = [
     subscribe: (listener) => useVideoStore.subscribe(listener),
     read: () => {
       const s = useVideoStore.getState();
-      return { playing: s.isPlaying, position: s.playedSeconds };
+      return {
+        playing: s.isPlaying,
+        requested: s.playbackRequested,
+        position: s.playedSeconds,
+      };
     },
     nowPlaying: readVideosNowPlaying,
     controls: transportControls(() => useVideoStore.getState().setIsPlaying),
@@ -195,7 +207,11 @@ const bindings: NativeBinding[] = [
     },
     read: () => {
       const s = useTvStore.getState();
-      return { playing: s.isPlaying, position: s.playedSeconds };
+      return {
+        playing: s.isPlaying,
+        requested: s.playbackRequested,
+        position: s.playedSeconds,
+      };
     },
     nowPlaying: getTvNowPlaying,
     controls: transportControls(() => useTvStore.getState().setIsPlaying),
@@ -212,10 +228,11 @@ function isAppWindowOpen(appId: AppId): boolean {
 }
 
 function readSourceState(binding: NativeBinding): NativeMediaSourceState {
-  const { playing, position } = binding.read();
-  const visible = playing || isAppWindowOpen(binding.appId);
+  const { playing, requested, position } = binding.read();
+  const visible = playing || requested || isAppWindowOpen(binding.appId);
   return {
     playing,
+    requested,
     nowPlaying: visible ? binding.nowPlaying() : null,
     positionSeconds: position,
     controls: binding.controls,

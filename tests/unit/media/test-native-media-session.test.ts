@@ -33,6 +33,8 @@ const {
   updateNativePlayback,
 } = await import("../../../src/utils/nativeShellBridge");
 const {
+  AUDIO_RELEASE_GRACE_MS,
+  flushNativeMediaSessionRelease,
   handleNativeRemoteCommand,
   installNativeRemoteCommandHandler,
   resetNativeMediaSession,
@@ -42,6 +44,7 @@ const {
 );
 const { useIpodStore } = await import("../../../src/stores/useIpodStore");
 const { useVideoStore } = await import("../../../src/stores/useVideoStore");
+const { useKaraokeStore } = await import("../../../src/stores/useKaraokeStore");
 const { useTvStore } = await import("../../../src/stores/useTvStore");
 const { useAppStore } = await import("../../../src/stores/useAppStore");
 const { initMediaCoreRuntime } = await import(
@@ -175,6 +178,8 @@ describe("native media session aggregator", () => {
     expect(callsOf("setAudioActive")).toEqual([[true]]);
 
     updateNativeMediaSource("b", null);
+    expect(callsOf("setAudioActive")).toEqual([[true]]);
+    flushNativeMediaSessionRelease();
     expect(callsOf("setAudioActive")).toEqual([[true], [false]]);
     expect(callsOf("setNowPlaying").at(-1)).toEqual([null]);
   });
@@ -227,6 +232,7 @@ describe("native media session aggregator", () => {
       [60, 0],
     ]);
     // Paused but still showing metadata keeps the lock-screen entry.
+    flushNativeMediaSessionRelease();
     expect(callsOf("setAudioActive")).toEqual([[true], [false]]);
     expect(callsOf("setNowPlaying")).toHaveLength(1);
   });
@@ -285,13 +291,17 @@ describe("MediaCore → native session", () => {
         },
       ],
     ]);
-    expect(callsOf("updatePlayback")).toEqual([[0, 1]]);
+    expect(callsOf("updatePlayback")).toEqual([
+      [0, 0],
+      [0, 1],
+    ]);
 
     useIpodStore.setState({ elapsedTime: 0.2 });
-    expect(callsOf("updatePlayback")).toHaveLength(1);
+    expect(callsOf("updatePlayback")).toHaveLength(2);
 
     // Paused with the window closed → session ends and metadata clears.
     useIpodStore.getState().setIsPlaying(false);
+    flushNativeMediaSessionRelease();
     expect(callsOf("setAudioActive").at(-1)).toEqual([false]);
     expect(callsOf("setNowPlaying").at(-1)).toEqual([null]);
   });
@@ -310,12 +320,14 @@ describe("MediaCore → native session", () => {
     useIpodStore.getState().setIsPlaying(true);
     useIpodStore.getState().confirmPlayback();
     useIpodStore.getState().setIsPlaying(false);
+    flushNativeMediaSessionRelease();
 
     expect(callsOf("setAudioActive")).toEqual([[true], [false]]);
     expect(callsOf("setNowPlaying")).toHaveLength(1);
     expect(callsOf("updatePlayback").at(-1)).toEqual([0, 0]);
 
     useAppStore.setState({ instances: {} });
+    flushNativeMediaSessionRelease();
     expect(callsOf("setNowPlaying").at(-1)).toEqual([null]);
   });
 
@@ -455,5 +467,95 @@ describe("lock-screen remote commands", () => {
       removeBridge();
     }
     expect(() => window.__ryosDesktopRemoteCommand?.("pause")).not.toThrow();
+  });
+});
+
+describe("Karaoke start regression (iOS session released mid-start)", () => {
+  let cleanup: (() => void) | null = null;
+
+  beforeEach(() => {
+    installBridge();
+    resetNativeMediaSession();
+    const tracks = [
+      { id: "k1", url: "https://youtu.be/k1", title: "Song One" },
+      { id: "k2", url: "https://youtu.be/k2", title: "Song Two" },
+    ];
+    useIpodStore.setState({
+      tracks,
+      librarySource: "youtube",
+      currentSongId: "k1",
+      isPlaying: false,
+      playbackRequested: false,
+    });
+    useKaraokeStore.setState({
+      currentSongId: "k1",
+      isPlaying: false,
+      playbackRequested: false,
+    });
+    useAppStore.setState({
+      instances: {
+        "1": { instanceId: "1", appId: "karaoke", isOpen: true, createdAt: 0 },
+      } as never,
+    });
+    cleanup = initMediaCoreRuntime();
+    calls = [];
+  });
+
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    useAppStore.setState({ instances: {} });
+    resetNativeMediaSession();
+    removeBridge();
+  });
+
+  test("starting Karaoke while the iPod plays never deactivates audio", () => {
+    useIpodStore.getState().setIsPlaying(true);
+    useIpodStore.getState().confirmPlayback();
+
+    // MediaCore stops the iPod before Karaoke's request reaches the session.
+    useKaraokeStore.getState().setIsPlaying(true);
+    expect(useIpodStore.getState().isPlaying).toBe(false);
+    useKaraokeStore.getState().confirmPlayback();
+
+    flushNativeMediaSessionRelease();
+    expect(callsOf("setAudioActive")).toEqual([[true]]);
+    expect(callsOf("setNowPlaying")).not.toContainEqual([null]);
+    expect(callsOf("setNowPlaying").at(-1)).toEqual([{ title: "Song One" }]);
+  });
+
+  test("re-requests and track switches keep the session while unconfirmed", () => {
+    useKaraokeStore.getState().setIsPlaying(true);
+    useKaraokeStore.getState().confirmPlayback();
+
+    // Track switch: confirmation resets until the player emits onPlay.
+    useKaraokeStore.getState().setCurrentSongId("k2");
+    expect(useKaraokeStore.getState().isPlaying).toBe(false);
+    // Exiting fullscreen re-requests playback the same way.
+    useKaraokeStore.getState().setIsPlaying(true);
+    flushNativeMediaSessionRelease();
+
+    expect(callsOf("setAudioActive")).toEqual([[true]]);
+    expect(callsOf("setNowPlaying").at(-1)).toEqual([{ title: "Song Two" }]);
+  });
+
+  test("a pending request can still be paused from the lock screen", () => {
+    useKaraokeStore.getState().setIsPlaying(true);
+    expect(handleNativeRemoteCommand("toggle-play-pause")).toBe(true);
+    expect(useKaraokeStore.getState().playbackRequested).toBe(false);
+  });
+
+  test("a real stop still releases the session after the grace period", async () => {
+    useKaraokeStore.getState().setIsPlaying(true);
+    useKaraokeStore.getState().confirmPlayback();
+    useAppStore.setState({ instances: {} });
+    useKaraokeStore.getState().setIsPlaying(false);
+
+    expect(callsOf("setAudioActive")).toEqual([[true]]);
+    await new Promise((resolve) =>
+      setTimeout(resolve, AUDIO_RELEASE_GRACE_MS + 50)
+    );
+    expect(callsOf("setAudioActive")).toEqual([[true], [false]]);
+    expect(callsOf("setNowPlaying").at(-1)).toEqual([null]);
   });
 });
