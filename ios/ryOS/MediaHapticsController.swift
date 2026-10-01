@@ -4,17 +4,19 @@ import UIKit
 
 /// Native side of the haptics + background-audio bridge (build 6).
 ///
-/// The web client calls, through the existing `ryosDesktop` invoke surface:
+/// The web client calls, through the existing `ryosDesktop` invoke surface
+/// (`src/utils/nativeShellBridge.ts`, fed by `nativeMediaSession.ts`):
 ///   playHaptic(pattern)      pattern: "light" | "medium" | "heavy" |
 ///                            "success" | "warning" | "error" | "rigid" | "soft"
 ///   setNowPlaying(info|null) info: { title, artist?, album?, durationSeconds?,
 ///                                    artworkUrl? } — null clears it
+///   updatePlayback(pos, rate) lock-screen clock; rate 1 playing, 0 paused
 ///   setAudioActive(bool)     true while any ryOS window is playing audio;
 ///                            the shell then keeps the session alive in
 ///                            background (UIBackgroundModes: audio)
 ///
-/// The web side needs no changes beyond calling these; full spec lives in
-/// the bridge-methods handoff for Ryo.
+/// Lock-screen play/pause/toggle go back through `onRemoteCommand`, which
+/// ShellWebView evaluates as `window.__ryosDesktopRemoteCommand(command)`.
 @MainActor
 final class MediaHapticsController {
     static let shared = MediaHapticsController()
@@ -22,6 +24,9 @@ final class MediaHapticsController {
     private var audioConfigured = false
     private var releaseTask: Task<Void, Never>?
     private var nowPlayingInfo: [String: Any]?
+    /// Bumped on every metadata change so late artwork for a previous track
+    /// is dropped.
+    private var nowPlayingGeneration = 0
     /// Remote-command handlers, installed once.
     private var remoteCommandsInstalled = false
     /// Lock-screen remote commands forwarded to the page. Values:
@@ -38,10 +43,12 @@ final class MediaHapticsController {
             cancelRelease()
             if !audioConfigured {
                 try? session.setCategory(.playback, mode: .default, options: [])
-                try? session.setActive(true)
                 audioConfigured = true
                 installRemoteCommands()
             }
+            // Re-activate on every request: calls, Siri, or other apps end
+            // the session behind our back without a matching inactive call.
+            try? session.setActive(true)
         } else if audioConfigured {
             // Mirror the web client's release grace (its MediaCore handoff
             // can briefly report no active source): delay the one destructive
@@ -67,6 +74,7 @@ final class MediaHapticsController {
     // MARK: Now playing
 
     func setNowPlaying(_ info: NowPlayingInfo?) {
+        nowPlayingGeneration += 1
         var centerInfo: [String: Any] = [:]
         if let info {
             centerInfo[MPMediaItemPropertyTitle] = info.title
@@ -76,7 +84,7 @@ final class MediaHapticsController {
             nowPlayingInfo = centerInfo
             MPNowPlayingInfoCenter.default().nowPlayingInfo = centerInfo
             if let urlString = info.artworkUrl, let url = URL(string: urlString) {
-                loadArtwork(from: url)
+                loadArtwork(from: url, generation: nowPlayingGeneration)
             }
         } else {
             nowPlayingInfo = nil
@@ -84,22 +92,26 @@ final class MediaHapticsController {
         }
     }
 
+    /// The web client sends this right after `setNowPlaying` and on rate
+    /// changes / seeks; the lock screen extrapolates in between. Kept in
+    /// `nowPlayingInfo` so a later artwork update doesn't reset the clock.
     func updatePlayback(positionSeconds: Double, rate: Double) {
-        var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+        guard var info = nowPlayingInfo else { return }
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = positionSeconds
         info[MPNowPlayingInfoPropertyPlaybackRate] = rate
+        nowPlayingInfo = info
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
-    private func loadArtwork(from url: URL) {
+    private func loadArtwork(from url: URL, generation: Int) {
         URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
             guard let data, let image = UIImage(data: data) else { return }
             let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             DispatchQueue.main.async {
-                guard self?.nowPlayingInfo != nil else { return }
-                var info = self?.nowPlayingInfo ?? [:]
+                guard let self, self.nowPlayingGeneration == generation,
+                      var info = self.nowPlayingInfo else { return }
                 info[MPMediaItemPropertyArtwork] = artwork
-                self?.nowPlayingInfo = info
+                self.nowPlayingInfo = info
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = info
             }
         }.resume()

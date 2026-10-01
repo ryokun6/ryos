@@ -43,9 +43,12 @@ final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate 
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // Show banners for relay pushes while the app is open but Chats is
-        // closed; the web client covers the in-app toast UX itself.
-        completionHandler([.banner, .sound])
+        // In the foreground the web client receives the same message over
+        // realtime and decides itself (toast, unread badge, or nothing when
+        // the room is open), so relay pushes would duplicate it. Local
+        // notifications come from the web client's own showNotification.
+        let isRelayPush = notification.request.trigger is UNPushNotificationTrigger
+        completionHandler(isRelayPush ? [] : [.banner, .sound])
     }
 
     func userNotificationCenter(

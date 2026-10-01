@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import Network
+import UserNotifications
 
 /// WKWebView shell around https://os.ryo.lu. The web client detects the
 /// injected `window.ryosDesktop` bridge (the same contract the Electron
@@ -54,7 +55,6 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
     private weak var shell: ShellViewModel?
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
-    private var hasAskedForPermission = false
 
     init(shell: ShellViewModel) {
         self.shell = shell
@@ -63,7 +63,6 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
 
     func attach(_ webView: WKWebView) {
         self.webView = webView
-        SessionCookieReader.shared.refresh(from: webView.configuration.websiteDataStore.httpCookieStore)
 
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -77,8 +76,15 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
 
     // MARK: WKNavigationDelegate
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        SessionCookieReader.shared.refresh(from: webView.configuration.websiteDataStore.httpCookieStore)
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        ShellRouter.shared.markPageUnloaded()
+    }
+
+    /// iOS kills the WebContent process under memory pressure (often while
+    /// backgrounded), leaving a blank view with a dead bridge; reload it.
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        ShellRouter.shared.markPageUnloaded()
+        webView.reload()
     }
 
     func webView(
@@ -106,6 +112,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
             handleInvoke(id: id, name: body["name"] as? String ?? "", args: body["args"])
         case "boot-finished":
             shell?.reportBootFinished()
+            ShellRouter.shared.markPageReady()
         case "app-active":
             ShellRouter.shared.firePendingRoom()
         default:
@@ -120,14 +127,15 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         case "getVersion":
             reply(id, Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
         case "canShowNotifications":
-            reply(id, true)
+            withNotificationAuthorization { allowed in
+                self.reply(id, allowed)
+            }
         case "shouldShowNativeNotification":
             reply(id, UIApplication.shared.applicationState != .active)
         case "isFullscreen":
             reply(id, true)
         case "showNotification":
-            handleShowNotification(args as? [String: Any])
-            reply(id, ["shown": true])
+            handleShowNotification(id: id, args as? [String: Any])
         case "configureChatNotifications":
             handleNotificationState((args as? [String: Any])?["state"])
             reply(id, ["managed": true, "ready": false])
@@ -135,10 +143,8 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
             handleNotificationState((args as? [String: Any])?["state"])
             reply(id, true)
         case "stopChatNotifications":
-            Task { @MainActor in
-                self.shell?.notificationState.isAuthenticated = false
-            }
-            reply(id, true)
+            shell?.updateNotificationState(.signedOut)
+            reply(id, NSNull())
         case "toggleMaximize", "quitAndInstall", "checkForUpdates", "openFile", "saveFile":
             reply(id, NSNull())
         case "playHaptic":
@@ -178,15 +184,37 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
         MediaHapticsController.shared.setNowPlaying(info)
     }
 
-    private func handleShowNotification(_ args: [String: Any]?) {
+    /// Replies with the `RyosDesktopNotificationResult` shape; `shown: false`
+    /// lets the web client fall back to its in-app toast.
+    private func handleShowNotification(id: String, _ args: [String: Any]?) {
         guard let options = args?["options"] as? [String: Any],
-              let title = options["title"] as? String else { return }
-        let chatRoomId = options["chatRoomId"] as? String
-        shell?.showNotification(ShellNotificationOptions(
+              let title = (options["title"] as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+              !title.isEmpty else {
+            reply(id, ["shown": false, "reason": "invalid-payload"])
+            return
+        }
+        let notification = ShellNotificationOptions(
             title: String(title.prefix(120)),
             body: (options["body"] as? String).map { String($0.prefix(240)) },
-            chatRoomId: chatRoomId
-        ))
+            chatRoomId: options["chatRoomId"] as? String
+        )
+        withNotificationAuthorization { allowed in
+            guard allowed else {
+                self.reply(id, ["shown": false, "reason": "unsupported"])
+                return
+            }
+            self.shell?.showNotification(notification)
+            self.reply(id, ["shown": true])
+        }
+    }
+
+    private func withNotificationAuthorization(_ body: @escaping @MainActor (Bool) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let status = settings.authorizationStatus
+            let allowed = status == .authorized || status == .provisional || status == .ephemeral
+            DispatchQueue.main.async { body(allowed) }
+        }
     }
 
     private func handleNotificationState(_ raw: Any?) {
@@ -194,25 +222,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler 
               let data = try? JSONSerialization.data(withJSONObject: dict, options: []),
               let state = try? JSONDecoder().decode(ShellNotificationState.self, from: data)
         else { return }
-        Task { @MainActor in
-            self.shell?.updateNotificationState(state)
-            if state.isAuthenticated { self.requestNotificationPermissionIfNeeded() }
-        }
-        SessionCookieReader.shared.refresh(
-            from: webView?.configuration.websiteDataStore.httpCookieStore ?? WKWebsiteDataStore.default().httpCookieStore
-        )
-    }
-
-    private func requestNotificationPermissionIfNeeded() {
-        guard !hasAskedForPermission else { return }
-        hasAskedForPermission = true
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-            guard granted else { return }
-            DispatchQueue.main.async {
-                UIApplication.shared.registerForRemoteNotifications()
-            }
-        }
+        shell?.updateNotificationState(state)
     }
 
     // MARK: Bridge replies
