@@ -275,6 +275,18 @@ export const redisKeys = {
     /** documentId → /Books/… path mapping for Books app bridging. */
     kosyncDocPaths: (username: string) =>
       redisKey("integration", "kosync", "user", username, "docpaths"),
+    /** APNs device row (JSON) keyed by the 64-hex device token. */
+    pushDevice: (deviceToken: string) =>
+      redisKey("integration", "push", "device", deviceToken),
+    /** Per-device hash: roomId → last pushed message watermark (JSON). */
+    pushDeviceWatermarks: (deviceToken: string) =>
+      redisKey("integration", "push", "device", deviceToken, "watermarks"),
+    /** Set of device tokens registered by a username. */
+    pushUserDevices: (username: string) =>
+      redisKey("integration", "push", "user", username, "devices"),
+    /** Set of device tokens that opted into pushes for a (public/IRC) room. */
+    pushRoomDevices: (roomId: string) =>
+      redisKeyCaseSensitive("integration", "push", "room", roomId, "devices"),
   },
   realtime: {
     ticket: (ticketHash: string) => redisKey("realtime", "ticket", ticketHash),

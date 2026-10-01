@@ -117,6 +117,10 @@ graph LR
 | `/api/telegram/link/create` | Create Telegram account link |
 | `/api/telegram/link/status` | Check Telegram link status |
 | `/api/telegram/link/disconnect` | Disconnect Telegram account |
+| `/api/push/register` | POST `{ deviceToken, appVersion?, rooms? }` — upsert the signed-in user's iOS APNs device (idempotent) |
+| `/api/push/unregister` | POST `{ deviceToken }` — delete the device row and its watermarks |
+
+APNs pushes (`api/_utils/push-relay.ts`) fire when a room message is broadcast: private rooms notify the other members' devices; public/IRC rooms notify only devices that listed the room in `rooms`. Devices are dropped when their registering session signs out, on `logout-all`, and on account deletion. `bun run push:test <token> [sandbox|prod]` sends a test alert.
 
 ### Utility Endpoints
 
@@ -219,6 +223,7 @@ When running via `scripts/api-standalone-server.ts`:
 | `MUSICKIT_*` (or `MAPKIT_*` fallback) | `/api/musickit-token` |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_WEBHOOK_SECRET`, `TELEGRAM_BOT_USERNAME` | `/api/webhooks/telegram`, `/api/telegram/link/*` |
 | `CRON_SECRET` | `/api/cron/sync-maintenance`, `/api/cron/telegram-heartbeat` |
+| `RYOS_APNS_TEAM_ID`, `RYOS_APNS_KEY_ID`, `RYOS_APNS_KEY_B64` (or `RYOS_APNS_KEY_FILE`) | iOS APNs pushes for room messages (`/api/push/*`); unset → no pushes sent |
 | `CURSOR_API_KEY` | `/api/ai/cursor-run-followup`, admin Cursor actions |
 | `TRUSTED_PROXY_COUNT`, `AUTH_COOKIE_SECURE` | Standalone reverse-proxy hardening (see [Self-hosting](/docs/self-hosting-vps)) |
 

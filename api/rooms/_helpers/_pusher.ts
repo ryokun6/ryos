@@ -20,6 +20,7 @@ import {
   sanitizeRealtimeChannelSegment,
 } from "../../../src/shared/constants/realtime.js";
 import { getRoom } from "./_redis.js";
+import { notifyRoomMessage } from "../../_utils/push-relay.js";
 
 interface BatchEvent {
   channel: string;
@@ -152,6 +153,8 @@ export async function broadcastNewMessage(
     const room = roomData ?? (await getRoom(roomId));
     const payload = { roomId, message };
     const channelName = getChatRoomChannelName(roomId, room?.type);
+
+    void notifyRoomMessage(room, message);
 
     await triggerRealtimeEvent(channelName, "room-message", payload);
 

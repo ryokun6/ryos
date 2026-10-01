@@ -57,6 +57,7 @@
     "seed:dev": "bun run scripts/seed-dev-users.ts",
     "storage:configure-cors": "bun run scripts/configure-s3-cors.ts",
     "telegram:webhook": "bun run scripts/setup-telegram-webhook.ts",
+    "push:test": "bun run scripts/push-send-test.ts",
     "test": "bun test",
     "test:abortable-fetch": "bun test tests/unit/pwa/test-abortable-fetch.test.ts",
     "test:registration": "bun run scripts/check-test-registration.ts",
