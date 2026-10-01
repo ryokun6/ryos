@@ -29,6 +29,13 @@ ios/
 open ios/ryOS.xcodeproj
 ```
 
+The project lists its files explicitly instead of using Xcode's synchronized
+folders: CodeQL's Swift autobuilder (code scanning) reads each target's
+Sources build phase and finds nothing to build in a synchronized folder. Add
+new files to their target in Xcode (File → Add Files…, or "Target
+Membership"); `tests/unit/build/test-ios-xcodeproj-sources.test.ts` fails if a
+Swift file under `ryOS/` or `ryOSTests/` is not compiled by its target.
+
 Select the `ryOS` scheme and run on a simulator or device. The project targets
 iOS 26 and Swift 6. Bundle ID is `com.ryo.lu.ryos`; pick your own team under
 Signing & Capabilities for local device builds. Signing material is not
