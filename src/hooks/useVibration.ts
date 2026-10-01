@@ -1,5 +1,4 @@
 import { useRef } from 'react';
-import "ios-vibrator-pro-max";
 
 /**
  * Custom hook to provide a debounced vibration function.
