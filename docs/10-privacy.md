@@ -12,7 +12,7 @@ For the Chrome extension, see the separate [ryOS Subtitles Privacy Policy](/docs
 
 The data controller for ryOS as hosted at `os.ryo.lu` is Ryo Lu. If you self-host ryOS, the operator of that deployment is the controller for their instance.
 
-For privacy questions, data-subject requests, or complaints, contact **support@os.ryo.lu**. You also have the right to lodge a complaint with your local data protection authority.
+For privacy questions, data-subject requests, or complaints, contact **support@ryo.lu**. You also have the right to lodge a complaint with your local data protection authority.
 
 ---
 
@@ -141,7 +141,7 @@ Subject to applicable law, you have the right to:
 - **Restriction and objection** — to certain processing, including analytics.
 - **Withdraw consent** for optional, consent-based processing.
 
-To exercise rights that cannot be handled directly in the app, contact **support@os.ryo.lu**.
+To exercise rights that cannot be handled directly in the app, contact **support@ryo.lu**.
 
 ---
 
