@@ -73,6 +73,11 @@ describe("playHaptic", () => {
     expect(playHaptic("light", 1000)).toBe(true);
   });
 
+  test("forwards selection ticks for the iPod click wheel", () => {
+    expect(playHaptic("selection", 0)).toBe(true);
+    expect(calls).toEqual([["selection"]]);
+  });
+
   test("rate-limits haptics to one per interval", () => {
     expect(playHaptic("soft", 1000)).toBe(true);
     expect(playHaptic("light", 1000 + HAPTIC_MIN_INTERVAL_MS - 1)).toBe(false);

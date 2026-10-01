@@ -114,6 +114,7 @@ export type RyosHapticPattern =
   | "heavy"
   | "rigid"
   | "soft"
+  | "selection"
   | "success"
   | "warning"
   | "error";

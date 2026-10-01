@@ -4,7 +4,8 @@ import UIKit
 ///
 /// The web client calls, through the existing `ryosDesktop` invoke surface:
 ///   playHaptic(pattern)      pattern: "light" | "medium" | "heavy" |
-///                            "success" | "warning" | "error" | "rigid" | "soft"
+///                            "success" | "warning" | "error" | "rigid" | "soft" |
+///                            "selection"
 @MainActor
 final class MediaHapticsController {
     static let shared = MediaHapticsController()
