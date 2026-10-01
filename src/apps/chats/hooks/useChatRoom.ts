@@ -18,6 +18,7 @@ import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldShowNativeToastNotification } from "@/utils/nativeToastNotifications";
 import { getApiUrl } from "@/utils/platform";
+import { playHaptic } from "@/utils/nativeShellBridge";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { chatRoomLog as log } from "../logging";
 import { shouldSubscribeToForegroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
@@ -313,12 +314,19 @@ export function useChatRoom(
             return { ...prev, [data.message.roomId]: next };
           });
 
-          const { currentRoomId: activeRoomId } = useChatsStore.getState();
+          const { currentRoomId: activeRoomId, username: selfUsername } =
+            useChatsStore.getState();
           const shouldNotifyInRyOs = shouldNotifyForRoomMessage({
             chatsOpen: true,
             currentRoomId: activeRoomId,
             messageRoomId: data.message.roomId,
           });
+          const isOwnMessage =
+            !!selfUsername &&
+            data.message.username?.toLowerCase() === selfUsername.toLowerCase();
+          if (!isOwnMessage) {
+            playHaptic(shouldNotifyInRyOs ? "success" : "light");
+          }
           if (!shouldNotifyInRyOs) {
             void shouldShowNativeToastNotification().then((shouldShowDesktop) => {
               if (!shouldShowDesktop) {

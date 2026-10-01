@@ -16,6 +16,7 @@ import { ThemedIcon } from "@/components/shared/ThemedIcon";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { usePointerLongPress } from "@/hooks/usePointerLongPress";
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
+import { playHaptic } from "@/utils/nativeShellBridge";
 import {
   DOCK_BASE_BUTTON_SIZE,
   DOCK_MAGNIFY_DISTANCE,
@@ -104,6 +105,7 @@ export const DockIconButton = memo(function DockIconButton({
 
   const longPressHandlers = usePointerLongPress((event) => {
     if (onContextMenu) {
+      playHaptic("medium");
       const syntheticEvent = {
         preventDefault: () => {},
         stopPropagation: () => {},

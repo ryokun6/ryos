@@ -22,6 +22,8 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { isMobileSafari } from "@/utils/device";
 import { MEDIA_ANALYTICS, track } from "@/utils/analytics";
 import { formatSecondsMmSs } from "@/utils/formatDuration";
+import { resolveMediaCoverUrl } from "@/utils/coverArt";
+import { publishTvNowPlaying } from "@/shared/media/tvNowPlaying";
 
 export const MTV_CHANNEL_ID = "mtv";
 export const RYO_TV_CHANNEL_ID = "ryos-picks";
@@ -167,6 +169,24 @@ export function useTvLogic({ isWindowOpen, isForeground }: UseTvLogicOptions) {
     const idx = Math.min(Math.max(0, videoIndex), list.length - 1);
     return list[idx] ?? list[0];
   }, [currentChannel, videoIndex]);
+
+  useEffect(() => {
+    if (!currentVideo) {
+      publishTvNowPlaying(null);
+      return;
+    }
+    publishTvNowPlaying({
+      title: currentVideo.title,
+      artist: currentVideo.artist,
+      album: currentChannel?.name,
+      durationSeconds: duration > 0 ? duration : undefined,
+      artworkUrl:
+        resolveMediaCoverUrl(currentVideo, { youtubeQuality: "hqdefault" }) ??
+        undefined,
+    });
+  }, [currentVideo, currentChannel?.name, duration]);
+
+  useEffect(() => () => publishTvNowPlaying(null), []);
 
   const nextVideoInSchedule = useMemo(() => {
     const list = currentChannel?.videos ?? [];
