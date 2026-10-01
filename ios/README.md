@@ -2,8 +2,8 @@
 
 Native iOS shell for ryOS: a SwiftUI app that hosts the web client in a
 `WKWebView` and implements the same `window.ryosDesktop` bridge the Electron
-desktop app exposes, so the web client gets native notifications, haptics, and
-Now Playing / background audio without iOS-specific code paths.
+desktop app exposes, so the web client gets native notifications and haptics
+without iOS-specific code paths.
 
 ## Layout
 
@@ -16,7 +16,7 @@ ios/
 │   ├── DesktopBridge.swift    # JS injected at document start (window.ryosDesktop)
 │   ├── ShellViewModel.swift   # Origin, boot/splash state, notification state
 │   ├── RelayClient.swift      # APNs token -> /api/push/register, notification routing
-│   └── MediaHapticsController.swift  # Haptics, audio session, Now Playing, remote commands
+│   └── MediaHapticsController.swift  # Haptics
 ├── ryOSTests/             # XCTest target
 ├── scripts/make-icon.swift    # Flattens AppIconSource.png onto black for the asset catalog
 ├── web/dist/              # Static App Store microsite (landing, privacy, support), not the Vite app
@@ -56,12 +56,10 @@ Later launches go straight to the web view and use the WebKit cache.
   `window.__ryosReply({ id, ok, value })`. Calls time out after 15 seconds.
   Supported calls include notification config and state
   (`configureChatNotifications`, `updateChatNotificationState`,
-  `showNotification`), `playHaptic`, `setAudioActive`, `setNowPlaying`,
-  `updatePlayback`, `getVersion`. Desktop-only calls such as `openFile`,
+  `showNotification`), `playHaptic`, `getLocationPermissionStatus`,
+  `getVersion`. Desktop-only calls such as `openFile`,
   `saveFile`, and `checkForUpdates` resolve to `null`.
 - **Native to web:**
-  - `window.__ryosDesktopRemoteCommand(command)` forwards lock-screen and
-    Control Center media commands.
   - `window.__ryosEmitOpenRoom(roomId)` opens a chat room when the user taps a
     notification.
 - **Lifecycle messages:** `boot-finished` hides the splash. `app-active` flushes

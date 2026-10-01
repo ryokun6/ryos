@@ -118,16 +118,6 @@ export type RyosHapticPattern =
   | "warning"
   | "error";
 
-/** Lock-screen / Control Center metadata for the iOS shell's now-playing info. */
-export interface RyosNowPlayingInfo {
-  title: string;
-  artist?: string;
-  album?: string;
-  durationSeconds?: number;
-  /** Must be https. */
-  artworkUrl?: string;
-}
-
 /**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop) and the
  * iOS WKWebView wrapper. Optional members are only injected by some shells.
@@ -196,22 +186,11 @@ export interface RyosDesktopApi {
   ) => () => void;
   /** iOS shell: play a native haptic. */
   playHaptic?: (pattern: RyosHapticPattern) => void;
-  /** iOS shell: keep the app alive in the background while any window makes sound. */
-  setAudioActive?: (active: boolean) => void;
-  /** iOS shell: lock-screen now-playing metadata; `null` clears it. */
-  setNowPlaying?: (info: RyosNowPlayingInfo | null) => void;
-  /** iOS shell: playback clock for the lock screen; `rate` is 1 playing, 0 paused. */
-  updatePlayback?: (positionSeconds: number, rate: number) => void;
 }
-
-/** Lock-screen commands the iOS shell (build 7+) forwards to the web client. */
-export type RyosRemoteCommand = "toggle-play-pause" | "play" | "pause";
 
 declare global {
   interface Window {
     ryosDesktop?: RyosDesktopApi;
-    /** Injected as a no-op by the iOS shell; the web client assigns its handler over it. */
-    __ryosDesktopRemoteCommand?: (command: RyosRemoteCommand) => void;
   }
 }
 

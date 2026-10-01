@@ -1,7 +1,6 @@
 /**
- * MediaCore runtime — feeds the now-playing bus (and the native shell's
- * audio session) and enforces the single-active-playback policy across the
- * four media transports.
+ * MediaCore runtime — feeds the now-playing bus and enforces the
+ * single-active-playback policy across the four media transports.
  *
  * Arbitration: when any transport requests playback, every other transport
  * with an in-flight or confirmed request is stopped. Historically nothing
@@ -19,7 +18,6 @@ import {
   type NowPlayingEntry,
   useNowPlayingStore,
 } from "./nowPlayingStore";
-import { initNativeMediaCoreSync } from "./nativeMediaCoreSync";
 
 interface TransportBinding {
   appId: MediaAppId;
@@ -145,11 +143,8 @@ export function initMediaCoreRuntime(): () => void {
     });
   });
 
-  const stopNativeSync = initNativeMediaCoreSync();
-
   runtimeCleanup = () => {
     for (const unsubscribe of unsubscribers) unsubscribe();
-    stopNativeSync();
     useNowPlayingStore.getState().reset();
     runtimeCleanup = null;
   };
