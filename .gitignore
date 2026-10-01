@@ -39,6 +39,8 @@ package-lock.json
 dist-electron/
 release/
 build/apple.p8
+# Apple signing keys (APNs / MapKit / MusicKit) — never commit
+*.p8
 build/github-secrets-paste.txt
 
 core
