@@ -25,6 +25,7 @@ import {
   menubarInnerPadding,
   menubarLeftEdge,
   menubarRightEdge,
+  menubarSafeTop,
 } from "./menubarEdgePadding";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
@@ -108,6 +109,7 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
               color: glassMenubarText,
             }
           : { color: "var(--os-color-menubar-text)" }),
+        top: menubarSafeTop(),
         left: menubarLeftEdge(),
         right: menubarRightEdge(),
         paddingLeft: menubarInnerPadding({

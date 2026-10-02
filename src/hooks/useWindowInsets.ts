@@ -3,6 +3,7 @@ import { useDockStore } from "@/stores/useDockStore";
 import type { ThemeMetadata } from "@/themes";
 import { useThemeFlags } from "./useThemeFlags";
 import { hasDesktopWindowChrome } from "@/utils/platform";
+import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 
 export interface WindowInsets {
   menuBarHeight: number;
@@ -74,7 +75,7 @@ export function useWindowInsets() {
       dockHeight += glassExtraBarHeight + GLASS_DOCK_LIFT;
     }
 
-    const topInset = menuBarHeight;
+    const topInset = menuBarHeight + measureMenubarSafeTop();
     // bottomInset includes dock for resize/maximize constraints
     const bottomInset = taskbarHeight + dockHeight + safeAreaBottom;
 

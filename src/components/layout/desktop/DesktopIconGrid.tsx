@@ -267,16 +267,18 @@ export const DesktopIconGrid = memo(function DesktopIconGrid({
               // Exclude menubar, safe area, and an extra visual buffer to prevent clipping
               // Add extra top padding for desktop traffic lights on Windows themes
               height:
-                "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
-              paddingTop: hasWindowChrome ? 36 : undefined,
+                "calc(100% - (30px + var(--menubar-safe-top, 0px) + var(--sat-safe-area-bottom) + 48px))",
+              paddingTop: hasWindowChrome
+                ? "calc(36px + var(--menubar-safe-top, 0px))"
+                : "calc(0.5rem + var(--menubar-safe-top, 0px))",
               paddingLeft: "calc(0.25rem + var(--desktop-content-left, 0px))",
               paddingRight: "calc(0.5rem + var(--desktop-content-right, 0px))",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
             }
           : {
-              height: "calc(100% - 2rem)",
+              height: "calc(100% - 2rem - var(--menubar-safe-top, 0px))",
               padding: "1rem",
-              paddingTop: "2rem",
+              paddingTop: "calc(2rem + var(--menubar-safe-top, 0px))",
               paddingLeft: "calc(1rem + var(--desktop-content-left, 0px))",
               paddingRight: "calc(1rem + var(--desktop-content-right, 0px))",
               paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",

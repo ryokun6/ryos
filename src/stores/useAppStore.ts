@@ -12,6 +12,7 @@ import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
 import { createClientLogger } from "@/utils/logger";
 import { playHaptic } from "@/utils/nativeShellBridge";
 import { getRestorablePreviewInitialData } from "@/types/appInitialData";
+import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -305,11 +306,12 @@ const createUseAppStore = () =>
           const offsetStep = 32;
           const isMobile =
             typeof window !== "undefined" && window.innerWidth < 768;
+          const safeTop = measureMenubarSafeTop();
           const position = {
             x: isMobile ? 0 : baseOffset + openInstances * offsetStep,
             y: isMobile
-              ? 28 + openInstances * offsetStep
-              : 40 + openInstances * 20,
+              ? 28 + safeTop + openInstances * offsetStep
+              : 40 + safeTop + openInstances * 20,
           };
           const cfg = getWindowConfig(appId);
           let size = isMobile
@@ -906,7 +908,10 @@ const createUseAppStore = () =>
             const cfg = getWindowConfig(inst.appId);
             const isMobile = window.innerWidth < 768;
             if (!inst.position)
-              inst.position = { x: isMobile ? 0 : 16, y: isMobile ? 28 : 40 };
+              inst.position = {
+                x: isMobile ? 0 : 16,
+                y: (isMobile ? 28 : 40) + measureMenubarSafeTop(),
+              };
             if (!inst.size)
               inst.size = isMobile
                 ? getMobileWindowSize(inst.appId)

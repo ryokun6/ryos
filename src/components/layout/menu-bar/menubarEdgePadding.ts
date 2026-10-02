@@ -31,6 +31,11 @@
  *
  * Traffic-light clearance stays a separate 78px prefix gated by
  * `needsTrafficLightClearance`.
+ *
+ * The menubar's top edge is `--menubar-safe-top`, which is
+ * `env(safe-area-inset-top)` inside the iOS shell and 0px in the browser.
+ * The bar keeps its theme height and sits under that inset. Wallpaper stays
+ * full-bleed in the strip above it.
  */
 
 export const MENUBAR_HORIZONTAL_RHYTHM = "0.5rem";
@@ -140,6 +145,40 @@ export function menubarLeftEdge(): string {
 
 export function menubarRightEdge(): string {
   return "max(var(--desktop-content-right), var(--menubar-corner-floor, 0px))";
+}
+
+/** Menubar box top. 0px until the iOS shell consumes the top safe area. */
+export function menubarSafeTop(): string {
+  return "var(--menubar-safe-top, 0px)";
+}
+
+let safeTopProbe: HTMLDivElement | null = null;
+
+/**
+ * Used pixel height of `--menubar-safe-top`. A custom property that still
+ * holds `env()` or `var()` does not parse with `parseInt`, so this resolves
+ * it through layout. 0 when the document is unavailable or the inset is 0.
+ */
+export function measureMenubarSafeTop(): number {
+  if (typeof document === "undefined") return 0;
+  if (!safeTopProbe) {
+    safeTopProbe = document.createElement("div");
+    safeTopProbe.setAttribute("aria-hidden", "true");
+    safeTopProbe.style.cssText = [
+      "position:fixed",
+      "left:0",
+      "top:0",
+      "width:0",
+      "visibility:hidden",
+      "pointer-events:none",
+      "padding:0",
+      "margin:0",
+      "border:0",
+      "height:var(--menubar-safe-top, 0px)",
+    ].join(";");
+    document.documentElement.appendChild(safeTopProbe);
+  }
+  return Math.round(Math.max(0, safeTopProbe.getBoundingClientRect().height));
 }
 
 /**

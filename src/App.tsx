@@ -127,7 +127,7 @@ export function App() {
       const menuBarHeight = isSystem7Theme ? 30 : 25;
       return {
         position: "top-right" as const,
-        offset: `${menuBarHeight + 12}px`,
+        offset: `calc(var(--menubar-safe-top, 0px) + ${menuBarHeight + 12}px)`,
       };
     }
   }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass, isMobile]);

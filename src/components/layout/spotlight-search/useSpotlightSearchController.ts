@@ -193,8 +193,8 @@ export function useSpotlightSearchController() {
   const isDesktopMacMenubar =
     hasDesktopWindowChrome() && !isDesktopWindows() && isMac;
   const menubarTop = isDesktopMacMenubar
-    ? "32px"
-    : "var(--os-metrics-menubar-height, 25px)";
+    ? "calc(var(--menubar-safe-top, 0px) + 32px)"
+    : "calc(var(--menubar-safe-top, 0px) + var(--os-metrics-menubar-height, 25px))";
 
   const panelTopStyle: CSSProperties = isMobile
     ? {

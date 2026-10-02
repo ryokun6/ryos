@@ -11,6 +11,7 @@ import {
   menubarInnerPadding,
   menubarLeftEdge,
   menubarRightEdge,
+  menubarSafeTop,
   shouldApplyDisplayCornerFloor,
   shouldApplyExpandedMenubarCorner,
   shouldApplyFoldedStatusBarInset,
@@ -36,6 +37,7 @@ describe("menubar edge padding", () => {
     expect(menubarRightEdge()).toBe(
       "max(var(--desktop-content-right), var(--menubar-corner-floor, 0px))"
     );
+    expect(menubarSafeTop()).toBe("var(--menubar-safe-top, 0px)");
     expect(
       menubarInnerPadding({ side: "left", trafficLightClearance: false })
     ).toBe("0.5rem");
@@ -99,6 +101,13 @@ describe("menubar edge padding", () => {
     expect(css).toContain("html[data-ios-shell]");
     expect(css).toContain("--desktop-content-left: var(--sat-safe-area-left)");
     expect(css).toContain("--desktop-content-right: var(--sat-safe-area-right)");
+    expect(css).toContain("--menubar-safe-top: 0px");
+    expect(css).toContain("--menubar-safe-top: var(--sat-safe-area-top)");
+    const shellBlock = css.slice(
+      css.indexOf("html[data-ios-shell] {"),
+      css.indexOf("html[data-ios-shell] {") + 220
+    );
+    expect(shellBlock).toContain("--menubar-safe-top: var(--sat-safe-area-top)");
     expect(css).toContain("min-width: 641px");
     expect(css).toContain(
       "--desktop-content-left: max(env(safe-area-inset-left, 0px), 12px)"
@@ -116,6 +125,7 @@ describe("menubar edge padding", () => {
       ),
       "utf8"
     );
+    expect(menubar).toContain("top: menubarSafeTop()");
     expect(menubar).toContain("left: menubarLeftEdge()");
     expect(menubar).toContain("right: menubarRightEdge()");
     expect(css).toContain("--menubar-corner-floor: 0px");
