@@ -100,11 +100,58 @@ final class ShellViewModel: ObservableObject {
         splashVisible = false
         bootPhase = .loading
         UserDefaults.standard.set(true, forKey: "ryos.everBooted")
+        disarmBootWatchdog(booted: true)
     }
 
     func reportBootFailed(_ message: String) {
         NSLog("ryOS boot failure: \(message)")
         splashVisible = false
+        countFailedBoot()
+    }
+
+    // MARK: Boot watchdog (gentle, per Ato's boundary: one force-reload per
+    // run, only after genuinely failed boots, never touching the web data
+    // store, never firing on a normal boot)
+    //
+    // The web client's stale-bundle recovery caps its own reloads with a
+    // sessionStorage counter — which iOS wipes on every app relaunch, so the
+    // cap cannot persist. If the page keeps failing to boot across launches
+    // (deploy left a cached index.html pointing at dead chunks), the shell
+    // notices after two consecutive failed boots and reloads the webview
+    // exactly once this run. Any successful boot resets the count.
+
+    private static let failedBootsKey = "ryos.consecutiveFailedBoots"
+    private var bootWatchdogItem: DispatchWorkItem?
+    private var forceReloadedThisRun = false
+
+    /// Arms the 45s boot timer. Called when the webview starts loading.
+    func armBootWatchdog() {
+        bootWatchdogItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            self?.countFailedBoot()
+        }
+        bootWatchdogItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: item)
+    }
+
+    private func disarmBootWatchdog(booted: Bool) {
+        bootWatchdogItem?.cancel()
+        bootWatchdogItem = nil
+        if booted {
+            UserDefaults.standard.set(0, forKey: Self.failedBootsKey)
+        }
+    }
+
+    private func countFailedBoot() {
+        guard !forceReloadedThisRun else { return }
+        let failed = UserDefaults.standard.integer(forKey: Self.failedBootsKey) + 1
+        UserDefaults.standard.set(failed, forKey: Self.failedBootsKey)
+        NSLog("ryOS boot watchdog: failed boot #\(failed)")
+        if failed >= 2 {
+            forceReloadedThisRun = true
+            NSLog("ryOS boot watchdog: forcing one reload")
+            ShellRouter.shared.reloadWebViewOnce()
+        }
     }
 
     private func registerWithRelay() {
