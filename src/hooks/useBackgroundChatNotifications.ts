@@ -9,6 +9,7 @@ import { showRoomMessageNotification } from "@/utils/chatNotificationDisplay";
 import { decodeHtmlEntities } from "@/utils/decodeHtmlEntities";
 import { shouldSubscribeToBackgroundRoomUpdates } from "@/utils/chatRoomSubscriptions";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
+import { pushLog } from "@/utils/pushNotificationLog";
 import {
   getAppPublicOrigin,
   getPusherRuntimeConfig,
@@ -50,6 +51,13 @@ const getDesktopChatNotificationApi = () => {
   }
   return desktop;
 };
+
+const summarizeDesktopState = (state: DesktopChatNotificationState) => ({
+  signedIn: state.isAuthenticated,
+  chatsOpen: state.chatsOpen,
+  currentRoomId: state.currentRoomId,
+  roomCount: state.rooms?.length ?? 0,
+});
 
 const buildDesktopChatNotificationConfig =
   (): DesktopChatNotificationConfig => {
@@ -137,6 +145,12 @@ export function useBackgroundChatNotifications() {
           messageRoomId: messageWithTimestamp.roomId,
         })
       ) {
+        pushLog.debug("Background room message not notified", {
+          roomId: messageWithTimestamp.roomId,
+          messageId: messageWithTimestamp.id,
+          chatsOpen,
+          isCurrentRoom: currentRoomId === messageWithTimestamp.roomId,
+        });
         return;
       }
 
@@ -187,6 +201,17 @@ export function useBackgroundChatNotifications() {
 
   const handleDesktopNotificationEvent = useCallback(
     (event: RyosDesktopChatNotificationEvent) => {
+      pushLog.debug("Shell chat notification event", {
+        type: event.type,
+        ...(event.type === "room-message"
+          ? {
+              roomId: event.message.roomId,
+              messageId: event.message.id,
+              showInMain: event.showInMain,
+              showInRenderer: event.showInRenderer,
+            }
+          : {}),
+      });
       switch (event.type) {
         case "room-created": {
           const { rooms: currentRooms } = useChatsStore.getState();
@@ -264,7 +289,11 @@ export function useBackgroundChatNotifications() {
       return;
     }
 
+    pushLog.debug("Listening for notification taps from shell", {
+      platform: desktop.platform,
+    });
     return desktop.onOpenChatRoomFromNotification((roomId) => {
+      pushLog.debug("Notification tap received from shell", { roomId });
       openChatRoomFromNotification(roomId);
     });
   }, []);
@@ -277,6 +306,7 @@ export function useBackgroundChatNotifications() {
 
     return desktop.onChatNotificationStatus((status) => {
       const mode = getDesktopChatNotificationRendererMode(status);
+      pushLog.debug("Shell chat notification status", { status, mode });
       if (mode) {
         setDesktopNotificationMode(mode);
       }
@@ -303,6 +333,9 @@ export function useBackgroundChatNotifications() {
     }
 
     if (!username || !isAuthenticated) {
+      pushLog.debug("Stopping shell chat notifications: signed out", {
+        platform: desktop.platform,
+      });
       setDesktopNotificationMode("renderer");
       void desktop.stopChatNotifications?.();
       return;
@@ -311,12 +344,21 @@ export function useBackgroundChatNotifications() {
     let cancelled = false;
     setDesktopNotificationMode("unknown");
     const configuredState = latestDesktopStateRef.current;
+    pushLog.debug("Configuring shell chat notifications", {
+      platform: desktop.platform,
+      ...summarizeDesktopState(configuredState),
+    });
     void desktop
       .configureChatNotifications(
         buildDesktopChatNotificationConfig(),
         configuredState
       )
       .then((result) => {
+        pushLog.debug("Shell chat notification config result", {
+          result,
+          cancelled,
+          mode: getDesktopChatNotificationRendererMode(result) ?? "renderer",
+        });
         if (cancelled) return;
         sentDesktopStateRef.current = configuredState;
         setShellWantsState(shouldSendDesktopChatNotificationState(result));
@@ -324,7 +366,8 @@ export function useBackgroundChatNotifications() {
           getDesktopChatNotificationRendererMode(result) ?? "renderer"
         );
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        pushLog.warn("Shell chat notification config failed", { error, cancelled });
         if (cancelled) return;
         setDesktopNotificationMode("renderer");
       });
@@ -358,6 +401,7 @@ export function useBackgroundChatNotifications() {
 
     const generation = configGenerationRef.current;
     sentDesktopStateRef.current = desktopState;
+    pushLog.debug("Syncing chat state to shell", summarizeDesktopState(desktopState));
     void desktop
       .updateChatNotificationState(desktopState)
       .then((result) => {
@@ -367,7 +411,8 @@ export function useBackgroundChatNotifications() {
           getDesktopChatNotificationRendererMode(result) ?? "renderer"
         );
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        pushLog.warn("Syncing chat state to shell failed", { error });
         if (generation !== configGenerationRef.current) return;
         setDesktopNotificationMode("renderer");
       });

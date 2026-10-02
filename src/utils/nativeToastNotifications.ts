@@ -4,6 +4,7 @@ import type {
 } from "@/types/ryos-desktop";
 import { toast } from "sonner";
 import { replaceControlCharacters } from "@/shared/sanitizeControlCharacters";
+import { pushLog } from "@/utils/pushNotificationLog";
 
 export type NativeToastKind = "basic" | "success" | "error" | "info" | "warning";
 
@@ -178,11 +179,34 @@ export async function showNativeToastNotification(
   desktopApi: NativeToastDesktopApi | null | undefined = getDesktopApi()
 ): Promise<boolean> {
   const payload = getNativeToastNotification(kind, message, options);
-  if (!payload || !(await shouldShowNativeToastNotification(desktopApi))) {
+  if (!payload) {
+    return false;
+  }
+  // Every toast passes through here; only chat notifications join the trail.
+  const chatRoomId = payload.chatRoomId;
+  const isChatNotification = chatRoomId !== undefined;
+  if (!(await shouldShowNativeToastNotification(desktopApi))) {
+    if (isChatNotification) {
+      pushLog.debug("Shell notification skipped", {
+        chatRoomId,
+        reason: desktopApi?.shouldShowNativeNotification ? "shell_declined" : "no_shell",
+      });
+    }
     return false;
   }
 
-  const result = await desktopApi?.showNotification(payload).catch(() => null);
+  const result = await desktopApi?.showNotification(payload).catch((error: unknown) => {
+    if (isChatNotification) {
+      pushLog.warn("Shell showNotification failed", { chatRoomId, error });
+    }
+    return null;
+  });
+  if (isChatNotification) {
+    pushLog.debug("Shell notification requested", {
+      chatRoomId,
+      shown: result?.shown === true,
+    });
+  }
   return result?.shown === true;
 }
 
