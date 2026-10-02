@@ -1,4 +1,9 @@
 import { resolveAppId, type AppId } from "./appRegistryData";
+import {
+  clampWindowToContentBounds,
+  getDesktopContentBounds,
+  mobileFullWidthFrame,
+} from "@/utils/desktopContentBounds";
 import type {
   BaseApp,
   ControlPanelsInitialData,
@@ -690,18 +695,31 @@ export const getWindowConfig = (appId: AppId): WindowConstraints => {
 // Helper function to get mobile window size
 export const getMobileWindowSize = (appId: AppId): WindowSize => {
   const config = getWindowConfig(appId);
+  const viewportWidth = window.innerWidth;
+  const bounds = getDesktopContentBounds();
+  const frame = mobileFullWidthFrame(viewportWidth, bounds);
   if (config.mobileDefaultSize) {
-    return config.mobileDefaultSize;
+    const fitted = clampWindowToContentBounds({
+      x: 0,
+      width: config.mobileDefaultSize.width,
+      viewportWidth,
+      bounds,
+      mobile: true,
+    });
+    return {
+      width: fitted.width,
+      height: config.mobileDefaultSize.height,
+    };
   }
-  // Square aspect ratio: height = width
+  // Square aspect ratio: height = width of the content rect.
   if (config.mobileSquare) {
     return {
-      width: window.innerWidth,
-      height: window.innerWidth,
+      width: frame.width,
+      height: frame.width,
     };
   }
   return {
-    width: window.innerWidth,
+    width: frame.width,
     height: config.defaultSize.height,
   };
 };

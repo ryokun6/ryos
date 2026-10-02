@@ -187,6 +187,7 @@ export const useWindowManager = ({
         windowWidthMotionValue.set(nextSize.width);
       }
     };
+    reclamp();
     window.addEventListener("resize", reclamp);
     window.visualViewport?.addEventListener("resize", reclamp);
     const media = window.matchMedia("(hover: none) and (pointer: coarse)");
@@ -208,17 +209,46 @@ export const useWindowManager = ({
   // Use refs for comparison to avoid re-running on every local state change during drag.
   useEffect(() => {
     const storeSize = instanceStateFromStore?.size;
+    if (!storeSize || isDragging || resizeType) return;
+    const viewportWidth = window.innerWidth;
+    const bounds = getDesktopContentBounds();
+    const fitted = clampWindowToContentBounds({
+      x: latestWindowPositionRef.current.x,
+      width: storeSize.width,
+      viewportWidth,
+      bounds,
+      mobile: viewportWidth < 768,
+    });
+    const nextSize =
+      fitted.width === storeSize.width
+        ? storeSize
+        : { ...storeSize, width: fitted.width };
     if (
-      storeSize &&
-      !isDragging &&
-      !resizeType &&
-      (storeSize.width !== latestWindowSizeRef.current.width ||
-        storeSize.height !== latestWindowSizeRef.current.height)
+      nextSize.width !== latestWindowSizeRef.current.width ||
+      nextSize.height !== latestWindowSizeRef.current.height
     ) {
-      setWindowSize(storeSize);
-      latestWindowSizeRef.current = storeSize;
+      setWindowSize(nextSize);
+      latestWindowSizeRef.current = nextSize;
+      if (windowUsesExplicitWidth(viewportWidth, bounds)) {
+        windowWidthMotionValue.set(nextSize.width);
+      }
     }
-  }, [instanceStateFromStore?.size, isDragging, resizeType]);
+    if (fitted.x !== latestWindowPositionRef.current.x) {
+      const nextPosition = {
+        ...latestWindowPositionRef.current,
+        x: fitted.x,
+      };
+      latestWindowPositionRef.current = nextPosition;
+      setWindowPosition(nextPosition);
+      windowLeftMotionValue.set(nextPosition.x);
+    }
+  }, [
+    instanceStateFromStore?.size,
+    isDragging,
+    resizeType,
+    windowLeftMotionValue,
+    windowWidthMotionValue,
+  ]);
 
   useEffect(() => {
     latestWindowSizeRef.current = windowSize;
