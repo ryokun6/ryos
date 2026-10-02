@@ -56,6 +56,12 @@ enum DesktopBridge {
         canShowNotifications: function () { return invoke('canShowNotifications'); },
         shouldShowNativeNotification: function () { return invoke('shouldShowNativeNotification'); },
         showNotification: function (options) { return invoke('showNotification', { options: options }); },
+        openAuthSheet: function (o) {
+          return invoke('openAuthSheet', {
+            url: o && o.url,
+            callback: (o && (o.callback || o.callbackScheme)) || ''
+          });
+        },
         configureChatNotifications: function (config, state) {
           return invoke('configureChatNotifications', { config: config, state: state });
         },

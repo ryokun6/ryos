@@ -86,3 +86,23 @@ the icon locally:
 ```bash
 cd ios && swift scripts/make-icon.swift
 ```
+
+## Auth popups and `openAuthSheet` (iOS shell)
+
+`window.open` popups from the web client are presented as sheets sharing the
+main webview's data store, and a popup calling `window.close()` dismisses its
+sheet. Apple Music sign-in (MusicKit JS `authorize()`) needs exactly this: it
+opens its own popup, runs the sign-in redirects there, and completes from
+shared storage — with no popup handler WKWebView silently dropped the call,
+which is why sign-in worked in Safari but died in the shell with no error.
+
+For redirect-based OAuth that doesn't rely on a popup, the shell also exposes
+a generic bridge method:
+
+```js
+window.ryosDesktop.openAuthSheet({ url: signInUrl, callback: 'https://os.ryo.lu' })
+```
+
+It runs `ASWebAuthenticationSession` (ephemeral — no Safari cookies shared)
+and resolves with the final callback URL, or rejects on cancel. The `callback`
+value is matched by the system as a prefix of the final URL.
