@@ -3,14 +3,17 @@ import { readFileSync } from "node:fs";
 import {
   DISPLAY_CORNER_FLOOR_PX,
   EXPANDED_DISPLAY_MIN_PX,
-  EXPANDED_MENUBAR_LEFT_FLOOR_PX,
+  EXPANDED_MENUBAR_CORNER_FLOOR_PX,
   MENUBAR_HORIZONTAL_RHYTHM,
   PHONE_LAYOUT_MAX_WIDTH_PX,
   desktopContentEdge,
+  FOLDED_COVER_STATUS_BAR_PX,
   menubarInnerPadding,
   menubarLeftEdge,
+  menubarRightEdge,
   shouldApplyDisplayCornerFloor,
   shouldApplyExpandedMenubarCorner,
+  shouldApplyFoldedStatusBarInset,
 } from "../../../src/components/layout/menu-bar/menubarEdgePadding";
 
 describe("menubar edge padding", () => {
@@ -24,11 +27,14 @@ describe("menubar edge padding", () => {
     // so it is not added again as padding.
     expect(MENUBAR_HORIZONTAL_RHYTHM).toBe("0.5rem");
     expect(DISPLAY_CORNER_FLOOR_PX).toBe(12);
-    expect(EXPANDED_MENUBAR_LEFT_FLOOR_PX).toBe(28);
+    expect(EXPANDED_MENUBAR_CORNER_FLOOR_PX).toBe(28);
     expect(desktopContentEdge("left")).toBe("var(--desktop-content-left)");
     expect(desktopContentEdge("right")).toBe("var(--desktop-content-right)");
     expect(menubarLeftEdge()).toBe(
       "max(var(--desktop-content-left), var(--menubar-corner-floor, 0px))"
+    );
+    expect(menubarRightEdge()).toBe(
+      "max(var(--desktop-content-right), var(--menubar-corner-floor, 0px))"
     );
     expect(
       menubarInnerPadding({ side: "left", trafficLightClearance: false })
@@ -111,6 +117,7 @@ describe("menubar edge padding", () => {
       "utf8"
     );
     expect(menubar).toContain("left: menubarLeftEdge()");
+    expect(menubar).toContain("right: menubarRightEdge()");
     expect(css).toContain("--menubar-corner-floor: 0px");
     expect(css).toContain("min-width: 500px) and (min-height: 500px)");
     expect(css).toContain("--menubar-corner-floor: 28px");
@@ -173,6 +180,68 @@ describe("menubar edge padding", () => {
         coarseTouch: false,
         viewportWidth: 951,
         viewportHeight: 669,
+      })
+    ).toBe(false);
+  });
+
+  test("the folded cover display floors the right inset at the 84px status bar", () => {
+    expect(FOLDED_COVER_STATUS_BAR_PX).toBe(84);
+    const css = readFileSync(new URL("../../../src/index.css", import.meta.url), "utf8");
+    const foldedRules = css.match(
+      /max\(env\(safe-area-inset-right, 0px\), 84px\)/g
+    );
+    expect(foldedRules?.length).toBe(2);
+    expect(css).toContain("min-width: 450px) and (max-width: 520px) and (min-height: 600px)");
+    expect(css).toContain(
+      "min-width: 620px) and (max-width: 760px) and (min-height: 440px) and (max-height: 540px)"
+    );
+
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 466,
+        viewportHeight: 678,
+      })
+    ).toBe(true);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 678,
+        viewportHeight: 466,
+      })
+    ).toBe(true);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 402,
+        viewportHeight: 874,
+      })
+    ).toBe(false);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 874,
+        viewportHeight: 402,
+      })
+    ).toBe(false);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 951,
+        viewportHeight: 669,
+      })
+    ).toBe(false);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: false,
+        coarseTouch: true,
+        viewportWidth: 466,
+        viewportHeight: 678,
       })
     ).toBe(false);
   });

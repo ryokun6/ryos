@@ -22,9 +22,9 @@ import { useDesktopFullscreen } from "./useDesktopFullscreen";
 import { shouldShowDesktopDragDebugZone } from "./desktopDragDebug";
 import { getMenubarWindowChromeLayout } from "./menubarWindowChrome";
 import {
-  desktopContentEdge,
   menubarInnerPadding,
   menubarLeftEdge,
+  menubarRightEdge,
 } from "./menubarEdgePadding";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
@@ -109,7 +109,7 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
             }
           : { color: "var(--os-color-menubar-text)" }),
         left: menubarLeftEdge(),
-        right: desktopContentEdge("right"),
+        right: menubarRightEdge(),
         paddingLeft: menubarInnerPadding({
           side: "left",
           trafficLightClearance: needsTrafficLightClearance,

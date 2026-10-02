@@ -6,8 +6,11 @@
  * consumes `env(safe-area-inset-left)` and `env(safe-area-inset-right)`.
  * Safari and desktop browsers keep a 0px content origin because the browser
  * already handles its safe areas. The right-hand status bar is the trailing
- * inset — 84pt on the closed outer display in the iOS 27.1 simulator — and is
- * never given an extra floor.
+ * inset — 84pt on the closed outer display in the iOS 27.1 simulator. When
+ * the system paints that bar over the web view, `env(safe-area-inset-right)`
+ * is 0, so the folded cover display (466×678pt) floors the right inset at
+ * 84px. A regular iPhone portrait is at most ~440pt wide, and the open inner
+ * display's shorter side is at least 626pt, so neither matches.
  *
  * The menubar and taskbar are offset by `--desktop-content-*` so their boxes
  * stop at the status bar. Inner padding is only the existing rhythm (or the
@@ -20,11 +23,11 @@
  * would grow 8px to 20px. Phone-width stays on the raw inset.
  *
  * Fully expanded, the inner display is 669×951pt with 55pt corners (iOS 27.1
- * simulator profile). A 25px menubar still meets that curve, so the menubar's
- * left edge uses a 28px floor when both viewport axes are at least 500px.
- * The cover display's shorter side is 466pt and a regular iPhone's is under
- * 450pt, so those keep the 12px floor. Windows, icons, and the dock stay on
- * `--desktop-content-*`.
+ * simulator profile). A 25px menubar still meets that curve on both ends, so
+ * both menubar edges use a 28px floor when both viewport axes are at least
+ * 500px. The cover display's shorter side is 466pt and a regular iPhone's is
+ * under 450pt, so those keep the content inset. Windows, icons, and the dock
+ * stay on `--desktop-content-*`.
  *
  * Traffic-light clearance stays a separate 78px prefix gated by
  * `needsTrafficLightClearance`.
@@ -50,11 +53,37 @@ export const PHONE_LAYOUT_MAX_WIDTH_PX = 640;
 export const EXPANDED_DISPLAY_MIN_PX = 500;
 
 /**
- * Menubar box offset on the fully expanded inner display.
- * The Apple menu trigger adds `px-2` inside the 8px rhythm, so the glyph
- * starts 16px past this floor — past the 55pt corner through a 25px bar.
+ * Menubar box offset on each side of the fully expanded inner display.
+ * The menu trigger adds `px-2` inside the 8px rhythm, so the glyph starts
+ * 16px past this floor — past the 55pt corner through a 25px bar.
+ * The same floor applies on the right. A larger status-bar inset wins.
  */
-export const EXPANDED_MENUBAR_LEFT_FLOOR_PX = 28;
+export const EXPANDED_MENUBAR_CORNER_FLOOR_PX = 28;
+
+/**
+ * Trailing status bar on the folded cover display (iOS 27.1 simulator).
+ * Applied as a floor under `env(safe-area-inset-right)`, not added to it.
+ */
+export const FOLDED_COVER_STATUS_BAR_PX = 84;
+
+export function shouldApplyFoldedStatusBarInset(input: {
+  iosShell: boolean;
+  coarseTouch: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}): boolean {
+  if (!input.iosShell || !input.coarseTouch) return false;
+  const portraitCover =
+    input.viewportWidth >= 450 &&
+    input.viewportWidth <= 520 &&
+    input.viewportHeight >= 600;
+  const landscapeCover =
+    input.viewportWidth >= 620 &&
+    input.viewportWidth <= 760 &&
+    input.viewportHeight >= 440 &&
+    input.viewportHeight <= 540;
+  return portraitCover || landscapeCover;
+}
 
 const COARSE_TOUCH_MEDIA = "(hover: none) and (pointer: coarse)";
 
@@ -100,12 +129,17 @@ export function shouldApplyExpandedMenubarCorner(input: {
 }
 
 /**
- * Menubar left box edge. At least the content inset, and at least
+ * Menubar box edge. At least the content inset, and at least
  * `--menubar-corner-floor` when the expanded-display query sets it.
  * A larger safe-area inset wins, so the floor is not added on top.
+ * Left and right use the same floor.
  */
 export function menubarLeftEdge(): string {
   return "max(var(--desktop-content-left), var(--menubar-corner-floor, 0px))";
+}
+
+export function menubarRightEdge(): string {
+  return "max(var(--desktop-content-right), var(--menubar-corner-floor, 0px))";
 }
 
 /**

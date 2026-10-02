@@ -5,6 +5,9 @@
  * and `userInterfaceIdiom` / device model / user agent are the wrong signal.
  * The vertical status bar is whichever safe-area inset is non-zero (84pt on
  * the trailing edge of the closed outer display in the iOS 27.1 simulator).
+ * On that folded display the shell CSS floors the right inset at 84px when
+ * env() is 0, and phone-width windows then use that content width instead
+ * of 100%.
  * Left and right are independent; do not mirror one side onto the other.
  *
  * `--desktop-content-left/right` are 0px in a regular browser. Inside the iOS
