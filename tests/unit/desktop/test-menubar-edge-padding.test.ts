@@ -2,12 +2,17 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
   DISPLAY_CORNER_FLOOR_PX,
+  EXPANDED_DISPLAY_MIN_PX,
+  EXPANDED_MENUBAR_CORNER_FLOOR_PX,
   MENUBAR_HORIZONTAL_RHYTHM,
   PHONE_LAYOUT_MAX_WIDTH_PX,
   desktopContentEdge,
   FOLDED_COVER_STATUS_BAR_PX,
   menubarInnerPadding,
+  menubarLeftEdge,
+  menubarRightEdge,
   shouldApplyDisplayCornerFloor,
+  shouldApplyExpandedMenubarCorner,
   shouldApplyFoldedStatusBarInset,
 } from "../../../src/components/layout/menu-bar/menubarEdgePadding";
 
@@ -22,8 +27,15 @@ describe("menubar edge padding", () => {
     // so it is not added again as padding.
     expect(MENUBAR_HORIZONTAL_RHYTHM).toBe("0.5rem");
     expect(DISPLAY_CORNER_FLOOR_PX).toBe(12);
+    expect(EXPANDED_MENUBAR_CORNER_FLOOR_PX).toBe(28);
     expect(desktopContentEdge("left")).toBe("var(--desktop-content-left)");
     expect(desktopContentEdge("right")).toBe("var(--desktop-content-right)");
+    expect(menubarLeftEdge()).toBe(
+      "max(var(--desktop-content-left), var(--menubar-corner-floor, 0px))"
+    );
+    expect(menubarRightEdge()).toBe(
+      "max(var(--desktop-content-right), var(--menubar-corner-floor, 0px))"
+    );
     expect(
       menubarInnerPadding({ side: "left", trafficLightClearance: false })
     ).toBe("0.5rem");
@@ -97,6 +109,79 @@ describe("menubar edge padding", () => {
     );
     expect(floorBlock).toContain("html[data-ios-shell]");
     expect(floorBlock).not.toContain("--desktop-content-right");
+    const menubar = readFileSync(
+      new URL(
+        "../../../src/components/layout/menu-bar/MacTopMenuBar.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    );
+    expect(menubar).toContain("left: menubarLeftEdge()");
+    expect(menubar).toContain("right: menubarRightEdge()");
+    expect(css).toContain("--menubar-corner-floor: 0px");
+    expect(css).toContain("min-width: 500px) and (min-height: 500px)");
+    expect(css).toContain("--menubar-corner-floor: 28px");
+    const expandedBlock = css.slice(
+      css.indexOf("min-height: 500px"),
+      css.indexOf("min-height: 500px") + 220
+    );
+    expect(expandedBlock).toContain("html[data-ios-shell]");
+    expect(expandedBlock).not.toContain("--desktop-content-left");
+    expect(expandedBlock).not.toContain("--desktop-content-right");
+  });
+
+  test("the wider menubar corner floor applies only when the inner display is fully expanded", () => {
+    expect(EXPANDED_DISPLAY_MIN_PX).toBe(500);
+    const expanded = {
+      iosShell: true,
+      coarseTouch: true,
+      viewportWidth: 951,
+      viewportHeight: 669,
+    };
+    expect(shouldApplyExpandedMenubarCorner(expanded)).toBe(true);
+    expect(
+      shouldApplyExpandedMenubarCorner({
+        ...expanded,
+        viewportWidth: 669,
+        viewportHeight: 951,
+      })
+    ).toBe(true);
+    // Cover display, landscape: wide, but the shorter side stays under 500.
+    expect(
+      shouldApplyExpandedMenubarCorner({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 678,
+        viewportHeight: 466,
+      })
+    ).toBe(false);
+    // Regular iPhone landscape in the shell.
+    expect(
+      shouldApplyExpandedMenubarCorner({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 874,
+        viewportHeight: 402,
+      })
+    ).toBe(false);
+    // Safari, even on a large touch viewport.
+    expect(
+      shouldApplyExpandedMenubarCorner({
+        iosShell: false,
+        coarseTouch: true,
+        viewportWidth: 951,
+        viewportHeight: 669,
+      })
+    ).toBe(false);
+    // Desktop pointer.
+    expect(
+      shouldApplyExpandedMenubarCorner({
+        iosShell: true,
+        coarseTouch: false,
+        viewportWidth: 951,
+        viewportHeight: 669,
+      })
+    ).toBe(false);
   });
 
   test("the folded cover display floors the right inset at the 84px status bar", () => {

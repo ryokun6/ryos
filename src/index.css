@@ -47,6 +47,8 @@
     */
     --desktop-content-left: 0px;
     --desktop-content-right: 0px;
+    /* Menubar only. Stays 0 until the fully expanded inner display. */
+    --menubar-corner-floor: 0px;
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
       "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
@@ -91,9 +93,10 @@
 /* iOS shell only. The browser keeps the 0px defaults above. Wide coarse-touch
    shell viewports floor the left inset. The folded cover display
    (466×678pt, or 678×466pt sideways) floors the right inset at 84px when the
-   status bar is painted over the web view and env() stays 0. A regular
-   iPhone portrait is narrower than 450px; the open inner display is larger
-   than these ranges on at least one axis. */
+   status bar is painted over the web view and env() stays 0. Both axes at
+   500px means the fully expanded inner display (669×951pt, 55pt corners):
+   the menubar grows 28px on the left and the right so the corner does not
+   clip either end. A regular iPhone does not match. */
 @layer base {
   html[data-ios-shell] {
     --desktop-content-left: var(--sat-safe-area-left);
@@ -115,6 +118,12 @@
   @media (hover: none) and (pointer: coarse) and (min-width: 620px) and (max-width: 760px) and (min-height: 440px) and (max-height: 540px) {
     html[data-ios-shell] {
       --desktop-content-right: max(env(safe-area-inset-right, 0px), 84px);
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) and (min-width: 500px) and (min-height: 500px) {
+    html[data-ios-shell] {
+      --menubar-corner-floor: 28px;
     }
   }
 }
