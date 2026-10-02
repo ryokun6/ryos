@@ -27,6 +27,10 @@ struct ShellWebView: UIViewRepresentable {
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
+        // MusicKit's authorize() opens Apple's sign-in page with window.open.
+        // iOS WebKit's default only lets that through during a live tap and
+        // otherwise returns null without ever asking createWebViewWith.
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
@@ -70,63 +74,139 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     // MARK: WKUIDelegate
 
     /// Popup windows (window.open): Apple Music's MusicKit JS authorize()
-    /// runs its sign-in dance inside a popup it opens itself. WKWebView
-    /// silently drops window.open when the UIDelegate doesn't implement this,
-    /// which is why Apple Music sign-in dies without any error in the shell
-    /// while the same flow works in Safari. We present the popup as a sheet
-    /// sharing the main webview's data store — same shape as the Electron
-    /// desktop's popup window, so the web client needs no changes: the popup
-    /// completes its redirects on the app origin, MusicKit JS picks the token
-    /// up from shared storage and closes itself (webViewDidClose dismisses).
+    /// opens Apple's sign-in page in a popup and waits on it, so a dropped
+    /// popup is a sign-in that never settles. The shell's own page gets a
+    /// sheet sharing the main webview's data store; Apple's page talks to
+    /// MusicKit through window.opener and closes itself (webViewDidClose).
+    /// Every outcome is logged under [auth] and reported to the web client
+    /// (`onAuthPopupStatus`), which falls back to `openAuthSheet` when the
+    /// sheet doesn't come up.
     func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        let popup = AuthPopupPresenter.presentPopup(
+        let url = navigationAction.request.url?.absoluteString ?? ""
+        let fromMainFrame = navigationAction.sourceFrame.isMainFrame
+        authLog(
+            "popup requested \(logURL(url)) mainFrame=\(fromMainFrame) "
+                + "opener=\(webView === self.webView ? "shell" : "popup") app=\(appStateName())"
+        )
+        // Embedded pages (applets, Internet Explorer) still need a link tap:
+        // automatic popups are for the shell's own page.
+        if !fromMainFrame && navigationAction.navigationType != .linkActivated {
+            authLog("popup refused: script window.open from an embedded frame")
+            emitAuthPopupStatus("refused", reason: "embedded-frame", url: url)
+            return nil
+        }
+        return AuthPopupPresenter.presentPopup(
             from: webView,
             configuration: configuration,
+            url: url,
             coordinator: self
         )
-        pushLog("Auth popup opened \(navigationAction.request.url?.absoluteString ?? "")")
-        return popup
     }
 
-    /// The web client asked for an isolated OAuth run (bridge `openAuthSheet`):
-    /// Apple-recommended system sheet, ephemeral Safari session, resolves the
-    /// bridge invoke with the final callback URL for the web client to finish
-    /// its handshake. Generic: any service with a redirect-based web sign-in.
+    func webViewDidClose(_ webView: WKWebView) {
+        guard let controller = AuthPopupController.hosting(webView) else {
+            authLog("window.close() from a page without a popup sheet; ignored")
+            return
+        }
+        controller.close(reason: "window.close")
+    }
+
+    /// Tells the web client what happened to a popup sheet.
+    func emitAuthPopupStatus(_ status: String, reason: String? = nil, url: String) {
+        var payload: [String: Any] = ["status": status, "url": url]
+        if let reason { payload["reason"] = reason }
+        guard let json = bridgeJSON(payload) else { return }
+        webView?.evaluateJavaScript(
+            "window.__ryosEmitAuthPopupStatus && window.__ryosEmitAuthPopupStatus(\(json))",
+            completionHandler: nil
+        )
+    }
+
+    /// Bridge `openAuthSheet`: a redirect-based web sign-in in the system
+    /// auth sheet (ephemeral ASWebAuthenticationSession). It finishes when
+    /// the page navigates to `callback`, a custom scheme optionally followed
+    /// by a prefix the final URL must start with; the invoke resolves with
+    /// that URL, or rejects with "cancelled" or the error.
     private var authSession: ASWebAuthenticationSession?
 
     func runAuthSheet(id: String, args: [String: Any]?) {
-        guard let raw = args? ["url"] as? String,
-              let url = URL(string: raw), url.scheme == "https",
-              let callbackPattern = (args? ["callback"] as? String).map(String.init),
-              !callbackPattern.isEmpty else {
-            reject(id, "openAuthSheet needs an https url and a non-empty callback")
+        let reason = args?["reason"] as? String ?? ""
+        guard let raw = args?["url"] as? String, let url = URL(string: raw), url.scheme == "https" else {
+            authLog("auth sheet refused: needs an https url")
+            reject(id, "openAuthSheet needs an https url")
             return
         }
+        let callback = args?["callback"] as? String ?? ""
+        guard let scheme = Self.callbackScheme(callback) else {
+            authLog("auth sheet refused: callback \"\(callback)\" is not a custom scheme")
+            reject(id, "openAuthSheet needs a custom-scheme callback such as ryos-auth://done")
+            return
+        }
+        guard authSession == nil else {
+            authLog("auth sheet refused: one is already open")
+            reject(id, "an auth sheet is already open")
+            return
+        }
+        let prefix = callback.contains(":") ? callback : scheme + ":"
+        authLog(
+            "auth sheet starting reason=\(reason.isEmpty ? "requested" : reason) "
+                + "\(logURL(raw)) callback=\(prefix) app=\(appStateName())"
+        )
         let session = ASWebAuthenticationSession(
             url: url,
-            callbackURLScheme: nil,
-            completionHandler: { [weak self] callbackURL, error in
-                guard let self else { return }
-                self.authSession = nil
-                if let callbackURL {
-                    pushLog("Auth sheet completed")
-                    self.reply(id, ["url": callbackURL.absoluteString])
-                } else {
-                    let message = error?.localizedDescription ?? "cancelled"
-                    pushLog("Auth sheet ended: \(message)")
-                    self.reject(id, message)
-                }
+            callback: .customScheme(scheme)
+        ) { @Sendable [self] callbackURL, error in
+            // May arrive off the main thread; only Sendable values cross over.
+            let cancelled = (error as? ASWebAuthenticationSessionError)?.code == .canceledLogin
+            let message = error?.localizedDescription
+            Task { @MainActor in
+                self.finishAuthSheet(
+                    id: id, callbackURL: callbackURL, prefix: prefix,
+                    cancelled: cancelled, message: message
+                )
             }
-        )
+        }
         session.prefersEphemeralWebBrowserSession = true
         session.presentationContextProvider = self
         authSession = session
-        session.start()
+        guard session.start() else {
+            authSession = nil
+            authLog("auth sheet failed to start app=\(appStateName())")
+            reject(id, "the auth sheet could not start")
+            return
+        }
+    }
+
+    private func finishAuthSheet(
+        id: String, callbackURL: URL?, prefix: String, cancelled: Bool, message: String?
+    ) {
+        authSession = nil
+        guard let callbackURL else {
+            let outcome = cancelled ? "cancelled" : (message ?? "auth sheet failed")
+            authLog("auth sheet ended: \(outcome)")
+            reject(id, outcome)
+            return
+        }
+        guard callbackURL.absoluteString.hasPrefix(prefix) else {
+            authLog("auth sheet ended on an unexpected callback \(callbackURL.scheme ?? "?"):")
+            reject(id, "unexpected auth sheet callback")
+            return
+        }
+        authLog("auth sheet completed callback=\(prefix)")
+        reply(id, ["url": callbackURL.absoluteString])
+    }
+
+    /// https callbacks need associated domains, which the app doesn't have.
+    private static func callbackScheme(_ callback: String) -> String? {
+        let scheme = URL(string: callback)?.scheme ?? callback
+        let isCustom = scheme.range(of: "^[A-Za-z][A-Za-z0-9+.-]*$", options: .regularExpression) != nil
+            && !["http", "https"].contains(scheme.lowercased())
+        return isCustom ? scheme : nil
     }
 
     /// Geolocation: the web client's navigator.geolocation asks route here.
@@ -270,7 +350,9 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     // MARK: ASWebAuthenticationPresentationContextProviding
 
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        webView?.window ?? ASPresentationAnchor()
+        if let window = webView?.window ?? foregroundWindow() { return window }
+        authLog("auth sheet has no window to anchor to")
+        return ASPresentationAnchor()
     }
 
     // MARK: Bridge replies
@@ -286,83 +368,191 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     }
 }
 
-/// Presents a web popup (window.open from the main page) as a sheet sharing
-/// the main webview's data store, and tears it down on window.close().
-/// macOS/Electron shells handle the same flow with a child window; iOS has
-/// no default, so this is the shell's own.
+/// Presents a web popup (window.open) as a sheet sharing the main webview's
+/// data store. macOS/Electron shells handle the same flow with a child
+/// window; iOS has no default, so this is the shell's own. Presents from
+/// whatever is frontmost, so an open sheet — or one still animating away
+/// after a resume from background — doesn't swallow the popup.
 @MainActor
 enum AuthPopupPresenter {
     static func presentPopup(
         from webView: WKWebView,
         configuration: WKWebViewConfiguration,
+        url: String,
         coordinator: Coordinator
     ) -> WKWebView? {
-        guard let anchor = nearestViewController(of: webView) else { return nil }
+        let controller = AuthPopupController(configuration: configuration, url: url, coordinator: coordinator)
+        controller.loadViewIfNeeded()
+        guard present(controller, from: webView, retries: 2) else { return nil }
+        // UIKit drops a refused present() without calling its completion.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(3))
+            if !controller.isPresentedSheet && !controller.isFinished {
+                controller.fail("sheet did not present within 3s")
+            }
+        }
+        return controller.popup
+    }
 
-        let popup = WKWebView(frame: .zero, configuration: configuration)
+    private static func present(
+        _ controller: AuthPopupController, from webView: WKWebView, retries: Int
+    ) -> Bool {
+        guard let presenter = frontmostViewController(for: webView) else {
+            controller.fail("no view controller to present from (window=\(webView.window != nil))")
+            return false
+        }
+        authLog("popup presenting from \(type(of: presenter)) app=\(appStateName())")
+        presenter.present(controller, animated: true) { controller.didPresent() }
+        guard controller.presentingViewController == nil else { return true }
+        guard retries > 0 else {
+            controller.fail("present refused by \(type(of: presenter))")
+            return true
+        }
+        authLog("popup present refused by \(type(of: presenter)); retrying")
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !controller.isFinished else { return }
+            _ = Self.present(controller, from: webView, retries: retries - 1)
+        }
+        return true
+    }
+
+    private static func frontmostViewController(for webView: WKWebView) -> UIViewController? {
+        var top = (webView.window ?? foregroundWindow())?.rootViewController
+        while let presented = top?.presentedViewController, !presented.isBeingDismissed {
+            top = presented
+        }
+        return top
+    }
+}
+
+/// One popup sheet. Every way it ends — Close, swipe-down, window.close(),
+/// or never presenting — goes through `finish`, which logs the outcome and
+/// reports it to the web client.
+final class AuthPopupController: UIViewController {
+    let popup: WKWebView
+    let url: String
+    private weak var coordinator: Coordinator?
+    private var closeReason = "swipe"
+    private(set) var isPresentedSheet = false
+    private(set) var isFinished = false
+
+    init(configuration: WKWebViewConfiguration, url: String, coordinator: Coordinator) {
+        popup = WKWebView(frame: .zero, configuration: configuration)
+        self.url = url
+        self.coordinator = coordinator
+        super.init(nibName: nil, bundle: nil)
         popup.uiDelegate = coordinator
         popup.allowsBackForwardNavigationGestures = true
+        modalPresentationStyle = .pageSheet
+    }
 
-        let container = UIViewController()
-        container.modalPresentationStyle = .pageSheet
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    override func loadView() {
+        let root = UIView()
+        root.backgroundColor = .systemBackground
         let bar = UIView()
-        bar.translatesAutoresizingMaskIntoConstraints = false
         let close = UIButton(type: .system)
         close.setTitle("Close", for: .normal)
         close.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         close.setTitleColor(.systemBlue, for: .normal)
         close.accessibilityLabel = "Close"
-        let done = { [weak container] in
-            container?.dismiss(animated: true)
+        close.addAction(UIAction { [weak self] _ in self?.close(reason: "close-button") }, for: .touchUpInside)
+        for subview in [bar, close, popup] {
+            subview.translatesAutoresizingMaskIntoConstraints = false
         }
-        close.addAction(UIAction { _ in done() }, for: .touchUpInside)
         bar.addSubview(close)
-        popup.translatesAutoresizingMaskIntoConstraints = false
-
-        container.view.backgroundColor = .systemBackground
-        container.view.addSubview(popup)
-        container.view.addSubview(bar)
+        root.addSubview(popup)
+        root.addSubview(bar)
         NSLayoutConstraint.activate([
-            bar.topAnchor.constraint(equalTo: container.view.safeAreaLayoutGuide.topAnchor),
-            bar.leadingAnchor.constraint(equalTo: container.view.leadingAnchor),
-            bar.trailingAnchor.constraint(equalTo: container.view.trailingAnchor),
+            bar.topAnchor.constraint(equalTo: root.safeAreaLayoutGuide.topAnchor),
+            bar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
             bar.heightAnchor.constraint(equalToConstant: 44),
             close.trailingAnchor.constraint(equalTo: bar.layoutMarginsGuide.trailingAnchor, constant: -8),
             close.centerYAnchor.constraint(equalTo: bar.centerYAnchor),
             popup.topAnchor.constraint(equalTo: bar.bottomAnchor),
-            popup.leadingAnchor.constraint(equalTo: container.view.leadingAnchor),
-            popup.trailingAnchor.constraint(equalTo: container.view.trailingAnchor),
-            popup.bottomAnchor.constraint(equalTo: container.view.bottomAnchor),
+            popup.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            popup.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            popup.bottomAnchor.constraint(equalTo: root.bottomAnchor),
         ])
-        anchor.present(container, animated: true)
-        return popup
+        view = root
     }
 
-    static func dismissPopup(containing webView: WKWebView) {
-        var responder: UIResponder? = webView.next
-        while let current = responder {
-            if let vc = current as? UIViewController {
-                vc.dismiss(animated: true)
-                return
-            }
-            responder = current.next
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        if isBeingDismissed { finish("closed", reason: closeReason) }
+    }
+
+    func didPresent() {
+        isPresentedSheet = true
+        authLog("popup presented \(logURL(url))")
+        coordinator?.emitAuthPopupStatus("presented", url: url)
+    }
+
+    func close(reason: String) {
+        closeReason = reason
+        if presentingViewController != nil {
+            dismiss(animated: true)
+        } else {
+            finish("closed", reason: reason)
         }
     }
 
-    private static func nearestViewController(of view: UIView) -> UIViewController? {
-        var responder: UIResponder? = view.next
+    func fail(_ reason: String) {
+        authLog("popup failed: \(reason) \(logURL(url)) app=\(appStateName())")
+        finish("failed", reason: reason)
+    }
+
+    private func finish(_ status: String, reason: String) {
+        guard !isFinished else { return }
+        isFinished = true
+        if status == "closed" { authLog("popup closed (\(reason)) \(logURL(url))") }
+        popup.stopLoading()
+        coordinator?.emitAuthPopupStatus(status, reason: reason, url: url)
+    }
+
+    static func hosting(_ webView: WKWebView) -> AuthPopupController? {
+        var responder: UIResponder? = webView
         while let current = responder {
-            if let vc = current as? UIViewController { return vc }
+            if let controller = current as? AuthPopupController { return controller }
             responder = current.next
         }
         return nil
     }
+}
 
-    /// window.close() from the popup (MusicKit's authorize popup does exactly
-    /// this after completing its handshake) — dismiss the hosting sheet.
-    func webViewDidClose(_ webView: WKWebView) {
-        AuthPopupPresenter.dismissPopup(containing: webView)
+/// Shell-side decision trail for popups and the auth sheet; filter the
+/// device console on "[auth]".
+func authLog(_ message: String) {
+    NSLog("ryOS: [auth] %@", message)
+}
+
+/// Host and path only: sign-in URLs carry tokens in their query and fragment.
+func logURL(_ raw: String) -> String {
+    guard let url = URL(string: raw), let host = url.host else { return raw.isEmpty ? "(blank)" : "(opaque)" }
+    return host + url.path
+}
+
+@MainActor
+func appStateName() -> String {
+    switch UIApplication.shared.applicationState {
+    case .active: "active"
+    case .inactive: "inactive"
+    case .background: "background"
+    @unknown default: "unknown"
     }
+}
+
+@MainActor
+func foregroundWindow() -> UIWindow? {
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+    return scene?.keyWindow ?? scene?.windows.first
 }
 
 /// Serializes a bridge payload to a safe JS object literal.

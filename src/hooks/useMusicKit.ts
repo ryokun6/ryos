@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { createClientLogger } from "@/utils/logger";
+import { authorizeMusicKit } from "@/utils/musicKitShellAuth";
 
 /**
  * Apple MusicKit JS v3 lazy loader / configurer.
@@ -546,7 +547,7 @@ export function useMusicKit(
       musicKitLog.debug("Requesting Apple Music authorization", {
         wasAuthorized: inst.isAuthorized,
       });
-      const token = await inst.authorize();
+      const token = await authorizeMusicKit(inst);
       musicKitLog.debug("Apple Music authorization completed", {
         isAuthorized: inst.isAuthorized,
         returnedToken: Boolean(token),

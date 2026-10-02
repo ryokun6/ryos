@@ -119,6 +119,23 @@ export type RyosHapticPattern =
   | "warning"
   | "error";
 
+/** iOS shell: what happened to a `window.open` popup sheet. */
+export interface RyosAuthPopupStatus {
+  status: "presented" | "failed" | "refused" | "closed";
+  reason?: string;
+  /** The URL the page passed to `window.open`. */
+  url: string;
+}
+
+export interface RyosAuthSheetOptions {
+  /** https page that starts the sign-in. */
+  url: string;
+  /** Custom scheme (optionally `scheme://prefix`) the sign-in finishes on. */
+  callback: string;
+  /** Why the sheet is being used; shows up in the shell's `[auth]` log. */
+  reason?: string;
+}
+
 /**
  * Desktop shell API exposed by Electron preload (window.ryosDesktop) and the
  * iOS WKWebView wrapper. Optional members are only injected by some shells.
@@ -191,6 +208,16 @@ export interface RyosDesktopApi {
   ) => () => void;
   /** iOS shell: play a native haptic. */
   playHaptic?: (pattern: RyosHapticPattern) => void;
+  /**
+   * iOS shell: run a redirect-based sign-in in the system auth sheet
+   * (ASWebAuthenticationSession). Resolves with the URL that reached
+   * `callback`; rejects with "cancelled" when the user closes the sheet.
+   */
+  openAuthSheet?: (options: RyosAuthSheetOptions) => Promise<{ url: string }>;
+  /** iOS shell: subscribe to popup sheet outcomes. Returns an unsubscribe fn. */
+  onAuthPopupStatus?: (
+    callback: (status: RyosAuthPopupStatus) => void
+  ) => () => void;
 }
 
 declare global {

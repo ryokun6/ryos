@@ -60,7 +60,8 @@ Later launches go straight to the web view and use the WebKit cache.
 
 - **Web to native:** each method posts `{ kind: 'invoke', id, name, args }` to the
   `ryosBridge` script message handler. Native code replies with
-  `window.__ryosReply({ id, ok, value })`. Calls time out after 15 seconds.
+  `window.__ryosReply({ id, ok, value })`. Calls time out after 15 seconds
+  (`openAuthSheet` after 10 minutes).
   Supported calls include notification config and state
   (`configureChatNotifications`, `updateChatNotificationState`,
   `showNotification`), `playHaptic`, `getLocationPermissionStatus`,
@@ -69,6 +70,8 @@ Later launches go straight to the web view and use the WebKit cache.
 - **Native to web:**
   - `window.__ryosEmitOpenRoom(roomId)` opens a chat room when the user taps a
     notification.
+  - `window.__ryosEmitAuthPopupStatus(status)` reports popup sheet outcomes to
+    `onAuthPopupStatus` subscribers.
 - **Lifecycle messages:** `boot-finished` hides the splash. `app-active` flushes
   a pending notification-tap room.
 - **Push:** after sign-in, the shell requests notification permission and sends
@@ -89,20 +92,42 @@ cd ios && swift scripts/make-icon.swift
 
 ## Auth popups and `openAuthSheet` (iOS shell)
 
-`window.open` popups from the web client are presented as sheets sharing the
-main webview's data store, and a popup calling `window.close()` dismisses its
-sheet. Apple Music sign-in (MusicKit JS `authorize()`) needs exactly this: it
-opens its own popup, runs the sign-in redirects there, and completes from
-shared storage — with no popup handler WKWebView silently dropped the call,
-which is why sign-in worked in Safari but died in the shell with no error.
+`window.open` popups from the shell's own page are presented as sheets sharing
+the main webview's data store, and a popup calling `window.close()` dismisses
+its sheet. The webview sets `javaScriptCanOpenWindowsAutomatically`, so a
+popup opened outside a live tap still reaches the shell; script popups from
+embedded frames (applets, Internet Explorer pages) are refused, and their
+`target=_blank` links still open. Apple Music sign-in (MusicKit JS
+`authorize()`) depends on this: it opens Apple's page with `window.open`,
+talks to it through `window.opener`, and waits forever if `window.open`
+returns null.
 
-For redirect-based OAuth that doesn't rely on a popup, the shell also exposes
-a generic bridge method:
+Every popup outcome is reported to the web client:
 
 ```js
-window.ryosDesktop.openAuthSheet({ url: signInUrl, callback: 'https://os.ryo.lu' })
+window.ryosDesktop.onAuthPopupStatus(({ status, reason, url }) => {})
+// status: 'presented' | 'failed' | 'refused' | 'closed'
 ```
 
-It runs `ASWebAuthenticationSession` (ephemeral — no Safari cookies shared)
-and resolves with the final callback URL, or rejects on cancel. The `callback`
-value is matched by the system as a prefix of the final URL.
+For redirect-based sign-ins, the shell also exposes a generic bridge method:
+
+```js
+window.ryosDesktop.openAuthSheet({ url: signInUrl, callback: 'ryos-auth://done', reason })
+```
+
+It runs `ASWebAuthenticationSession` (ephemeral, so no Safari cookies are
+shared) and resolves with `{ url }` once the page navigates to the callback.
+`callback` must be a custom scheme, optionally followed by a prefix the final
+URL has to start with. https callbacks would need associated domains. The
+call rejects with `cancelled` when the user closes the sheet, and it waits up
+to 10 minutes instead of the usual 15-second bridge timeout.
+
+When the popup sheet doesn't come up, the web client
+(`src/utils/musicKitShellAuth.ts`) runs Apple's sign-in page in
+`openAuthSheet` through `public/musickit-auth.html`, then hands MusicKit the
+returned token.
+
+Popup and auth-sheet decisions are logged with an `[auth]` prefix, for example
+`popup requested`, `popup presented`, `popup failed: …`, and
+`auth sheet starting reason=musickit popup …`. Filter the device console on
+`[auth]` to see what happened to a sign-in.

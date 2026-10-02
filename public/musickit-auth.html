@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <!--
+      Apple Music sign-in for the iOS app's system auth sheet
+      (src/utils/musicKitShellAuth.ts). Apple's page only hands the token
+      back to a referrer it can see, so this page sends the sheet there and
+      forwards Apple's #token redirect to the app's callback scheme.
+    -->
+    <meta name="referrer" content="origin" />
+    <title>Apple Music</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        font: 15px -apple-system, system-ui, sans-serif;
+        color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Connecting to Apple Music…</p>
+    <script>
+      (function () {
+        var callback = "ryos-auth://musickit";
+        var token = location.hash.slice(1);
+        if (token) {
+          location.replace(callback + "#" + token);
+          return;
+        }
+        var target = new URLSearchParams(location.search).get("to") || "";
+        if (target.indexOf("https://authorize.music.apple.com/") === 0) {
+          location.replace(target);
+          return;
+        }
+        location.replace(callback + "#error");
+      })();
+    </script>
+  </body>
+</html>
