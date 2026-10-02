@@ -73,6 +73,7 @@ import {
   type MapKitMarkerAnnotation,
 } from "../components/maps-app/mapKitTypes";
 import {
+  isPointNearMapCenter,
   locateMeCameraMode,
   locateMeFocusRegion,
   readMapRegion,
@@ -313,6 +314,8 @@ export function useYouBikeLayer({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [locationTracking, setLocationTracking] = useState(false);
   const [trackedUser, setTrackedUser] = useState<GeoPoint | null>(null);
+  /** Locate Me stays on but the camera stopped following after a user pan / off-center zoom. */
+  const [locateMeFollowPaused, setLocateMeFollowPausedState] = useState(false);
 
   const annotationsRef = useRef<
     Map<
@@ -335,6 +338,22 @@ export function useYouBikeLayer({
   );
   const userPuckRef = useRef<MapKitMarkerAnnotation | null>(null);
   const locateMeZoomAppliedRef = useRef(false);
+  const locateMeFollowPausedRef = useRef(false);
+  const lastUserPointRef = useRef<GeoPoint | null>(null);
+  const locationWatchSourceRef = useRef<"geolocation" | "none" | null>(null);
+
+  const setLocateMeFollowPaused = useCallback(
+    (paused: boolean) => {
+      locateMeFollowPausedRef.current = paused;
+      setLocateMeFollowPausedState(paused);
+      const map = mapInstanceRef.current;
+      // The MapKit fallback recenters on its own while tracksUserLocation is on.
+      if (map && locationWatchSourceRef.current === "none") {
+        map.tracksUserLocation = !paused;
+      }
+    },
+    [mapInstanceRef]
+  );
 
   const removeUserPuck = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -953,6 +972,9 @@ export function useYouBikeLayer({
     const shouldWatch = shouldWatchYouBikeUserLocation({ locateMeEnabled });
     if (!shouldWatch || mapReadyTick === 0) {
       locateMeZoomAppliedRef.current = false;
+      lastUserPointRef.current = null;
+      locationWatchSourceRef.current = null;
+      setLocateMeFollowPaused(false);
       removeUserPuck();
       setLocationTracking(false);
       setTrackedUser(null);
@@ -966,15 +988,17 @@ export function useYouBikeLayer({
 
     setLocationTracking(true);
     locateMeZoomAppliedRef.current = false;
-    let lastPoint: GeoPoint | null = null;
+    lastUserPointRef.current = null;
+    setLocateMeFollowPaused(false);
     const applyFix = (point: GeoPoint, source: "geolocation" | "mapkit") => {
-      if (!isDistinctUserLocation(lastPoint, point)) return;
-      lastPoint = point;
+      if (!isDistinctUserLocation(lastUserPointRef.current, point)) return;
+      lastUserPointRef.current = point;
       setTrackedUser(point);
       const camera = locateMeCameraMode({
         locateMeEnabled: true,
         hasAppliedFocusZoom: locateMeZoomAppliedRef.current,
         currentSpanDeg: visibleMapSpanDeg(readMapRegion(map.region)),
+        followPaused: locateMeFollowPausedRef.current,
       });
       // Geolocation owns the camera (center + first-on zoom-in). MapKit's
       // tracksUserLocation already recenters; we only tighten to the
@@ -983,7 +1007,7 @@ export function useYouBikeLayer({
       if (source === "geolocation" || camera === "focus") {
         followUserOnMap(point, camera);
       }
-      locateMeZoomAppliedRef.current = true;
+      if (camera !== "idle") locateMeZoomAppliedRef.current = true;
       if (source === "geolocation") {
         upsertUserPuck(point);
       }
@@ -997,6 +1021,7 @@ export function useYouBikeLayer({
       geolocation,
       onUpdate: (point) => applyFix(point, "geolocation"),
     });
+    locationWatchSourceRef.current = watch.source;
 
     if (watch.source === "geolocation") {
       map.showsUserLocation = false;
@@ -1027,8 +1052,30 @@ export function useYouBikeLayer({
       map.addEventListener?.("user-location-change", onMapkitLocation);
     }
 
+    // MapKit only fires scroll-* / zoom-* for user interaction, so our own
+    // setCenterAnimated / setRegionAnimated calls never pause follow.
+    const onUserScrollStart = () => {
+      if (!locateMeFollowPausedRef.current) setLocateMeFollowPaused(true);
+    };
+    const onUserZoomEnd = () => {
+      if (locateMeFollowPausedRef.current) return;
+      const point = lastUserPointRef.current;
+      if (!point) return;
+      if (!isPointNearMapCenter(readMapRegion(map.region), point)) {
+        setLocateMeFollowPaused(true);
+      }
+    };
+    map.addEventListener?.("scroll-start", onUserScrollStart);
+    map.addEventListener?.("zoom-end", onUserZoomEnd);
+
     return () => {
       watch.stop();
+      try {
+        map.removeEventListener?.("scroll-start", onUserScrollStart);
+        map.removeEventListener?.("zoom-end", onUserZoomEnd);
+      } catch {
+        // ignore
+      }
       if (watch.source === "none") {
         try {
           map.removeEventListener?.("user-location-change", onMapkitLocation);
@@ -1044,8 +1091,24 @@ export function useYouBikeLayer({
     mapInstanceRef,
     mapReadyTick,
     removeUserPuck,
+    setLocateMeFollowPaused,
     upsertUserPuck,
   ]);
+
+  const resumeLocateMeFollow = useCallback(() => {
+    if (!locateMeEnabled) return;
+    setLocateMeFollowPaused(false);
+    const map = mapInstanceRef.current;
+    const point = lastUserPointRef.current;
+    if (!map || !point) return;
+    const camera = locateMeCameraMode({
+      locateMeEnabled: true,
+      hasAppliedFocusZoom: locateMeZoomAppliedRef.current,
+      currentSpanDeg: visibleMapSpanDeg(readMapRegion(map.region)),
+    });
+    followUserOnMap(point, camera);
+    locateMeZoomAppliedRef.current = true;
+  }, [followUserOnMap, locateMeEnabled, mapInstanceRef, setLocateMeFollowPaused]);
 
   const activeStepIndex = useMemo(() => {
     if (!locationTracking || !trackedUser || !routePlan) return null;
@@ -1084,5 +1147,7 @@ export function useYouBikeLayer({
     focusYouBikeStep,
     activeStepIndex,
     trackedUser,
+    locateMeFollowPaused,
+    resumeLocateMeFollow,
   };
 }

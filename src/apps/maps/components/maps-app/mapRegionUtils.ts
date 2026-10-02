@@ -93,19 +93,45 @@ export type LocateMeCameraMode = "focus" | "recenter" | "idle";
  * current view is wider. If the user is already closer, just recenter.
  * Later GPS ticks only recenter so pinch-zoom while tracking is kept.
  * Locate Me off is always idle — do not zoom out or reset the region.
+ * Paused follow (user panned away) is idle too until Recenter resumes it.
  */
 export function locateMeCameraMode(options: {
   locateMeEnabled: boolean;
   hasAppliedFocusZoom: boolean;
   currentSpanDeg?: number | null;
+  followPaused?: boolean;
 }): LocateMeCameraMode {
-  if (!options.locateMeEnabled) return "idle";
+  if (!options.locateMeEnabled || options.followPaused) return "idle";
   if (options.hasAppliedFocusZoom) return "recenter";
   const span = options.currentSpanDeg;
   if (typeof span === "number" && Number.isFinite(span) && span <= LOCATE_ME_SPAN_DEG) {
     return "recenter";
   }
   return "focus";
+}
+
+/** Share of the visible span the user may sit off-center before a zoom counts as moving away. */
+export const LOCATE_ME_FOLLOW_CENTER_TOLERANCE = 0.25;
+
+/**
+ * After a user zoom (pinch, double-tap, wheel), keep following only when the
+ * user is still near the middle of the view. Zooms anchored far from the
+ * user move the camera away and pause follow like a pan does.
+ */
+export function isPointNearMapCenter(
+  region: MapKitRegionLike | null,
+  point: MapKitCoordinate,
+  tolerance = LOCATE_ME_FOLLOW_CENTER_TOLERANCE
+): boolean {
+  if (!region) return true;
+  const { center, span } = region;
+  const latOffset = Math.abs(point.latitude - center.latitude);
+  let lngOffset = Math.abs(point.longitude - center.longitude);
+  if (lngOffset > 180) lngOffset = 360 - lngOffset;
+  return (
+    latOffset <= span.latitudeDelta * tolerance &&
+    lngOffset <= span.longitudeDelta * tolerance
+  );
 }
 
 export function statusMessageKey(status: MapKitStatus): string {

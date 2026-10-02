@@ -455,14 +455,18 @@ export function MapsYouBikeRouteCard({
 
   const stepsRef = useRef(steps);
   const onSelectStepRef = useRef(onSelectStep);
+  const followUserLocationRef = useRef(followUserLocation);
   stepsRef.current = steps;
   onSelectStepRef.current = onSelectStep;
+  followUserLocationRef.current = followUserLocation;
 
+  // Frame only when the focused step changes. Follow flipping off (the user
+  // panned away mid-ride) must not yank the camera to the step mid-gesture.
   useEffect(() => {
-    if (!isNavigating || followUserLocation) return;
+    if (!isNavigating || followUserLocationRef.current) return;
     const step = stepsRef.current[focusedIndex];
     if (step) onSelectStepRef.current?.(step);
-  }, [focusedIndex, followUserLocation, isNavigating]);
+  }, [focusedIndex, isNavigating]);
 
   return (
     <AnimatePresence>

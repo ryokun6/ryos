@@ -1,4 +1,10 @@
-import { MapPin, Minus, NavigationArrow, Plus } from "@phosphor-icons/react";
+import {
+  GpsFix,
+  MapPin,
+  Minus,
+  NavigationArrow,
+  Plus,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 
@@ -14,12 +20,16 @@ export interface MapsMapBottomChromeProps {
   zoomInTitle: string;
   locateMeTitle: string;
   locateMePressed?: boolean;
+  /** Locate Me is on but the user panned away; offers a one-tap resume. */
+  showRecenter?: boolean;
+  recenterTitle: string;
   placesTitle: string;
   canUseMap: boolean;
   isPlacesDrawerOpen: boolean;
   onZoomOut: () => void;
   onZoomIn: () => void;
   onLocateMe: () => void;
+  onRecenter: () => void;
   onTogglePlacesDrawer: () => void;
 }
 
@@ -35,12 +45,15 @@ export function MapsMapBottomChrome({
   zoomInTitle,
   locateMeTitle,
   locateMePressed = false,
+  showRecenter = false,
+  recenterTitle,
   placesTitle,
   canUseMap,
   isPlacesDrawerOpen,
   onZoomOut,
   onZoomIn,
   onLocateMe,
+  onRecenter,
   onTogglePlacesDrawer,
 }: MapsMapBottomChromeProps) {
   return (
@@ -82,6 +95,20 @@ export function MapsMapBottomChrome({
         >
           <Plus size={12} weight="bold" />
         </Button>
+        {showRecenter ? (
+          <Button
+            type="button"
+            variant={isMacOSTheme ? "aqua" : "retro"}
+            size="sm"
+            onClick={onRecenter}
+            disabled={!canUseMap}
+            title={recenterTitle}
+            aria-label={recenterTitle}
+            className="shrink-0 !h-6 !w-6 !min-w-0 !rounded-full !p-0"
+          >
+            <GpsFix size={12} weight="bold" className="text-os-link" />
+          </Button>
+        ) : null}
         <Button
           type="button"
           variant={isMacOSTheme ? "aqua" : "retro"}
@@ -95,7 +122,7 @@ export function MapsMapBottomChrome({
         >
           <NavigationArrow
             size={12}
-            weight="fill"
+            weight={locateMePressed && showRecenter ? "bold" : "fill"}
             className={locateMePressed ? "text-os-link" : undefined}
           />
         </Button>

@@ -60,6 +60,7 @@ export function MapsAppComponent({
     handleYouBikeDirections,
     handleClearYouBikeRoute,
     locateMeEnabled,
+    locateMeFollowPaused,
     focusYouBikeStep,
     youbikeActiveStepIndex,
     youbikeTrackedUser,
@@ -73,6 +74,7 @@ export function MapsAppComponent({
     handleZoomIn,
     handleZoomOut,
     handleLocateMe,
+    handleRecenterOnUser,
     handleSearchKeyDown,
     canUseMap,
     overlayMessage,
@@ -195,7 +197,7 @@ export function MapsAppComponent({
                 onSelectStep={focusYouBikeStep}
                 activeStepIndex={youbikeActiveStepIndex}
                 userLocation={youbikeTrackedUser}
-                followUserLocation={locateMeEnabled}
+                followUserLocation={locateMeEnabled && !locateMeFollowPaused}
               />
             ) : (
               <MapsPlaceCard
@@ -275,6 +277,10 @@ export function MapsAppComponent({
                 defaultValue: "Locate Me",
               })}
               locateMePressed={locateMeEnabled}
+              showRecenter={locateMeEnabled && locateMeFollowPaused}
+              recenterTitle={t("apps.maps.recenter", {
+                defaultValue: "Recenter",
+              })}
               placesTitle={t("apps.maps.places.title", {
                 defaultValue: "Places",
               })}
@@ -283,6 +289,7 @@ export function MapsAppComponent({
               onZoomOut={handleZoomOut}
               onZoomIn={handleZoomIn}
               onLocateMe={handleLocateMe}
+              onRecenter={handleRecenterOnUser}
               onTogglePlacesDrawer={() =>
                 dispatchUi({ type: "togglePlacesDrawer" })
               }

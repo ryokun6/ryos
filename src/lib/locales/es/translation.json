@@ -3344,6 +3344,7 @@
         }
       },
       "locateMe": "Ubicarme",
+      "recenter": "Recentrar",
       "mapAriaLabel": "Mapa",
       "menu": {
         "about": "Acerca de Mapas",

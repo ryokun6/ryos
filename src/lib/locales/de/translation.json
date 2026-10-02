@@ -3341,6 +3341,7 @@
         }
       },
       "locateMe": "Meinen Standort bestimmen",
+      "recenter": "Zentrieren",
       "mapAriaLabel": "Karte",
       "menu": {
         "about": "Über Karten",

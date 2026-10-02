@@ -196,7 +196,9 @@ describe("YouBike navigation location wiring", () => {
     );
     expect(app).not.toContain("onStartNavigation={handleLocateMe}");
     expect(app).not.toContain("onNavigatingChange=");
-    expect(app).toContain("followUserLocation={locateMeEnabled}");
+    expect(app).toContain(
+      "followUserLocation={locateMeEnabled && !locateMeFollowPaused}"
+    );
     const controller = readFileSync(
       resolve(
         import.meta.dir,
@@ -206,6 +208,78 @@ describe("YouBike navigation location wiring", () => {
     );
     expect(controller).toContain("nextLocateMeEnabled");
     expect(controller).not.toContain("isNavigating: youbikeNavigating");
+  });
+
+  test("user pan pauses follow; Recenter resumes it without toggling Locate Me", () => {
+    const read = (path: string) =>
+      readFileSync(resolve(import.meta.dir, "../../../", path), "utf8");
+    const layer = read("src/apps/maps/hooks/useYouBikeLayer.ts");
+    const controller = read(
+      "src/apps/maps/components/maps-app/useMapsAppController.ts"
+    );
+    const app = read("src/apps/maps/components/maps-app/MapsAppComponent.tsx");
+    const chrome = read(
+      "src/apps/maps/components/maps-app/MapsMapBottomChrome.tsx"
+    );
+    const card = read("src/apps/maps/components/MapsYouBikeRouteCard.tsx");
+
+    // Only user-interaction events pause; programmatic recenters never do.
+    expect(layer).toContain('map.addEventListener?.("scroll-start", onUserScrollStart)');
+    expect(layer).toContain('map.addEventListener?.("zoom-end", onUserZoomEnd)');
+    expect(layer).toContain('map.removeEventListener?.("scroll-start", onUserScrollStart)');
+    expect(layer).toContain('map.removeEventListener?.("zoom-end", onUserZoomEnd)');
+    expect(layer).not.toContain('"region-change-start"');
+    expect(layer).toContain("isPointNearMapCenter");
+    expect(layer).toContain("followPaused: locateMeFollowPausedRef.current");
+
+    const resumeStart = layer.indexOf("const resumeLocateMeFollow");
+    const resume = layer.slice(resumeStart, layer.indexOf("}, [", resumeStart));
+    expect(resume).toContain("if (!locateMeEnabled) return;");
+    expect(resume).toContain("setLocateMeFollowPaused(false)");
+    expect(resume).toContain("followUserOnMap(point, camera)");
+
+    // Locate Me off / map teardown clears the paused state.
+    const stopStart = layer.indexOf("if (!shouldWatch || mapReadyTick === 0)");
+    const stopWatch = layer.slice(
+      stopStart,
+      layer.indexOf("const map = mapInstanceRef.current;", stopStart)
+    );
+    expect(stopWatch).toContain("setLocateMeFollowPaused(false)");
+
+    expect(controller).toContain("locateMeFollowPaused: youbike.locateMeFollowPaused");
+    expect(controller).toContain("youbike.resumeLocateMeFollow");
+    expect(app).toContain("showRecenter={locateMeEnabled && locateMeFollowPaused}");
+    expect(app).toContain("onRecenter={handleRecenterOnUser}");
+    expect(app).toContain('t("apps.maps.recenter"');
+    expect(app).toContain("onLocateMe={handleLocateMe}");
+    expect(chrome).toContain("{showRecenter ? (");
+    expect(chrome).toContain("onClick={onRecenter}");
+    expect(chrome.indexOf("onClick={onRecenter}")).toBeLessThan(
+      chrome.indexOf("onClick={onLocateMe}")
+    );
+
+    // Pausing mid-ride must not reframe the step until the step changes.
+    expect(card).toContain("}, [focusedIndex, isNavigating]);");
+    expect(card).toContain("followUserLocationRef.current");
+  });
+
+  test("recenter copy is translated in every locale", () => {
+    const locales = [
+      "de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh-CN", "zh-TW",
+    ];
+    for (const locale of locales) {
+      const json = JSON.parse(
+        readFileSync(
+          resolve(
+            import.meta.dir,
+            `../../../src/lib/locales/${locale}/translation.json`
+          ),
+          "utf8"
+        )
+      ) as { apps: { maps: { recenter?: string } } };
+      expect(typeof json.apps.maps.recenter).toBe("string");
+      expect(json.apps.maps.recenter?.length).toBeGreaterThan(0);
+    }
   });
 
   test("Locate Me keeps outline chrome and only blues the glyph when tracking", () => {

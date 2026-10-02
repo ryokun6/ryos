@@ -4551,6 +4551,7 @@
       "noResults": "No results",
       "searchFailed": "Search failed",
       "locateMe": "Locate Me",
+      "recenter": "Recenter",
       "mapAriaLabel": "Map",
       "places": {
         "title": "Places",

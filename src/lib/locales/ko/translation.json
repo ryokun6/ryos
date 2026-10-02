@@ -3341,6 +3341,7 @@
         }
       },
       "locateMe": "내 위치 찾기",
+      "recenter": "다시 중앙에 맞추기",
       "mapAriaLabel": "지도",
       "menu": {
         "about": "지도에 관하여",

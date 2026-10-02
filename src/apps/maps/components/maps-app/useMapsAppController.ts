@@ -1219,6 +1219,8 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     });
   }, []);
 
+  const handleRecenterOnUser = youbike.resumeLocateMeFollow;
+
   // Debounced search-as-you-type. Fires `performSearch` after the user pauses
   // for ~250ms. Pressing Enter still triggers immediately via handleSearchKeyDown
   // — performSearch's request-token guard ensures the latest call wins.
@@ -1320,6 +1322,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleYouBikeDirections,
     handleClearYouBikeRoute,
     locateMeEnabled,
+    locateMeFollowPaused: youbike.locateMeFollowPaused,
     focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeActiveStepIndex: youbike.activeStepIndex,
     youbikeTrackedUser: youbike.trackedUser,
@@ -1333,6 +1336,7 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleZoomIn,
     handleZoomOut,
     handleLocateMe,
+    handleRecenterOnUser,
     handleSearchKeyDown,
     canUseMap,
     overlayMessage,
