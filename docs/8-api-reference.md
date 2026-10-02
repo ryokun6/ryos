@@ -124,6 +124,8 @@ APNs pushes (`api/_utils/push-relay.ts`) fire when a room message is broadcast: 
 
 Push logs are prefixed `[push]` (device tokens shown as `abcd…wxyz`; no JWTs, keys, session tokens, or message text). Production logs one `notifyRoomMessage done` summary per message with outcome counts (`sent`, `failed`, `dead`, `duplicate`, `sessionDead`, `ineligible`, …) plus warnings for APNs failures, dead-token removal, and env changes. Set `RYOS_DEBUG=1` (the shared API debug flag) to also log each skip reason, burst grouping, and every APNs attempt's env/status/reason.
 
+The web client logs its half under the same `[push]` scope via `createClientLogger` (debug mode: dev builds or `localStorage["ryos:debug"] = "1"`): permission requests, shell configure/room-state sync, which display path a chat notification took (shell / browser / toast), and notification taps. The iOS shell logs `ryOS: [push] …` lines via `NSLog` (Console.app / Xcode): permission result, APNs token (redacted), `api/push/register` and AirBuild fallback status codes, local notifications, and tap → web delivery.
+
 ### Utility Endpoints
 
 | Endpoint | Purpose |
