@@ -63,6 +63,18 @@
     <meta name="twitter:image" content="https://os.ryo.lu/icons/mac-512.png" />
 
     <title>ryOS</title>
+
+    <!-- The iOS shell injects window.ryosDesktop at document start. Content
+         insets apply only then; Safari and desktop browsers stay at 0. -->
+    <script>
+      (function () {
+        try {
+          if (window.ryosDesktop && window.ryosDesktop.platform === "ios") {
+            document.documentElement.setAttribute("data-ios-shell", "");
+          }
+        } catch (e) {}
+      })();
+    </script>
     
     <!-- Stale bundle detection: reload if cached index.html references missing JS bundles -->
     <script>

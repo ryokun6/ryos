@@ -37,6 +37,8 @@ import { useWindowFrameDockOffsets } from "./hooks/useWindowFrameDockOffsets";
 import { useWindowFrameDrawerSlot } from "./hooks/useWindowFrameDrawerSlot";
 import { useWindowFramePhoneSwipe } from "./hooks/useWindowFramePhoneSwipe";
 import { useWindowFrameNoTitlebarMouseHandlers } from "./hooks/useWindowFrameNoTitlebarMouseHandlers";
+import { useDesktopContentBounds } from "@/hooks/useDesktopContentBounds";
+import { windowUsesExplicitWidth } from "@/utils/desktopContentBounds";
 
 export type { WindowFrameProps } from "./windowFrameTypes";
 
@@ -159,6 +161,11 @@ export function WindowFrame({
 
   const isMobile = useIsMobile();
   const isPhone = useIsPhone();
+  const contentBounds = useDesktopContentBounds();
+  const explicitWidth = windowUsesExplicitWidth(
+    window.innerWidth,
+    contentBounds,
+  );
 
   const {
     handleTouchStart,
@@ -274,7 +281,7 @@ export function WindowFrame({
             animate={{
               left: windowPosition.x,
               top: Math.max(0, windowPosition.y),
-              width: window.innerWidth >= 768 ? windowSize.width : "100%",
+              width: explicitWidth ? windowSize.width : "100%",
               height: Math.max(
                 windowSize.height,
                 mergedConstraints.minHeight || 0
@@ -306,8 +313,7 @@ export function WindowFrame({
               top: windowTopMotionValue,
               width: windowWidthMotionValue,
               height: windowHeightMotionValue,
-              minWidth:
-                window.innerWidth >= 768 ? mergedConstraints.minWidth : "100%",
+              minWidth: explicitWidth ? mergedConstraints.minWidth : "100%",
               minHeight: mergedConstraints.minHeight,
               maxWidth: mergedConstraints.maxWidth || undefined,
               maxHeight: mergedConstraints.maxHeight || undefined,

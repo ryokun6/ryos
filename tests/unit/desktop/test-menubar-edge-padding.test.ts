@@ -4,9 +4,8 @@ import {
   DISPLAY_CORNER_FLOOR_PX,
   MENUBAR_HORIZONTAL_RHYTHM,
   PHONE_LAYOUT_MAX_WIDTH_PX,
-  edgeChromeHorizontalPadding,
-  menubarHorizontalPadding,
-  safeAreaInsetPadding,
+  desktopContentEdge,
+  menubarInnerPadding,
   shouldApplyDisplayCornerFloor,
 } from "../../../src/components/layout/menu-bar/menubarEdgePadding";
 
@@ -16,95 +15,92 @@ describe("menubar edge padding", () => {
     expect(html).toContain("viewport-fit=cover");
   });
 
-  test("desktop and phone-width keep the existing 0.5rem rhythm plus the raw inset", () => {
-    // 0.5rem is 8px at the 16px root, which is less than the 12px floor.
-    // Adding the floor here would change desktop padding from 8px to 20px.
+  test("the menubar box is offset by the content rect and padded only by the rhythm", () => {
+    // 0.5rem is 8px at the 16px root. The status-bar inset is the box offset,
+    // so it is not added again as padding.
     expect(MENUBAR_HORIZONTAL_RHYTHM).toBe("0.5rem");
     expect(DISPLAY_CORNER_FLOOR_PX).toBe(12);
+    expect(desktopContentEdge("left")).toBe("var(--desktop-content-left)");
+    expect(desktopContentEdge("right")).toBe("var(--desktop-content-right)");
     expect(
-      menubarHorizontalPadding({
-        side: "left",
-        trafficLightClearance: false,
-        cornerFloor: false,
-      })
-    ).toBe("calc(0.5rem + env(safe-area-inset-left, 0px))");
+      menubarInnerPadding({ side: "left", trafficLightClearance: false })
+    ).toBe("0.5rem");
     expect(
-      menubarHorizontalPadding({
-        side: "right",
-        trafficLightClearance: false,
-        cornerFloor: false,
-      })
-    ).toBe("calc(0.5rem + env(safe-area-inset-right, 0px))");
+      menubarInnerPadding({ side: "right", trafficLightClearance: false })
+    ).toBe("0.5rem");
   });
 
-  test("wide touch uses a 12px inset floor outside the 0.5rem rhythm", () => {
+  test("traffic-light clearance stays a 78px inner pad and does not replace the offset", () => {
     expect(
-      menubarHorizontalPadding({
-        side: "left",
-        trafficLightClearance: false,
-        cornerFloor: true,
-      })
-    ).toBe("calc(max(env(safe-area-inset-left, 0px), 12px) + 0.5rem)");
+      menubarInnerPadding({ side: "left", trafficLightClearance: true })
+    ).toBe("78px");
     expect(
-      menubarHorizontalPadding({
-        side: "right",
-        trafficLightClearance: false,
-        cornerFloor: true,
-      })
-    ).toBe("calc(max(env(safe-area-inset-right, 0px), 12px) + 0.5rem)");
+      menubarInnerPadding({ side: "right", trafficLightClearance: true })
+    ).toBe("0.5rem");
   });
 
-  test("traffic-light clearance stays 78px plus the raw inset, even when the floor is on", () => {
-    expect(
-      menubarHorizontalPadding({
-        side: "left",
-        trafficLightClearance: true,
-        cornerFloor: true,
-      })
-    ).toBe("calc(78px + env(safe-area-inset-left, 0px))");
-    expect(
-      menubarHorizontalPadding({
-        side: "right",
-        trafficLightClearance: true,
-        cornerFloor: false,
-      })
-    ).toBe("calc(0.5rem + env(safe-area-inset-right, 0px))");
-  });
-
-  test("the corner floor applies only to wide coarse-touch viewports", () => {
+  test("the left corner floor applies only inside the iOS shell on wide coarse-touch viewports", () => {
     expect(PHONE_LAYOUT_MAX_WIDTH_PX).toBe(640);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: false, viewportWidth: 1440 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: false,
+        coarseTouch: true,
+        viewportWidth: 1180,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: false, viewportWidth: 1024 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: false,
+        viewportWidth: 1440,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 390 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 390,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 640 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 640,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 641 })
-    ).toBe(true);
-    expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 1180 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 641,
+      })
     ).toBe(true);
   });
 
-  test("taskbar row padding is the raw inset, with the same 12px floor on wide touch", () => {
-    expect(
-      edgeChromeHorizontalPadding({ side: "left", cornerFloor: false })
-    ).toBe("env(safe-area-inset-left, 0px)");
-    expect(
-      edgeChromeHorizontalPadding({ side: "right", cornerFloor: true })
-    ).toBe("max(env(safe-area-inset-right, 0px), 12px)");
+  test("css content insets are 0 until the iOS shell attribute is present", () => {
+    const css = readFileSync(new URL("../../../src/index.css", import.meta.url), "utf8");
+    expect(css).toContain("--desktop-content-left: 0px");
+    expect(css).toContain("--desktop-content-right: 0px");
+    expect(css).toContain("html[data-ios-shell]");
+    expect(css).toContain("--desktop-content-left: var(--sat-safe-area-left)");
+    expect(css).toContain("--desktop-content-right: var(--sat-safe-area-right)");
+    expect(css).toContain("min-width: 641px");
+    expect(css).toContain(
+      "--desktop-content-left: max(env(safe-area-inset-left, 0px), 12px)"
+    );
+    const floorBlock = css.slice(
+      css.indexOf("min-width: 641px"),
+      css.indexOf("min-width: 641px") + 280
+    );
+    expect(floorBlock).toContain("html[data-ios-shell]");
+    expect(floorBlock).not.toContain("--desktop-content-right");
   });
 
-  test("centered dock clearance consumes the inset without a hardcoded floor", () => {
-    expect(safeAreaInsetPadding("left")).toBe("env(safe-area-inset-left, 0px)");
-    expect(safeAreaInsetPadding("right")).toBe("env(safe-area-inset-right, 0px)");
-    expect(safeAreaInsetPadding("bottom")).toBe("env(safe-area-inset-bottom, 0px)");
+  test("the shell marker is the iOS bridge platform, not a user-agent check", () => {
+    const html = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
+    expect(html).toContain('window.ryosDesktop.platform === "ios"');
+    expect(html).toContain('setAttribute("data-ios-shell"');
+    expect(html).not.toContain("iPhone");
   });
 });

@@ -2,6 +2,10 @@ import { useMemo } from "react";
 import type { WindowFrameDrawerContextValue } from "@/components/shared/WindowFrameDrawerContext";
 import type { WindowInsets } from "@/hooks/useWindowInsets";
 import type { ResizeType } from "@/types/types";
+import {
+  getDesktopContentBounds,
+  windowSnapGeometry,
+} from "@/utils/desktopContentBounds";
 
 type DrawerSlotParams = {
   windowPosition: { x: number; y: number };
@@ -69,12 +73,16 @@ export function useWindowFrameDrawerSlot({
     if (!snapZone) return null;
     const { topInset, bottomInset } = computeWindowInsets();
     const height = window.innerHeight - topInset - bottomInset;
-    const width = Math.floor(window.innerWidth / 2);
+    const snap = windowSnapGeometry({
+      viewportWidth: window.innerWidth,
+      bounds: getDesktopContentBounds(),
+      zone: snapZone,
+    });
     return {
       top: topInset,
       height,
-      width,
-      left: snapZone === "left" ? 0 : width,
+      width: snap.width,
+      left: snap.x,
     };
   }, [snapZone, computeWindowInsets]);
 

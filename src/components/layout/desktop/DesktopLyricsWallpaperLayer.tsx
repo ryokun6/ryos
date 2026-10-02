@@ -65,8 +65,8 @@ export function LyricsWallpaperLayer() {
       (pipActive ? LYRICS_PIP_CLEARANCE : 0);
     return {
       gap: LYRICS_WALLPAPER_GAP,
-      paddingLeft: "env(safe-area-inset-left, 0px)",
-      paddingRight: "env(safe-area-inset-right, 0px)",
+      paddingLeft: "var(--desktop-content-left, 0px)",
+      paddingRight: "var(--desktop-content-right, 0px)",
       paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${paddingBottomPx}px)`,
     };
   }, [isMacOSTheme, isAquaGlass, isWinXp, isWin98, pipActive]);

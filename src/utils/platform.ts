@@ -113,3 +113,26 @@ export function isDesktopWindows(): boolean {
 
   return window.ryosDesktop?.platform === "win32";
 }
+
+/** Attribute set on `<html>` while the native iOS shell is hosting the page. */
+export const IOS_SHELL_ATTRIBUTE = "data-ios-shell";
+
+/**
+ * The ryOS iOS app injects `window.ryosDesktop` at document start with
+ * `platform: "ios"`. Mobile Safari and desktop browsers do not. Safe-area
+ * content insets are applied only for that shell; the browser already
+ * handles its own safe areas.
+ */
+export function isIosShell(
+  bridge: { platform?: string } | null | undefined = typeof window === "undefined"
+    ? undefined
+    : window.ryosDesktop
+): boolean {
+  return bridge?.platform === "ios";
+}
+
+/** Mark the document so CSS content insets apply. No-op in a regular browser. */
+export function markIosShellDocument(): void {
+  if (typeof document === "undefined" || !isIosShell()) return;
+  document.documentElement.setAttribute(IOS_SHELL_ATTRIBUTE, "");
+}
