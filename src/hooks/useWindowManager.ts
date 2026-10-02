@@ -11,6 +11,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
+import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import { useEventListener } from "@/hooks/useEventListener";
 import {
   clampWindowToContentBounds,
@@ -49,7 +50,7 @@ export const useWindowManager = ({
     size: WindowSize;
   } => {
     const isMobile = window.innerWidth < 768;
-    const mobileY = 28; // Fixed Y position for mobile to account for menu bar
+    const mobileY = 28 + measureMenubarSafeTop();
 
     const appIndex = appIds.indexOf(appId);
     const offsetIndex = appIndex >= 0 ? appIndex : 0;
