@@ -21,18 +21,9 @@ if (typeof document === "undefined") {
 }
 ensureTestLocalStorage();
 
-const {
-  playHaptic,
-  resetNativeHapticRateLimitForTests,
-  setNativeAudioActive,
-  setNativeNowPlaying,
-  updateNativePlayback,
-} = await import("../../../src/utils/nativeShellBridge");
-const {
-  installNativeRemoteCommandHandler,
-  resetNativeMediaSession,
-  updateNativeMediaSource,
-} = await import("../../../src/shared/media/nativeMediaSession");
+const { playHaptic, resetNativeHapticRateLimitForTests } = await import(
+  "../../../src/utils/nativeShellBridge"
+);
 const { resolveDesktopCapabilities } = await import("../../../src/utils/platform");
 const { getDesktopChatNotificationRendererMode, shouldSendDesktopChatNotificationState } =
   await import("../../../src/utils/desktopChatNotificationPolicy");
@@ -83,7 +74,6 @@ interface ShellPage {
     };
     __ryosReply: (payload: unknown) => void;
     __ryosEmitOpenRoom: (roomId: string | null) => void;
-    __ryosDesktopRemoteCommand: (command: string) => void;
   };
   posted: Posted[];
   /** Replies to every invoke so far the way `Coordinator.reply` does. */
@@ -142,13 +132,10 @@ beforeEach(() => {
   page = loadShellPage();
   appWindow.ryosDesktop = page.window.ryosDesktop;
   resetNativeHapticRateLimitForTests();
-  resetNativeMediaSession();
 });
 
 afterEach(() => {
-  resetNativeMediaSession();
   delete appWindow.ryosDesktop;
-  delete appWindow.__ryosDesktopRemoteCommand;
 });
 
 afterAll(() => {
@@ -179,9 +166,6 @@ describe("injected bridge surface", () => {
       "onChatNotificationStatus",
       "onOpenChatRoomFromNotification",
       "playHaptic",
-      "setAudioActive",
-      "setNowPlaying",
-      "updatePlayback",
       "getVersion",
       "isFullscreen",
       "onFullscreenChange",
@@ -194,7 +178,6 @@ describe("injected bridge surface", () => {
     ]) {
       expect(typeof page.window.ryosDesktop[method]).toBe("function");
     }
-    expect(typeof page.window.__ryosDesktopRemoteCommand).toBe("function");
     expect(typeof page.window.__ryosEmitOpenRoom).toBe("function");
   });
 
@@ -223,87 +206,12 @@ describe("injected bridge surface", () => {
   });
 });
 
-describe("background media", () => {
-  test("the web helpers post the argument keys the native handlers read", () => {
+describe("haptics", () => {
+  test("the web helper posts the argument key the native handler reads", () => {
     expect(playHaptic("soft", 1_000)).toBe(true);
-    expect(setNativeAudioActive(true)).toBe(true);
-    expect(
-      setNativeNowPlaying({
-        title: "Song",
-        artist: "Artist",
-        durationSeconds: 200,
-        artworkUrl: "https://example.com/a.jpg",
-      })
-    ).toBe(true);
-    expect(updateNativePlayback(12.5, 1)).toBe(true);
-    expect(setNativeNowPlaying(null)).toBe(true);
-
-    expect(invokes(page)).toEqual([
-      ["playHaptic", { pattern: "soft" }],
-      ["setAudioActive", { active: true }],
-      [
-        "setNowPlaying",
-        {
-          info: {
-            title: "Song",
-            artist: "Artist",
-            durationSeconds: 200,
-            artworkUrl: "https://example.com/a.jpg",
-          },
-        },
-      ],
-      ["updatePlayback", { positionSeconds: 12.5, rate: 1 }],
-      ["setNowPlaying", { info: null }],
-    ]);
-
-    for (const key of ["pattern", "active", "positionSeconds", "rate", "info"]) {
-      expect(shellWebViewSwift).toContain(`["${key}"]`);
-    }
-    // `NowPlayingInfo` decodes the same field names the web sanitizer emits.
-    for (const field of ["title", "artist", "album", "durationSeconds", "artworkUrl"]) {
-      expect(mediaSwift).toMatch(new RegExp(`var ${field}: `));
-    }
-  });
-
-  test("the session aggregator activates audio before publishing metadata", () => {
-    updateNativeMediaSource("a", {
-      playing: true,
-      nowPlaying: { title: "A" },
-      positionSeconds: 3,
-    });
-    expect(invokes(page).map(([name]) => name)).toEqual([
-      "setAudioActive",
-      "setNowPlaying",
-      "updatePlayback",
-    ]);
-  });
-
-  test("lock-screen commands the shell sends reach the web transport", () => {
-    const shellCommands = [...mediaSwift.matchAll(/onRemoteCommand\?\("([^"]+)"\)/g)].map(
-      (match) => match[1]
-    );
-    expect(shellCommands.sort()).toEqual(["pause", "play", "toggle-play-pause"]);
-    expect(shellWebViewSwift).toContain("window.__ryosDesktopRemoteCommand(");
-
-    // The web handler is installed over the injected no-op on the page the
-    // shell evaluates into.
-    appWindow.__ryosDesktopRemoteCommand = page.window.__ryosDesktopRemoteCommand;
-    const uninstall = installNativeRemoteCommandHandler();
-    const controls: string[] = [];
-    updateNativeMediaSource("ipod", {
-      playing: true,
-      nowPlaying: { title: "A" },
-      positionSeconds: 0,
-      controls: {
-        play: () => controls.push("play"),
-        pause: () => controls.push("pause"),
-      },
-    });
-    const evaluate = appWindow.__ryosDesktopRemoteCommand as (command: string) => void;
-    for (const command of shellCommands) evaluate(command);
-    // pause, play, then toggle on a still-active owner → pause.
-    expect(controls).toEqual(["pause", "play", "pause"]);
-    uninstall();
+    expect(invokes(page)).toEqual([["playHaptic", { pattern: "soft" }]]);
+    expect(shellWebViewSwift).toContain('["pattern"]');
+    expect(mediaSwift).toContain("func playHaptic(");
   });
 });
 
