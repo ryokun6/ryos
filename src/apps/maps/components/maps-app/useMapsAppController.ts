@@ -25,7 +25,7 @@ import {
   withMapPlaceClustering,
 } from "../../utils/mapMarkerClustering";
 import { useYouBikeLayer } from "../../hooks/useYouBikeLayer";
-import { nextLocateMeEnabled } from "../../youbike/locationWatch";
+import { nextLocateMeAction } from "../../youbike/locationWatch";
 import { youbikeMapPoiFields } from "../../youbike/place";
 import { MAPS_ANALYTICS, track } from "@/utils/analytics";
 import {
@@ -1206,18 +1206,41 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
   const handleZoomIn = useCallback(() => adjustMapZoom("in"), [adjustMapZoom]);
   const handleZoomOut = useCallback(() => adjustMapZoom("out"), [adjustMapZoom]);
 
+  const {
+    locateMeFollowPaused,
+    pauseLocateMeFollow,
+    resumeLocateMeFollow,
+    trackedUser: youbikeTrackedUser,
+  } = youbike;
   const handleLocateMe = useCallback(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
-    setLocateMeEnabled((enabled) => {
-      const next = nextLocateMeEnabled({ currentlyEnabled: enabled });
-      // Stop or start tracking only. Off must not reframe / zoom out —
-      // the first-on neighborhood zoom lives in the location watch.
-      map.showsUserLocation = next;
-      map.tracksUserLocation = next;
-      return next;
+    const action = nextLocateMeAction({
+      enabled: locateMeEnabled,
+      followPaused: locateMeFollowPaused,
+      hasFix: youbikeTrackedUser !== null,
     });
-  }, []);
+    if (action === "pause") {
+      pauseLocateMeFollow();
+      return;
+    }
+    if (action === "resume") {
+      resumeLocateMeFollow();
+      return;
+    }
+    // Start or stop tracking only. Stop must not reframe / zoom out —
+    // the first-on neighborhood zoom lives in the location watch.
+    const next = action === "start";
+    map.showsUserLocation = next;
+    map.tracksUserLocation = next;
+    setLocateMeEnabled(next);
+  }, [
+    locateMeEnabled,
+    locateMeFollowPaused,
+    pauseLocateMeFollow,
+    resumeLocateMeFollow,
+    youbikeTrackedUser,
+  ]);
 
   // Debounced search-as-you-type. Fires `performSearch` after the user pauses
   // for ~250ms. Pressing Enter still triggers immediately via handleSearchKeyDown
@@ -1320,9 +1343,10 @@ export function useMapsAppController({ isWindowOpen }: UseMapsAppControllerArgs)
     handleYouBikeDirections,
     handleClearYouBikeRoute,
     locateMeEnabled,
+    locateMeFollowPaused,
     focusYouBikeStep: youbike.focusYouBikeStep,
     youbikeActiveStepIndex: youbike.activeStepIndex,
-    youbikeTrackedUser: youbike.trackedUser,
+    youbikeTrackedUser,
     youbikeOverlayEnabled,
     setYoubikeOverlayEnabled,
     youbikeRoutePlan: youbike.routePlan,

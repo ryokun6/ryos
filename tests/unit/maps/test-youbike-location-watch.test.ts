@@ -7,7 +7,7 @@ import {
   createYouBikeUserPuckElement,
   geoPointFromCoords,
   isDistinctUserLocation,
-  nextLocateMeEnabled,
+  nextLocateMeAction,
   shouldWatchYouBikeUserLocation,
   startYouBikeUserLocationWatch,
   type GeolocationWatchLike,
@@ -45,10 +45,35 @@ describe("shouldWatchYouBikeUserLocation", () => {
   });
 });
 
-describe("nextLocateMeEnabled", () => {
-  test("toggles Locate Me on and off", () => {
-    expect(nextLocateMeEnabled({ currentlyEnabled: false })).toBe(true);
-    expect(nextLocateMeEnabled({ currentlyEnabled: true })).toBe(false);
+describe("nextLocateMeAction", () => {
+  test("off starts tracking (prompts for location)", () => {
+    expect(
+      nextLocateMeAction({ enabled: false, followPaused: false, hasFix: false })
+    ).toBe("start");
+    expect(
+      nextLocateMeAction({ enabled: false, followPaused: true, hasFix: true })
+    ).toBe("start");
+  });
+
+  test("with a fix, taps toggle auto-recenter instead of stopping", () => {
+    expect(
+      nextLocateMeAction({ enabled: true, followPaused: false, hasFix: true })
+    ).toBe("pause");
+    expect(
+      nextLocateMeAction({ enabled: true, followPaused: true, hasFix: true })
+    ).toBe("resume");
+  });
+
+  test("paused after a pan resumes even before a fix arrives", () => {
+    expect(
+      nextLocateMeAction({ enabled: true, followPaused: true, hasFix: false })
+    ).toBe("resume");
+  });
+
+  test("no fix yet (prompt pending / denied) stops so the next tap asks again", () => {
+    expect(
+      nextLocateMeAction({ enabled: true, followPaused: false, hasFix: false })
+    ).toBe("stop");
   });
 });
 
@@ -196,7 +221,9 @@ describe("YouBike navigation location wiring", () => {
     );
     expect(app).not.toContain("onStartNavigation={handleLocateMe}");
     expect(app).not.toContain("onNavigatingChange=");
-    expect(app).toContain("followUserLocation={locateMeEnabled}");
+    expect(app).toContain(
+      "followUserLocation={locateMeEnabled && !locateMeFollowPaused}"
+    );
     const controller = readFileSync(
       resolve(
         import.meta.dir,
@@ -204,8 +231,70 @@ describe("YouBike navigation location wiring", () => {
       ),
       "utf8"
     );
-    expect(controller).toContain("nextLocateMeEnabled");
+    expect(controller).toContain("nextLocateMeAction");
     expect(controller).not.toContain("isNavigating: youbikeNavigating");
+  });
+
+  test("user pan pauses follow; Locate Me tap recenters and resumes it", () => {
+    const read = (path: string) =>
+      readFileSync(resolve(import.meta.dir, "../../../", path), "utf8");
+    const layer = read("src/apps/maps/hooks/useYouBikeLayer.ts");
+    const controller = read(
+      "src/apps/maps/components/maps-app/useMapsAppController.ts"
+    );
+    const app = read("src/apps/maps/components/maps-app/MapsAppComponent.tsx");
+    const chrome = read(
+      "src/apps/maps/components/maps-app/MapsMapBottomChrome.tsx"
+    );
+    const card = read("src/apps/maps/components/MapsYouBikeRouteCard.tsx");
+
+    // Only user-interaction events pause; programmatic recenters never do.
+    expect(layer).toContain('map.addEventListener?.("scroll-start", onUserScrollStart)');
+    expect(layer).toContain('map.addEventListener?.("zoom-end", onUserZoomEnd)');
+    expect(layer).toContain('map.removeEventListener?.("scroll-start", onUserScrollStart)');
+    expect(layer).toContain('map.removeEventListener?.("zoom-end", onUserZoomEnd)');
+    expect(layer).not.toContain('"region-change-start"');
+    expect(layer).toContain("isPointNearMapCenter");
+    expect(layer).toContain("followPaused: locateMeFollowPausedRef.current");
+
+    const resumeStart = layer.indexOf("const resumeLocateMeFollow");
+    const resume = layer.slice(resumeStart, layer.indexOf("}, [", resumeStart));
+    expect(resume).toContain("if (!locateMeEnabled) return;");
+    expect(resume).toContain("setLocateMeFollowPaused(false)");
+    expect(resume).toContain("followUserOnMap(point, camera)");
+
+    // Locate Me off / map teardown clears the paused state.
+    const stopStart = layer.indexOf("if (!shouldWatch || mapReadyTick === 0)");
+    const stopWatch = layer.slice(
+      stopStart,
+      layer.indexOf("const map = mapInstanceRef.current;", stopStart)
+    );
+    expect(stopWatch).toContain("setLocateMeFollowPaused(false)");
+
+    // Locate Me itself toggles auto-recenter once a fix exists; no extra button.
+    const handleStart = controller.indexOf("const handleLocateMe");
+    const handleLocateMe = controller.slice(
+      handleStart,
+      controller.indexOf("\n  }, [", handleStart)
+    );
+    expect(handleLocateMe).toContain("nextLocateMeAction");
+    expect(handleLocateMe).toContain("hasFix: youbikeTrackedUser !== null");
+    expect(handleLocateMe).toContain("pauseLocateMeFollow()");
+    expect(handleLocateMe).toContain("resumeLocateMeFollow()");
+    expect(app).toContain("locateMeTracking={locateMeEnabled}");
+    expect(app).toContain(
+      "locateMePressed={locateMeEnabled && !locateMeFollowPaused}"
+    );
+    expect(app).toContain("onLocateMe={handleLocateMe}");
+    expect(app).not.toContain("Recenter");
+    expect(chrome).not.toContain("onRecenter");
+    expect(chrome).toContain(
+      'weight={locateMeTracking && !locateMePressed ? "bold" : "fill"}'
+    );
+
+    // Pausing mid-ride must not reframe the step until the step changes.
+    expect(card).toContain("}, [focusedIndex, isNavigating]);");
+    expect(card).toContain("followUserLocationRef.current");
   });
 
   test("Locate Me keeps outline chrome and only blues the glyph when tracking", () => {
@@ -217,7 +306,7 @@ describe("YouBike navigation location wiring", () => {
       "utf8"
     );
     expect(chrome).toContain("aria-pressed={locateMePressed}");
-    expect(chrome).toContain('locateMePressed ? "text-os-link"');
+    expect(chrome).toContain('locateMeTracking ? "text-os-link"');
     expect(chrome).toContain('variant={isMacOSTheme ? "aqua" : "retro"}');
     expect(chrome).not.toContain("aqua-button primary");
     expect(chrome).not.toContain('variant="default"');

@@ -12,6 +12,7 @@ import {
   geoIpCityMapRegion,
   initialHomeMapRegion,
   initialMapFrameSpanDeg,
+  isPointNearMapCenter,
   locateMeCameraMode,
   locateMeFocusRegion,
   visibleMapSpanDeg,
@@ -74,6 +75,67 @@ describe("locate / home camera spans", () => {
         currentSpanDeg: LOCATE_ME_SPAN_DEG / 2,
       })
     ).toBe("recenter");
+  });
+
+  test("paused follow keeps the camera idle until a Locate Me tap resumes it", () => {
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: true,
+        followPaused: true,
+      })
+    ).toBe("idle");
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: false,
+        currentSpanDeg: CITY_LEVEL_SPAN_DEG,
+        followPaused: true,
+      })
+    ).toBe("idle");
+    expect(
+      locateMeCameraMode({
+        locateMeEnabled: true,
+        hasAppliedFocusZoom: true,
+        followPaused: false,
+      })
+    ).toBe("recenter");
+  });
+
+  test("user zoom keeps follow only while the user stays near the view center", () => {
+    const region = {
+      center: HOME,
+      span: { latitudeDelta: 0.01, longitudeDelta: 0.02 },
+    };
+    expect(isPointNearMapCenter(region, HOME)).toBe(true);
+    expect(
+      isPointNearMapCenter(region, {
+        latitude: HOME.latitude + 0.002,
+        longitude: HOME.longitude - 0.004,
+      })
+    ).toBe(true);
+    expect(
+      isPointNearMapCenter(region, {
+        latitude: HOME.latitude + 0.004,
+        longitude: HOME.longitude,
+      })
+    ).toBe(false);
+    expect(
+      isPointNearMapCenter(region, {
+        latitude: HOME.latitude,
+        longitude: HOME.longitude + 0.006,
+      })
+    ).toBe(false);
+    expect(
+      isPointNearMapCenter(
+        {
+          center: { latitude: 0, longitude: 179.999 },
+          span: { latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        },
+        { latitude: 0, longitude: -179.999 }
+      )
+    ).toBe(true);
+    expect(isPointNearMapCenter(null, HOME)).toBe(true);
   });
 
   test("visible span is the wider axis of the current region", () => {
@@ -160,10 +222,11 @@ describe("locate / home camera wiring", () => {
     expect(controller).not.toContain("frameAtCityLevel(home");
 
     const handleStart = controller.indexOf("const handleLocateMe");
-    const handleEnd = controller.indexOf("}, []);", handleStart);
+    const handleEnd = controller.indexOf("\n  }, [", handleStart);
     const handleLocateMe = controller.slice(handleStart, handleEnd);
     expect(handleLocateMe).toContain("map.showsUserLocation = next");
     expect(handleLocateMe).toContain("map.tracksUserLocation = next");
+    expect(handleLocateMe).not.toContain("followUserOnMap");
     expect(handleLocateMe).not.toContain("setRegionAnimated");
     expect(handleLocateMe).not.toContain("setCenterAnimated");
     expect(handleLocateMe).not.toContain("geoIpCityMapRegion");
