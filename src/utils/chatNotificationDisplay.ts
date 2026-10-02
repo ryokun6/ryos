@@ -8,6 +8,7 @@ import i18n from "@/lib/i18n";
 import { showChatNotification } from "@/utils/browserNotifications";
 import { openChatRoomFromNotification } from "@/utils/openChatRoomFromNotification";
 import { showNativeToastNotification } from "@/utils/nativeToastNotifications";
+import { pushLog } from "@/utils/pushNotificationLog";
 
 const openLabel = () => i18n.t("apps.chats.notification.openAction");
 
@@ -25,6 +26,7 @@ function showNotificationFallback(params: {
     chatRoomId,
   }).then((shown) => {
     if (shown) {
+      pushLog.debug("Chat notification displayed", { tag, path: "shell" });
       return;
     }
 
@@ -38,6 +40,10 @@ function showNotificationFallback(params: {
     if (!shownInBrowser) {
       showToast();
     }
+    pushLog.debug("Chat notification displayed", {
+      tag,
+      path: shownInBrowser ? "browser" : "toast",
+    });
   });
 }
 

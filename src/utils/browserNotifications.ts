@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { pushLog } from "@/utils/pushNotificationLog";
 
 const DEFAULT_ICON = "/icons/mac-192.png";
 
@@ -34,13 +35,25 @@ export function getNotificationPermission(): NotificationPermission {
  */
 export function requestNotificationPermission(): Promise<NotificationPermission> {
   if (!isNotificationApiAvailable()) {
+    pushLog.debug("Notification permission request skipped: API unavailable");
     return Promise.resolve("denied");
   }
   if (Notification.permission !== "default") {
+    pushLog.debug("Notification permission already decided", {
+      permission: Notification.permission,
+    });
     return Promise.resolve(Notification.permission as NotificationPermission);
   }
+  pushLog.debug("Requesting notification permission");
   return Notification.requestPermission().then(
-    (result) => result as NotificationPermission
+    (result) => {
+      pushLog.debug("Notification permission result", { permission: result });
+      return result as NotificationPermission;
+    },
+    (error: unknown) => {
+      pushLog.warn("Notification permission request failed", { error });
+      throw error;
+    }
   );
 }
 
@@ -76,6 +89,12 @@ export function showChatNotification(
   params: ShowChatNotificationParams
 ): boolean {
   if (!shouldShowNativeNotification()) {
+    pushLog.debug("Browser notification skipped", {
+      apiAvailable: isNotificationApiAvailable(),
+      hidden: typeof document !== "undefined" ? document.hidden : undefined,
+      permission: getNotificationPermission(),
+      tag: params.tag,
+    });
     return false;
   }
 
@@ -90,13 +109,16 @@ export function showChatNotification(
     });
 
     n.onclick = () => {
+      pushLog.debug("Browser notification clicked", { tag });
       n.close();
       onClick?.();
       window.focus();
     };
 
+    pushLog.debug("Browser notification shown", { tag });
     return true;
-  } catch {
+  } catch (error) {
+    pushLog.warn("Browser notification failed", { tag, error });
     return false;
   }
 }

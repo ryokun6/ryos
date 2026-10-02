@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let centerDelegate = NotificationTapDelegate()
         UNUserNotificationCenter.current().delegate = centerDelegate
         centerDelegateHolder = centerDelegate
+        AudioSessionController.shared.start()
         return true
     }
 
@@ -20,6 +21,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
+        pushLog("APNs token received \(redactedPushToken(token))")
         DispatchQueue.main.async {
             NotificationCenter.default.post(
                 name: .ryOSAPNsTokenArrived, object: nil, userInfo: ["token": token]
@@ -31,7 +33,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
-        NSLog("ryOS: APNs registration failed: \(error.localizedDescription)")
+        pushLog("APNs registration failed: \(error.localizedDescription)")
     }
 }
 
@@ -45,6 +47,8 @@ final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate 
     ) {
         // Show banners for relay pushes while the app is open but Chats is
         // closed; the web client covers the in-app toast UX itself.
+        let roomId = notification.request.content.userInfo["chatRoomId"] as? String
+        pushLog("Presenting foreground notification room=\(roomId ?? "nil")")
         completionHandler([.banner, .sound])
     }
 
@@ -54,6 +58,7 @@ final class NotificationTapDelegate: NSObject, UNUserNotificationCenterDelegate 
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let roomId = response.notification.request.content.userInfo["chatRoomId"] as? String
+        pushLog("Notification tapped room=\(roomId ?? "nil")")
         DispatchQueue.main.async {
             ShellRouter.shared.queue(roomId: roomId)
             ShellRouter.shared.firePendingRoom()

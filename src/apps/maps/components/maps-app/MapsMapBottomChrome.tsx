@@ -13,6 +13,9 @@ export interface MapsMapBottomChromeProps {
   zoomOutTitle: string;
   zoomInTitle: string;
   locateMeTitle: string;
+  /** Location watch is on — the glyph takes the accent color. */
+  locateMeTracking?: boolean;
+  /** Auto-recenter is on — filled arrow. Tracking but paused shows an outline. */
   locateMePressed?: boolean;
   placesTitle: string;
   canUseMap: boolean;
@@ -34,6 +37,7 @@ export function MapsMapBottomChrome({
   zoomOutTitle,
   zoomInTitle,
   locateMeTitle,
+  locateMeTracking = false,
   locateMePressed = false,
   placesTitle,
   canUseMap,
@@ -95,8 +99,8 @@ export function MapsMapBottomChrome({
         >
           <NavigationArrow
             size={12}
-            weight="fill"
-            className={locateMePressed ? "text-os-link" : undefined}
+            weight={locateMeTracking && !locateMePressed ? "bold" : "fill"}
+            className={locateMeTracking ? "text-os-link" : undefined}
           />
         </Button>
         <Button

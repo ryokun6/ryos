@@ -1,5 +1,6 @@
 import { useAppStore } from "@/stores/useAppStore";
 import { useChatsStore } from "@/stores/useChatsStore";
+import { pushLog } from "@/utils/pushNotificationLog";
 
 /**
  * Open/focus Chats and switch to the target room.
@@ -18,10 +19,14 @@ export const openChatRoomFromNotification = (
   void chatsStore.switchRoom(targetRoomId);
 
   // If this room is not currently visible in state, refresh rooms to surface it.
-  if (
-    targetRoomId &&
-    !chatsStore.rooms.some((room) => room.id === targetRoomId)
-  ) {
+  const roomKnown =
+    !targetRoomId || chatsStore.rooms.some((room) => room.id === targetRoomId);
+  pushLog.debug("Opening chat room from notification", {
+    roomId: targetRoomId,
+    roomKnown,
+    signedIn: chatsStore.isAuthenticated,
+  });
+  if (!roomKnown) {
     void chatsStore.fetchRooms();
   }
 };
