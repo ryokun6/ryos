@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { calculateExposeGrid, getExposeTransform } from "../../exposeUtils";
 import { useAppStore } from "@/stores/useAppStore";
+import { useDesktopContentBounds } from "@/hooks/useDesktopContentBounds";
 
 type ExposeParams = {
   exposeMode: boolean;
@@ -19,6 +20,7 @@ export function useWindowFrameExposeTransform({
   windowSize,
   isMobile,
 }: ExposeParams) {
+  const bounds = useDesktopContentBounds();
   return useMemo(() => {
     if (!exposeMode || !instanceId) return null;
 
@@ -34,7 +36,7 @@ export function useWindowFrameExposeTransform({
 
     const grid = calculateExposeGrid(
       openInstances.length,
-      window.innerWidth,
+      bounds.width,
       window.innerHeight,
       60,
       24,
@@ -48,8 +50,9 @@ export function useWindowFrameExposeTransform({
       windowSize.height,
       myIndex,
       grid,
-      window.innerWidth,
-      window.innerHeight
+      bounds.width,
+      window.innerHeight,
+      bounds.x
     );
 
     return { ...transform, index: myIndex };
@@ -62,5 +65,7 @@ export function useWindowFrameExposeTransform({
     windowPosition,
     windowSize,
     isMobile,
+    bounds.width,
+    bounds.x,
   ]);
 }

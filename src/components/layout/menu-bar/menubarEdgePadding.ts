@@ -1,33 +1,37 @@
 /**
- * Horizontal edge clearance for full-bleed shell chrome (menubar, taskbar).
+ * Horizontal edge clearance for full-bleed shell chrome.
  *
- * `env(safe-area-inset-*)` is 0 until the page opts into edge-to-edge layout
- * (`viewport-fit=cover` in index.html) and the host webview actually extends
- * under the reserved regions. The iPhone Duo open pose needs a floor so the
- * Apple logo and the opposite status controls still clear the rounded corners
- * when those insets report 0.
+ * Apple documents no API that detects iPhone Duo. The page consumes
+ * `env(safe-area-inset-left)` and `env(safe-area-inset-right)` independently
+ * (`viewport-fit=cover` is set in index.html). The right-hand status bar is
+ * the trailing inset — 84pt on the closed outer display in the iOS 27.1
+ * simulator — and is never given an extra floor. When the inset is 0 (desktop
+ * browsers, and a shell that has not extended under the bar), chrome stays on
+ * today's rhythm.
  *
- * The floor is not applied on desktop or phone-width layouts. The menubar's
- * existing rhythm is `0.5rem`, which is 8px at the 16px root (`html` does not
- * override the browser default, and Tailwind preflight does not either).
- * `max(inset, 12px) + 0.5rem` with a 0 inset would grow that padding from 8px
- * to 20px. Phone-width (closed Duo) already matches production via `env()`
- * alone, so the floor starts only above `useIsPhone`'s 640px breakpoint, and
- * only for a coarse touch pointer — not for desktop browsers or the Electron
- * shell.
+ * The menubar and taskbar are offset by `--desktop-content-*` so their boxes
+ * stop at the status bar. Inner padding is only the existing rhythm (or the
+ * 78px traffic-light prefix), otherwise the inset would be applied twice.
+ * Wallpaper does not use these variables.
+ *
+ * A 12px left floor applies only on wide coarse-touch viewports, via the
+ * `--desktop-content-left` media query in index.css. The menubar rhythm is
+ * `0.5rem` (8px at the 16px root). Folding that floor into padding on desktop
+ * would grow 8px to 20px. Phone-width stays on the raw inset.
  *
  * Traffic-light clearance stays a separate 78px prefix gated by
- * `needsTrafficLightClearance`. It is never replaced by this floor.
+ * `needsTrafficLightClearance`.
  */
 
 export const MENUBAR_HORIZONTAL_RHYTHM = "0.5rem";
 
-/** Minimum inset once the corner floor is active. The rhythm is added outside this. */
+/** Minimum left inset once the corner floor is active. Applied as a box offset, not extra padding. */
 export const DISPLAY_CORNER_FLOOR_PX = 12;
 
 /**
- * Viewports at or below this width keep today's unfloored padding.
+ * Viewports at or below this width keep the raw left inset.
  * Matches the default breakpoint in `useIsPhone` (`innerWidth < 640`).
+ * The CSS media query uses `min-width: 641px`.
  */
 export const PHONE_LAYOUT_MAX_WIDTH_PX = 640;
 
@@ -41,58 +45,26 @@ export function shouldApplyDisplayCornerFloor(input: {
   coarseTouch: boolean;
   viewportWidth: number;
 }): boolean {
-  return (
-    input.coarseTouch && input.viewportWidth > PHONE_LAYOUT_MAX_WIDTH_PX
-  );
+  return input.coarseTouch && input.viewportWidth > PHONE_LAYOUT_MAX_WIDTH_PX;
 }
 
-function insetVariable(side: "left" | "right" | "bottom"): string {
-  return `safe-area-inset-${side}`;
+/** Box offset. Right is the status-bar inset only; left may include the wide-touch floor. */
+export function desktopContentEdge(side: "left" | "right"): string {
+  return side === "left"
+    ? "var(--desktop-content-left)"
+    : "var(--desktop-content-right)";
 }
 
 /**
- * Menubar padding for one side.
- *
- * Unfloored (desktop, phone-width, Electron): `calc(0.5rem + env(...))`.
- * Wide touch: `calc(max(env(...), 12px) + 0.5rem)`.
- * Traffic lights (left only): `calc(78px + env(...))`, floor ignored.
+ * Padding inside the already-offset menubar box.
+ * Traffic lights (left only): `78px`. Otherwise `0.5rem`.
  */
-export function menubarHorizontalPadding(options: {
+export function menubarInnerPadding(options: {
   side: "left" | "right";
   trafficLightClearance: boolean;
-  cornerFloor: boolean;
 }): string {
-  const inset = insetVariable(options.side);
   if (options.trafficLightClearance && options.side === "left") {
-    return `calc(78px + env(${inset}, 0px))`;
+    return "78px";
   }
-  if (options.cornerFloor) {
-    return `calc(max(env(${inset}, 0px), ${DISPLAY_CORNER_FLOOR_PX}px) + ${MENUBAR_HORIZONTAL_RHYTHM})`;
-  }
-  return `calc(${MENUBAR_HORIZONTAL_RHYTHM} + env(${inset}, 0px))`;
-}
-
-/**
- * Padding for other full-bleed chrome that already sits on the viewport edge
- * with no extra rhythm (the Windows taskbar item row).
- *
- * Unfloored: `env(safe-area-inset-*, 0px)` — 0px on desktop.
- * Wide touch: `max(env(...), 12px)`.
- */
-export function edgeChromeHorizontalPadding(options: {
-  side: "left" | "right";
-  cornerFloor: boolean;
-}): string {
-  const inset = insetVariable(options.side);
-  if (options.cornerFloor) {
-    return `max(env(${inset}, 0px), ${DISPLAY_CORNER_FLOOR_PX}px)`;
-  }
-  return `env(${inset}, 0px)`;
-}
-
-/** Real safe-area inset only. 0 on desktop, so centered chrome does not move. */
-export function safeAreaInsetPadding(
-  side: "left" | "right" | "bottom",
-): string {
-  return `env(${insetVariable(side)}, 0px)`;
+  return MENUBAR_HORIZONTAL_RHYTHM;
 }

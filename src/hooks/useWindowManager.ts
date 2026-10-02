@@ -12,6 +12,18 @@ import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
 import { useEventListener } from "@/hooks/useEventListener";
+import {
+  clampWindowToContentBounds,
+  getDesktopContentBounds,
+  hasHorizontalContentInset,
+  mobileFullWidthFrame,
+  windowDragLimits,
+  windowResizeMaxWidth,
+  windowResizeMinLeft,
+  windowSnapEdges,
+  windowSnapGeometry,
+  windowUsesExplicitWidth,
+} from "@/utils/desktopContentBounds";
 
 interface UseWindowManagerProps {
   appId: AppId;
@@ -62,18 +74,24 @@ export const useWindowManager = ({
   };
 
   const adjustedPosition = { ...initialState.position };
-
-  // Ensure window is visible within viewport
-  if (adjustedPosition.x + initialState.size.width > window.innerWidth) {
-    adjustedPosition.x = Math.max(
-      0,
-      window.innerWidth - initialState.size.width
-    );
-  }
+  const viewportWidth = window.innerWidth;
+  const contentBounds = getDesktopContentBounds();
+  const fitted = clampWindowToContentBounds({
+    x: adjustedPosition.x,
+    width: initialState.size.width,
+    viewportWidth,
+    bounds: contentBounds,
+    mobile: viewportWidth < 768,
+  });
+  adjustedPosition.x = fitted.x;
+  const fittedSize =
+    fitted.width === initialState.size.width
+      ? initialState.size
+      : { ...initialState.size, width: fitted.width };
 
   const [windowPosition, setWindowPosition] =
     useState<WindowPosition>(adjustedPosition);
-  const [windowSize, setWindowSize] = useState<WindowSize>(initialState.size);
+  const [windowSize, setWindowSize] = useState<WindowSize>(fittedSize);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeType, setResizeType] = useState<ResizeType>("");
@@ -96,6 +114,7 @@ export const useWindowManager = ({
   const latestWindowSizeRef = useRef(windowSize);
 
   const isMobile = window.innerWidth < 768;
+  const explicitWidth = windowUsesExplicitWidth(viewportWidth, contentBounds);
 
   // Transient geometry written directly during drag / resize. WindowFrame
   // binds these motion values to the frame's style, so pointer moves update
@@ -110,10 +129,10 @@ export const useWindowManager = ({
     Math.max(0, adjustedPosition.y)
   );
   const windowWidthMotionValue = useMotionValue<number | string>(
-    isMobile ? "100%" : initialState.size.width
+    explicitWidth ? fittedSize.width : "100%"
   );
   const windowHeightMotionValue = useMotionValue<number | string>(
-    initialState.size.height
+    fittedSize.height
   );
 
   const applyLiveWindowPosition = useCallback(
@@ -128,15 +147,56 @@ export const useWindowManager = ({
   const applyLiveWindowSize = useCallback(
     (nextSize: WindowSize) => {
       latestWindowSizeRef.current = nextSize;
-      // Below the md breakpoint the frame is rendered at "100%" width; leave
-      // the motion value alone so it stays correct across viewport resizes.
-      if (window.innerWidth >= 768) {
+      // Below the md breakpoint the frame is rendered at "100%" width unless
+      // a horizontal content inset exists. Leave the motion value alone in
+      // the fill case so it stays correct across viewport resizes.
+      if (windowUsesExplicitWidth(window.innerWidth, getDesktopContentBounds())) {
         windowWidthMotionValue.set(nextSize.width);
       }
       windowHeightMotionValue.set(nextSize.height);
     },
     [windowWidthMotionValue, windowHeightMotionValue]
   );
+
+  // Reclamp only when a status-bar inset exists (unfolding Duo). Desktop
+  // resize behavior stays unchanged when both insets are 0.
+  useEffect(() => {
+    const reclamp = () => {
+      const width = window.innerWidth;
+      const bounds = getDesktopContentBounds();
+      if (!hasHorizontalContentInset(bounds, width)) return;
+      const pos = latestWindowPositionRef.current;
+      const size = latestWindowSizeRef.current;
+      const next = clampWindowToContentBounds({
+        x: pos.x,
+        width: size.width,
+        viewportWidth: width,
+        bounds,
+        mobile: width < 768,
+      });
+      if (next.x !== pos.x) {
+        const nextPos = { ...pos, x: next.x };
+        latestWindowPositionRef.current = nextPos;
+        setWindowPosition(nextPos);
+        windowLeftMotionValue.set(nextPos.x);
+      }
+      if (next.width !== size.width) {
+        const nextSize = { ...size, width: next.width };
+        latestWindowSizeRef.current = nextSize;
+        setWindowSize(nextSize);
+        windowWidthMotionValue.set(nextSize.width);
+      }
+    };
+    window.addEventListener("resize", reclamp);
+    window.visualViewport?.addEventListener("resize", reclamp);
+    const media = window.matchMedia("(hover: none) and (pointer: coarse)");
+    media.addEventListener("change", reclamp);
+    return () => {
+      window.removeEventListener("resize", reclamp);
+      window.visualViewport?.removeEventListener("resize", reclamp);
+      media.removeEventListener("change", reclamp);
+    };
+  }, [windowLeftMotionValue, windowWidthMotionValue]);
 
   const updateSnapZone = useCallback((zone: "left" | "right" | null) => {
     if (snapZoneRef.current === zone) return;
@@ -297,22 +357,35 @@ export const useWindowManager = ({
 
         if (isMobile) {
           // On mobile, only allow vertical dragging and keep window full width
-          applyLiveWindowPosition({ x: 0, y: Math.max(menuBarHeight, newY) });
+          // of the content rect (the viewport, unless a status bar is inset).
+          const frame = mobileFullWidthFrame(
+            window.innerWidth,
+            getDesktopContentBounds(),
+          );
+          applyLiveWindowPosition({
+            x: frame.x,
+            y: Math.max(menuBarHeight, newY),
+          });
           updateSnapZone(null);
         } else {
           // Allow dragging past edges, but keep at least 80px of window visible
-          const minX = -(windowSize.width - 80); // Can drag left, keeping 80px visible on right
-          const maxX = window.innerWidth - 80; // Can drag right, keeping 80px visible on left
+          const bounds = getDesktopContentBounds();
+          const { minX, maxX } = windowDragLimits({
+            windowWidth: windowSize.width,
+            viewportWidth: window.innerWidth,
+            bounds,
+          });
           const maxY = window.innerHeight - 80; // Can drag down, keeping 80px visible at top
           const x = Math.min(Math.max(minX, newX), maxX);
           const y = Math.min(Math.max(menuBarHeight, newY), Math.max(0, maxY));
           applyLiveWindowPosition({ x, y });
 
-          // Detect snap zones - trigger when cursor is within 20px of screen edge
+          // Detect snap zones - trigger when cursor is within 20px of the content edge
           const SNAP_THRESHOLD = 20;
-          if (clientX <= SNAP_THRESHOLD) {
+          const edges = windowSnapEdges(window.innerWidth, bounds);
+          if (clientX <= edges.left + SNAP_THRESHOLD) {
             updateSnapZone("left");
-          } else if (clientX >= window.innerWidth - SNAP_THRESHOLD) {
+          } else if (clientX >= edges.right - SNAP_THRESHOLD) {
             updateSnapZone("right");
           } else {
             updateSnapZone(null);
@@ -332,7 +405,9 @@ export const useWindowManager = ({
 
         const minWidth = config.minSize?.width || 260;
         const minHeight = config.minSize?.height || 200;
-        const maxWidth = window.innerWidth;
+        const resizeBounds = getDesktopContentBounds();
+        const maxWidth = windowResizeMaxWidth(window.innerWidth, resizeBounds);
+        const minLeft = windowResizeMinLeft(resizeBounds);
         const { bottomInset, topInset: menuBarHeight } = computeInsets();
         const maxHeight = window.innerHeight - bottomInset;
 
@@ -356,7 +431,7 @@ export const useWindowManager = ({
             );
             if (potentialWidth !== resizeStart.width) {
               newLeft = Math.max(
-                0,
+                minLeft,
                 resizeStart.left + (resizeStart.width - potentialWidth)
               );
               newWidth = potentialWidth;
@@ -390,9 +465,10 @@ export const useWindowManager = ({
         }
 
         if (isMobile) {
-          // Keep window full width on mobile
-          newWidth = window.innerWidth;
-          newLeft = 0;
+          // Keep window full width of the content rect on mobile
+          const frame = mobileFullWidthFrame(window.innerWidth, resizeBounds);
+          newWidth = frame.width;
+          newLeft = frame.x;
         }
 
         applyLiveWindowSize({ width: newWidth, height: newHeight });
@@ -441,7 +517,11 @@ export const useWindowManager = ({
       if (snapZoneRef.current && !isMobile) {
         const { topInset, bottomInset } = computeInsets();
         const snapHeight = window.innerHeight - topInset - bottomInset;
-        const snapWidth = Math.floor(window.innerWidth / 2);
+        const snap = windowSnapGeometry({
+          viewportWidth: window.innerWidth,
+          bounds: getDesktopContentBounds(),
+          zone: snapZoneRef.current,
+        });
 
         // Save current state before snapping (for potential restore later)
         preSnapStateRef.current = {
@@ -449,9 +529,9 @@ export const useWindowManager = ({
           size: { ...currentSize },
         };
 
-        const newSize = { width: snapWidth, height: snapHeight };
+        const newSize = { width: snap.width, height: snapHeight };
         const newPosition = {
-          x: snapZoneRef.current === "left" ? 0 : snapWidth,
+          x: snap.x,
           y: topInset,
         };
 

@@ -21,8 +21,10 @@ import { SpotlightMenuBarButton } from "./SpotlightMenuBarButton";
 import { useDesktopFullscreen } from "./useDesktopFullscreen";
 import { shouldShowDesktopDragDebugZone } from "./desktopDragDebug";
 import { getMenubarWindowChromeLayout } from "./menubarWindowChrome";
-import { menubarHorizontalPadding } from "./menubarEdgePadding";
-import { useDisplayCornerFloor } from "@/hooks/useDisplayCornerFloor";
+import {
+  desktopContentEdge,
+  menubarInnerPadding,
+} from "./menubarEdgePadding";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
 const dragRegionStyle = { WebkitAppRegion: "drag" } as CSSProperties;
@@ -55,7 +57,6 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
     showResizers,
   });
   const isFullscreen = useDesktopFullscreen();
-  const cornerFloor = useDisplayCornerFloor();
   const { showWindowDragRegion, needsTrafficLightClearance } =
     getMenubarWindowChromeLayout({
       hasWindowChrome,
@@ -106,15 +107,15 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
               color: glassMenubarText,
             }
           : { color: "var(--os-color-menubar-text)" }),
-        paddingLeft: menubarHorizontalPadding({
+        left: desktopContentEdge("left"),
+        right: desktopContentEdge("right"),
+        paddingLeft: menubarInnerPadding({
           side: "left",
           trafficLightClearance: needsTrafficLightClearance,
-          cornerFloor,
         }),
-        paddingRight: menubarHorizontalPadding({
+        paddingRight: menubarInnerPadding({
           side: "right",
           trafficLightClearance: needsTrafficLightClearance,
-          cornerFloor,
         }),
         height: menuBarHeight,
         minHeight: menuBarHeight,

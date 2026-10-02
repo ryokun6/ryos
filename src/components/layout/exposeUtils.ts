@@ -71,7 +71,8 @@ export function getExposeCellCenter(
   index: number,
   grid: ReturnType<typeof calculateExposeGrid>,
   viewportWidth: number,
-  viewportHeight: number
+  viewportHeight: number,
+  originX = 0
 ): { x: number; y: number } {
   const { cols, cellWidth, cellHeight, gap, padding, isMobile } = grid;
   const col = index % cols;
@@ -82,7 +83,7 @@ export function getExposeCellCenter(
     const labelSpacePerRow = 50;
     const totalGridWidth = cols * cellWidth + (cols - 1) * gap;
     const totalGridHeight = grid.rows * cellHeight + (grid.rows - 1) * gap + grid.rows * labelSpacePerRow;
-    const startX = (viewportWidth - totalGridWidth) / 2;
+    const startX = originX + (viewportWidth - totalGridWidth) / 2;
     const startY = Math.max(padding, (viewportHeight - totalGridHeight) / 2);
     const x = startX + col * (cellWidth + gap) + cellWidth / 2;
     const y = startY + row * (cellHeight + gap + labelSpacePerRow) + cellHeight / 2;
@@ -92,8 +93,8 @@ export function getExposeCellCenter(
   const totalGridWidth = cols * cellWidth + (cols - 1) * gap;
   const totalGridHeight = grid.rows * cellHeight + (grid.rows - 1) * gap;
 
-  // Center the grid in the viewport
-  const startX = (viewportWidth - totalGridWidth) / 2;
+  // Center the grid in the content rect (originX is 0 when insets are 0)
+  const startX = originX + (viewportWidth - totalGridWidth) / 2;
   const startY = (viewportHeight - totalGridHeight) / 2 - 20; // Shift up slightly for labels
 
   // Return the CENTER of the cell
@@ -126,9 +127,16 @@ export function getExposeTransform(
   index: number,
   grid: ReturnType<typeof calculateExposeGrid>,
   viewportWidth: number,
-  viewportHeight: number
+  viewportHeight: number,
+  originX = 0
 ): { translateX: number; translateY: number; scale: number } {
-  const cellCenter = getExposeCellCenter(index, grid, viewportWidth, viewportHeight);
+  const cellCenter = getExposeCellCenter(
+    index,
+    grid,
+    viewportWidth,
+    viewportHeight,
+    originX
+  );
   const scale = getExposeScale(windowWidth, windowHeight, grid.cellWidth, grid.cellHeight);
   
   // Current window center
