@@ -1,0 +1,248 @@
+name: temp-apns-key-update
+on:
+  workflow_dispatch:
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.9"
+
+      - name: Update Coolify RYOS_APNS_KEY_B64 + restart + push:test
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_WEBHOOK_URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          NEW_KEY_B64: ${{ secrets.TEMP_RYOS_APNS_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import json, os, re, subprocess, sys, time, urllib.parse, urllib.request
+
+          token = os.environ["COOLIFY_TOKEN"]
+          new_b64 = os.environ["NEW_KEY_B64"].strip()
+          webhook = os.environ["COOLIFY_WEBHOOK_URL"]
+          host = urllib.parse.urlparse(webhook).hostname
+          if not host:
+              print("::error::Could not parse Coolify host")
+              sys.exit(1)
+          base = f"https://{host}"
+          print(f"coolify_host={host}")
+          print(f"new_key_b64_len={len(new_b64)}")
+          # Mask secret material for Actions logs
+          print(f"::add-mask::{new_b64}")
+          print(f"::add-mask::{token}")
+
+          apps = {
+              "prod": "atf4yjhkpmkyz5laip477ebm",
+              "dev": "hswkgooccww480k088s4skgg",
+          }
+
+          def req(method, path, body=None):
+              data = None if body is None else json.dumps(body).encode()
+              r = urllib.request.Request(
+                  base + path,
+                  data=data,
+                  method=method,
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Accept": "application/json",
+                      "Content-Type": "application/json",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(r, timeout=60) as resp:
+                      raw = resp.read()
+                      return resp.status, json.loads(raw.decode() or "null")
+              except urllib.error.HTTPError as e:
+                  raw = e.read().decode(errors="replace")
+                  try:
+                      payload = json.loads(raw) if raw else {}
+                  except Exception:
+                      payload = {"raw_len": len(raw)}
+                  return e.code, payload
+
+          def summarize_envs(envs):
+              # envs may be list or dict-wrapped
+              items = envs if isinstance(envs, list) else envs.get("data") or envs.get("envs") or []
+              out = {}
+              for e in items:
+                  if not isinstance(e, dict):
+                      continue
+                  k = e.get("key") or e.get("name")
+                  if not k:
+                      continue
+                  v = e.get("value") if e.get("value") is not None else e.get("real_value")
+                  if v is None:
+                      v = ""
+                  v = str(v)
+                  print(f"::add-mask::{v}")
+                  out[k] = {"len": len(v), "uuid": e.get("uuid"), "is_multiline": e.get("is_multiline")}
+              return out, items
+
+          results = {"apps": {}, "push_tests": {}}
+
+          for label, uuid in apps.items():
+              print(f"=== app {label} uuid={uuid} ===")
+              code, envs = req("GET", f"/api/v1/applications/{uuid}/envs")
+              print(f"list_envs_http={code}")
+              if code >= 400:
+                  print(f"list_envs_error_keys={list(envs) if isinstance(envs, dict) else type(envs)}")
+                  results["apps"][label] = {"updated": False, "error": f"list_envs_{code}"}
+                  continue
+              summary, items = summarize_envs(envs)
+              for needed in ("RYOS_APNS_KEY_B64", "RYOS_APNS_TEAM_ID", "RYOS_APNS_KEY_ID"):
+                  info = summary.get(needed)
+                  if info:
+                      print(f"present {needed} len={info['len']}")
+                  else:
+                      print(f"MISSING {needed}")
+
+              # Update or create KEY_B64
+              if "RYOS_APNS_KEY_B64" in summary:
+                  code, resp = req(
+                      "PATCH",
+                      f"/api/v1/applications/{uuid}/envs",
+                      {"key": "RYOS_APNS_KEY_B64", "value": new_b64, "is_literal": True},
+                  )
+                  print(f"patch_key_http={code}")
+              else:
+                  code, resp = req(
+                      "POST",
+                      f"/api/v1/applications/{uuid}/envs",
+                      {"key": "RYOS_APNS_KEY_B64", "value": new_b64, "is_literal": True, "is_runtime": True},
+                  )
+                  print(f"create_key_http={code}")
+
+              updated = 200 <= code < 300
+              # Re-list to confirm length without printing value
+              code2, envs2 = req("GET", f"/api/v1/applications/{uuid}/envs")
+              summary2, _ = summarize_envs(envs2) if code2 < 400 else ({}, [])
+              new_len = summary2.get("RYOS_APNS_KEY_B64", {}).get("len")
+              print(f"post_update_key_len={new_len}")
+              team_ok = "RYOS_APNS_TEAM_ID" in summary2
+              keyid_ok = "RYOS_APNS_KEY_ID" in summary2
+              print(f"team_id_present={team_ok} key_id_present={keyid_ok}")
+
+              # Restart so runtime env refreshes
+              rcode, rresp = req("GET", f"/api/v1/applications/{uuid}/restart")
+              if rcode >= 400:
+                  rcode, rresp = req("POST", f"/api/v1/applications/{uuid}/restart")
+              print(f"restart_http={rcode}")
+
+              results["apps"][label] = {
+                  "updated": updated and new_len == len(new_b64),
+                  "patch_or_create_http": code,
+                  "restart_http": rcode,
+                  "key_len": new_len,
+                  "team_id_present": team_ok,
+                  "key_id_present": keyid_ok,
+              }
+
+              # Capture team/key for local push:test (masked)
+              if team_ok and keyid_ok:
+                  # find values again from envs2
+                  items2 = envs2 if isinstance(envs2, list) else envs2.get("data") or envs2.get("envs") or []
+                  kv = {}
+                  for e in items2:
+                      if isinstance(e, dict) and e.get("key") in (
+                          "RYOS_APNS_TEAM_ID",
+                          "RYOS_APNS_KEY_ID",
+                          "RYOS_APNS_KEY_B64",
+                      ):
+                          val = e.get("value") if e.get("value") is not None else e.get("real_value")
+                          kv[e["key"]] = str(val or "")
+                          print(f"::add-mask::{kv[e['key']]}")
+                  # Prefer newly written b64
+                  kv["RYOS_APNS_KEY_B64"] = new_b64
+                  results["apps"][label]["creds"] = kv
+
+          # Wait for containers to come back
+          print("waiting 45s for restarts...")
+          time.sleep(45)
+
+          # Local push:test using prod app creds (same key both apps)
+          creds = None
+          for label in ("prod", "dev"):
+              if results["apps"].get(label, {}).get("creds"):
+                  creds = results["apps"][label]["creds"]
+                  break
+          if not creds:
+              print("::error::No creds available for push:test")
+              print(json.dumps({k: {kk: vv for kk, vv in v.items() if kk != "creds"} for k, v in results["apps"].items()}))
+              sys.exit(1)
+
+          env = os.environ.copy()
+          env["RYOS_APNS_TEAM_ID"] = creds["RYOS_APNS_TEAM_ID"]
+          env["RYOS_APNS_KEY_ID"] = creds["RYOS_APNS_KEY_ID"]
+          env["RYOS_APNS_KEY_B64"] = creds["RYOS_APNS_KEY_B64"]
+          fake = "ab" * 32
+          for apns_env in ("sandbox", "prod"):
+              print(f"=== push:test {apns_env} ===")
+              p = subprocess.run(
+                  ["bun", "run", "push:test", fake, apns_env],
+                  env=env,
+                  capture_output=True,
+                  text=True,
+              )
+              out = (p.stdout or "") + "\n" + (p.stderr or "")
+              # Redact anything that looks like PEM/base64 long tokens
+              out = re.sub(r"[A-Za-z0-9+/=_-]{40,}", "[REDACTED]", out)
+              print(out[-4000:])
+              print(f"push_test_exit={p.returncode}")
+              # Extract status / reason
+              status = None
+              reason = None
+              m = re.search(r"\b(400|403|429|500|520)\b", out)
+              if m:
+                  status = m.group(1)
+              m = re.search(r"(BadDeviceToken|InvalidProviderToken|POINT_IS_NOT_ON_CURVE|ExpiredProviderToken|Forbidden)", out)
+              if m:
+                  reason = m.group(1)
+              results["push_tests"][apns_env] = {
+                  "exit": p.returncode,
+                  "status": status,
+                  "reason": reason,
+                  "ok": reason == "BadDeviceToken" or status == "400",
+              }
+
+          # Optional HTTP/2 probe
+          try:
+              import http.client
+              # use curl for http2
+              p = subprocess.run(
+                  ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "--http2", "https://api.push.apple.com/"],
+                  capture_output=True, text=True, timeout=20,
+              )
+              print(f"apns_prod_http2_probe code={p.stdout.strip()} exit={p.returncode}")
+              results["http2_prod"] = p.stdout.strip()
+          except Exception as e:
+              print(f"http2_probe_error={type(e).__name__}")
+
+          # Final summary without secrets
+          safe_apps = {k: {kk: vv for kk, vv in v.items() if kk != "creds"} for k, v in results["apps"].items()}
+          print("FINAL_SUMMARY", json.dumps({"apps": safe_apps, "push_tests": results["push_tests"], "http2_prod": results.get("http2_prod")}))
+          # Fail job if update or push test failed
+          if not all(v.get("updated") for v in safe_apps.values()):
+              sys.exit(2)
+          if not all(v.get("ok") for v in results["push_tests"].values()):
+              # sandbox BadDeviceToken is required; prod too if feasible
+              if not results["push_tests"].get("sandbox", {}).get("ok"):
+                  sys.exit(3)
+          PY
+
+      - name: Cleanup note
+        if: always()
+        run: echo "Parent agent should delete TEMP_RYOS_APNS_KEY_B64 secret and this branch/workflow."
