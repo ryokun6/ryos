@@ -2,6 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useVibration } from "@/hooks/useVibration";
 import type { MutableRefObject } from "react";
+import {
+  getDesktopContentBounds,
+  maximizedWindowFrame,
+} from "@/utils/desktopContentBounds";
 
 type WindowSize = { width: number; height: number };
 type WindowPosition = { x: number; y: number };
@@ -148,8 +152,15 @@ export function useWindowFrameMaximize({
       if (!newMaximizedState) {
         playWindowCollapse();
         const defaultSize = mergedConstraints.defaultSize;
+        const restored = maximizedWindowFrame({
+          viewportWidth: window.innerWidth,
+          bounds: getDesktopContentBounds(),
+          maxWidthConstraint: null,
+          defaultWidth: defaultSize.width,
+          restoring: true,
+        });
         const newPosition = {
-          x: Math.max(0, (window.innerWidth - defaultSize.width) / 2),
+          x: restored.x,
           y: Math.max(30, (window.innerHeight - defaultSize.height) / 2),
         };
 
@@ -185,23 +196,26 @@ export function useWindowFrameMaximize({
           : maxPossibleHeight;
         const newHeight = Math.min(maxPossibleHeight, maxHeight);
 
-        let newWidth = window.innerWidth;
-        if (window.innerWidth >= 768) {
-          const maxWidth = mergedConstraints.maxWidth
-            ? typeof mergedConstraints.maxWidth === "string"
-              ? parseInt(mergedConstraints.maxWidth)
-              : mergedConstraints.maxWidth
-            : window.innerWidth;
-          newWidth = Math.min(window.innerWidth, maxWidth);
-        }
+        const maxWidthConstraint = mergedConstraints.maxWidth
+          ? typeof mergedConstraints.maxWidth === "string"
+            ? parseInt(mergedConstraints.maxWidth)
+            : mergedConstraints.maxWidth
+          : null;
+        const maximized = maximizedWindowFrame({
+          viewportWidth: window.innerWidth,
+          bounds: getDesktopContentBounds(),
+          maxWidthConstraint,
+          defaultWidth: mergedConstraints.defaultSize.width,
+          restoring: false,
+        });
 
         const newSize = {
-          width: newWidth,
+          width: maximized.width,
           height: newHeight,
         };
 
         const newPosition = {
-          x: window.innerWidth >= 768 ? (window.innerWidth - newWidth) / 2 : 0,
+          x: maximized.x,
           y: topInset,
         };
 

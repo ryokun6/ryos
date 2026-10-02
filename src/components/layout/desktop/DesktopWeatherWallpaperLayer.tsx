@@ -131,7 +131,7 @@ export function WeatherGradientLayer() {
     if (topLeft) {
       return {
         top: `calc(env(safe-area-inset-top, 0px) + var(--os-metrics-menubar-height, 25px) + ${WEATHER_TOP_GAP}px)`,
-        left: `calc(env(safe-area-inset-left, 0px) + ${WEATHER_LEFT_INSET}px)`,
+        left: `calc(var(--desktop-content-left, 0px) + ${WEATHER_LEFT_INSET}px)`,
         textAlign: "left",
         alignItems: "flex-start",
       };
@@ -147,7 +147,7 @@ export function WeatherGradientLayer() {
       style.textAlign = "center";
       style.alignItems = "center";
     } else {
-      style.right = "12px";
+      style.right = "calc(var(--desktop-content-right, 0px) + 12px)";
       style.textAlign = "right";
       style.alignItems = "flex-end";
     }
@@ -163,7 +163,7 @@ export function WeatherGradientLayer() {
     const style: CSSProperties = { position: "fixed", zIndex: 1 };
     if (topLeft) {
       style.top = `calc(env(safe-area-inset-top, 0px) + var(--os-metrics-menubar-height, 25px) + ${WEATHER_TOP_GAP + WEATHER_SELECT_OFFSET}px)`;
-      style.left = `calc(env(safe-area-inset-left, 0px) + ${WEATHER_LEFT_INSET}px)`;
+      style.left = `calc(var(--desktop-content-left, 0px) + ${WEATHER_LEFT_INSET}px)`;
       return style;
     }
     const base = isWindowsTheme ? WEATHER_BOTTOM_WINDOWS : WEATHER_BOTTOM_DEFAULT;
@@ -174,7 +174,7 @@ export function WeatherGradientLayer() {
       style.left = "50%";
       style.transform = "translateX(-50%)";
     } else {
-      style.right = "12px";
+      style.right = "calc(var(--desktop-content-right, 0px) + 12px)";
     }
     return style;
   }, [topLeft, isWindowsTheme, shouldCenter, pipActive]);

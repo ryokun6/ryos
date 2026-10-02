@@ -34,7 +34,19 @@
     --border: 0 0% 0%;
     --ring: 0 0% 0%;
     --radius: 0px;
+    --sat-safe-area-top: env(safe-area-inset-top, 0px);
+    --sat-safe-area-right: env(safe-area-inset-right, 0px);
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --sat-safe-area-left: env(safe-area-inset-left, 0px);
+    /*
+      Content origin. Apple documents no API for detecting iPhone Duo (it
+      reports as an iPhone). The vertical status bar is the trailing safe-area
+      inset — 84pt on the closed outer display in the iOS 27.1 simulator, and
+      one side only on the inner display in landscape. Left and right are not
+      mirrors. Wallpaper ignores these and paints the full viewport.
+    */
+    --desktop-content-left: var(--sat-safe-area-left);
+    --desktop-content-right: var(--sat-safe-area-right);
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
       "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
@@ -73,6 +85,17 @@
     --border: 0 0% 100%;
     --input: 0 0% 14.9%;
     --ring: 0 0% 100%;
+  }
+}
+
+/* Wide coarse-touch only (open Duo / iPad). Phone-width and desktop stay on the
+   raw inset, which is 0 in a desktop browser. The right edge is never floored:
+   it is the status-bar width itself. */
+@layer base {
+  @media (hover: none) and (pointer: coarse) and (min-width: 641px) {
+    :root {
+      --desktop-content-left: max(env(safe-area-inset-left, 0px), 12px);
+    }
   }
 }
 

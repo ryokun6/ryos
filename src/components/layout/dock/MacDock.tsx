@@ -38,7 +38,7 @@ import { useDockContextMenus } from "./useDockContextMenus";
 import { useDockDragDrop } from "./useDockDragDrop";
 import { createDockTrashHandlers } from "./dockTrashHandlers";
 import { DockDivider } from "./DockDivider";
-import { safeAreaInsetPadding } from "../menu-bar/menubarEdgePadding";
+import { desktopContentEdge } from "../menu-bar/menubarEdgePadding";
 import { useDockIconHover } from "./useDockIconHover";
 import { useDockMagnification } from "./useDockMagnification";
 import {
@@ -768,13 +768,12 @@ export function MacDock() {
       <div
         className="flex w-full items-end justify-center"
         style={{
-          // Real safe-area insets only. The dock is centered and capped at
-          // min(92%, 980px), so it does not sit on the viewport edge; a 12px
-          // floor would shrink that cap on desktop where the inset is 0.
-          // 92% of this box equals today's 92vw when the insets are 0.
-          paddingBottom: safeAreaInsetPadding("bottom"),
-          paddingLeft: safeAreaInsetPadding("left"),
-          paddingRight: safeAreaInsetPadding("right"),
+          // Content-rect insets only. The dock is centered and capped at
+          // min(92%, 980px). 92% of this box equals today's 92vw when the
+          // insets are 0. The right inset is the status-bar width.
+          paddingBottom: "var(--sat-safe-area-bottom, 0px)",
+          paddingLeft: desktopContentEdge("left"),
+          paddingRight: desktopContentEdge("right"),
         }}
       >
         <motion.div

@@ -10,6 +10,7 @@ import { useFilesStore } from "@/stores/useFilesStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useDesktopContentBounds } from "@/hooks/useDesktopContentBounds";
 import type { AppInstance } from "@/stores/useAppStore";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import {
@@ -47,6 +48,7 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const getFileItem = useFilesStore((s) => s.getItem);
   const { isMacOSTheme } = useThemeFlags();
   const isMobile = useIsMobile();
+  const contentBounds = useDesktopContentBounds();
 
   // Sounds for expose view open/close
   const { play: playOpenSound } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE, 0.5);
@@ -163,13 +165,13 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
   const grid = useMemo(() => {
     return calculateExposeGrid(
       openInstances.length,
-      window.innerWidth,
+      contentBounds.width,
       window.innerHeight,
       60, // padding
       24, // gap
       isMobile
     );
-  }, [openInstances.length, isMobile]);
+  }, [openInstances.length, isMobile, contentBounds.width]);
 
   if (!isOpen) return null;
 
@@ -230,8 +232,9 @@ export function ExposeView({ isOpen, onClose }: ExposeViewProps) {
               const cellCenter = getExposeCellCenter(
                 index,
                 grid,
-                window.innerWidth,
-                window.innerHeight
+                contentBounds.width,
+                window.innerHeight,
+                contentBounds.x
               );
 
               // Calculate scaled window bottom for accurate label positioning

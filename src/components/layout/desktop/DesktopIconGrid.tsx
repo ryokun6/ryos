@@ -269,16 +269,16 @@ export const DesktopIconGrid = memo(function DesktopIconGrid({
               height:
                 "calc(100% - (30px + var(--sat-safe-area-bottom) + 48px))",
               paddingTop: hasWindowChrome ? 36 : undefined,
-              paddingLeft: "calc(0.25rem + env(safe-area-inset-left, 0px))",
-              paddingRight: "calc(0.5rem + env(safe-area-inset-right, 0px))",
+              paddingLeft: "calc(0.25rem + var(--desktop-content-left, 0px))",
+              paddingRight: "calc(0.5rem + var(--desktop-content-right, 0px))",
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
             }
           : {
               height: "calc(100% - 2rem)",
               padding: "1rem",
               paddingTop: "2rem",
-              paddingLeft: "calc(1rem + env(safe-area-inset-left, 0px))",
-              paddingRight: "calc(1rem + env(safe-area-inset-right, 0px))",
+              paddingLeft: "calc(1rem + var(--desktop-content-left, 0px))",
+              paddingRight: "calc(1rem + var(--desktop-content-right, 0px))",
               paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))",
             }
       }
