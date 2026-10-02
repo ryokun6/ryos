@@ -38,6 +38,13 @@ final class ShellRouter {
         firePendingRoom()
     }
 
+    /// One-shot reload used only by the shell's gentle boot watchdog after
+    /// two consecutive failed boots; a no-op when no webview is attached.
+    func reloadWebViewOnce() {
+        webView?.reload()
+        pageReady = false
+    }
+
     /// Called when a notification is tapped (app cold or backgrounded) and
     /// once the web client is ready to receive the room id.
     func firePendingRoom() {

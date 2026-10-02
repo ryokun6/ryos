@@ -146,6 +146,13 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     // MARK: WKNavigationDelegate
 
+    /// Resources fully loaded but the web client never reports boot-finished
+    /// — that is the watchdog's only strike condition (see ShellViewModel:
+    /// boot-slow never counts, boot-broken does).
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        shell?.bootResourcesArrived()
+    }
+
     func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,
