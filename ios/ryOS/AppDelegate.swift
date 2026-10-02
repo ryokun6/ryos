@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         let centerDelegate = NotificationTapDelegate()
         UNUserNotificationCenter.current().delegate = centerDelegate
         centerDelegateHolder = centerDelegate
+        AudioSessionController.shared.start()
         return true
     }
 
