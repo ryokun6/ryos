@@ -6,8 +6,11 @@
  * consumes `env(safe-area-inset-left)` and `env(safe-area-inset-right)`.
  * Safari and desktop browsers keep a 0px content origin because the browser
  * already handles its safe areas. The right-hand status bar is the trailing
- * inset — 84pt on the closed outer display in the iOS 27.1 simulator — and is
- * never given an extra floor.
+ * inset — 84pt on the closed outer display in the iOS 27.1 simulator. When
+ * the system paints that bar over the web view, `env(safe-area-inset-right)`
+ * is 0, so the folded cover display (466×678pt) floors the right inset at
+ * 84px. A regular iPhone portrait is at most ~440pt wide, and the open inner
+ * display's shorter side is at least 626pt, so neither matches.
  *
  * The menubar and taskbar are offset by `--desktop-content-*` so their boxes
  * stop at the status bar. Inner padding is only the existing rhythm (or the
@@ -34,6 +37,31 @@ export const DISPLAY_CORNER_FLOOR_PX = 12;
  * The CSS media query uses `min-width: 641px`.
  */
 export const PHONE_LAYOUT_MAX_WIDTH_PX = 640;
+
+/**
+ * Trailing status bar on the folded cover display (iOS 27.1 simulator).
+ * Applied as a floor under `env(safe-area-inset-right)`, not added to it.
+ */
+export const FOLDED_COVER_STATUS_BAR_PX = 84;
+
+export function shouldApplyFoldedStatusBarInset(input: {
+  iosShell: boolean;
+  coarseTouch: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+}): boolean {
+  if (!input.iosShell || !input.coarseTouch) return false;
+  const portraitCover =
+    input.viewportWidth >= 450 &&
+    input.viewportWidth <= 520 &&
+    input.viewportHeight >= 600;
+  const landscapeCover =
+    input.viewportWidth >= 620 &&
+    input.viewportWidth <= 760 &&
+    input.viewportHeight >= 440 &&
+    input.viewportHeight <= 540;
+  return portraitCover || landscapeCover;
+}
 
 const COARSE_TOUCH_MEDIA = "(hover: none) and (pointer: coarse)";
 
