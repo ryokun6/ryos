@@ -35,7 +35,6 @@ struct ShellWebView: UIViewRepresentable {
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
         ShellRouter.shared.attach(webView)
-        shell.armBootWatchdog()
         webView.load(URLRequest(url: ShellViewModel.origin))
         return webView
     }
@@ -85,6 +84,13 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     }
 
     // MARK: WKNavigationDelegate
+
+    /// Resources fully loaded but the web client never reports boot-finished
+    /// — that is the watchdog's only strike condition (see ShellViewModel:
+    /// boot-slow never counts, boot-broken does).
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        shell?.bootResourcesArrived()
+    }
 
     func webView(
         _ webView: WKWebView,

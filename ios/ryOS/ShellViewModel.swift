@@ -106,7 +106,6 @@ final class ShellViewModel: ObservableObject {
     func reportBootFailed(_ message: String) {
         NSLog("ryOS boot failure: \(message)")
         splashVisible = false
-        countFailedBoot()
     }
 
     // MARK: Boot watchdog (gentle, per Ato's boundary: one force-reload per
@@ -119,24 +118,33 @@ final class ShellViewModel: ObservableObject {
     // (deploy left a cached index.html pointing at dead chunks), the shell
     // notices after two consecutive failed boots and reloads the webview
     // exactly once this run. Any successful boot resets the count.
+    //
+    // Boot-slow vs boot-broken (review condition on #1970): only a boot whose
+    // resources have fully loaded (didFinish) but which never reports
+    // boot-finished counts a strike — that is a broken app, not a slow
+    // download. A boot still streaming resources never arms the strike
+    // counter, so a cache-miss download on a bad network can take as long as
+    // it needs.
 
     private static let failedBootsKey = "ryos.consecutiveFailedBoots"
-    private var bootWatchdogItem: DispatchWorkItem?
+    private var bootStrikeItem: DispatchWorkItem?
     private var forceReloadedThisRun = false
 
-    /// Arms the 45s boot timer. Called when the webview starts loading.
-    func armBootWatchdog() {
-        bootWatchdogItem?.cancel()
+    /// Called when the webview finishes loading its resources (didFinish).
+    /// The web client normally reports boot-finished ~300ms later; if it is
+    /// still silent after the grace period, this boot was broken.
+    func bootResourcesArrived() {
+        bootStrikeItem?.cancel()
         let item = DispatchWorkItem { [weak self] in
             self?.countFailedBoot()
         }
-        bootWatchdogItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 45, execute: item)
+        bootStrikeItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15, execute: item)
     }
 
     private func disarmBootWatchdog(booted: Bool) {
-        bootWatchdogItem?.cancel()
-        bootWatchdogItem = nil
+        bootStrikeItem?.cancel()
+        bootStrikeItem = nil
         if booted {
             UserDefaults.standard.set(0, forKey: Self.failedBootsKey)
         }
