@@ -27,7 +27,9 @@ describe("speech permit client", () => {
 
   test("retries while the streaming draft is still catching up", async () => {
     const calls: string[] = [];
-    globalThis.fetch = mock(async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (!url.includes("/api/speech/permits")) return new Response(null, { status: 204 });
       const attempt = calls.length;
       calls.push("mint");
       if (attempt === 0) {
@@ -66,7 +68,9 @@ describe("speech permit client", () => {
 
   test("does not retry a forbidden-source mint", async () => {
     let calls = 0;
-    globalThis.fetch = mock(async () => {
+    globalThis.fetch = mock(async (input: RequestInfo | URL) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (!url.includes("/api/speech/permits")) return new Response(null, { status: 204 });
       calls += 1;
       return new Response(JSON.stringify({ error: "ryo_voice_forbidden" }), {
         status: 403,
