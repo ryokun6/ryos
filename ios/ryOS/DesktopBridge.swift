@@ -15,14 +15,14 @@ enum DesktopBridge {
       function post(msg) {
         try { window.webkit.messageHandlers.ryosBridge.postMessage(msg); } catch (e) {}
       }
-      function invoke(name, args) {
+      function invoke(name, args, timeoutMs) {
         return new Promise(function (resolve, reject) {
           var id = 'i' + (++cbN);
           pending.set(id, { resolve: resolve, reject: reject });
           post({ kind: 'invoke', id: id, name: name, args: args });
           setTimeout(function () {
             if (pending.has(id)) { pending.delete(id); reject(new Error('bridge timeout: ' + name)); }
-          }, 15000);
+          }, timeoutMs || 15000);
         });
       }
       window.__ryosReply = function (payload) {
@@ -56,12 +56,15 @@ enum DesktopBridge {
         canShowNotifications: function () { return invoke('canShowNotifications'); },
         shouldShowNativeNotification: function () { return invoke('shouldShowNativeNotification'); },
         showNotification: function (options) { return invoke('showNotification', { options: options }); },
+        // A sign-in can take minutes; the shell replies whenever the sheet closes.
         openAuthSheet: function (o) {
           return invoke('openAuthSheet', {
             url: o && o.url,
-            callback: (o && (o.callback || o.callbackScheme)) || ''
-          });
+            callback: (o && (o.callback || o.callbackScheme)) || '',
+            reason: (o && o.reason) || ''
+          }, 600000);
         },
+        onAuthPopupStatus: function (cb) { return register('authPopupStatus', cb); },
         configureChatNotifications: function (config, state) {
           return invoke('configureChatNotifications', { config: config, state: state });
         },
@@ -88,6 +91,13 @@ enum DesktopBridge {
           }
         });
         if (!delivered) pendingOpenRoom = { has: true, roomId: roomId };
+      };
+      window.__ryosEmitAuthPopupStatus = function (status) {
+        callbacks.forEach(function (entry) {
+          if (entry.name === 'authPopupStatus') {
+            try { entry.cb(status); } catch (e) {}
+          }
+        });
       };
       window.__ryosBootPainted = function () { return bootPainted; };
       var bootPainted = false;
