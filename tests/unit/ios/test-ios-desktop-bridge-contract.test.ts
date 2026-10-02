@@ -74,8 +74,11 @@ interface ShellPage {
     };
     __ryosReply: (payload: unknown) => void;
     __ryosEmitOpenRoom: (roomId: string | null) => void;
+    __ryosEmitAuthPopupStatus: (status: unknown) => void;
   };
   posted: Posted[];
+  /** Delay of every timer the script set, in order. */
+  timers: number[];
   /** Replies to every invoke so far the way `Coordinator.reply` does. */
   replyAll(value: (message: Posted) => unknown): void;
 }
@@ -101,12 +104,22 @@ function loadShellPage(): ShellPage {
       (listeners[`document:${type}`] ??= []).push(cb);
     },
   };
-  new Function("window", "document", INJECTED_JS)(fakeWindow, fakeDocument);
+  const timers: number[] = [];
+  const recordingSetTimeout = (cb: () => void, ms: number) => {
+    timers.push(ms);
+    return setTimeout(cb, ms);
+  };
+  new Function("window", "document", "setTimeout", INJECTED_JS)(
+    fakeWindow,
+    fakeDocument,
+    recordingSetTimeout
+  );
   const page = fakeWindow as ShellPage["window"];
   const replied = new Set<string>();
   return {
     window: page,
     posted,
+    timers,
     replyAll(value) {
       for (const message of posted) {
         if (message.kind !== "invoke" || !message.id || replied.has(message.id)) continue;
@@ -175,10 +188,13 @@ describe("injected bridge surface", () => {
       "checkForUpdates",
       "quitAndInstall",
       "onUpdateStatus",
+      "openAuthSheet",
+      "onAuthPopupStatus",
     ]) {
       expect(typeof page.window.ryosDesktop[method]).toBe("function");
     }
     expect(typeof page.window.__ryosEmitOpenRoom).toBe("function");
+    expect(typeof page.window.__ryosEmitAuthPopupStatus).toBe("function");
   });
 
   test("native handles every invoke and message kind the script posts", () => {
@@ -312,5 +328,132 @@ describe("notifications", () => {
     expect(
       readFileSync(join(ROOT, "api/_utils/push-relay.ts"), "utf8")
     ).toContain("export const MAX_ROOMS_PER_DEVICE = 200;");
+  });
+});
+
+/** A method's body, up to its closing brace at class-member indentation. */
+function swiftFunctionBody(source: string, signature: string): string {
+  const start = source.indexOf(signature);
+  if (start === -1) throw new Error(`${signature} not found`);
+  return source.slice(start, source.indexOf("\n    }\n", start));
+}
+
+describe("auth popups and the auth sheet", () => {
+  test("openAuthSheet forwards its options and outlives the default bridge timeout", async () => {
+    const options = {
+      url: "https://os.ryo.lu/musickit-auth.html",
+      callback: "ryos-auth://musickit",
+      reason: "musickit popup failed",
+    };
+    const result = page.window.ryosDesktop.openAuthSheet(options) as Promise<unknown>;
+    expect(invokes(page)).toEqual([["openAuthSheet", options]]);
+    expect(page.timers.at(-1)).toBe(600_000);
+    page.replyAll(() => ({ url: "ryos-auth://musickit#abc" }));
+    expect(await result).toEqual({ url: "ryos-auth://musickit#abc" });
+
+    void page.window.ryosDesktop.getVersion();
+    expect(page.timers.at(-1)).toBe(15_000);
+
+    for (const key of ["url", "callback", "reason"]) {
+      expect(shellWebViewSwift).toContain(`args?["${key}"]`);
+    }
+    expect(shellWebViewSwift).toContain('reply(id, ["url": callbackURL.absoluteString])');
+    expect(shellWebViewSwift).toContain('cancelled ? "cancelled"');
+  });
+
+  test("popup statuses reach subscribers until they unsubscribe", () => {
+    const seen: unknown[] = [];
+    const unsubscribe = page.window.ryosDesktop.onAuthPopupStatus((status: unknown) =>
+      seen.push(status)
+    ) as () => void;
+    const presented = { status: "presented", url: "https://authorize.music.apple.com/woa" };
+    page.window.__ryosEmitAuthPopupStatus(presented);
+    expect(seen).toEqual([presented]);
+    unsubscribe();
+    page.window.__ryosEmitAuthPopupStatus({ status: "closed", url: presented.url });
+    expect(seen).toEqual([presented]);
+    expect(shellWebViewSwift).toContain(
+      "window.__ryosEmitAuthPopupStatus && window.__ryosEmitAuthPopupStatus("
+    );
+  });
+
+  test("the shell emits exactly the statuses the web types declare", () => {
+    const emitted = new Set(
+      [...shellWebViewSwift.matchAll(/(?:emitAuthPopupStatus|finish)\("(\w+)"/g)].map(
+        (match) => match[1]
+      )
+    );
+    expect([...emitted].sort()).toEqual(["closed", "failed", "presented", "refused"]);
+    const types = readFileSync(join(ROOT, "src/types/ryos-desktop.d.ts"), "utf8");
+    const union = /status: ((?:"\w+"(?: \| )?)+);/.exec(types)?.[1] ?? "";
+    expect([...union.matchAll(/"(\w+)"/g)].map((match) => match[1]).sort()).toEqual(
+      [...emitted].sort()
+    );
+  });
+
+  test("window.open is allowed and handled on every webview", () => {
+    const makeUIView = swiftFunctionBody(shellWebViewSwift, "func makeUIView(");
+    const flag = makeUIView.indexOf(
+      "config.preferences.javaScriptCanOpenWindowsAutomatically = true"
+    );
+    expect(flag).toBeGreaterThan(-1);
+    expect(flag).toBeLessThan(makeUIView.indexOf("WKWebView(frame: .zero, configuration: config)"));
+    expect(makeUIView).toContain("webView.uiDelegate = context.coordinator");
+    expect(shellWebViewSwift).toContain("popup.uiDelegate = coordinator");
+
+    const coordinator = shellWebViewSwift.slice(
+      shellWebViewSwift.indexOf("final class Coordinator"),
+      shellWebViewSwift.indexOf("enum AuthPopupPresenter")
+    );
+    expect(coordinator).toContain("createWebViewWith configuration: WKWebViewConfiguration");
+    expect(coordinator).toContain("func webViewDidClose(_ webView: WKWebView)");
+    // Embedded frames still need a tap; the shell's page doesn't.
+    expect(coordinator).toContain(
+      "!fromMainFrame && navigationAction.navigationType != .linkActivated"
+    );
+  });
+
+  test("every popup and auth sheet decision is logged under [auth]", () => {
+    expect(shellWebViewSwift).toContain('NSLog("ryOS: [auth] %@", message)');
+    for (const line of [
+      "popup requested",
+      "popup refused",
+      "window.close() from a page without a popup sheet",
+      "popup presenting from",
+      "popup present refused",
+      "popup presented",
+      "popup failed",
+      "popup closed",
+      "auth sheet refused",
+      "auth sheet starting",
+      "auth sheet failed to start",
+      "auth sheet ended",
+      "auth sheet completed",
+      "auth sheet has no window",
+    ]) {
+      expect(shellWebViewSwift).toMatch(new RegExp(`authLog\\(\\s*"${line.replace(/[().]/g, "\\$&")}`));
+    }
+    expect(shellWebViewSwift).not.toContain('pushLog("Auth popup opened');
+  });
+
+  test("no popup or auth sheet failure returns without a log line", () => {
+    for (const signature of [
+      "createWebViewWith configuration",
+      "func webViewDidClose(",
+      "private static func present(",
+      "func runAuthSheet(",
+      "private func finishAuthSheet(",
+    ]) {
+      const lines = swiftFunctionBody(shellWebViewSwift, signature).split("\n");
+      lines.forEach((line, index) => {
+        if (!/return nil\b|return false\b|reject\(id|^\s*return\s*$/.test(line)) return;
+        const before = lines.slice(Math.max(0, index - 3), index).join("\n");
+        expect({ signature, line, logged: /authLog\(|\.fail\(/.test(before) }).toEqual({
+          signature,
+          line,
+          logged: true,
+        });
+      });
+    }
   });
 });
