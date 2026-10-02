@@ -122,6 +122,8 @@ graph LR
 
 APNs pushes (`api/_utils/push-relay.ts`) fire when a room message is broadcast: private rooms notify the other members' devices; public/IRC rooms notify only devices that listed the room in `rooms`. Devices are dropped when their registering session signs out, on `logout-all`, and on account deletion. `bun run push:test <token> [sandbox|prod]` sends a test alert.
 
+Push logs are prefixed `[push]` (device tokens shown as `abcd…wxyz`; no JWTs, keys, session tokens, or message text). Production logs one `notifyRoomMessage done` summary per message with outcome counts (`sent`, `failed`, `dead`, `duplicate`, `sessionDead`, `ineligible`, …) plus warnings for APNs failures, dead-token removal, and env changes. Set `RYOS_DEBUG=1` (the shared API debug flag) to also log each skip reason, burst grouping, and every APNs attempt's env/status/reason.
+
 ### Utility Endpoints
 
 | Endpoint | Purpose |
