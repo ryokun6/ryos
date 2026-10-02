@@ -120,7 +120,12 @@ final class ShellViewModel: ObservableObject {
         guard !hasAskedForNotificationPermission else { return }
         hasAskedForNotificationPermission = true
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+        pushLog("Requesting notification permission")
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            pushLog(
+                "Notification permission granted=\(granted)"
+                    + (error.map { " (\($0.localizedDescription))" } ?? "")
+            )
             guard granted else { return }
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
@@ -146,6 +151,12 @@ final class NotificationPresenter {
         let request = UNNotificationRequest(
             identifier: UUID().uuidString, content: content, trigger: nil
         )
-        UNUserNotificationCenter.current().add(request)
+        let roomId = options.chatRoomId ?? "nil"
+        UNUserNotificationCenter.current().add(request) { error in
+            pushLog(
+                "Local notification room=\(roomId) "
+                    + (error.map { "failed: \($0.localizedDescription)" } ?? "scheduled")
+            )
+        }
     }
 }

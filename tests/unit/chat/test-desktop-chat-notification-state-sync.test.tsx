@@ -165,6 +165,42 @@ describe("desktop chat notification state sync", () => {
     expect(statesSentBy("updateChatNotificationState")).toEqual([]);
   });
 
+  test("debug mode logs the configure + room sync trail without the username", async () => {
+    const { readStoredDebugFlagEnabled, refreshRuntimeDebugFlag, setRuntimeDebugEnabled } =
+      await import("../../../src/utils/debug");
+    const storedDebug = readStoredDebugFlagEnabled();
+    const originalLog = console.log;
+    const logged: string[] = [];
+    console.log = (...args: unknown[]) => {
+      logged.push(args.map((arg) => (typeof arg === "string" ? arg : JSON.stringify(arg))).join(" "));
+    };
+    setRuntimeDebugEnabled(true);
+    try {
+      installShell({ managed: true, ready: false });
+      await mount();
+      await settle();
+      await settle(() =>
+        useChatsStore.setState({
+          rooms: [{ id: "room-1", name: "general", type: "public" }] as never,
+        })
+      );
+    } finally {
+      console.log = originalLog;
+      setRuntimeDebugEnabled(storedDebug);
+      refreshRuntimeDebugFlag();
+    }
+
+    const push = logged.filter((line) => line.startsWith("[push]"));
+    expect(push.some((line) => line.startsWith("[push] Configuring shell chat notifications"))).toBe(true);
+    expect(
+      push.find((line) => line.startsWith("[push] Shell chat notification config result"))
+    ).toContain('"result":{"managed":true,"ready":false}');
+    expect(
+      push.find((line) => line.startsWith("[push] Syncing chat state to shell"))
+    ).toContain('"roomCount":1');
+    expect(push.join("\n")).not.toContain("alice");
+  });
+
   test("signing out stops the shell and halts state updates", async () => {
     installShell({ managed: true, ready: false });
     await mount();
