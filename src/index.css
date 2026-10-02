@@ -39,14 +39,14 @@
     --sat-safe-area-bottom: env(safe-area-inset-bottom, 0px);
     --sat-safe-area-left: env(safe-area-inset-left, 0px);
     /*
-      Content origin. Apple documents no API for detecting iPhone Duo (it
-      reports as an iPhone). The vertical status bar is the trailing safe-area
-      inset — 84pt on the closed outer display in the iOS 27.1 simulator, and
-      one side only on the inner display in landscape. Left and right are not
-      mirrors. Wallpaper ignores these and paints the full viewport.
+      Content origin. Zero in a regular browser: Safari and desktop Chrome
+      already handle their own safe areas. The iOS shell (html[data-ios-shell])
+      draws edge-to-edge, so it consumes the safe-area insets itself. Apple
+      documents no Duo detection API; the vertical status bar is the trailing
+      inset. Left and right are not mirrors. Wallpaper ignores these.
     */
-    --desktop-content-left: var(--sat-safe-area-left);
-    --desktop-content-right: var(--sat-safe-area-right);
+    --desktop-content-left: 0px;
+    --desktop-content-right: 0px;
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
       "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
@@ -88,12 +88,17 @@
   }
 }
 
-/* Wide coarse-touch only (open Duo / iPad). Phone-width and desktop stay on the
-   raw inset, which is 0 in a desktop browser. The right edge is never floored:
-   it is the status-bar width itself. */
+/* iOS shell only. The browser keeps the 0px defaults above. Wide coarse-touch
+   shell viewports floor the left inset; the right edge is the status-bar
+   inset alone. */
 @layer base {
+  html[data-ios-shell] {
+    --desktop-content-left: var(--sat-safe-area-left);
+    --desktop-content-right: var(--sat-safe-area-right);
+  }
+
   @media (hover: none) and (pointer: coarse) and (min-width: 641px) {
-    :root {
+    html[data-ios-shell] {
       --desktop-content-left: max(env(safe-area-inset-left, 0px), 12px);
     }
   }

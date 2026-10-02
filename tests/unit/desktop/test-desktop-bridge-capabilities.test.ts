@@ -4,6 +4,7 @@ import {
   getDesktopCapabilities,
   hasDesktopWindowChrome,
   isDesktop,
+  isIosShell,
   resolveDesktopCapabilities,
 } from "../../../src/utils/platform";
 import { getMenubarWindowChromeLayout } from "../../../src/components/layout/menu-bar/menubarWindowChrome";
@@ -177,6 +178,7 @@ describe("runtime bridge consumers", () => {
     setBridge({ platform: "ios" });
 
     expect(isDesktop()).toBe(true);
+    expect(isIosShell()).toBe(true);
     expect(hasDesktopWindowChrome()).toBe(false);
     expect(getDesktopCapabilities().windowShortcuts).toBe(false);
     expect(getDesktopCapabilities().selfUpdate).toBe(false);
@@ -193,6 +195,7 @@ describe("runtime bridge consumers", () => {
     setUserAgent(IOS_WKWEBVIEW_UA, "iPhone", 5);
     setBridge({ platform: "darwin" });
 
+    expect(isIosShell()).toBe(false);
     expect(getSupportedDesktopDownloadTarget()).toBeNull();
   });
 
@@ -204,6 +207,7 @@ describe("runtime bridge consumers", () => {
     );
     setBridge({ platform: "win32" });
 
+    expect(isIosShell()).toBe(false);
     expect(hasDesktopWindowChrome()).toBe(true);
     expect(getShortcutPlatform()).toBe("other");
     expect(getSupportedDesktopDownloadTarget()?.platform).toBe("windows");

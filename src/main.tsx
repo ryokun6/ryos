@@ -22,6 +22,9 @@ import { installNetworkCapture } from "./utils/networkCapture";
 import { createClientLogger } from "./utils/logger";
 import { removeStaleStorageKeys } from "./utils/storageKeys";
 import { installPersistEpochListener } from "./utils/persistWriteQueue";
+import { markIosShellDocument } from "./utils/platform";
+
+markIosShellDocument();
 
 const bootstrapLog = createClientLogger("Bootstrap");
 

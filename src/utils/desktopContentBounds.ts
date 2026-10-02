@@ -7,10 +7,10 @@
  * the trailing edge of the closed outer display in the iOS 27.1 simulator).
  * Left and right are independent; do not mirror one side onto the other.
  *
- * `--desktop-content-left/right` are those insets, plus a 12px left floor on
- * wide coarse-touch viewports when the left inset is 0. Wallpaper ignores
- * them and paints the full viewport. Zero insets reproduce today's viewport
- * math exactly.
+ * `--desktop-content-left/right` are 0px in a regular browser. Inside the iOS
+ * shell they are those insets, plus a 12px left floor on wide coarse-touch
+ * viewports when the left inset is 0. Wallpaper ignores them and paints the
+ * full viewport. Zero insets reproduce today's viewport math exactly.
  */
 
 export type DesktopContentInsets = {

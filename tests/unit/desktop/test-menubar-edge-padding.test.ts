@@ -39,30 +39,50 @@ describe("menubar edge padding", () => {
     ).toBe("0.5rem");
   });
 
-  test("the left corner floor applies only to wide coarse-touch viewports", () => {
+  test("the left corner floor applies only inside the iOS shell on wide coarse-touch viewports", () => {
     expect(PHONE_LAYOUT_MAX_WIDTH_PX).toBe(640);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: false, viewportWidth: 1440 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: false,
+        coarseTouch: true,
+        viewportWidth: 1180,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: false, viewportWidth: 1024 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: false,
+        viewportWidth: 1440,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 390 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 390,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 640 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 640,
+      })
     ).toBe(false);
     expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 641 })
-    ).toBe(true);
-    expect(
-      shouldApplyDisplayCornerFloor({ coarseTouch: true, viewportWidth: 1180 })
+      shouldApplyDisplayCornerFloor({
+        iosShell: true,
+        coarseTouch: true,
+        viewportWidth: 641,
+      })
     ).toBe(true);
   });
 
-  test("css keeps the right edge as the raw status-bar inset", () => {
+  test("css content insets are 0 until the iOS shell attribute is present", () => {
     const css = readFileSync(new URL("../../../src/index.css", import.meta.url), "utf8");
+    expect(css).toContain("--desktop-content-left: 0px");
+    expect(css).toContain("--desktop-content-right: 0px");
+    expect(css).toContain("html[data-ios-shell]");
     expect(css).toContain("--desktop-content-left: var(--sat-safe-area-left)");
     expect(css).toContain("--desktop-content-right: var(--sat-safe-area-right)");
     expect(css).toContain("min-width: 641px");
@@ -71,8 +91,16 @@ describe("menubar edge padding", () => {
     );
     const floorBlock = css.slice(
       css.indexOf("min-width: 641px"),
-      css.indexOf("min-width: 641px") + 240
+      css.indexOf("min-width: 641px") + 280
     );
+    expect(floorBlock).toContain("html[data-ios-shell]");
     expect(floorBlock).not.toContain("--desktop-content-right");
+  });
+
+  test("the shell marker is the iOS bridge platform, not a user-agent check", () => {
+    const html = readFileSync(new URL("../../../index.html", import.meta.url), "utf8");
+    expect(html).toContain('window.ryosDesktop.platform === "ios"');
+    expect(html).toContain('setAttribute("data-ios-shell"');
+    expect(html).not.toContain("iPhone");
   });
 });
