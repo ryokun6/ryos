@@ -396,8 +396,10 @@ describe("the auth sheet hand-off", () => {
   });
 
   function runAuthPage(url: string) {
-    const script = /<script>([\s\S]*?)<\/script>/.exec(AUTH_PAGE)?.[1];
-    if (!script) throw new Error("musickit-auth.html has no inline script");
+    const start = AUTH_PAGE.indexOf("<script>");
+    const end = AUTH_PAGE.indexOf("</script>");
+    if (start === -1 || end < start) throw new Error("musickit-auth.html has no inline script");
+    const script = AUTH_PAGE.slice(start + "<script>".length, end);
     const parsed = new URL(url);
     const replace = mock((_to: string) => {});
     new Function("location", "URLSearchParams", script)(

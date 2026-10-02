@@ -415,6 +415,7 @@ describe("auth popups and the auth sheet", () => {
 
   test("every popup and auth sheet decision is logged under [auth]", () => {
     expect(shellWebViewSwift).toContain('NSLog("ryOS: [auth] %@", message)');
+    const logCalls = shellWebViewSwift.replace(/authLog\(\s+"/g, 'authLog("');
     for (const line of [
       "popup requested",
       "popup refused",
@@ -431,7 +432,7 @@ describe("auth popups and the auth sheet", () => {
       "auth sheet completed",
       "auth sheet has no window",
     ]) {
-      expect(shellWebViewSwift).toMatch(new RegExp(`authLog\\(\\s*"${line.replace(/[().]/g, "\\$&")}`));
+      expect(logCalls).toContain(`authLog("${line}`);
     }
     expect(shellWebViewSwift).not.toContain('pushLog("Auth popup opened');
   });
