@@ -306,11 +306,12 @@ const createUseAppStore = () =>
           const offsetStep = 32;
           const isMobile =
             typeof window !== "undefined" && window.innerWidth < 768;
+          const safeTop = measureMenubarSafeTop();
           const position = {
             x: isMobile ? 0 : baseOffset + openInstances * offsetStep,
             y: isMobile
-              ? 28 + measureMenubarSafeTop() + openInstances * offsetStep
-              : 40 + openInstances * 20,
+              ? 28 + safeTop + openInstances * offsetStep
+              : 40 + safeTop + openInstances * 20,
           };
           const cfg = getWindowConfig(appId);
           let size = isMobile
@@ -909,7 +910,7 @@ const createUseAppStore = () =>
             if (!inst.position)
               inst.position = {
                 x: isMobile ? 0 : 16,
-                y: isMobile ? 28 + measureMenubarSafeTop() : 40,
+                y: (isMobile ? 28 : 40) + measureMenubarSafeTop(),
               };
             if (!inst.size)
               inst.size = isMobile

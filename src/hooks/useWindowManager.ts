@@ -50,7 +50,8 @@ export const useWindowManager = ({
     size: WindowSize;
   } => {
     const isMobile = window.innerWidth < 768;
-    const mobileY = 28 + measureMenubarSafeTop();
+    const safeTop = measureMenubarSafeTop();
+    const mobileY = 28 + safeTop;
 
     const appIndex = appIds.indexOf(appId);
     const offsetIndex = appIndex >= 0 ? appIndex : 0;
@@ -58,7 +59,7 @@ export const useWindowManager = ({
     return {
       position: {
         x: isMobile ? 0 : 16 + offsetIndex * 32,
-        y: isMobile ? mobileY : 40 + offsetIndex * 20,
+        y: isMobile ? mobileY : 40 + safeTop + offsetIndex * 20,
       },
       size: isMobile
         ? getMobileWindowSize(appId)
