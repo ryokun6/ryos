@@ -1,6 +1,17 @@
 import Foundation
 import WebKit
 
+/// Native half of the `[push]` trail (Console.app / Xcode). Never pass full
+/// device tokens, the session cookie, or message text.
+func pushLog(_ message: String) {
+    NSLog("ryOS: [push] %@", message)
+}
+
+/// `abcd…wxyz` — same shape as `redactDeviceToken` in api/_utils/push-relay.ts.
+func redactedPushToken(_ token: String) -> String {
+    token.count > 8 ? "\(token.prefix(4))…\(token.suffix(4))" : "****"
+}
+
 @MainActor
 final class ShellRouter {
     static let shared = ShellRouter()
@@ -17,10 +28,12 @@ final class ShellRouter {
     }
 
     func queue(roomId: String?) {
+        pushLog("Queued tapped room \(roomId ?? "nil") (pageReady=\(pageReady))")
         pendingRoomId = roomId
     }
 
     func markPageReady() {
+        pushLog("Web client ready (pendingRoom=\(pendingRoomId != nil))")
         pageReady = true
         firePendingRoom()
     }
@@ -31,12 +44,17 @@ final class ShellRouter {
         // A cold-launch tap arrives before the page loads; keep it queued.
         guard pageReady, let webView, let roomId = pendingRoomId else { return }
         pendingRoomId = nil
+        pushLog("Delivering tapped room \(roomId) to web client")
         let escaped = roomId
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "'", with: "\\'")
         webView.evaluateJavaScript(
             "window.__ryosEmitOpenRoom && window.__ryosEmitOpenRoom('\(escaped)')",
-            completionHandler: nil
+            completionHandler: { _, error in
+                if let error {
+                    pushLog("Delivering tapped room failed: \(error.localizedDescription)")
+                }
+            }
         )
     }
 }
@@ -62,6 +80,8 @@ final class RelayClient {
     /// rate limited, so identical registrations are skipped.
     private var registeredKey: String?
     private var inFlightKey: String?
+    /// Last logged reason registration could not start (logged once per change).
+    private var lastSkipReason: String?
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -71,19 +91,29 @@ final class RelayClient {
         self.apnsToken = apnsToken
     }
 
+    private func logSkip(_ reason: String?) {
+        guard reason != lastSkipReason else { return }
+        lastSkipReason = reason
+        if let reason { pushLog("Device registration waiting: \(reason)") }
+    }
+
     func registerDevice(
         username: String?, isAuthenticated: Bool, rooms: [String]
     ) {
-        guard isAuthenticated, let token = apnsToken, !token.isEmpty else { return }
+        guard isAuthenticated else { return logSkip("signed out") }
+        guard let token = apnsToken, !token.isEmpty else { return logSkip("no APNs token") }
         let roomIds = Array(Array(Set(rooms)).sorted().prefix(Self.maxRooms))
 
         // URLSession does not share WebKit's cookie jar, so read the HttpOnly
         // session cookie from the web view's store for every attempt.
         SessionCookieReader.shared.readAuthCookieHeader { [weak self] cookieHeader in
-            guard let self, let cookieHeader else { return }
+            guard let self else { return }
+            guard let cookieHeader else { return self.logSkip("no ryos_auth cookie") }
+            self.logSkip(nil)
             let key = [token, cookieHeader, roomIds.joined(separator: ",")].joined(separator: "|")
             guard key != self.registeredKey, key != self.inFlightKey else { return }
             self.inFlightKey = key
+            pushLog("Registering device \(redactedPushToken(token)) rooms=\(roomIds.count)")
             self.postPrimary(token: token, rooms: roomIds, cookieHeader: cookieHeader) { accepted in
                 if self.inFlightKey == key { self.inFlightKey = nil }
                 if accepted {
@@ -118,8 +148,14 @@ final class RelayClient {
         request.setValue(ShellViewModel.origin.absoluteString, forHTTPHeaderField: "Origin")
         request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
         request.httpBody = body
-        URLSession.shared.dataTask(with: request) { _, response, _ in
-            let accepted = (response as? HTTPURLResponse)?.statusCode == 200
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let status = (response as? HTTPURLResponse)?.statusCode
+            let accepted = status == 200
+            pushLog(
+                "POST api/push/register \(redactedPushToken(token)) -> "
+                    + (status.map { String($0) } ?? "no response")
+                    + (error.map { " (\($0.localizedDescription))" } ?? "")
+            )
             DispatchQueue.main.async { completion(accepted) }
         }.resume()
     }
@@ -144,7 +180,15 @@ final class RelayClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(cookieHeader, forHTTPHeaderField: "X-Ryos-Auth")
         request.httpBody = body
-        URLSession.shared.dataTask(with: request).resume()
+        pushLog("Primary register failed; trying AirBuild fallback for \(redactedPushToken(token))")
+        URLSession.shared.dataTask(with: request) { _, response, error in
+            let status = (response as? HTTPURLResponse)?.statusCode
+            pushLog(
+                "AirBuild fallback register \(redactedPushToken(token)) -> "
+                    + (status.map { String($0) } ?? "no response")
+                    + (error.map { " (\($0.localizedDescription))" } ?? "")
+            )
+        }.resume()
     }
 }
 

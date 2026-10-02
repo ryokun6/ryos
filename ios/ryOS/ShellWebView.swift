@@ -184,7 +184,12 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         guard !hasAskedForPermission else { return }
         hasAskedForPermission = true
         let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
+        pushLog("Requesting notification permission")
+        center.requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            pushLog(
+                "Notification permission granted=\(granted)"
+                    + (error.map { " (\($0.localizedDescription))" } ?? "")
+            )
             guard granted else { return }
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
