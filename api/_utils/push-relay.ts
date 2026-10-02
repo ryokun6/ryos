@@ -10,6 +10,12 @@
  * RYOS_APNS_KEY_B64 (base64 of the file) or RYOS_APNS_KEY_FILE (path). When
  * unset, registration still works but no pushes are sent.
  *
+ * Logging: `[push] …` lines via the shared API logger. Outcomes (delivery
+ * failures, dead tokens, env changes, per-message summaries) log at
+ * info/warn; every decision point logs at debug (RYOS_DEBUG / API_DEBUG_LOGS,
+ * see `_logging.ts`). Never logs full device tokens, JWTs, keys, session
+ * tokens/hashes, or message content.
+ *
  * Storage (no credentials stored — `sessionHash` is the SHA-256 Redis id of the
  * registering session, used only to stop serving the device once that session
  * is signed out):
@@ -25,6 +31,7 @@ import { readFileSync } from "node:fs";
 import { createRedis, type Redis } from "./redis.js";
 import { parseJSON } from "./redis-helpers.js";
 import { decodeHtmlEntitiesOnce } from "./html-entities.js";
+import { createLogger, generateRequestId } from "./_logging.js";
 import { redisKeys, sha256RedisIdentifier } from "../../src/shared/redisKeys.js";
 import type { ApiChatMessage, ApiChatRoom } from "../../src/shared/contracts/chat.js";
 
@@ -101,6 +108,24 @@ export interface ApnsDeliveryResult extends ApnsResponse {
 }
 
 // ============================================================================
+// Logging
+// ============================================================================
+
+export type PushLogger = ReturnType<typeof createLogger>;
+
+/** For work not tied to a request (config load, `push:test`). */
+const moduleLogger: PushLogger = createLogger("push");
+
+/** `abcd…wxyz` — enough to correlate with the device without exposing it. */
+export function redactDeviceToken(token: string): string {
+  return token.length > 8 ? `${token.slice(0, 4)}…${token.slice(-4)}` : "****";
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+// ============================================================================
 // Config & provider JWT
 // ============================================================================
 
@@ -135,15 +160,34 @@ export function getApnsConfig(): ApnsConfig | null {
   if (cachedConfig !== undefined) return cachedConfig;
   const teamId = process.env.RYOS_APNS_TEAM_ID?.trim();
   const keyId = process.env.RYOS_APNS_KEY_ID?.trim();
-  if (!teamId || !keyId) {
+  const keySource = process.env.RYOS_APNS_KEY_B64?.trim()
+    ? "RYOS_APNS_KEY_B64"
+    : process.env.RYOS_APNS_KEY_FILE?.trim()
+      ? "RYOS_APNS_KEY_FILE"
+      : null;
+  if (!teamId || !keyId || !keySource) {
+    const missing = [
+      !teamId && "RYOS_APNS_TEAM_ID",
+      !keyId && "RYOS_APNS_KEY_ID",
+      !keySource && "RYOS_APNS_KEY_B64|RYOS_APNS_KEY_FILE",
+    ].filter(Boolean);
+    moduleLogger.info("[push] APNs not configured; pushes disabled", { missing });
     cachedConfig = null;
     return null;
   }
   try {
     const key = loadPrivateKey();
     cachedConfig = key ? { teamId, keyId, key } : null;
+    moduleLogger.info("[push] APNs configured", {
+      keySource,
+      keyType: key?.asymmetricKeyType,
+      curve: key?.asymmetricKeyDetails?.namedCurve,
+    });
   } catch (error) {
-    console.error("[push] Failed to load APNs key", error);
+    moduleLogger.error("[push] Failed to load APNs key", {
+      keySource,
+      error: errorMessage(error),
+    });
     cachedConfig = null;
   }
   return cachedConfig;
@@ -235,7 +279,7 @@ function getSession(env: ApnsEnv): http2.ClientHttp2Session {
     if (sessions.get(env) === session) sessions.delete(env);
   };
   session.on("error", (error) => {
-    console.warn(`[push] APNs ${env} session error`, error);
+    moduleLogger.warn("[push] APNs session error", { env, error: errorMessage(error) });
     drop();
   });
   session.on("goaway", drop);
@@ -340,10 +384,12 @@ async function attemptDelivery(
   env: ApnsEnv,
   deviceToken: string,
   body: string,
-  collapseId?: string
+  collapseId: string | undefined,
+  logger: PushLogger
 ): Promise<ApnsResponse> {
-  const send = (jwt: string) =>
-    postToApns(env, deviceToken, body, {
+  const send = async (jwt: string) => {
+    const startedAt = Date.now();
+    const response = await postToApns(env, deviceToken, body, {
       authorization: `bearer ${jwt}`,
       "apns-topic": APNS_TOPIC,
       "apns-push-type": "alert",
@@ -351,13 +397,25 @@ async function attemptDelivery(
       "content-type": "application/json",
       ...(collapseId ? { "apns-collapse-id": collapseId } : {}),
     });
+    logger.debug("[push] APNs response", {
+      device: redactDeviceToken(deviceToken),
+      env,
+      status: response.status,
+      reason: response.reason,
+      apnsId: response.apnsId,
+      collapsed: !!collapseId,
+      ms: Date.now() - startedAt,
+    });
+    return response;
+  };
 
   const response = await send(getProviderToken(config));
   if (response.status === 403 && response.reason === "ExpiredProviderToken") {
+    logger.debug("[push] Provider token expired; re-signing", { env });
     return send(getProviderToken(config, true));
   }
   if (response.status === 403 && response.reason === "InvalidProviderToken") {
-    console.error("[push] APNs rejected provider token — check RYOS_APNS_* config");
+    logger.error("[push] APNs rejected provider token — check RYOS_APNS_* config", { env });
   }
   return response;
 }
@@ -371,14 +429,22 @@ async function attemptDelivery(
 export async function sendApnsNotification(
   deviceToken: string,
   payload: ApnsAlertPayload,
-  options: { env?: ApnsEnv; collapseId?: string } = {}
+  options: { env?: ApnsEnv; collapseId?: string; logger?: PushLogger } = {}
 ): Promise<ApnsDeliveryResult | null> {
+  const logger = options.logger ?? moduleLogger;
   const config = getApnsConfig();
   if (!config) return null;
 
   const env = options.env ?? "sandbox";
   const body = JSON.stringify(payload);
-  const first = await attemptDelivery(config, env, deviceToken, body, options.collapseId);
+  const first = await attemptDelivery(
+    config,
+    env,
+    deviceToken,
+    body,
+    options.collapseId,
+    logger
+  );
   if (first.status === 200) {
     return { ...first, ok: true, env, envChanged: false, tokenDead: false };
   }
@@ -387,12 +453,20 @@ export async function sendApnsNotification(
   }
 
   const fallbackEnv = otherEnv(env);
+  logger.debug("[push] APNs env mismatch; retrying other host", {
+    device: redactDeviceToken(deviceToken),
+    from: env,
+    to: fallbackEnv,
+    status: first.status,
+    reason: first.reason,
+  });
   const second = await attemptDelivery(
     config,
     fallbackEnv,
     deviceToken,
     body,
-    options.collapseId
+    options.collapseId,
+    logger
   );
   if (second.status === 200) {
     return { ...second, ok: true, env: fallbackEnv, envChanged: true, tokenDead: false };
@@ -497,7 +571,8 @@ export async function registerPushDevice(
     sessionToken: string;
     appVersion?: string;
     rooms?: string[];
-  }
+  },
+  logger: PushLogger = moduleLogger
 ): Promise<PushDevice> {
   const token = input.deviceToken.toLowerCase();
   const username = input.username.toLowerCase();
@@ -505,6 +580,11 @@ export async function registerPushDevice(
   const sameOwner = existing?.username === username;
 
   if (existing && !sameOwner) {
+    logger.info("[push] Device token moved to another account", {
+      device: redactDeviceToken(token),
+      username,
+      droppedRooms: existing.rooms.length,
+    });
     await deleteDeviceRow(redis, existing);
   }
 
@@ -515,8 +595,10 @@ export async function registerPushDevice(
         : []
       : Array.from(new Set(input.rooms)).slice(0, MAX_ROOMS_PER_DEVICE);
 
+  let removedRooms = 0;
   if (existing && sameOwner) {
     const removed = existing.rooms.filter((roomId) => !rooms.includes(roomId));
+    removedRooms = removed.length;
     if (removed.length > 0) {
       await Promise.all([
         ...removed.map((roomId) =>
@@ -544,6 +626,17 @@ export async function registerPushDevice(
       redis.sadd(redisKeys.integration.pushRoomDevices(roomId), token)
     ),
   ]);
+  logger.debug("[push] Device row upserted", {
+    device: redactDeviceToken(token),
+    username,
+    isNew: !existing,
+    ownerChanged: !!existing && !sameOwner,
+    env: device.env,
+    appVersion: device.appVersion,
+    roomCount: rooms.length,
+    roomsKept: input.rooms === undefined,
+    removedRooms,
+  });
   return device;
 }
 
@@ -551,10 +644,18 @@ export async function registerPushDevice(
 export async function unregisterPushDevice(
   redis: Redis,
   deviceToken: string,
-  username: string
+  username: string,
+  logger: PushLogger = moduleLogger
 ): Promise<boolean> {
   const device = await getPushDevice(redis, deviceToken.toLowerCase());
-  if (!device || device.username !== username.toLowerCase()) return false;
+  if (!device || device.username !== username.toLowerCase()) {
+    logger.debug("[push] Unregister skipped", {
+      device: redactDeviceToken(deviceToken),
+      username,
+      reason: device ? "owned_by_other_account" : "not_registered",
+    });
+    return false;
+  }
   await deleteDeviceRow(redis, device);
   return true;
 }
@@ -606,15 +707,27 @@ function isEligible(device: PushDevice, room: ApiChatRoom, sender: string): bool
   return device.rooms.includes(room.id);
 }
 
+type DeliveryOutcome = "sent" | "failed" | "dead" | "duplicate" | "unconfigured";
+
 async function deliverToDevice(
   redis: Redis,
   device: PushDevice,
   room: ApiChatRoom,
-  message: ApiChatMessage
-): Promise<void> {
+  message: ApiChatMessage,
+  logger: PushLogger
+): Promise<DeliveryOutcome> {
+  const deviceLabel = redactDeviceToken(device.deviceToken);
   const watermarksKey = redisKeys.integration.pushDeviceWatermarks(device.deviceToken);
   const previous = parseJSON<RoomWatermark>(await redis.hget(watermarksKey, room.id));
-  if (previous && (previous.id === message.id || message.timestamp < previous.ts)) return;
+  if (previous && (previous.id === message.id || message.timestamp < previous.ts)) {
+    logger.debug("[push] Skipped by watermark", {
+      device: deviceLabel,
+      roomId: room.id,
+      messageId: message.id,
+      reason: previous.id === message.id ? "already_notified" : "older_than_watermark",
+    });
+    return "duplicate";
+  }
 
   const now = Date.now();
   const inBurst = !!previous && now - previous.burstStart < BURST_WINDOW_MS;
@@ -628,6 +741,14 @@ async function deliverToDevice(
 
   const label = getPushRoomLabel(room, device.username, message.username);
   const grouped = watermark.burstCount > BURST_INDIVIDUAL_LIMIT;
+  if (grouped) {
+    logger.debug("[push] Burst grouping", {
+      device: deviceLabel,
+      roomId: room.id,
+      burstCount: watermark.burstCount,
+      burstAgeMs: now - watermark.burstStart,
+    });
+  }
   const payload = grouped
     ? buildPushPayload(
         room.id,
@@ -644,31 +765,52 @@ async function deliverToDevice(
     env: device.env,
     // Grouped alerts replace each other instead of stacking during a burst.
     collapseId: grouped ? `burst-${room.id}`.slice(0, 64) : undefined,
+    logger,
   });
-  if (!result) return;
+  if (!result) return "unconfigured";
 
   if (result.tokenDead) {
-    console.info("[push] Removing dead device token", {
+    logger.info("[push] Removing dead device token", {
+      device: deviceLabel,
       username: device.username,
+      status: result.status,
       reason: result.reason,
     });
     await deleteDeviceRow(redis, device);
-    return;
+    return "dead";
   }
   if (result.envChanged) {
+    logger.info("[push] Device APNs env updated", {
+      device: deviceLabel,
+      username: device.username,
+      from: device.env,
+      to: result.env,
+    });
     await redis.set(
       redisKeys.integration.pushDevice(device.deviceToken),
       JSON.stringify({ ...device, env: result.env })
     );
   }
   if (!result.ok) {
-    console.warn("[push] APNs delivery failed", {
+    logger.warn("[push] APNs delivery failed", {
+      device: deviceLabel,
       username: device.username,
       roomId: room.id,
+      env: result.env,
       status: result.status,
       reason: result.reason,
     });
+    return "failed";
   }
+  logger.debug("[push] Delivered", {
+    device: deviceLabel,
+    username: device.username,
+    roomId: room.id,
+    env: result.env,
+    apnsId: result.apnsId,
+    grouped,
+  });
+  return "sent";
 }
 
 /**
@@ -676,39 +818,101 @@ async function deliverToDevice(
  * Private rooms notify every member's devices; public/IRC rooms notify only
  * devices that listed the room in `rooms` at registration. Devices whose
  * registering session has been signed out are dropped. Never throws.
+ *
+ * Logs one info summary per message that reached at least one device row;
+ * every skip path logs at debug.
  */
 export async function notifyRoomMessage(
   room: ApiChatRoom | null | undefined,
   message: ApiChatMessage,
   client?: Redis
 ): Promise<void> {
+  const logger = createLogger(`push:${generateRequestId()}`);
+  const startedAt = Date.now();
+  const context = {
+    roomId: room?.id,
+    roomType: room?.type,
+    messageId: message.id,
+    sender: message.username,
+  };
   try {
-    if (!room || !isPushConfigured()) return;
+    if (!room) {
+      logger.debug("[push] Skipped: room not found", context);
+      return;
+    }
+    if (!isPushConfigured()) {
+      logger.debug("[push] Skipped: APNs not configured", context);
+      return;
+    }
+    logger.debug("[push] notifyRoomMessage start", context);
     const redis = client ?? createRedis();
     const sender = message.username.toLowerCase();
 
     const tokens = await collectCandidateTokens(redis, room, sender);
-    if (tokens.length === 0) return;
+    if (tokens.length === 0) {
+      logger.debug("[push] Skipped: no candidate devices", {
+        ...context,
+        memberCount: room.type === "private" ? (room.members ?? []).length : undefined,
+      });
+      return;
+    }
 
     const rows = await redis.mget(
       ...tokens.map((token) => redisKeys.integration.pushDevice(token))
     );
-    const devices = rows
-      .map((row) => parseJSON<PushDevice>(row))
-      .filter((device): device is PushDevice => !!device && isEligible(device, room, sender));
+    const parsed = rows.map((row) => parseJSON<PushDevice>(row));
+    const devices = parsed.filter(
+      (device): device is PushDevice => !!device && isEligible(device, room, sender)
+    );
+    const counts: Record<DeliveryOutcome | "sessionDead" | "error", number> = {
+      sent: 0,
+      failed: 0,
+      dead: 0,
+      duplicate: 0,
+      unconfigured: 0,
+      sessionDead: 0,
+      error: 0,
+    };
 
     await Promise.all(
       devices.map(async (device) => {
-        const sessionAlive =
-          (await redis.exists(redisKeys.auth.session(device.sessionHash))) > 0;
-        if (!sessionAlive) {
-          await deleteDeviceRow(redis, device);
-          return;
+        try {
+          const sessionAlive =
+            (await redis.exists(redisKeys.auth.session(device.sessionHash))) > 0;
+          if (!sessionAlive) {
+            logger.info("[push] Dropping device: registering session signed out", {
+              device: redactDeviceToken(device.deviceToken),
+              username: device.username,
+            });
+            await deleteDeviceRow(redis, device);
+            counts.sessionDead++;
+            return;
+          }
+          counts[await deliverToDevice(redis, device, room, message, logger)]++;
+        } catch (error) {
+          counts.error++;
+          logger.warn("[push] Device delivery threw", {
+            device: redactDeviceToken(device.deviceToken),
+            error: errorMessage(error),
+          });
         }
-        await deliverToDevice(redis, device, room, message);
       })
     );
+
+    const missingRows = parsed.filter((device) => !device).length;
+    const tally: Record<string, number> = {
+      candidates: tokens.length,
+      missingRows,
+      ineligible: parsed.length - missingRows - devices.length,
+      ...counts,
+    };
+    // Counts first and zeros omitted: the shared formatter truncates long lines.
+    logger.info("[push] notifyRoomMessage done", {
+      ...Object.fromEntries(Object.entries(tally).filter(([, value]) => value > 0)),
+      ms: Date.now() - startedAt,
+      ...context,
+    });
   } catch (error) {
-    console.error("[push] notifyRoomMessage failed", error);
+    logger.error("[push] notifyRoomMessage failed", { ...context, error: errorMessage(error) });
   }
 }

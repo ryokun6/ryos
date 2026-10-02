@@ -10,8 +10,10 @@ import { z } from "zod";
 import { apiHandler } from "../_utils/api-handler.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import {
+  isPushConfigured,
   MAX_ROOMS_PER_DEVICE,
   normalizeDeviceToken,
+  redactDeviceToken,
   registerPushDevice,
 } from "../_utils/push-relay.js";
 import { ROOM_ID_REGEX } from "../../src/shared/validation.js";
@@ -52,7 +54,11 @@ export default apiHandler<RegisterBody>(
 
     const deviceToken = normalizeDeviceToken(body?.deviceToken);
     if (!deviceToken) {
-      logger.warn("Invalid device token", { username });
+      logger.warn("[push] Invalid device token", {
+        username,
+        type: typeof body?.deviceToken,
+        length: typeof body?.deviceToken === "string" ? body.deviceToken.length : undefined,
+      });
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "invalid_device_token" });
       return;
@@ -63,6 +69,10 @@ export default apiHandler<RegisterBody>(
       rooms: body?.rooms ?? undefined,
     });
     if (!parsed.success) {
+      logger.warn("[push] Invalid register options", {
+        username,
+        paths: parsed.error.issues.map((issue) => issue.path.join(".")).slice(0, 5),
+      });
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "validation_error", issues: parsed.error.issues });
       return;
@@ -74,12 +84,15 @@ export default apiHandler<RegisterBody>(
       sessionToken: user!.token,
       appVersion: parsed.data.appVersion,
       rooms: parsed.data.rooms,
-    });
+    }, logger);
 
-    logger.info("Push device registered", {
+    logger.info("[push] Device registered", {
       username,
+      device: redactDeviceToken(deviceToken),
       env: device.env,
+      appVersion: device.appVersion,
       roomCount: device.rooms.length,
+      apnsConfigured: isPushConfigured(),
     });
     logger.response(200, Date.now() - startTime);
     res.status(200).json({ ok: true });
