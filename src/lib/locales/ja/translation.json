@@ -3341,7 +3341,6 @@
         }
       },
       "locateMe": "現在地を表示",
-      "recenter": "中央に戻す",
       "mapAriaLabel": "マップ",
       "menu": {
         "about": "マップについて",

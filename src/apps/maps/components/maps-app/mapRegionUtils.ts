@@ -93,7 +93,7 @@ export type LocateMeCameraMode = "focus" | "recenter" | "idle";
  * current view is wider. If the user is already closer, just recenter.
  * Later GPS ticks only recenter so pinch-zoom while tracking is kept.
  * Locate Me off is always idle — do not zoom out or reset the region.
- * Paused follow (user panned away) is idle too until Recenter resumes it.
+ * Paused follow (user panned away) is idle too until a Locate Me tap resumes it.
  */
 export function locateMeCameraMode(options: {
   locateMeEnabled: boolean;

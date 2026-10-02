@@ -1110,6 +1110,11 @@ export function useYouBikeLayer({
     locateMeZoomAppliedRef.current = true;
   }, [followUserOnMap, locateMeEnabled, mapInstanceRef, setLocateMeFollowPaused]);
 
+  const pauseLocateMeFollow = useCallback(() => {
+    if (!locateMeEnabled) return;
+    setLocateMeFollowPaused(true);
+  }, [locateMeEnabled, setLocateMeFollowPaused]);
+
   const activeStepIndex = useMemo(() => {
     if (!locationTracking || !trackedUser || !routePlan) return null;
     return youbikeNextStepIndex(listYouBikeRouteSteps(routePlan), trackedUser);
@@ -1148,6 +1153,7 @@ export function useYouBikeLayer({
     activeStepIndex,
     trackedUser,
     locateMeFollowPaused,
+    pauseLocateMeFollow,
     resumeLocateMeFollow,
   };
 }

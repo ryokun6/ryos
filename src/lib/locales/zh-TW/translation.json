@@ -3341,7 +3341,6 @@
         }
       },
       "locateMe": "我的位置",
-      "recenter": "重新置中",
       "mapAriaLabel": "地圖",
       "menu": {
         "about": "關於地圖",

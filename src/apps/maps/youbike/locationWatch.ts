@@ -39,11 +39,23 @@ export function shouldWatchYouBikeUserLocation(
   return flags.locateMeEnabled;
 }
 
-/** Locate Me is a toggle: off → on starts the watch; on → off tears it down. */
-export function nextLocateMeEnabled(options: {
-  currentlyEnabled: boolean;
-}): boolean {
-  return !options.currentlyEnabled;
+export type LocateMeAction = "start" | "pause" | "resume" | "stop";
+
+/**
+ * Locate Me button / menu item. Off → start the watch (prompts once). Once a
+ * fix exists the watch stays on and taps toggle auto-recenter: following →
+ * paused (camera stays put, dot keeps updating), paused → recenter + follow.
+ * Without a fix yet (prompt pending or denied) a tap stops so the next one
+ * asks again.
+ */
+export function nextLocateMeAction(options: {
+  enabled: boolean;
+  followPaused: boolean;
+  hasFix: boolean;
+}): LocateMeAction {
+  if (!options.enabled) return "start";
+  if (options.followPaused) return "resume";
+  return options.hasFix ? "pause" : "stop";
 }
 
 export function isDistinctUserLocation(

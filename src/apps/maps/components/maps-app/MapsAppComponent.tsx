@@ -74,7 +74,6 @@ export function MapsAppComponent({
     handleZoomIn,
     handleZoomOut,
     handleLocateMe,
-    handleRecenterOnUser,
     handleSearchKeyDown,
     canUseMap,
     overlayMessage,
@@ -276,11 +275,8 @@ export function MapsAppComponent({
               locateMeTitle={t("apps.maps.menu.locateMe", {
                 defaultValue: "Locate Me",
               })}
-              locateMePressed={locateMeEnabled}
-              showRecenter={locateMeEnabled && locateMeFollowPaused}
-              recenterTitle={t("apps.maps.recenter", {
-                defaultValue: "Recenter",
-              })}
+              locateMeTracking={locateMeEnabled}
+              locateMePressed={locateMeEnabled && !locateMeFollowPaused}
               placesTitle={t("apps.maps.places.title", {
                 defaultValue: "Places",
               })}
@@ -289,7 +285,6 @@ export function MapsAppComponent({
               onZoomOut={handleZoomOut}
               onZoomIn={handleZoomIn}
               onLocateMe={handleLocateMe}
-              onRecenter={handleRecenterOnUser}
               onTogglePlacesDrawer={() =>
                 dispatchUi({ type: "togglePlacesDrawer" })
               }

@@ -77,7 +77,7 @@ describe("locate / home camera spans", () => {
     ).toBe("recenter");
   });
 
-  test("paused follow keeps the camera idle until Recenter resumes it", () => {
+  test("paused follow keeps the camera idle until a Locate Me tap resumes it", () => {
     expect(
       locateMeCameraMode({
         locateMeEnabled: true,
@@ -222,10 +222,11 @@ describe("locate / home camera wiring", () => {
     expect(controller).not.toContain("frameAtCityLevel(home");
 
     const handleStart = controller.indexOf("const handleLocateMe");
-    const handleEnd = controller.indexOf("}, []);", handleStart);
+    const handleEnd = controller.indexOf("\n  }, [", handleStart);
     const handleLocateMe = controller.slice(handleStart, handleEnd);
     expect(handleLocateMe).toContain("map.showsUserLocation = next");
     expect(handleLocateMe).toContain("map.tracksUserLocation = next");
+    expect(handleLocateMe).not.toContain("followUserOnMap");
     expect(handleLocateMe).not.toContain("setRegionAnimated");
     expect(handleLocateMe).not.toContain("setCenterAnimated");
     expect(handleLocateMe).not.toContain("geoIpCityMapRegion");
