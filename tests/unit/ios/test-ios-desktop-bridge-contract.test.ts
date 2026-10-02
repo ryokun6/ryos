@@ -413,6 +413,12 @@ describe("auth popups and the auth sheet", () => {
     );
   });
 
+  test("only debug builds of the shell webview are inspectable", () => {
+    const makeUIView = swiftFunctionBody(shellWebViewSwift, "func makeUIView(");
+    expect(makeUIView).toContain("#if DEBUG\n        webView.isInspectable = true\n        #endif");
+    expect(shellWebViewSwift.match(/isInspectable/g)).toHaveLength(1);
+  });
+
   test("every popup and auth sheet decision is logged under [auth]", () => {
     expect(shellWebViewSwift).toContain('NSLog("ryOS: [auth] %@", message)');
     const logCalls = shellWebViewSwift.replace(/authLog\(\s+"/g, 'authLog("');
