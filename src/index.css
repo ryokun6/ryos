@@ -47,6 +47,8 @@
     */
     --desktop-content-left: 0px;
     --desktop-content-right: 0px;
+    /* Menubar only. Stays 0 until the fully expanded inner display. */
+    --menubar-corner-floor: 0px;
     --font-geneva-12: "Geneva-12", "ArkPixel", "SerenityOS-Emoji", system-ui;
     --font-cjk-serif-jp: "Noto Serif JP", "Source Han Serif JP",
       "Noto Serif CJK JP", "Source Han Serif", "Noto Serif KR",
@@ -90,7 +92,9 @@
 
 /* iOS shell only. The browser keeps the 0px defaults above. Wide coarse-touch
    shell viewports floor the left inset; the right edge is the status-bar
-   inset alone. */
+   inset alone. Both axes at 500px means the fully expanded inner display
+   (669×951pt, 55pt corners): the menubar left edge grows to clear that curve.
+   The cover display (shorter side 466pt) and a regular iPhone do not match. */
 @layer base {
   html[data-ios-shell] {
     --desktop-content-left: var(--sat-safe-area-left);
@@ -100,6 +104,12 @@
   @media (hover: none) and (pointer: coarse) and (min-width: 641px) {
     html[data-ios-shell] {
       --desktop-content-left: max(env(safe-area-inset-left, 0px), 12px);
+    }
+  }
+
+  @media (hover: none) and (pointer: coarse) and (min-width: 500px) and (min-height: 500px) {
+    html[data-ios-shell] {
+      --menubar-corner-floor: 28px;
     }
   }
 }

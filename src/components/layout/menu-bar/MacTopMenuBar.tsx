@@ -24,6 +24,7 @@ import { getMenubarWindowChromeLayout } from "./menubarWindowChrome";
 import {
   desktopContentEdge,
   menubarInnerPadding,
+  menubarLeftEdge,
 } from "./menubarEdgePadding";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
@@ -107,7 +108,7 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
               color: glassMenubarText,
             }
           : { color: "var(--os-color-menubar-text)" }),
-        left: desktopContentEdge("left"),
+        left: menubarLeftEdge(),
         right: desktopContentEdge("right"),
         paddingLeft: menubarInnerPadding({
           side: "left",
