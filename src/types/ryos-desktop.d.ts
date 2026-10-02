@@ -124,7 +124,8 @@ export type RyosHapticPattern =
  * iOS WKWebView wrapper. Optional members are only injected by some shells.
  */
 export interface RyosDesktopApi {
-  platform: NodeJS.Platform;
+  /** Electron reports `process.platform`; the iOS WKWebView shell reports `"ios"`. */
+  platform: NodeJS.Platform | "ios";
   /**
    * Declared shell features. Electron builds that predate this field omit it;
    * see `resolveDesktopCapabilities` for the fallback.
@@ -153,7 +154,10 @@ export interface RyosDesktopApi {
   ) => Promise<RyosDesktopNotificationResult>;
   /**
    * Start/refresh the Electron main-process chat notification service with
-   * public realtime config and minimal chat state.
+   * public realtime config and minimal chat state. A `{ managed: true }`
+   * result (even `ready: false`, which the iOS shell always returns) keeps
+   * `updateChatNotificationState` flowing; only `ready: true` hands
+   * notifications off from the renderer.
    */
   configureChatNotifications: (
     config: DesktopChatNotificationConfig,
