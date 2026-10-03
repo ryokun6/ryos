@@ -81,18 +81,18 @@ enum DesktopBridge {
         quitAndInstall: function () { return invoke('quitAndInstall'); },
         onUpdateStatus: function () { return function () {}; },
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
-        // Vertical status-bar cluster extent inside the trailing side bar, in
-        // CSS px, and whether the camera dot is part of the cluster: 0/false
-        // wherever a vertical bar doesn't exist; on the iPhone Duo poses the
-        // bar is the trailing 84pt strip in both poses (probe-confirmed
-        // env right = 84 closed and open) and the extent is the cluster's
-        // depth in it — 150 with camera (closed), 88 without (open). The iOS
-        // shell keeps these current on pose changes via
-        // __ryosSetSideStatusBarExtent below, which also fires a
-        // `ryos-status-bar-extent` CustomEvent (detail = {extent, hasCamera})
-        // so listeners can react without polling.
-        sideStatusBarExtent: 0,
-        sideStatusBarHasCamera: false,
+        // Vertical status-bar cluster extent inside the trailing side bar,
+        // in CSS px, and whether the camera dot is part of the cluster: the
+        // initial values come from the shell's prelude user script
+        // (window.__ryosInitialSideStatusBar, seeded before any page script
+        // runs so the dock never sees a 0-to-measured jump); they stay 0 and
+        // false when the prelude is absent (contract test, other shells).
+        sideStatusBarExtent:
+          (window.__ryosInitialSideStatusBar &&
+            window.__ryosInitialSideStatusBar.extent) || 0,
+        sideStatusBarHasCamera:
+          !!(window.__ryosInitialSideStatusBar &&
+            window.__ryosInitialSideStatusBar.hasCamera),
       };
       window.__ryosSetSideStatusBarExtent = function (v, cam) {
         v = Number(v) || 0;

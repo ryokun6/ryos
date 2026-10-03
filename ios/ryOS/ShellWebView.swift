@@ -32,6 +32,20 @@ struct ShellWebView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let config = WKWebViewConfiguration()
         let userContent = config.userContentController
+        // Seed the bridge with the pose's real values BEFORE any page script
+        // runs, so the dock never sees a 0→150 jump at boot-finished. The
+        // main injected script reads this prelude for its initial state; the
+        // template itself still defaults to 0 (the contract test runs it
+        // standalone, without the prelude).
+        let prelude = "window.__ryosInitialSideStatusBar="
+            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
+        userContent.addUserScript(
+            WKUserScript(
+                source: prelude,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
         userContent.addUserScript(
             WKUserScript(
                 source: DesktopBridge.injectedJavaScript,
