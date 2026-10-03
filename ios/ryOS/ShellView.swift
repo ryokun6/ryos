@@ -9,7 +9,7 @@ struct ShellView: View {
         GeometryReader { geo in
             let topIsClearanceEdge = Self.isTopClearanceEdge(geo.safeAreaInsets)
             let sideTruth = Self.sideStatusBarTruth(
-                insets: geo.safeAreaInsets,
+                isVerticalBar: !topIsClearanceEdge,
                 viewSize: geo.size
             )
             duoBody(
@@ -21,11 +21,18 @@ struct ShellView: View {
     }
 
     /// A vertical status bar shows up as a large side safe-area inset; when
-    /// the bar is horizontal at the top (regular iPhone), both side insets
-    /// are zero. 8pt comfortably separates the two shapes.
+    /// the bar is horizontal at the top (regular iPhone portrait) or rotated
+    /// to a side narrower than the Duo strip (notched iPhone landscape,
+    /// ~59pt), the page keeps main's behavior. 70pt separates the measured
+    /// 84pt Duo strip (both poses) from every iPhone's landscape bar.
     static func isTopClearanceEdge(_ insets: EdgeInsets) -> Bool {
-        max(insets.leading, insets.trailing) < 8
+        max(insets.leading, insets.trailing) < sideBarMinimumInset
     }
+
+    /// Side-inset width that means "this is the Duo status-bar strip".
+    /// Measured 84pt on both Duo poses; a notched iPhone in landscape
+    /// reports ~59pt.
+    static let sideBarMinimumInset: CGFloat = 70
 
     /// Measured vertical extent of the system-drawn status cluster inside
     /// the trailing side bar, plus whether the camera dot is part of it.
@@ -34,24 +41,23 @@ struct ShellView: View {
     /// (pixel-scanned off the live simulator 2026-10-03: camera ~30–67,
     /// clock ~84–99, chip+dots ending at 150). On the open inner display
     /// (951×669, same 84pt trailing strip) the cluster is clock + wi-fi
-    /// only, ending at 88pt. Geometry-keyed measurements, not pose names.
+    /// only. The first cut reserved 88pt — the wi-fi glyphs' depth — but
+    /// the chip's glass circle runs deeper: pixel-scanned 2026-10-03 the
+    /// circle's fade reaches ~100–102pt and kissed the dock pill placed at
+    /// extent+12. Reserve 104pt, which restores the closed pose's ~13pt
+    /// gap between cluster content and the dock. Geometry-keyed
+    /// measurements, not pose names.
     static let sideStatusBarExtentMeasured: CGFloat = 150
-    static let sideStatusBarExtentOpenMeasured: CGFloat = 88
+    static let sideStatusBarExtentOpenMeasured: CGFloat = 104
 
     /// One contract everywhere (always reported, 0 where meaningless): a
-    /// nonzero extent only where the vertical side bar exists. Both Duo
-    /// poses share the same 84pt trailing strip (probe-confirmed: env right
-    /// = 84 in both), so the extent is the cluster's depth in that strip:
-    /// 150 with the camera dot (closed), 88 without (open). Regular iPhones
-    /// have no vertical bar in portrait (zero side insets). In landscape a
-    /// notched iPhone rotates its bar to a side too (~59pt), which must NOT
-    /// read as the Duo open pose — the 70pt gate separates the measured 84
-    /// (Duo) from every iPhone's landscape bar width (≤ ~59).
-    static func sideStatusBarTruth(insets: EdgeInsets, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
-        let side = max(insets.leading, insets.trailing)
-        guard side >= 8 else { return (0, false) }
+    /// nonzero extent only where the Duo side bar exists (side inset ≥ 70,
+    /// checked by the caller via isTopClearanceEdge). The extent is the
+    /// cluster's depth in that strip: 150 with the camera dot (closed), 104
+    /// without (open).
+    static func sideStatusBarTruth(isVerticalBar: Bool, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
+        guard isVerticalBar else { return (0, false) }
         if viewSize.height > viewSize.width { return (sideStatusBarExtentMeasured, true) }
-        guard side >= 70 else { return (0, false) }
         return (sideStatusBarExtentOpenMeasured, false)
     }
 
