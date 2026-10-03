@@ -209,11 +209,14 @@ export interface RyosDesktopApi {
   /** iOS shell: play a native haptic. */
   playHaptic?: (pattern: RyosHapticPattern) => void;
   /**
-   * iOS shell: height in CSS px of the system status cluster (camera, clock,
-   * Wi-Fi) at the top of a vertical side status bar, 0 where there is none.
+   * iOS shell: how far in CSS px the system status cluster (camera, clock,
+   * Wi-Fi) reaches down the side status-bar strip. 150 on the folded iPhone
+   * Duo, 88 open, 0 without a side bar. Absent on other shells; treat as 0.
    * Changes fire a `ryos-status-bar-extent` window event.
    */
   sideStatusBarExtent?: number;
+  /** iOS shell: whether the camera is part of that cluster (folded iPhone Duo only). */
+  sideStatusBarHasCamera?: boolean;
   /**
    * iOS shell: run a redirect-based sign-in in the system auth sheet
    * (ASWebAuthenticationSession). Resolves with the URL that reached
@@ -224,6 +227,12 @@ export interface RyosDesktopApi {
   onAuthPopupStatus?: (
     callback: (status: RyosAuthPopupStatus) => void
   ) => () => void;
+}
+
+/** Detail of the iOS shell's `ryos-status-bar-extent` window event. */
+export interface RyosSideStatusBarExtentDetail {
+  extent: number;
+  hasCamera: boolean;
 }
 
 declare global {

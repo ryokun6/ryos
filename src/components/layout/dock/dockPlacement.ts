@@ -1,8 +1,8 @@
 /**
  * Where the Mac dock sits.
  *
- * The folded iPhone Duo cover display reserves an 84px trailing strip for its
- * vertical status bar (`--desktop-content-right`). The menubar, desktop icons,
+ * The iPhone Duo reserves an 84px trailing strip for its vertical status bar,
+ * folded and open (`--desktop-content-right`). The menubar, desktop icons,
  * and windows already stop at that strip, so a bottom dock leaves it empty
  * while taking the bottom of a short screen. When a side content inset is at
  * least `SIDE_DOCK_MIN_INSET_PX`, the dock runs vertically inside that strip
@@ -20,7 +20,7 @@ import {
   type DesktopContentBounds,
   getDesktopContentBounds,
 } from "@/utils/desktopContentBounds";
-import { SIDE_STATUS_BAR_EXTENT_VAR } from "@/utils/platform";
+import { SIDE_BAR_EXTENT_VAR } from "@/utils/platform";
 
 export type DockPlacement = "bottom" | "left" | "right";
 export type SideDockPlacement = Exclude<DockPlacement, "bottom">;
@@ -35,19 +35,10 @@ export type DockLayout = {
 export const SIDE_DOCK_MIN_INSET_PX = 72;
 
 /**
- * Bottom of the system status cluster at the top of a side strip: camera,
- * clock, Wi-Fi and battery ring, then the cellular dots. Measured at ~152pt
- * on the folded iPhone Duo cover display. It still applies when the iOS shell
- * reports a shorter extent, because the shell reports 0 in sideways poses
- * that still draw the cluster.
+ * Gap below the system status cluster at the top of the strip, and the
+ * margin left at the bottom of the strip.
  */
-export const SIDE_DOCK_STATUS_BAR_EXTENT_PX = 152;
-
-/** Gap between the status cluster and the top of a side dock. */
-export const SIDE_DOCK_STATUS_BAR_GAP_PX = 12;
-
-/** Kept clear at the bottom of the strip, where the display corner curves through it. */
-export const SIDE_DOCK_BOTTOM_CLEARANCE_PX = 48;
+export const SIDE_DOCK_CLEARANCE_PX = 12;
 
 /** Minimum gap between a side dock and either edge of its strip. */
 export const SIDE_DOCK_GUTTER_PX = 6;
@@ -99,17 +90,17 @@ export function sideDockHiddenOffset(input: {
 }
 
 /**
- * Strip padding at one end. The top clears the status cluster, using the
- * taller of the shell-reported and measured extents. A larger system
- * safe-area inset wins at either end. A dock taller than the space left
- * scrolls.
+ * Strip padding at one end. The dock's top sits `SIDE_DOCK_CLEARANCE_PX`
+ * below the status cluster the iOS shell reports in `--side-bar-extent`
+ * (150px folded, 88px open). The bottom keeps the same margin. The dock is
+ * capped to the height between them and scrolls past it, so it never grows
+ * up into the cluster. The menubar's top safe-area inset is separate and
+ * does not feed this.
  */
 export function sideDockEndPadding(end: "top" | "bottom"): string {
-  if (end === "bottom") {
-    return `max(var(--sat-safe-area-bottom, 0px), ${SIDE_DOCK_BOTTOM_CLEARANCE_PX}px)`;
-  }
-  const gap = SIDE_DOCK_STATUS_BAR_GAP_PX;
-  return `max(var(--sat-safe-area-top, 0px), var(${SIDE_STATUS_BAR_EXTENT_VAR}, 0px) + ${gap}px, ${SIDE_DOCK_STATUS_BAR_EXTENT_PX + gap}px)`;
+  return end === "top"
+    ? `calc(var(${SIDE_BAR_EXTENT_VAR}, 0px) + ${SIDE_DOCK_CLEARANCE_PX}px)`
+    : `${SIDE_DOCK_CLEARANCE_PX}px`;
 }
 
 let snapshot: DockLayout = BOTTOM_DOCK_LAYOUT;

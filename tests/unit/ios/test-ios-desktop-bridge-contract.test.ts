@@ -24,7 +24,9 @@ ensureTestLocalStorage();
 const { playHaptic, resetNativeHapticRateLimitForTests } = await import(
   "../../../src/utils/nativeShellBridge"
 );
-const { resolveDesktopCapabilities } = await import("../../../src/utils/platform");
+const { resolveDesktopCapabilities, SIDE_STATUS_BAR_EXTENT_EVENT } = await import(
+  "../../../src/utils/platform"
+);
 const { getDesktopChatNotificationRendererMode, shouldSendDesktopChatNotificationState } =
   await import("../../../src/utils/desktopChatNotificationPolicy");
 const { getNativeToastNotification, showNativeToastNotification } = await import(
@@ -75,8 +77,11 @@ interface ShellPage {
     __ryosReply: (payload: unknown) => void;
     __ryosEmitOpenRoom: (roomId: string | null) => void;
     __ryosEmitAuthPopupStatus: (status: unknown) => void;
+    __ryosSetSideStatusBarExtent: (extent: unknown, hasCamera?: unknown) => void;
   };
   posted: Posted[];
+  /** Every event the script dispatched on window, in order. */
+  dispatched: Array<{ type: string; detail: unknown }>;
   /** Delay of every timer the script set, in order. */
   timers: number[];
   /** Replies to every invoke so far the way `Coordinator.reply` does. */
@@ -86,6 +91,7 @@ interface ShellPage {
 /** Run the injected script in an isolated fake page, as WKUserScript would. */
 function loadShellPage(): ShellPage {
   const posted: Posted[] = [];
+  const dispatched: ShellPage["dispatched"] = [];
   const listeners: Record<string, Array<() => void>> = {};
   const fakeWindow: Record<string, unknown> = {
     webkit: {
@@ -95,6 +101,10 @@ function loadShellPage(): ShellPage {
     },
     addEventListener: (type: string, cb: () => void) => {
       (listeners[type] ??= []).push(cb);
+    },
+    dispatchEvent: (event: Event) => {
+      dispatched.push({ type: event.type, detail: (event as CustomEvent).detail });
+      return true;
     },
   };
   const fakeDocument = {
@@ -119,6 +129,7 @@ function loadShellPage(): ShellPage {
   return {
     window: page,
     posted,
+    dispatched,
     timers,
     replyAll(value) {
       for (const message of posted) {
@@ -456,5 +467,40 @@ describe("auth popups and the auth sheet", () => {
         });
       });
     }
+  });
+});
+
+describe("side status-bar extent", () => {
+  test("starts at 0 without a camera until the shell reports a side bar", () => {
+    expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(0);
+    expect(page.window.ryosDesktop.sideStatusBarHasCamera as unknown).toBe(false);
+    expect(page.dispatched).toEqual([]);
+  });
+
+  test("each fold change updates both fields and fires one event the web listens for", () => {
+    const set = page.window.__ryosSetSideStatusBarExtent;
+    set(150, true);
+    set(150, true);
+    set(88, false);
+    set(88, false);
+    set(150, true);
+    expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(150);
+    expect(page.window.ryosDesktop.sideStatusBarHasCamera as unknown).toBe(true);
+    expect(page.dispatched).toEqual([
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 150, hasCamera: true } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 88, hasCamera: false } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 150, hasCamera: true } },
+    ]);
+  });
+
+  test("the shell pushes the value on change and again once the page has booted", () => {
+    expect(shellWebViewSwift).toContain(
+      "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent("
+    );
+    const bootCase = shellWebViewSwift.slice(
+      shellWebViewSwift.indexOf('case "boot-finished":'),
+      shellWebViewSwift.indexOf('case "app-active":')
+    );
+    expect(bootCase).toContain("pushSideStatusBarExtent()");
   });
 });
