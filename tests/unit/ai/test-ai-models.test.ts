@@ -28,15 +28,31 @@ describe("AI model registry", () => {
   test("maps product names to provider API ids", () => {
     expect(normalizeAiModelId("gpt-6-astra")).toBe("gpt-6");
     expect(normalizeAiModelId("claude-opus-5-5")).toBe("opus-5.5");
-    expect(normalizeAiModelId("claude-sonnet")).toBe("sonnet-4.6");
     expect(getModelInstance("gpt-6").modelId).toContain("gpt-6");
     expect(getModelInstance("opus-5.5").modelId).toContain("opus");
+    expect(getModelInstance("gpt-5.5").modelId).toContain("gpt-5.5");
   });
 
-  test("lists opus-5.5 as a restricted Ryo-debug model", () => {
-    expect(SUPPORTED_AI_MODELS).toContain("opus-5.5");
-    expect(isRestrictedAiModel("opus-5.5")).toBe(true);
+  test("keeps only gpt-6 public and gates every other model", () => {
+    expect(SUPPORTED_AI_MODELS).toEqual(["gpt-6", "gpt-5.5", "opus-5.5"]);
     expect(isRestrictedAiModel("gpt-6")).toBe(false);
+    expect(isRestrictedAiModel("gpt-5.5")).toBe(true);
+    expect(isRestrictedAiModel("opus-5.5")).toBe(true);
+    expect(resolveRequestedAiModel("sonnet-4.6")).toEqual({
+      ok: false,
+      error: "unsupported",
+      requested: "sonnet-4.6",
+    });
+    expect(resolveRequestedAiModel("gemini-3-flash")).toEqual({
+      ok: false,
+      error: "unsupported",
+      requested: "gemini-3-flash",
+    });
+    expect(resolveRequestedAiModel("gemini-3.1-pro-preview")).toEqual({
+      ok: false,
+      error: "unsupported",
+      requested: "gemini-3.1-pro-preview",
+    });
   });
 
   test("does not throw on persisted or unknown model ids", () => {
@@ -47,7 +63,7 @@ describe("AI model registry", () => {
   });
 });
 
-describe("opus-5.5 access control", () => {
+describe("non-default model access control", () => {
   test("allows only the ryo account in debug mode", () => {
     expect(
       canAccessAiModel("opus-5.5", { username: "ryo", debugMode: true })
@@ -62,27 +78,35 @@ describe("opus-5.5 access control", () => {
       canAccessAiModel("opus-5.5", { username: "alice", debugMode: true })
     ).toBe(false);
     expect(canAccessAiModel("opus-5.5", { debugMode: true })).toBe(false);
+    expect(
+      canAccessAiModel("gpt-5.5", { username: "ryo", debugMode: true })
+    ).toBe(true);
+    expect(
+      canAccessAiModel("gpt-5.5", { username: "ryo", debugMode: false })
+    ).toBe(false);
+    expect(canAccessAiModel("gpt-5.5", { username: "alice", debugMode: true })).toBe(
+      false
+    );
     expect(canAccessAiModel("gpt-6", { username: "alice" })).toBe(true);
   });
 
-  test("hides opus-5.5 from the picker unless Ryo is in debug", () => {
+  test("hides non-default models unless Ryo is in debug", () => {
     const ryoDebug = getSelectableAiModels({
       username: "ryo",
       debugMode: true,
     }).map((model) => model.id);
-    expect(ryoDebug).toContain("opus-5.5");
-    expect(ryoDebug).toContain("gpt-6");
+    expect(ryoDebug).toEqual(["gpt-6", "gpt-5.5", "opus-5.5"]);
 
     expect(
       getSelectableAiModels({ username: "ryo", debugMode: false }).map(
         (model) => model.id
       )
-    ).not.toContain("opus-5.5");
+    ).toEqual(["gpt-6"]);
     expect(
       getSelectableAiModels({ username: "alice", debugMode: true }).map(
         (model) => model.id
       )
-    ).not.toContain("opus-5.5");
+    ).toEqual(["gpt-6"]);
   });
 
   test("rejects restricted requests on the server resolver", () => {
@@ -99,6 +123,13 @@ describe("opus-5.5 access control", () => {
       ok: false,
       error: "not_allowed",
       requested: "opus-5.5",
+    });
+    expect(
+      resolveRequestedAiModel("gpt-5.5", { username: "alice", debugMode: true })
+    ).toEqual({
+      ok: false,
+      error: "not_allowed",
+      requested: "gpt-5.5",
     });
     expect(
       resolveRequestedAiModel("opus-5.5", {
@@ -160,14 +191,16 @@ describe("telegram model selection", () => {
     expect(logMessages).toHaveLength(0);
   });
 
-  test("rejects opus-5.5 even when configured", () => {
-    const logMessages: string[] = [];
-    const model = getTelegramModel(
-      (message) => logMessages.push(String(message)),
-      { TELEGRAM_BOT_MODEL: "opus-5.5" }
-    );
-    expect(model).toBe("gpt-6");
-    expect(logMessages[0]).toContain("Restricted TELEGRAM_BOT_MODEL");
+  test("rejects non-default models even when configured", () => {
+    for (const configured of ["opus-5.5", "gpt-5.5"]) {
+      const logMessages: string[] = [];
+      const model = getTelegramModel(
+        (message) => logMessages.push(String(message)),
+        { TELEGRAM_BOT_MODEL: configured }
+      );
+      expect(model).toBe("gpt-6");
+      expect(logMessages[0]).toContain("Restricted TELEGRAM_BOT_MODEL");
+    }
   });
 });
 

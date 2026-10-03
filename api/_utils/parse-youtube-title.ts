@@ -1,4 +1,4 @@
-import { google } from "@ai-sdk/google";
+import { DEFAULT_MODEL, getModelInstance } from "./_aiModels.js";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
@@ -196,7 +196,7 @@ export async function parseYouTubeTitleWithAI(
 
   try {
     const { output: parsedData } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: getModelInstance(DEFAULT_MODEL),
       output: Output.object({
         schema: ParsedTitleSchema,
         name: "parsed_youtube_title",
@@ -221,7 +221,6 @@ Examples:
           content: `Title: ${cleanTitle}${cleanChannel ? `\nChannel: ${cleanChannel}` : ""}`,
         },
       ],
-      temperature: 0.1,
       abortSignal: abortController.signal,
     });
 

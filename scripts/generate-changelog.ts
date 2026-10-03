@@ -12,8 +12,8 @@
 
 import { execFileSync } from "child_process";
 import { writeFile, stat } from "fs/promises";
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { DEFAULT_MODEL, getModelInstance } from "../api/_utils/_aiModels.js";
 
 const OUTPUT_FILE = "docs/9-changelog.md";
 const DEFAULT_MONTHS = 12;
@@ -163,9 +163,8 @@ Return ONLY valid JSON, no other text.`;
 
   try {
     const { text } = await generateText({
-      model: google("gemini-2.0-flash"),
+      model: getModelInstance(DEFAULT_MODEL),
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
     });
 
     // Parse JSON response

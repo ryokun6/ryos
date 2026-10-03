@@ -19,7 +19,7 @@
  */
 
 import { generateText, Output } from "ai";
-import { google } from "@ai-sdk/google";
+import { DEFAULT_MODEL, getModelInstance } from "../_utils/_aiModels.js";
 import { z } from "zod";
 import type { Redis } from "../_utils/redis.js";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -474,13 +474,12 @@ async function _processSingleDayBatch(
   }
 
   const { output: result } = await generateText({
-    model: google("gemini-3-flash-preview"),
+    model: getModelInstance(DEFAULT_MODEL),
     output: Output.object({
       schema: dailyNotesExtractionSchema,
     }),
     instructions: DAILY_NOTES_EXTRACTION_PROMPT,
     prompt: `${existingStateSection}\n\n--- DAILY NOTES ---\n${dailyNotesText}\n--- END DAILY NOTES ---\n\nExtract up to ${Math.max(maxExtract, 3)} long-term memories. For existing keys, you may suggest updates via relatedKeys. Return empty array if nothing qualifies.`,
-    temperature: 0.3,
   });
 
   log("[processDailyNotes] Extraction complete for day", {
