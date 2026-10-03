@@ -146,8 +146,13 @@ describe("sideDockEndPadding", () => {
     );
   });
 
-  test("the bottom keeps a 12px margin, independent of the safe-area insets", () => {
-    expect(sideDockEndPadding("bottom")).toBe("12px");
+  test("the bottom keeps at least 12px and clears the home-indicator zone", () => {
+    expect(sideDockEndPadding("bottom")).toBe(
+      "max(12px, env(safe-area-inset-bottom))",
+    );
+  });
+
+  test("the top ignores the safe-area insets", () => {
     expect(sideDockEndPadding("top")).not.toContain("safe-area");
   });
 });
