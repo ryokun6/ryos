@@ -8,11 +8,15 @@ struct ShellView: View {
     var body: some View {
         GeometryReader { geo in
             let topIsClearanceEdge = Self.isTopClearanceEdge(geo.safeAreaInsets)
-            let sideExtent = Self.sideStatusBarExtent(
+            let sideTruth = Self.sideStatusBarTruth(
                 isVerticalBar: !topIsClearanceEdge,
                 viewSize: geo.size
             )
-            duoBody(topIsClearanceEdge: topIsClearanceEdge, sideStatusBarExtent: sideExtent)
+            duoBody(
+                topIsClearanceEdge: topIsClearanceEdge,
+                sideStatusBarExtent: sideTruth.extent,
+                sideStatusBarHasCamera: sideTruth.hasCamera
+            )
         }
     }
 
@@ -23,23 +27,27 @@ struct ShellView: View {
         max(insets.leading, insets.trailing) < 8
     }
 
-    /// Measured vertical extent of the system-drawn status cluster inside a
-    /// vertical bar: on the closed outer display (466×678, trailing strip
-    /// 84pt) the cluster — camera dot, clock, wi-fi chip — occupies the top
-    /// 150pt (measured off the live simulator 2026-10-03 by pixel scan:
-    /// camera ~30–67, clock ~84–99, chip+dots ending at 150). The web's side
-    /// dock derives its top offset (extent + 12pt clearance) and max height
-    /// from this value; it is a geometry-keyed measurement, not a pose name.
+    /// Measured vertical extent of the system-drawn status cluster inside
+    /// the trailing side bar, plus whether the camera dot is part of it.
+    /// On the closed outer display (466×678, trailing strip 84pt) the
+    /// cluster — camera dot, clock, wi-fi chip — occupies the top 150pt
+    /// (pixel-scanned off the live simulator 2026-10-03: camera ~30–67,
+    /// clock ~84–99, chip+dots ending at 150). On the open inner display
+    /// (951×669, same 84pt trailing strip) the cluster is clock + wi-fi
+    /// only, ending at 88pt. Geometry-keyed measurements, not pose names.
     static let sideStatusBarExtentMeasured: CGFloat = 150
+    static let sideStatusBarExtentOpenMeasured: CGFloat = 88
 
-    /// One contract everywhere (always reported, 0 where meaningless): the
-    /// extent is nonzero only for a vertical bar on a portrait viewport —
-    /// the closed outer display. The open pose is landscape and its dock is
-    /// bottom-horizontal, so it reads 0 there; regular iPhones never have a
-    /// vertical bar at all.
-    static func sideStatusBarExtent(isVerticalBar: Bool, viewSize: CGSize) -> CGFloat {
-        guard isVerticalBar, viewSize.height > viewSize.width else { return 0 }
-        return sideStatusBarExtentMeasured
+    /// One contract everywhere (always reported, 0 where meaningless): a
+    /// nonzero extent only where the vertical side bar exists (large side
+    /// inset — both Duo poses share the same 84pt trailing strip, confirmed
+    /// by on-page probe: T=20 L=0 R=84 in both). The extent is the cluster's
+    /// depth in that strip: 150 with the camera dot (closed), 88 without
+    /// (open). Regular iPhones have no vertical bar at all.
+    static func sideStatusBarTruth(isVerticalBar: Bool, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
+        guard isVerticalBar else { return (0, false) }
+        if viewSize.height > viewSize.width { return (sideStatusBarExtentMeasured, true) }
+        return (sideStatusBarExtentOpenMeasured, false)
     }
 
     /// Clearance follows the status bar's actual edge, read from the live
@@ -52,7 +60,7 @@ struct ShellView: View {
     /// --desktop-content-left/right env(safe-area-inset-*) bindings (PR 1965).
     /// Regular iPhones always have zero side insets, so they keep the top
     /// clearance with the web menubar flush beneath the black strip.
-    private func duoBody(topIsClearanceEdge: Bool, sideStatusBarExtent: CGFloat) -> some View {
+    private func duoBody(topIsClearanceEdge: Bool, sideStatusBarExtent: CGFloat, sideStatusBarHasCamera: Bool) -> some View {
         ZStack(alignment: .top) {
             // Solid black behind the status bar, per the design reference:
             // the web menubar sits flush beneath it. Ignore every edge so the
@@ -64,7 +72,8 @@ struct ShellView: View {
 
             ShellWebView(shell: shell,
                          virtualTopInset: topIsClearanceEdge ? 0 : 20,
-                         sideStatusBarExtent: sideStatusBarExtent)
+                         sideStatusBarExtent: sideStatusBarExtent,
+                         sideStatusBarHasCamera: sideStatusBarHasCamera)
                 // Full bleed on the sides always (the web clears any vertical
                 // bar itself — insetting here would double it as black bars
                 // down the display edge), and the top too when the bar is a

@@ -20,6 +20,10 @@ struct ShellWebView: UIViewControllerRepresentable {
     /// vertical bar doesn't exist. The web's side dock derives its top
     /// offset (extent + 12pt clearance) and max height from it.
     var sideStatusBarExtent: CGFloat = 0
+    /// Whether the measured cluster includes the camera dot (closed pose:
+    /// true; open pose and regular iPhones: false). Companion to
+    /// `sideStatusBarExtent`, reported through the same bridge contract.
+    var sideStatusBarHasCamera: Bool = false
 
     func makeCoordinator() -> Coordinator {
         Coordinator(shell: shell)
@@ -73,7 +77,7 @@ struct ShellWebView: UIViewControllerRepresentable {
         if holder.additionalSafeAreaInsets != inset {
             holder.additionalSafeAreaInsets = inset
         }
-        context.coordinator.reportSideStatusBarExtent(sideStatusBarExtent)
+        context.coordinator.reportSideStatusBarExtent(sideStatusBarExtent, hasCamera: sideStatusBarHasCamera)
     }
 }
 
@@ -82,19 +86,21 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
     private var hasAskedForPermission = false
-    /// Latest geometry-reported side status-bar extent; (re)pushed to the
+    /// Latest geometry-reported side status-bar truth; (re)pushed to the
     /// page whenever it changes and once after boot-finished, because early
     /// evaluations land before the page's bridge exists.
     private var sideStatusBarExtent: CGFloat = 0
+    private var sideStatusBarHasCamera = false
 
     init(shell: ShellViewModel) {
         self.shell = shell
         super.init()
     }
 
-    func reportSideStatusBarExtent(_ extent: CGFloat) {
-        let changed = extent != sideStatusBarExtent
+    func reportSideStatusBarExtent(_ extent: CGFloat, hasCamera: Bool) {
+        let changed = extent != sideStatusBarExtent || hasCamera != sideStatusBarHasCamera
         sideStatusBarExtent = extent
+        sideStatusBarHasCamera = hasCamera
         guard changed else { return }
         pushSideStatusBarExtent()
     }
@@ -102,8 +108,9 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     private func pushSideStatusBarExtent() {
         guard let webView else { return }
         let value = Double(sideStatusBarExtent)
+        let camera = sideStatusBarHasCamera
         webView.evaluateJavaScript(
-            "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent(\(value))",
+            "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent(\(value),\(camera))",
             completionHandler: nil
         )
     }

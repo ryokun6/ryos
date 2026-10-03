@@ -81,21 +81,30 @@ enum DesktopBridge {
         quitAndInstall: function () { return invoke('quitAndInstall'); },
         onUpdateStatus: function () { return function () {}; },
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
-        // Vertical status-bar cluster extent inside a side bar, in CSS px:
-        // 0 wherever a vertical bar doesn't exist, the measured extent (150
-        // on the iPhone Duo closed outer display) where it does. The iOS
-        // shell keeps this current on pose changes via
+        // Vertical status-bar cluster extent inside the trailing side bar, in
+        // CSS px, and whether the camera dot is part of the cluster: 0/false
+        // wherever a vertical bar doesn't exist; on the iPhone Duo poses the
+        // bar is the trailing 84pt strip in both poses (probe-confirmed
+        // env right = 84 closed and open) and the extent is the cluster's
+        // depth in it — 150 with camera (closed), 88 without (open). The iOS
+        // shell keeps these current on pose changes via
         // __ryosSetSideStatusBarExtent below, which also fires a
-        // `ryos-status-bar-extent` CustomEvent (detail = the new value) so
-        // listeners can react without polling.
+        // `ryos-status-bar-extent` CustomEvent (detail = {extent, hasCamera})
+        // so listeners can react without polling.
         sideStatusBarExtent: 0,
+        sideStatusBarHasCamera: false,
       };
-      window.__ryosSetSideStatusBarExtent = function (v) {
+      window.__ryosSetSideStatusBarExtent = function (v, cam) {
         v = Number(v) || 0;
-        if (window.ryosDesktop.sideStatusBarExtent === v) return;
+        cam = !!cam;
+        if (window.ryosDesktop.sideStatusBarExtent === v &&
+            window.ryosDesktop.sideStatusBarHasCamera === cam) return;
         window.ryosDesktop.sideStatusBarExtent = v;
+        window.ryosDesktop.sideStatusBarHasCamera = cam;
         try {
-          window.dispatchEvent(new CustomEvent('ryos-status-bar-extent', { detail: v }));
+          window.dispatchEvent(new CustomEvent('ryos-status-bar-extent', {
+            detail: { extent: v, hasCamera: cam }
+          }));
         } catch (e) {}
       };
       window.__ryosEmitOpenRoom = function (roomId) {
