@@ -11,6 +11,7 @@ import { getNextBootMessage, clearNextBootMessage, isBootDebugMode } from "./uti
 import { AnyApp } from "./apps/base/types";
 import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { useDockLayout } from "./hooks/useDockLayout";
 import { useOffline } from "./hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { getDesktopCapabilities } from "./utils/platform";
@@ -95,6 +96,7 @@ export function App() {
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass } =
     useThemeFlags();
   const isMobile = useIsMobile();
+  const dockPlacement = useDockLayout().placement;
   // Initialize offline detection
   useOffline();
 
@@ -102,7 +104,8 @@ export function App() {
   const toastConfig = useMemo(() => {
     // The Aqua glass dock sits a bit higher than the classic dock (6px lift +
     // 8px taller bar = 70px tall), so add a little extra clearance to clear it.
-    const dockHeight = isMacOSTheme ? (isAquaGlass ? 70 : 56) : 0;
+    const dockHeight =
+      isMacOSTheme && dockPlacement === "bottom" ? (isAquaGlass ? 70 : 56) : 0;
     const taskbarHeight = isWindowsTheme ? 30 : 0;
 
     // Mobile: always show at bottom-center with dock/taskbar and safe area clearance
@@ -130,7 +133,14 @@ export function App() {
         offset: `calc(var(--menubar-safe-top, 0px) + ${menuBarHeight + 12}px)`,
       };
     }
-  }, [isWindowsTheme, isMacOSTheme, isSystem7Theme, isAquaGlass, isMobile]);
+  }, [
+    isWindowsTheme,
+    isMacOSTheme,
+    isSystem7Theme,
+    isAquaGlass,
+    isMobile,
+    dockPlacement,
+  ]);
 
   const [bootUiState, dispatchBootUi] = useReducer(
     bootUiReducer,
