@@ -19,7 +19,7 @@ import {
   type AssistantPosition,
 } from "@/stores/useAssistantStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
-import { getDesktopContentBounds } from "@/utils/desktopContentBounds";
+import { getDockLayout } from "@/components/layout/dock/dockPlacement";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
@@ -163,6 +163,18 @@ interface SnapEdges {
 }
 
 /**
+ * Horizontal span the character rests in: the viewport minus the strip that
+ * holds a side dock, so its default spot and edge snaps never cover the dock.
+ */
+function restingSpan(): { left: number; right: number } {
+  const { placement, stripWidth } = getDockLayout();
+  return {
+    left: placement === "left" ? stripWidth : 0,
+    right: window.innerWidth - (placement === "right" ? stripWidth : 0),
+  };
+}
+
+/**
  * Collect snap targets: screen edges (inside menubar/dock insets), the dock's
  * top edge, and the edges of every open window so the assistant can perch on
  * title bars or hang off window corners like the original.
@@ -174,12 +186,10 @@ function collectSnapEdges(
   bottomInset: number
 ): SnapEdges {
   const vh = window.innerHeight;
-  // Side edges snap inside the content rect, so the character stays out of
-  // a side safe-area strip (the iPhone Duo status bar and side dock).
-  const content = getDesktopContentBounds();
+  const span = restingSpan();
   const xs: SnapAxisCandidate[] = [
-    { value: content.x + SNAP_MARGIN, windowRect: null },
-    { value: content.right - width - SNAP_MARGIN, windowRect: null },
+    { value: span.left + SNAP_MARGIN, windowRect: null },
+    { value: span.right - width - SNAP_MARGIN, windowRect: null },
   ];
   // Bottom edge doubles as the dock snap: bottomInset already includes the
   // dock height, so this rests the character right on top of the dock.
@@ -446,7 +456,7 @@ function AssistantOverlayInner() {
     const insets = computeInsets();
     return clampToViewport(
       {
-        x: getDesktopContentBounds().right - character.width - 24,
+        x: restingSpan().right - character.width - 24,
         y: window.innerHeight - insets.bottomInset - character.height - 16,
       },
       character.width,
