@@ -8,6 +8,7 @@ import {
   windowDragLimits,
   windowResizeMaxWidth,
   windowResizeMinLeft,
+  windowFrameMinWidth,
   windowSnapGeometry,
   windowUsesExplicitWidth,
 } from "../../../src/utils/desktopContentBounds";
@@ -168,5 +169,30 @@ describe("desktop content bounds", () => {
         })
       )
     ).toBe(true);
+  });
+
+  test("an app minimum never widens a phone-width frame past the content rect", () => {
+    const folded = desktopContentBounds({
+      viewportWidth: 466,
+      viewportHeight: 678,
+      insets: { left: 0, right: 84 },
+    });
+    expect(
+      windowFrameMinWidth({ viewportWidth: 466, bounds: folded, appMinWidth: 400 })
+    ).toBeUndefined();
+    expect(
+      windowFrameMinWidth({ viewportWidth: 390, bounds: full(390), appMinWidth: 400 })
+    ).toBe("100%");
+    const open = desktopContentBounds({
+      viewportWidth: 951,
+      viewportHeight: 669,
+      insets: { left: 0, right: 84 },
+    });
+    expect(
+      windowFrameMinWidth({ viewportWidth: 951, bounds: open, appMinWidth: 400 })
+    ).toBe(400);
+    expect(
+      windowFrameMinWidth({ viewportWidth: 1440, bounds: full(1440), appMinWidth: 400 })
+    ).toBe(400);
   });
 });

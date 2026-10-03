@@ -8,6 +8,7 @@ import {
   SIDE_DOCK_MIN_INSET_PX,
   fitSideDockButtonSize,
   getDockLayout,
+  phoneWindowFlushEdge,
   resolveDockLayout,
   sideDockEndPadding,
   sideDockHiddenOffset,
@@ -138,6 +139,22 @@ describe("sideDockHiddenOffset", () => {
   });
 });
 
+describe("phoneWindowFlushEdge", () => {
+  test("phone-width windows drop their padding on the side-dock edge only", () => {
+    expect(phoneWindowFlushEdge(466, layoutFor(466, { left: 0, right: 84 }))).toBe(
+      "right",
+    );
+    expect(phoneWindowFlushEdge(466, layoutFor(466, { left: 84, right: 0 }))).toBe(
+      "left",
+    );
+  });
+
+  test("bottom docks and md+ layouts keep the padding as it is today", () => {
+    expect(phoneWindowFlushEdge(393, layoutFor(393, { left: 0, right: 0 }))).toBeNull();
+    expect(phoneWindowFlushEdge(951, layoutFor(951, { left: 0, right: 84 }))).toBeNull();
+  });
+});
+
 describe("sideDockEndPadding", () => {
   test("the top sits 12px below the shell-reported status cluster", () => {
     expect(SIDE_DOCK_CLEARANCE_PX).toBe(12);
@@ -146,8 +163,13 @@ describe("sideDockEndPadding", () => {
     );
   });
 
-  test("the bottom keeps a 12px margin, independent of the safe-area insets", () => {
-    expect(sideDockEndPadding("bottom")).toBe("12px");
+  test("the bottom keeps at least 12px and clears the home-indicator zone", () => {
+    expect(sideDockEndPadding("bottom")).toBe(
+      "max(12px, env(safe-area-inset-bottom))",
+    );
+  });
+
+  test("the top ignores the safe-area insets", () => {
     expect(sideDockEndPadding("top")).not.toContain("safe-area");
   });
 });

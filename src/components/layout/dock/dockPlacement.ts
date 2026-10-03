@@ -79,6 +79,20 @@ export function fitSideDockButtonSize(input: {
   return Math.max(0, Math.min(input.buttonSize, room));
 }
 
+/**
+ * Edge where a phone-width window frame drops its 8px padding. A side dock is
+ * centered in its strip, so the window runs to the strip edge and the gap to
+ * the dock is the dock's own margin, as in the wider layout where frames
+ * have no padding.
+ */
+export function phoneWindowFlushEdge(
+  viewportWidth: number,
+  layout: DockLayout,
+): SideDockPlacement | null {
+  if (viewportWidth >= 768 || layout.placement === "bottom") return null;
+  return layout.placement;
+}
+
 /** Horizontal shift that slides a hidden side dock fully past the screen edge. */
 export function sideDockHiddenOffset(input: {
   placement: SideDockPlacement;
