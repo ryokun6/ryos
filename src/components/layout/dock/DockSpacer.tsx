@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useContext, useEffect, useRef } from "react";
 import {
   motion,
   useMotionValue,
@@ -11,6 +11,7 @@ import {
   DOCK_MAX_SCALE,
 } from "./dockConstants";
 import type { DockSpacerProps } from "./dockTypes";
+import { DockPlacementContext } from "./DockPlacementContext";
 
 export function DockSpacer({
   ref,
@@ -22,6 +23,7 @@ export function DockSpacer({
   ref?: React.Ref<HTMLDivElement>;
 }) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const isSideDock = useContext(DockPlacementContext) !== "bottom";
   const baseSize = baseSizeProp ?? DOCK_BASE_BUTTON_SIZE;
   const maxSize = Math.round(baseSize * DOCK_MAX_SCALE);
 
@@ -85,7 +87,11 @@ export function DockSpacer({
       layout
       layoutId={`dock-spacer-${idKey}`}
       initial={{ width: 0, height: 0 }}
-      animate={{ width: baseSize + 8, height: baseSize }}
+      animate={
+        isSideDock
+          ? { width: baseSize, height: baseSize + 8 }
+          : { width: baseSize + 8, height: baseSize }
+      }
       exit={{ width: 0, height: 0 }}
       transition={{
         type: "spring",
@@ -96,9 +102,10 @@ export function DockSpacer({
       style={{
         width: widthValue,
         height: widthValue,
-        marginLeft: 4,
-        marginRight: 4,
-        transformOrigin: "bottom center",
+        ...(isSideDock
+          ? { marginTop: 4, marginBottom: 4 }
+          : { marginLeft: 4, marginRight: 4 }),
+        transformOrigin: isSideDock ? "center" : "bottom center",
       }}
     />
   );

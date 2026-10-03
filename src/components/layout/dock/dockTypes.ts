@@ -43,7 +43,8 @@ export interface DockDividerProps {
   onDrop?: React.DragEventHandler;
   onDragLeave?: React.DragEventHandler;
   isDropTarget?: boolean;
-  height?: number;
+  /** Span across the dock (the icon size): height on the bottom dock, width on a side dock. */
+  length?: number;
   resizable?: boolean;
   onResizeStart?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;

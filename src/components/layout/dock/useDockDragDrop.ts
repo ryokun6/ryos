@@ -11,8 +11,29 @@ const REORDER_DELAY = 150;
 const REORDER_COOLDOWN = 300;
 const SWAP_THRESHOLD = 0.65;
 
+/** Axis the dock icons run along: `x` for the bottom dock, `y` for a side dock. */
+export type DockAxis = "x" | "y";
+
+function isPointOutsideDock(
+  rect: DOMRect,
+  clientX: number,
+  clientY: number,
+  axis: DockAxis,
+  slack: { along: number; across: number },
+): boolean {
+  const slackX = axis === "x" ? slack.along : slack.across;
+  const slackY = axis === "x" ? slack.across : slack.along;
+  return (
+    clientX < rect.left - slackX ||
+    clientX > rect.right + slackX ||
+    clientY < rect.top - slackY ||
+    clientY > rect.bottom + slackY
+  );
+}
+
 export interface UseDockDragDropParams {
   pinnedItems: DockItem[];
+  axis: DockAxis;
   effectiveDockScale: number;
   scaledPadding: number;
   getFileItem: (path: string) => FileSystemItem | undefined;
@@ -25,6 +46,7 @@ export interface UseDockDragDropParams {
 
 export function useDockDragDrop({
   pinnedItems,
+  axis,
   effectiveDockScale,
   scaledPadding,
   getFileItem,
@@ -40,7 +62,7 @@ export function useDockDragDrop({
   const [isDividerDropTarget, setIsDividerDropTarget] = useState(false);
 
   const calculateDropIndex = useCallback(
-    (clientX: number): number => {
+    (clientX: number, clientY: number): number => {
       const dockBar = dockBarRef.current;
       if (!dockBar) return pinnedItems.length;
 
@@ -48,14 +70,17 @@ export function useDockDragDrop({
 
       if (pinnedItems.length === 0) return 0;
 
-      const iconWidth = Math.round(56 * effectiveDockScale);
-      const startX = dockRect.left + scaledPadding;
-      const relativeX = clientX - startX;
-      const slotIndex = Math.floor(relativeX / iconWidth);
+      const iconSpan = Math.round(56 * effectiveDockScale);
+      const start =
+        (axis === "y" ? dockRect.top : dockRect.left) + scaledPadding;
+      // The phone and side docks scroll along their axis.
+      const scrolled = axis === "y" ? dockBar.scrollTop : dockBar.scrollLeft;
+      const pointer = axis === "y" ? clientY : clientX;
+      const slotIndex = Math.floor((pointer - start + scrolled) / iconSpan);
 
       return Math.max(0, Math.min(slotIndex, pinnedItems.length));
     },
-    [pinnedItems.length, effectiveDockScale, scaledPadding, dockBarRef],
+    [pinnedItems.length, axis, effectiveDockScale, scaledPadding, dockBarRef],
   );
 
   const isExternalDrag = useCallback((e: React.DragEvent): boolean => {
@@ -69,7 +94,7 @@ export function useDockDragDrop({
 
       if (!isExternalDrag(e)) return;
 
-      const dropIndex = calculateDropIndex(e.clientX);
+      const dropIndex = calculateDropIndex(e.clientX, e.clientY);
       setExternalDragIndex(dropIndex);
     },
     [calculateDropIndex, isExternalDrag],
@@ -165,11 +190,13 @@ export function useDockDragDrop({
     (e: React.DragEvent, itemId: string) => {
       const dockRect = dockBarRef.current?.getBoundingClientRect();
       if (dockRect) {
-        const isOutside =
-          e.clientX < dockRect.left ||
-          e.clientX > dockRect.right ||
-          e.clientY < dockRect.top - 50 ||
-          e.clientY > dockRect.bottom + 50;
+        const isOutside = isPointOutsideDock(
+          dockRect,
+          e.clientX,
+          e.clientY,
+          axis,
+          { along: 0, across: 50 },
+        );
 
         if (isOutside && !PROTECTED_DOCK_ITEMS.has(itemId)) {
           removeDockItem(itemId);
@@ -179,23 +206,25 @@ export function useDockDragDrop({
       setDraggingItemId(null);
       setIsDraggedOutside(false);
     },
-    [removeDockItem, dockBarRef],
+    [removeDockItem, dockBarRef, axis],
   );
 
   const handleItemDrag = useCallback(
     (e: React.DragEvent) => {
       const dockRect = dockBarRef.current?.getBoundingClientRect();
       if (dockRect && draggingItemId) {
-        const isOutside =
-          e.clientX < dockRect.left - 20 ||
-          e.clientX > dockRect.right + 20 ||
-          e.clientY < dockRect.top - 60 ||
-          e.clientY > dockRect.bottom + 60;
+        const isOutside = isPointOutsideDock(
+          dockRect,
+          e.clientX,
+          e.clientY,
+          axis,
+          { along: 20, across: 60 },
+        );
 
         setIsDraggedOutside(isOutside);
       }
     },
-    [draggingItemId, dockBarRef],
+    [draggingItemId, dockBarRef, axis],
   );
 
   const lastReorderTimeRef = useRef<number>(0);
@@ -241,13 +270,15 @@ export function useDockDragDrop({
       const targetElement = iconRefsMap.current?.get(pinnedItems[targetIndex]?.id);
       if (targetElement) {
         const rect = targetElement.getBoundingClientRect();
-        const relativeX = e.clientX - rect.left;
-        const percentAcross = relativeX / rect.width;
+        const fractionAlong =
+          axis === "y"
+            ? (e.clientY - rect.top) / rect.height
+            : (e.clientX - rect.left) / rect.width;
 
-        const movingRight = targetIndex > currentIndex;
-        const shouldSwap = movingRight
-          ? percentAcross > SWAP_THRESHOLD
-          : percentAcross < 1 - SWAP_THRESHOLD;
+        const movingForward = targetIndex > currentIndex;
+        const shouldSwap = movingForward
+          ? fractionAlong > SWAP_THRESHOLD
+          : fractionAlong < 1 - SWAP_THRESHOLD;
 
         if (!shouldSwap) {
           if (pendingReorderRef.current) {
@@ -284,7 +315,7 @@ export function useDockDragDrop({
 
       pendingReorderRef.current = { targetIndex, timeout };
     },
-    [draggingItemId, pinnedItems, reorderItems, iconRefsMap],
+    [draggingItemId, pinnedItems, reorderItems, iconRefsMap, axis],
   );
 
   useEffect(() => {

@@ -750,6 +750,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
 
+/* A side dock is centered in its safe-area strip, which already keeps it off
+   the screen edge. */
+:root[data-os-theme="macosx"][data-os-aqua-material="glass"]
+  .mac-dock-surface:is([data-dock-placement="left"], [data-dock-placement="right"]) {
+  margin-bottom: 0;
+}
+
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
   .mac-dock-surface {
   box-shadow: var(--os-color-dock-shadow),
