@@ -1,6 +1,7 @@
 import React, {
   memo,
   useCallback,
+  useContext,
   useEffect,
   useRef,
 } from "react";
@@ -23,6 +24,43 @@ import {
   DOCK_MAX_SCALE,
 } from "./dockConstants";
 import type { DockIconButtonProps } from "./dockTypes";
+import type { DockPlacement } from "./dockPlacement";
+import { DockPlacementContext } from "./DockPlacementContext";
+
+const LOADING_BOUNCE = {
+  repeat: Infinity,
+  duration: 0.8,
+  ease: "easeInOut",
+  repeatType: "loop",
+} as const;
+
+/** The open-app indicator sits between the icon and the screen edge. */
+function indicatorEdgeStyle(
+  placement: DockPlacement,
+  offset: number,
+): React.CSSProperties {
+  if (placement === "bottom") return { bottom: offset };
+  const centered = { top: "50%", transform: "translateY(-50%)" };
+  return placement === "right"
+    ? { right: offset, ...centered }
+    : { left: offset, ...centered };
+}
+
+/** Classic triangle pointing from the screen edge at the icon. */
+function classicIndicatorArrow(
+  placement: DockPlacement,
+  color: string,
+): React.CSSProperties {
+  const solid = `4px solid ${color}`;
+  const clear = "4px solid transparent";
+  if (placement === "right") {
+    return { borderTop: clear, borderBottom: clear, borderLeft: "0", borderRight: solid };
+  }
+  if (placement === "left") {
+    return { borderTop: clear, borderBottom: clear, borderRight: "0", borderLeft: solid };
+  }
+  return { borderLeft: clear, borderRight: clear, borderTop: "0", borderBottom: solid };
+}
 
 export const DockIconButton = memo(function DockIconButton({
   ref: forwardedRef,
@@ -59,6 +97,8 @@ export const DockIconButton = memo(function DockIconButton({
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const isPresent = useIsPresent();
   const { isDarkMode, isAquaGlass } = useThemeFlags();
+  const placement = useContext(DockPlacementContext);
+  const isSideDock = placement !== "bottom";
 
   const targetSize = useMotionValue(baseButtonSize);
 
@@ -167,19 +207,21 @@ export const DockIconButton = memo(function DockIconButton({
         },
       }}
       style={{
-        transformOrigin: "bottom center",
+        transformOrigin: isSideDock ? "center" : "bottom center",
         willChange: "width, height, transform",
         width: dragWidth,
         height: dragHeight,
-        marginLeft: dragMargin,
-        marginRight: dragMargin,
+        ...(isSideDock
+          ? { marginTop: dragMargin, marginBottom: dragMargin }
+          : { marginLeft: dragMargin, marginRight: dragMargin }),
         overflow: "visible",
         cursor: draggable ? (isDragging ? "grabbing" : "grab") : "pointer",
       }}
       className="flex-shrink-0 relative"
     >
       <AnimatePresence>
-        {isHovered && (
+        {/* A side dock scrolls inside its strip, which would clip the label. */}
+        {isHovered && !isSideDock && (
           <motion.div
             initial={{ opacity: 0, y: 10, x: "-50%" }}
             animate={{
@@ -249,21 +291,25 @@ export const DockIconButton = memo(function DockIconButton({
         <motion.div
           className="w-full h-full flex items-end justify-center"
           animate={
-            isLoading
-              ? {
-                  y: [0, -20, 0],
-                  transition: {
-                    y: {
-                      repeat: Infinity,
-                      duration: 0.8,
-                      ease: "easeInOut",
-                      repeatType: "loop",
-                    },
-                  },
-                }
-              : { y: 0 }
+            !isLoading
+              ? { x: 0, y: 0 }
+              : isSideDock
+                ? {
+                    // Bounce away from the screen edge the dock sits on.
+                    x: [0, placement === "left" ? 20 : -20, 0],
+                    transition: { x: LOADING_BOUNCE },
+                  }
+                : {
+                    y: [0, -20, 0],
+                    transition: { y: LOADING_BOUNCE },
+                  }
           }
           transition={{
+            x: {
+              type: "spring",
+              stiffness: 200,
+              damping: 20,
+            },
             y: {
               type: "spring",
               stiffness: 200,
@@ -307,7 +353,7 @@ export const DockIconButton = memo(function DockIconButton({
               aria-hidden
               className="absolute rounded-full"
               style={{
-                bottom: -5,
+                ...indicatorEdgeStyle(placement, -5),
                 width: 4,
                 height: 4,
                 backgroundColor: isDarkMode
@@ -321,13 +367,10 @@ export const DockIconButton = memo(function DockIconButton({
               aria-hidden
               className="absolute"
               style={{
-                bottom: -3,
+                ...indicatorEdgeStyle(placement, -3),
                 width: 0,
                 height: 0,
-                borderLeft: "4px solid transparent",
-                borderRight: "4px solid transparent",
-                borderTop: "0",
-                borderBottom: `4px solid ${isDarkMode ? "#fff" : "#000"}`,
+                ...classicIndicatorArrow(placement, isDarkMode ? "#fff" : "#000"),
                 filter: "none",
               }}
             />

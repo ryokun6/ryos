@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { useNowPlayingLyrics } from "@/hooks/useNowPlayingLyrics";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { useDockLayout } from "@/hooks/useDockLayout";
 import { useIpodPipActive } from "@/apps/ipod/hooks/useIpodPipActive";
 import { useSaveSongCoverColor } from "@/hooks/useSaveSongCoverColor";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
@@ -41,6 +42,7 @@ export function LyricsWallpaperLayer() {
   const wallpaperPlaybackRateRef = useRef(1);
   const { isMacOSTheme, isAquaGlass, isWinXp, isWin98 } = useThemeFlags();
   const pipActive = useIpodPipActive();
+  const dockPlacement = useDockLayout().placement;
   // Persist the resolved cover color back to the song (and store) so the lyric
   // highlight color matches the song palette — exactly like the Karaoke overlay.
   const saveCoverColor = useSaveSongCoverColor(np.track);
@@ -52,7 +54,7 @@ export function LyricsWallpaperLayer() {
   // Aqua Glass since the glass dock sits a touch higher.
   const containerStyle = useMemo<CSSProperties>(() => {
     const isWindowsTheme = isWinXp || isWin98;
-    const dockClearance = isMacOSTheme
+    const dockClearance = isMacOSTheme && dockPlacement === "bottom"
       ? isAquaGlass
         ? LYRICS_DOCK_CLEARANCE_GLASS
         : LYRICS_DOCK_CLEARANCE_AQUA
@@ -69,7 +71,7 @@ export function LyricsWallpaperLayer() {
       paddingRight: "var(--desktop-content-right, 0px)",
       paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${paddingBottomPx}px)`,
     };
-  }, [isMacOSTheme, isAquaGlass, isWinXp, isWin98, pipActive]);
+  }, [isMacOSTheme, isAquaGlass, isWinXp, isWin98, pipActive, dockPlacement]);
 
   const showVideoBackground =
     np.effectiveDisplayMode === DisplayMode.Video &&

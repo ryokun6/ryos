@@ -23,11 +23,21 @@ import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { AnimatePresence, motion, LayoutGroup, useMotionValue } from "motion/react";
 import { useShallow } from "zustand/react/shallow";
 import {
+  isClientXInSideZone,
   isClientYInBottomZone,
   shouldRevealDockFromSwipeUp,
+  shouldRevealSideDockFromSwipe,
 } from "@/utils/dockRevealGesture";
 import { useDashboardShellInputDisabled } from "@/hooks/useDashboardShellInputDisabled";
+import { useDockLayout } from "@/hooks/useDockLayout";
+import { cn } from "@/lib/utils";
 import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
+import {
+  fitSideDockButtonSize,
+  sideDockEndPadding,
+  sideDockHiddenOffset,
+} from "./dockPlacement";
+import { DockPlacementContext } from "./DockPlacementContext";
 import { renderDockPinnedItems } from "./DockPinnedItems";
 import { renderDockOpenItems } from "./DockOpenItems";
 import { computeDockOpenItems } from "./dockOpenList";
@@ -54,6 +64,9 @@ export function MacDock() {
   const { t } = useTranslation();
   const isPhone = useIsPhone();
   const { isAquaGlass } = useThemeFlags();
+  const dockLayout = useDockLayout();
+  const sidePlacement =
+    dockLayout.placement === "bottom" ? null : dockLayout.placement;
   // Match Dashboard shell guards: no bottom hover capture zone on touch-first viewports.
   const useSwipeToRevealDock = useDashboardShellInputDisabled();
   const { dockInstancesSignature, bringInstanceToForeground, restoreInstance, minimizeInstance, closeAppInstance } =
@@ -177,12 +190,21 @@ export function MacDock() {
   const lastTimerRestartRef = useRef<number>(0); // Throttle timer restarts
 
   // Computed scaled sizes (from the committed scale; drag preview is a transform)
-  const scaledButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * dockScale);
-  const scaledPadding = Math.round(4 * dockScale); // Base horizontal padding is 4px (px-1)
-  // Aqua glass gets extra breathing room above/below the icons.
-  const scaledVerticalPadding = Math.round((isAquaGlass ? 8 : 4) * dockScale);
-  // Dock height tracks the icon size plus the vertical padding on both sides.
-  const scaledDockHeight = scaledButtonSize + scaledVerticalPadding * 2;
+  const scaledPadding = Math.round(4 * dockScale); // Base padding along the dock is 4px (px-1)
+  // Padding across the dock: above/below the icons on the bottom dock, beside
+  // them on a side dock. Aqua glass gets extra breathing room.
+  const scaledCrossPadding = Math.round((isAquaGlass ? 8 : 4) * dockScale);
+  const userButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * dockScale);
+  const scaledButtonSize = sidePlacement
+    ? fitSideDockButtonSize({
+        stripWidth: dockLayout.stripWidth,
+        buttonSize: userButtonSize,
+        crossPadding: scaledCrossPadding,
+      })
+    : userButtonSize;
+  // Dock thickness tracks the icon size plus the cross padding on both sides:
+  // the bar height on the bottom dock, the bar width on a side dock.
+  const scaledDockThickness = scaledButtonSize + scaledCrossPadding * 2;
 
 
   const {
@@ -204,7 +226,10 @@ export function MacDock() {
     handleDividerDrop,
   } = useDockDragDrop({
     pinnedItems,
-    effectiveDockScale: dockScale,
+    axis: sidePlacement ? "y" : "x",
+    effectiveDockScale: sidePlacement
+      ? scaledButtonSize / DOCK_BASE_BUTTON_SIZE
+      : dockScale,
     scaledPadding,
     getFileItem,
     addDockItem,
@@ -214,16 +239,17 @@ export function MacDock() {
     iconRefsMap,
   });
 
-  // Resize handlers for divider drag (only on desktop)
+  // Resize handlers for divider drag (only on the desktop bottom dock; a side
+  // dock is sized by its safe-area strip)
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    if (isPhone) return;
+    if (isPhone || sidePlacement) return;
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
     resizeStartY.current = e.clientY;
     resizeStartScale.current = dockScale;
     liveDockScaleRef.current = dockScale;
-  }, [isPhone, dockScale]);
+  }, [isPhone, sidePlacement, dockScale]);
 
   useEffect(() => {
     if (!isResizing) return;
@@ -367,7 +393,8 @@ export function MacDock() {
     setIsDockVisible(false);
   }, [dockHiding, draggingItemId, externalDragIndex, trashContextMenuPos, applicationsContextMenuPos, appContextMenu, dividerContextMenuPos]);
 
-  // Mobile / small-height: swipe up from bottom reveals dock; taps pass through (no overlay).
+  // Mobile / small-height: swipe up from bottom (or in from a side dock's
+  // strip) reveals the dock; taps pass through (no overlay).
   useEffect(() => {
     if (!dockHiding || isDockVisible || !useSwipeToRevealDock) {
       return;
@@ -381,8 +408,22 @@ export function MacDock() {
         10,
       );
       const safeBottom = Number.isFinite(safeInset) ? safeInset : 0;
-      return scaledDockHeight + safeBottom;
+      return scaledDockThickness + safeBottom;
     };
+
+    const isInRevealZone = (e: PointerEvent) =>
+      sidePlacement
+        ? isClientXInSideZone(
+            e.clientX,
+            window.innerWidth,
+            dockLayout.stripWidth,
+            sidePlacement,
+          )
+        : isClientYInBottomZone(
+            e.clientY,
+            window.innerHeight,
+            getZoneHeightPx(),
+          );
 
     let activePointer: {
       pointerId: number;
@@ -396,10 +437,7 @@ export function MacDock() {
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse") return;
-      const zoneHeight = getZoneHeightPx();
-      if (!isClientYInBottomZone(e.clientY, window.innerHeight, zoneHeight)) {
-        return;
-      }
+      if (!isInRevealZone(e)) return;
       activePointer = {
         pointerId: e.pointerId,
         startX: e.clientX,
@@ -415,7 +453,10 @@ export function MacDock() {
       const deltaY = e.clientY - activePointer.startY;
       clearActivePointer();
 
-      if (shouldRevealDockFromSwipeUp(deltaX, deltaY)) {
+      const reveals = sidePlacement
+        ? shouldRevealSideDockFromSwipe(deltaX, deltaY, sidePlacement)
+        : shouldRevealDockFromSwipeUp(deltaX, deltaY);
+      if (reveals) {
         showDock();
       }
     };
@@ -434,7 +475,9 @@ export function MacDock() {
     dockHiding,
     isDockVisible,
     useSwipeToRevealDock,
-    scaledDockHeight,
+    scaledDockThickness,
+    sidePlacement,
+    dockLayout.stripWidth,
     showDock,
   ]);
 
@@ -725,8 +768,9 @@ export function MacDock() {
   const { handleTrashDragOver, handleTrashDrop, handleTrashDragLeave } =
     createDockTrashHandlers(removeFileItem, setIsDraggingOverTrash);
 
+  // A side dock scrolls inside its strip, which would clip magnified icons.
   const { mouseX, effectiveMagnifyEnabled } = useDockMagnification(
-    dockMagnification,
+    dockMagnification && !sidePlacement,
     isResizing,
   );
 
@@ -756,34 +800,90 @@ export function MacDock() {
 
   // index tracking no longer needed; sizing is per-element via motion values
 
+  const dockHiddenShift = sidePlacement
+    ? {
+        x: sideDockHiddenOffset({
+          placement: sidePlacement,
+          stripWidth: dockLayout.stripWidth,
+          thickness: scaledDockThickness,
+        }),
+        y: 0,
+      }
+    : { x: 0, y: scaledDockThickness + 10 };
+
+  const dockBarAxisStyle: React.CSSProperties = sidePlacement
+    ? {
+        width: scaledDockThickness,
+        maxHeight: "100%",
+        padding: `${scaledPadding}px ${scaledCrossPadding}px`,
+        transformOrigin: `${sidePlacement} center`,
+        // The strip is short (especially sideways), so scroll along the dock.
+        overflowX: "hidden",
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        overscrollBehaviorY: "contain",
+      }
+    : {
+        height: scaledDockThickness,
+        padding: `${scaledCrossPadding}px ${scaledPadding}px`,
+        maxWidth: "min(92%, 980px)",
+        transformOrigin: "center bottom",
+        overflowX: isPhone ? "auto" : "visible",
+        overflowY: isPhone ? "hidden" : "visible",
+        WebkitOverflowScrolling: isPhone ? "touch" : undefined,
+        overscrollBehaviorX: isPhone ? "contain" : undefined,
+      };
+
   return (
     <div
       ref={dockContainerRef}
-      className="fixed left-0 right-0 z-50"
+      className={cn(
+        "fixed z-50",
+        sidePlacement === null && "left-0 right-0 bottom-0",
+        sidePlacement === "right" && "top-0 bottom-0 right-0",
+        sidePlacement === "left" && "top-0 bottom-0 left-0",
+      )}
       style={{
-        bottom: 0,
+        // A side dock lives inside the safe-area strip the content rect skips.
+        width: sidePlacement ? desktopContentEdge(sidePlacement) : undefined,
         pointerEvents: "none",
       }}
     >
       <div
-        className="flex w-full items-end justify-center"
-        style={{
-          // Content-rect insets only. The dock is centered and capped at
-          // min(92%, 980px). 92% of this box equals today's 92vw when the
-          // insets are 0. The right inset is the status-bar width.
-          paddingBottom: "var(--sat-safe-area-bottom, 0px)",
-          paddingLeft: desktopContentEdge("left"),
-          paddingRight: desktopContentEdge("right"),
-        }}
+        className={
+          sidePlacement
+            ? "flex h-full w-full flex-col items-center justify-center"
+            : "flex w-full items-end justify-center"
+        }
+        style={
+          sidePlacement
+            ? {
+                paddingTop: sideDockEndPadding("top"),
+                paddingBottom: sideDockEndPadding("bottom"),
+              }
+            : {
+                // Content-rect insets only. The dock is centered and capped at
+                // min(92%, 980px). 92% of this box equals today's 92vw when the
+                // insets are 0. The right inset is the status-bar width.
+                paddingBottom: "var(--sat-safe-area-bottom, 0px)",
+                paddingLeft: desktopContentEdge("left"),
+                paddingRight: desktopContentEdge("right"),
+              }
+        }
       >
         <motion.div
           ref={dockBarRef}
           layout
           layoutRoot
-          className="mac-dock-surface inline-flex items-end"
+          data-dock-placement={dockLayout.placement}
+          className={cn(
+            "mac-dock-surface inline-flex",
+            sidePlacement ? "flex-col items-center" : "items-end",
+          )}
           initial={false}
           animate={{
-            y: isDockVisible ? 0 : scaledDockHeight + 10,
+            x: isDockVisible ? 0 : dockHiddenShift.x,
+            y: isDockVisible ? 0 : dockHiddenShift.y,
             opacity: isDockVisible ? 1 : 0,
           }}
           style={{
@@ -797,17 +897,15 @@ export function MacDock() {
             border: "none",
             boxShadow:
               "var(--os-color-dock-shadow, 0 2px 8px rgba(0, 0, 0, 0.15))",
-            height: scaledDockHeight,
-            padding: `${scaledVerticalPadding}px ${scaledPadding}px`,
-            maxWidth: "min(92%, 980px)",
-            transformOrigin: "center bottom",
             borderRadius: "0px",
-            overflowX: isPhone ? "auto" : "visible",
-            overflowY: isPhone ? "hidden" : "visible",
-            WebkitOverflowScrolling: isPhone ? "touch" : undefined,
-            overscrollBehaviorX: isPhone ? "contain" : undefined,
+            ...dockBarAxisStyle,
           }}
           transition={{
+            x: {
+              type: "tween",
+              duration: 0.2,
+              ease: "easeOut",
+            },
             y: {
               type: "tween",
               duration: 0.2,
@@ -866,133 +964,141 @@ export function MacDock() {
           onDragLeave={handleDockDragLeave}
           onDrop={handleDockDrop}
         >
-          <LayoutGroup>
-            <AnimatePresence mode="popLayout" initial={false}>
-              {renderDockPinnedItems({
-                pinnedItems: sanitizedPinnedItems,
-                externalDragIndex,
-                openAppsAllSet,
-                instances,
-                mouseX,
-                effectiveMagnifyEnabled,
-                scaledButtonSize,
-                iconRefsMap,
-                hasMounted,
-                seenIdsRef,
-                hoveredId,
-                isSwapping,
-                handleIconHover,
-                handleIconLeave,
-                draggingItemId,
-                isDraggedOutside,
-                handleItemDragStart,
-                handleItemDragEnd,
-                handleItemDragOver,
-                handleAppContextMenu,
-                focusOrLaunchFinder,
-                focusOrLaunchApp,
-                getFileItem,
-                launchApp,
-              })}
+          <DockPlacementContext.Provider value={dockLayout.placement}>
+            <LayoutGroup>
+              <AnimatePresence mode="popLayout" initial={false}>
+                {renderDockPinnedItems({
+                  pinnedItems: sanitizedPinnedItems,
+                  externalDragIndex,
+                  openAppsAllSet,
+                  instances,
+                  mouseX,
+                  effectiveMagnifyEnabled,
+                  scaledButtonSize,
+                  iconRefsMap,
+                  hasMounted,
+                  seenIdsRef,
+                  hoveredId,
+                  isSwapping,
+                  handleIconHover,
+                  handleIconLeave,
+                  draggingItemId,
+                  isDraggedOutside,
+                  handleItemDragStart,
+                  handleItemDragEnd,
+                  handleItemDragOver,
+                  handleAppContextMenu,
+                  focusOrLaunchFinder,
+                  focusOrLaunchApp,
+                  getFileItem,
+                  launchApp,
+                })}
 
-              {/* Divider between pinned and non-pinned apps */}
-              {openItems.length > 0 && (
+                {/* Divider between pinned and non-pinned apps */}
+                {openItems.length > 0 && (
+                  <DockDivider 
+                    key="divider-pinned" 
+                    idKey="pinned"
+                    onDragOver={handleDividerDragOver}
+                    onDrop={handleDividerDrop}
+                    onDragLeave={handleDividerDragLeave}
+                    isDropTarget={isDividerDropTarget}
+                    length={scaledButtonSize}
+                    onContextMenu={handleDividerContextMenu}
+                    {...dividerLongPress}
+                  />
+                )}
+
+                {renderDockOpenItems({
+                  openItems,
+                  instances,
+                  mouseX,
+                  effectiveMagnifyEnabled,
+                  scaledButtonSize,
+                  hasMounted,
+                  seenIdsRef,
+                  hoveredId,
+                  isSwapping,
+                  handleIconHover,
+                  handleIconLeave,
+                  handleAppContextMenu,
+                  restoreInstance,
+                  bringInstanceToForeground,
+                  focusMostRecentInstanceOfApp,
+                  handleNonPinnedDragStart,
+                  getFileItem,
+                  t,
+                })}
+
+                {/* Divider between open apps and Applications/Trash */}
                 <DockDivider 
-                  key="divider-pinned" 
-                  idKey="pinned"
-                  onDragOver={handleDividerDragOver}
-                  onDrop={handleDividerDrop}
-                  onDragLeave={handleDividerDragLeave}
-                  isDropTarget={isDividerDropTarget}
-                  height={scaledButtonSize}
+                  key="divider-between" 
+                  idKey="between" 
+                  length={scaledButtonSize}
+                  resizable={!isPhone && !sidePlacement}
+                  onResizeStart={handleResizeStart}
                   onContextMenu={handleDividerContextMenu}
                   {...dividerLongPress}
                 />
-              )}
 
-              {renderDockOpenItems({
-                openItems,
-                instances,
-                mouseX,
-                effectiveMagnifyEnabled,
-                scaledButtonSize,
-                hasMounted,
-                seenIdsRef,
-                hoveredId,
-                isSwapping,
-                handleIconHover,
-                handleIconLeave,
-                handleAppContextMenu,
-                restoreInstance,
-                bringInstanceToForeground,
-                focusMostRecentInstanceOfApp,
-                handleNonPinnedDragStart,
-                getFileItem,
-                t,
-              })}
+                <DockApplicationsButton
+                  key="__applications__"
+                  dockContainerRef={dockContainerRef}
+                  setApplicationsContextMenuPos={setApplicationsContextMenuPos}
+                  focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
+                  mouseX={mouseX}
+                  effectiveMagnifyEnabled={effectiveMagnifyEnabled}
+                  scaledButtonSize={scaledButtonSize}
+                  hasMounted={hasMounted}
+                  seenIdsRef={seenIdsRef}
+                  hoveredId={hoveredId}
+                  isSwapping={isSwapping}
+                  handleIconHover={handleIconHover}
+                  handleIconLeave={handleIconLeave}
+                  t={t}
+                />
 
-              {/* Divider between open apps and Applications/Trash */}
-              <DockDivider 
-                key="divider-between" 
-                idKey="between" 
-                height={scaledButtonSize}
-                resizable={!isPhone}
-                onResizeStart={handleResizeStart}
-                onContextMenu={handleDividerContextMenu}
-                {...dividerLongPress}
-              />
+                <DockTrashButton
+                  key="__trash__"
+                  dockContainerRef={dockContainerRef}
+                  setTrashContextMenuPos={setTrashContextMenuPos}
+                  focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
+                  trashIcon={trashIcon}
+                  handleTrashDragOver={handleTrashDragOver}
+                  handleTrashDrop={handleTrashDrop}
+                  handleTrashDragLeave={handleTrashDragLeave}
+                  isDraggingOverTrash={isDraggingOverTrash}
+                  mouseX={mouseX}
+                  effectiveMagnifyEnabled={effectiveMagnifyEnabled}
+                  scaledButtonSize={scaledButtonSize}
+                  hasMounted={hasMounted}
+                  seenIdsRef={seenIdsRef}
+                  hoveredId={hoveredId}
+                  isSwapping={isSwapping}
+                  handleIconHover={handleIconHover}
+                  handleIconLeave={handleIconLeave}
+                  t={t}
+                />
 
-              <DockApplicationsButton
-                key="__applications__"
-                dockContainerRef={dockContainerRef}
-                setApplicationsContextMenuPos={setApplicationsContextMenuPos}
-                focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                t={t}
-              />
-
-              <DockTrashButton
-                key="__trash__"
-                dockContainerRef={dockContainerRef}
-                setTrashContextMenuPos={setTrashContextMenuPos}
-                focusFinderAtPathOrLaunch={focusFinderAtPathOrLaunch}
-                trashIcon={trashIcon}
-                handleTrashDragOver={handleTrashDragOver}
-                handleTrashDrop={handleTrashDrop}
-                handleTrashDragLeave={handleTrashDragLeave}
-                isDraggingOverTrash={isDraggingOverTrash}
-                mouseX={mouseX}
-                effectiveMagnifyEnabled={effectiveMagnifyEnabled}
-                scaledButtonSize={scaledButtonSize}
-                hasMounted={hasMounted}
-                seenIdsRef={seenIdsRef}
-                hoveredId={hoveredId}
-                isSwapping={isSwapping}
-                handleIconHover={handleIconHover}
-                handleIconLeave={handleIconLeave}
-                t={t}
-              />
-
-            </AnimatePresence>
-          </LayoutGroup>
+              </AnimatePresence>
+            </LayoutGroup>
+          </DockPlacementContext.Provider>
         </motion.div>
       </div>
       
       {/* Desktop: hover zone reveals hidden dock. Mobile uses swipe (see effect above). */}
       {dockHiding && !isDockVisible && !useSwipeToRevealDock && (
         <div
-          className="fixed left-0 right-0 z-40"
+          className={cn(
+            "fixed z-40",
+            sidePlacement === null && "left-0 right-0 bottom-0",
+            sidePlacement === "right" && "top-0 bottom-0 right-0",
+            sidePlacement === "left" && "top-0 bottom-0 left-0",
+          )}
           style={{
-            bottom: 0,
-            height: Math.max(Math.round(scaledDockHeight / 2), 8),
+            ...(sidePlacement
+              ? { width: Math.max(Math.round(scaledDockThickness / 2), 8) }
+              : { height: Math.max(Math.round(scaledDockThickness / 2), 8) }),
             pointerEvents: "auto",
             // Debug: uncomment to visualize hover zone
             // backgroundColor: "rgba(255, 0, 0, 0.2)",

@@ -2059,6 +2059,11 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   :root[data-os-theme="macosx"][data-os-aqua-material="glass"] [data-sonner-toaster][data-y-position="bottom"] {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 82px) !important;
   }
+
+  /* macOS X side dock (iPhone Duo status-bar strip): no dock to clear below */
+  :root[data-os-theme="macosx"]:has(.mac-dock-surface[data-dock-placement="left"], .mac-dock-surface[data-dock-placement="right"]) [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 16px) !important;
+  }
   
   /* Windows XP theme: add taskbar height (30px) */
   :root[data-os-theme="xp"] [data-sonner-toaster][data-y-position="bottom"] {

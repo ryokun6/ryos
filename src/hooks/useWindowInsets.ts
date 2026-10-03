@@ -4,6 +4,7 @@ import type { ThemeMetadata } from "@/themes";
 import { useThemeFlags } from "./useThemeFlags";
 import { hasDesktopWindowChrome } from "@/utils/platform";
 import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
+import { getDockLayout } from "@/components/layout/dock/dockPlacement";
 
 export interface WindowInsets {
   menuBarHeight: number;
@@ -58,9 +59,12 @@ export function useWindowInsets() {
 
     const taskbarHeight = themeMetaTyped.taskbarHeight;
 
-    // Use scaled dock height for accurate constraints (0 if dock hiding is enabled)
+    // Use scaled dock height for accurate constraints (0 if dock hiding is
+    // enabled, or when the dock sits in a side safe-area strip instead).
     let dockHeight =
-      themeMetaTyped.hasDock && !dockHiding
+      themeMetaTyped.hasDock &&
+      !dockHiding &&
+      getDockLayout().placement === "bottom"
         ? Math.round(themeMetaTyped.baseDockHeight * dockScale)
         : 0;
 
