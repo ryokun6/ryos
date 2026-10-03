@@ -81,6 +81,22 @@ enum DesktopBridge {
         quitAndInstall: function () { return invoke('quitAndInstall'); },
         onUpdateStatus: function () { return function () {}; },
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
+        // Vertical status-bar cluster extent inside a side bar, in CSS px:
+        // 0 wherever a vertical bar doesn't exist, the measured extent (150
+        // on the iPhone Duo closed outer display) where it does. The iOS
+        // shell keeps this current on pose changes via
+        // __ryosSetSideStatusBarExtent below, which also fires a
+        // `ryos-status-bar-extent` CustomEvent (detail = the new value) so
+        // listeners can react without polling.
+        sideStatusBarExtent: 0,
+      };
+      window.__ryosSetSideStatusBarExtent = function (v) {
+        v = Number(v) || 0;
+        if (window.ryosDesktop.sideStatusBarExtent === v) return;
+        window.ryosDesktop.sideStatusBarExtent = v;
+        try {
+          window.dispatchEvent(new CustomEvent('ryos-status-bar-extent', { detail: v }));
+        } catch (e) {}
       };
       window.__ryosEmitOpenRoom = function (roomId) {
         var delivered = false;

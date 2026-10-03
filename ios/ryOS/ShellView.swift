@@ -8,7 +8,11 @@ struct ShellView: View {
     var body: some View {
         GeometryReader { geo in
             let topIsClearanceEdge = Self.isTopClearanceEdge(geo.safeAreaInsets)
-            duoBody(topIsClearanceEdge: topIsClearanceEdge)
+            let sideExtent = Self.sideStatusBarExtent(
+                isVerticalBar: !topIsClearanceEdge,
+                viewSize: geo.size
+            )
+            duoBody(topIsClearanceEdge: topIsClearanceEdge, sideStatusBarExtent: sideExtent)
         }
     }
 
@@ -17,6 +21,25 @@ struct ShellView: View {
     /// are zero. 8pt comfortably separates the two shapes.
     static func isTopClearanceEdge(_ insets: EdgeInsets) -> Bool {
         max(insets.leading, insets.trailing) < 8
+    }
+
+    /// Measured vertical extent of the system-drawn status cluster inside a
+    /// vertical bar: on the closed outer display (466×678, trailing strip
+    /// 84pt) the cluster — camera dot, clock, wi-fi chip — occupies the top
+    /// 150pt (measured off the live simulator 2026-10-03 by pixel scan:
+    /// camera ~30–67, clock ~84–99, chip+dots ending at 150). The web's side
+    /// dock derives its top offset (extent + 12pt clearance) and max height
+    /// from this value; it is a geometry-keyed measurement, not a pose name.
+    static let sideStatusBarExtentMeasured: CGFloat = 150
+
+    /// One contract everywhere (always reported, 0 where meaningless): the
+    /// extent is nonzero only for a vertical bar on a portrait viewport —
+    /// the closed outer display. The open pose is landscape and its dock is
+    /// bottom-horizontal, so it reads 0 there; regular iPhones never have a
+    /// vertical bar at all.
+    static func sideStatusBarExtent(isVerticalBar: Bool, viewSize: CGSize) -> CGFloat {
+        guard isVerticalBar, viewSize.height > viewSize.width else { return 0 }
+        return sideStatusBarExtentMeasured
     }
 
     /// Clearance follows the status bar's actual edge, read from the live
@@ -29,7 +52,7 @@ struct ShellView: View {
     /// --desktop-content-left/right env(safe-area-inset-*) bindings (PR 1965).
     /// Regular iPhones always have zero side insets, so they keep the top
     /// clearance with the web menubar flush beneath the black strip.
-    private func duoBody(topIsClearanceEdge: Bool) -> some View {
+    private func duoBody(topIsClearanceEdge: Bool, sideStatusBarExtent: CGFloat) -> some View {
         ZStack(alignment: .top) {
             // Solid black behind the status bar, per the design reference:
             // the web menubar sits flush beneath it. Ignore every edge so the
@@ -40,7 +63,8 @@ struct ShellView: View {
                 .ignoresSafeArea()
 
             ShellWebView(shell: shell,
-                         virtualTopInset: topIsClearanceEdge ? 0 : 20)
+                         virtualTopInset: topIsClearanceEdge ? 0 : 20,
+                         sideStatusBarExtent: sideStatusBarExtent)
                 // Full bleed on the sides always (the web clears any vertical
                 // bar itself — insetting here would double it as black bars
                 // down the display edge), and the top too when the bar is a

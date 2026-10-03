@@ -6,14 +6,26 @@ import AuthenticationServices
 /// WKWebView shell around https://os.ryo.lu. The web client detects the
 /// injected `window.ryosDesktop` bridge (the same contract the Electron
 /// desktop shell installs) and hands the shell its notification state.
-struct ShellWebView: UIViewRepresentable {
+struct ShellWebView: UIViewControllerRepresentable {
     let shell: ShellViewModel
+    /// Top inset reported to the page in Duo poses: the measured system
+    /// reserved band (~20pt, closed pose — taps below it, dead inside it).
+    /// Zero on regular iPhone, where the natural status-bar inset already
+    /// covers the same role. Read-only signal for the page's env(); the web
+    /// owns all layout and hit targets in the band (one-owner redivision).
+    var virtualTopInset: CGFloat = 0
+    /// Vertical extent of the system-drawn status cluster inside a vertical
+    /// bar (Duo closed pose: 150pt), reported to the page through the bridge
+    /// as `window.ryosDesktop.sideStatusBarExtent` — one contract, 0 where a
+    /// vertical bar doesn't exist. The web's side dock derives its top
+    /// offset (extent + 12pt clearance) and max height from it.
+    var sideStatusBarExtent: CGFloat = 0
 
     func makeCoordinator() -> Coordinator {
         Coordinator(shell: shell)
     }
 
-    func makeUIView(context: Context) -> WKWebView {
+    func makeUIViewController(context: Context) -> UIViewController {
         let config = WKWebViewConfiguration()
         let userContent = config.userContentController
         userContent.addUserScript(
@@ -36,15 +48,33 @@ struct ShellWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.scrollView.isScrollEnabled = false
+        // Full-bleed visuals with a reported inset: .never keeps the scroll
+        // view from consuming safe areas into contentInset (which would
+        // shift the page); env(safe-area-inset-*) still sees the insets.
+        webView.scrollView.contentInsetAdjustmentBehavior = .never
+
+        let holder = UIViewController()
+        holder.view.backgroundColor = .black
+        webView.frame = holder.view.bounds
+        webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        holder.view.addSubview(webView)
         webView.isOpaque = false
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
         ShellRouter.shared.attach(webView)
         webView.load(URLRequest(url: ShellViewModel.origin))
-        return webView
+        return holder
     }
 
-    func updateUIView(_ webView: WKWebView, context: Context) {}
+    func updateUIViewController(_ holder: UIViewController, context: Context) {
+        // UIKit's native virtual-inset mechanism: adds to the propagated safe
+        // area, reaches the page only as env(safe-area-inset-top).
+        let inset = UIEdgeInsets(top: virtualTopInset, left: 0, bottom: 0, right: 0)
+        if holder.additionalSafeAreaInsets != inset {
+            holder.additionalSafeAreaInsets = inset
+        }
+        context.coordinator.reportSideStatusBarExtent(sideStatusBarExtent)
+    }
 }
 
 final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, ASWebAuthenticationPresentationContextProviding {
@@ -52,10 +82,30 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
     private var hasAskedForPermission = false
+    /// Latest geometry-reported side status-bar extent; (re)pushed to the
+    /// page whenever it changes and once after boot-finished, because early
+    /// evaluations land before the page's bridge exists.
+    private var sideStatusBarExtent: CGFloat = 0
 
     init(shell: ShellViewModel) {
         self.shell = shell
         super.init()
+    }
+
+    func reportSideStatusBarExtent(_ extent: CGFloat) {
+        let changed = extent != sideStatusBarExtent
+        sideStatusBarExtent = extent
+        guard changed else { return }
+        pushSideStatusBarExtent()
+    }
+
+    private func pushSideStatusBarExtent() {
+        guard let webView else { return }
+        let value = Double(sideStatusBarExtent)
+        webView.evaluateJavaScript(
+            "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent(\(value))",
+            completionHandler: nil
+        )
     }
 
     func attach(_ webView: WKWebView) {
@@ -259,6 +309,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         case "boot-finished":
             shell?.reportBootFinished()
             ShellRouter.shared.markPageReady()
+            pushSideStatusBarExtent()
         case "app-active":
             ShellRouter.shared.firePendingRoom()
         default:
