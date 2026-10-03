@@ -6,6 +6,7 @@ import { getAppPublicOrigin } from "@/utils/runtimeConfig";
 import type {
   RyosDesktopApi,
   RyosDesktopCapabilities,
+  RyosSideStatusBarExtentDetail,
 } from "@/types/ryos-desktop";
 
 /**
@@ -131,8 +132,33 @@ export function isIosShell(
   return bridge?.platform === "ios";
 }
 
-/** Mark the document so CSS content insets apply. No-op in a regular browser. */
+/** Window event the iOS shell fires when the side status-bar cluster changes. */
+export const SIDE_STATUS_BAR_EXTENT_EVENT = "ryos-status-bar-extent";
+
+/** Root CSS variable that mirrors the iOS shell's `sideStatusBarExtent`. */
+export const SIDE_BAR_EXTENT_VAR = "--side-bar-extent";
+
+function applySideBarExtent(value: unknown): void {
+  const px = Number(value);
+  document.documentElement.style.setProperty(
+    SIDE_BAR_EXTENT_VAR,
+    `${Number.isFinite(px) && px > 0 ? px : 0}px`
+  );
+}
+
+/**
+ * Mark the document so CSS content insets apply, and mirror the side
+ * status-bar extent into `--side-bar-extent`: read once here, then on every
+ * `ryos-status-bar-extent` event as the device folds. No-op in a regular
+ * browser.
+ */
 export function markIosShellDocument(): void {
   if (typeof document === "undefined" || !isIosShell()) return;
   document.documentElement.setAttribute(IOS_SHELL_ATTRIBUTE, "");
+  applySideBarExtent(window.ryosDesktop?.sideStatusBarExtent);
+  window.addEventListener(SIDE_STATUS_BAR_EXTENT_EVENT, (event) => {
+    const detail = (event as CustomEvent<Partial<RyosSideStatusBarExtentDetail> | undefined>)
+      .detail;
+    applySideBarExtent(detail?.extent ?? window.ryosDesktop?.sideStatusBarExtent);
+  });
 }

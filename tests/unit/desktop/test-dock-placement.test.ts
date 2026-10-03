@@ -1,9 +1,10 @@
 #!/usr/bin/env bun
 
-import { describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   BOTTOM_DOCK_LAYOUT,
   SIDE_DOCK_GUTTER_PX,
+  SIDE_DOCK_CLEARANCE_PX,
   SIDE_DOCK_MIN_INSET_PX,
   fitSideDockButtonSize,
   getDockLayout,
@@ -12,6 +13,11 @@ import {
   sideDockHiddenOffset,
 } from "../../../src/components/layout/dock/dockPlacement";
 import { desktopContentBounds } from "../../../src/utils/desktopContentBounds";
+import {
+  SIDE_BAR_EXTENT_VAR,
+  SIDE_STATUS_BAR_EXTENT_EVENT,
+  markIosShellDocument,
+} from "../../../src/utils/platform";
 
 function layoutFor(
   viewportWidth: number,
@@ -133,13 +139,100 @@ describe("sideDockHiddenOffset", () => {
 });
 
 describe("sideDockEndPadding", () => {
-  test("clears the status-bar ends unless the system inset is larger", () => {
+  test("the top sits 12px below the shell-reported status cluster", () => {
+    expect(SIDE_DOCK_CLEARANCE_PX).toBe(12);
     expect(sideDockEndPadding("top")).toBe(
-      "max(var(--sat-safe-area-top, 0px), 64px)",
+      "calc(var(--side-bar-extent, 0px) + 12px)",
     );
-    expect(sideDockEndPadding("bottom")).toBe(
-      "max(var(--sat-safe-area-bottom, 0px), 64px)",
-    );
+  });
+
+  test("the bottom keeps a 12px margin, independent of the safe-area insets", () => {
+    expect(sideDockEndPadding("bottom")).toBe("12px");
+    expect(sideDockEndPadding("top")).not.toContain("safe-area");
+  });
+});
+
+describe("iOS shell side status-bar extent", () => {
+  const g = globalThis as Record<string, unknown>;
+  const saved = {
+    window: Object.getOwnPropertyDescriptor(globalThis, "window"),
+    document: Object.getOwnPropertyDescriptor(globalThis, "document"),
+  };
+  let events = new EventTarget();
+  const cssVars = new Map<string, string>();
+
+  beforeEach(() => {
+    cssVars.clear();
+    events = new EventTarget();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      writable: true,
+      value: {
+        ryosDesktop: { platform: "ios", sideStatusBarExtent: 150 },
+        addEventListener: events.addEventListener.bind(events),
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      writable: true,
+      value: {
+        documentElement: {
+          setAttribute() {},
+          style: { setProperty: (name: string, value: string) => cssVars.set(name, value) },
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    for (const key of ["window", "document"] as const) {
+      const descriptor = saved[key];
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor);
+      else delete g[key];
+    }
+  });
+
+  const emit = (detail: unknown) =>
+    events.dispatchEvent(new CustomEvent(SIDE_STATUS_BAR_EXTENT_EVENT, { detail }));
+
+  test("reads the bridge once, then follows fold events", () => {
+    markIosShellDocument();
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("150px");
+
+    emit({ extent: 88, hasCamera: false });
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("88px");
+
+    emit({ extent: 150, hasCamera: true });
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("150px");
+
+    emit({ extent: 0, hasCamera: false });
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("0px");
+  });
+
+  test("falls back to the bridge property and treats bad values as 0", () => {
+    markIosShellDocument();
+    const bridge = (g.window as { ryosDesktop: { sideStatusBarExtent?: unknown } })
+      .ryosDesktop;
+    bridge.sideStatusBarExtent = 88;
+    emit(undefined);
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("88px");
+
+    emit({ extent: "bogus" });
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("0px");
+  });
+
+  test("a shell without the property reads 0", () => {
+    (g.window as { ryosDesktop: { sideStatusBarExtent?: unknown } }).ryosDesktop = {
+      platform: "ios",
+    };
+    markIosShellDocument();
+    expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("0px");
+  });
+
+  test("a regular browser never sets the variable", () => {
+    (g.window as { ryosDesktop?: unknown }).ryosDesktop = undefined;
+    markIosShellDocument();
+    expect(cssVars.has(SIDE_BAR_EXTENT_VAR)).toBe(false);
   });
 });
 

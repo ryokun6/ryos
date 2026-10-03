@@ -1,8 +1,8 @@
 /**
  * Where the Mac dock sits.
  *
- * The folded iPhone Duo cover display reserves an 84px trailing strip for its
- * vertical status bar (`--desktop-content-right`). The menubar, desktop icons,
+ * The iPhone Duo reserves an 84px trailing strip for its vertical status bar,
+ * folded and open (`--desktop-content-right`). The menubar, desktop icons,
  * and windows already stop at that strip, so a bottom dock leaves it empty
  * while taking the bottom of a short screen. When a side content inset is at
  * least `SIDE_DOCK_MIN_INSET_PX`, the dock runs vertically inside that strip
@@ -20,6 +20,7 @@ import {
   type DesktopContentBounds,
   getDesktopContentBounds,
 } from "@/utils/desktopContentBounds";
+import { SIDE_BAR_EXTENT_VAR } from "@/utils/platform";
 
 export type DockPlacement = "bottom" | "left" | "right";
 export type SideDockPlacement = Exclude<DockPlacement, "bottom">;
@@ -34,10 +35,10 @@ export type DockLayout = {
 export const SIDE_DOCK_MIN_INSET_PX = 72;
 
 /**
- * Kept clear at both ends of the strip. The vertical status bar draws its
- * glyphs there, and the display corners curve through it.
+ * Gap below the system status cluster at the top of the strip, and the
+ * margin left at the bottom of the strip.
  */
-export const SIDE_DOCK_END_CLEARANCE_PX = 64;
+export const SIDE_DOCK_CLEARANCE_PX = 12;
 
 /** Minimum gap between a side dock and either edge of its strip. */
 export const SIDE_DOCK_GUTTER_PX = 6;
@@ -88,9 +89,18 @@ export function sideDockHiddenOffset(input: {
   return input.placement === "right" ? distance : -distance;
 }
 
-/** Strip padding at one end. A larger system safe-area inset wins. */
+/**
+ * Strip padding at one end. The dock's top sits `SIDE_DOCK_CLEARANCE_PX`
+ * below the status cluster the iOS shell reports in `--side-bar-extent`
+ * (150px folded, 88px open). The bottom keeps the same margin. The dock is
+ * capped to the height between them and scrolls past it, so it never grows
+ * up into the cluster. The menubar's top safe-area inset is separate and
+ * does not feed this.
+ */
 export function sideDockEndPadding(end: "top" | "bottom"): string {
-  return `max(var(--sat-safe-area-${end}, 0px), ${SIDE_DOCK_END_CLEARANCE_PX}px)`;
+  return end === "top"
+    ? `calc(var(${SIDE_BAR_EXTENT_VAR}, 0px) + ${SIDE_DOCK_CLEARANCE_PX}px)`
+    : `${SIDE_DOCK_CLEARANCE_PX}px`;
 }
 
 let snapshot: DockLayout = BOTTOM_DOCK_LAYOUT;

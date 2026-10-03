@@ -852,7 +852,7 @@ export function MacDock() {
       <div
         className={
           sidePlacement
-            ? "flex h-full w-full flex-col items-center justify-center"
+            ? "flex h-full w-full flex-col items-center justify-start"
             : "flex w-full items-end justify-center"
         }
         style={
