@@ -92,7 +92,10 @@ export function sideDockHiddenOffset(input: {
 /**
  * Strip padding at one end. The dock's top sits `SIDE_DOCK_CLEARANCE_PX`
  * below the status cluster the iOS shell reports in `--side-bar-extent`
- * (150px folded, 88px open). The bottom keeps the same margin. The dock is
+ * (150px folded, 88px open). The bottom keeps at least the same margin,
+ * never less than the home-indicator zone (env safe-area bottom, 34px on
+ * both Duo poses), so an overfull dock stays clear of the rounded corner.
+ * The dock is
  * capped to the height between them and scrolls past it, so it never grows
  * up into the cluster. The menubar's top safe-area inset is separate and
  * does not feed this.
@@ -100,7 +103,7 @@ export function sideDockHiddenOffset(input: {
 export function sideDockEndPadding(end: "top" | "bottom"): string {
   return end === "top"
     ? `calc(var(${SIDE_BAR_EXTENT_VAR}, 0px) + ${SIDE_DOCK_CLEARANCE_PX}px)`
-    : `${SIDE_DOCK_CLEARANCE_PX}px`;
+    : `max(${SIDE_DOCK_CLEARANCE_PX}px, env(safe-area-inset-bottom))`;
 }
 
 let snapshot: DockLayout = BOTTOM_DOCK_LAYOUT;
