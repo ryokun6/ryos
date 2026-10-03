@@ -155,9 +155,12 @@ export function AppleMenu() {
           )}
         >
           {isMacOSTheme ? (
+            // The 30px image overflows the menubar row, so it must not take
+            // taps outside the trigger (e.g. in the iOS shell's top band).
             <ThemedIcon
               name="apple.png"
               alt="Apple Menu"
+              className="pointer-events-none"
               style={{ width: 30, height: 30 }}
             />
           ) : (
