@@ -49,6 +49,9 @@ struct ShellWebView: UIViewControllerRepresentable {
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
 
         let webView = WKWebView(frame: .zero, configuration: config)
+        #if DEBUG
+        webView.isInspectable = true
+        #endif
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.scrollView.isScrollEnabled = false
