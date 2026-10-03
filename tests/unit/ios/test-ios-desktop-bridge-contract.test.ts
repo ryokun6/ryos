@@ -392,7 +392,7 @@ describe("auth popups and the auth sheet", () => {
   });
 
   test("window.open is allowed and handled on every webview", () => {
-    const makeUIView = swiftFunctionBody(shellWebViewSwift, "func makeUIView(");
+    const makeUIView = swiftFunctionBody(shellWebViewSwift, "func makeUIViewController(");
     const flag = makeUIView.indexOf(
       "config.preferences.javaScriptCanOpenWindowsAutomatically = true"
     );

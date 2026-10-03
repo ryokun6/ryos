@@ -131,8 +131,29 @@ export function isIosShell(
   return bridge?.platform === "ios";
 }
 
-/** Mark the document so CSS content insets apply. No-op in a regular browser. */
+/** Window event the iOS shell fires when `sideStatusBarExtent` changes. */
+export const SIDE_STATUS_BAR_EXTENT_EVENT = "ryos-status-bar-extent";
+
+/** Root CSS variable that mirrors the iOS shell's `sideStatusBarExtent`. */
+export const SIDE_STATUS_BAR_EXTENT_VAR = "--ios-side-status-bar-extent";
+
+function applySideStatusBarExtent(value: unknown): void {
+  const px = Number(value);
+  document.documentElement.style.setProperty(
+    SIDE_STATUS_BAR_EXTENT_VAR,
+    `${Number.isFinite(px) && px > 0 ? px : 0}px`
+  );
+}
+
+/**
+ * Mark the document so CSS content insets apply, and keep the side status-bar
+ * extent in sync for the side dock. No-op in a regular browser.
+ */
 export function markIosShellDocument(): void {
   if (typeof document === "undefined" || !isIosShell()) return;
   document.documentElement.setAttribute(IOS_SHELL_ATTRIBUTE, "");
+  applySideStatusBarExtent(window.ryosDesktop?.sideStatusBarExtent);
+  window.addEventListener(SIDE_STATUS_BAR_EXTENT_EVENT, (event) => {
+    applySideStatusBarExtent((event as CustomEvent<unknown>).detail);
+  });
 }
