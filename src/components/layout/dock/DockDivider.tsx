@@ -1,6 +1,18 @@
-import React from "react";
+import React, { useContext } from "react";
 import { motion } from "motion/react";
 import type { DockDividerProps } from "./dockTypes";
+import { DockPlacementContext } from "./DockPlacementContext";
+
+const DIVIDER_MOTION = {
+  bottom: {
+    hidden: { opacity: 0, scaleY: 0.8 },
+    shown: { opacity: 0.9, scaleY: 1 },
+  },
+  side: {
+    hidden: { opacity: 0, scaleX: 0.8 },
+    shown: { opacity: 0.9, scaleX: 1 },
+  },
+};
 
 export function DockDivider({
   ref,
@@ -9,7 +21,7 @@ export function DockDivider({
   onDrop,
   onDragLeave,
   isDropTarget,
-  height = 48,
+  length = 48,
   resizable,
   onResizeStart,
   onContextMenu,
@@ -20,7 +32,10 @@ export function DockDivider({
 }: DockDividerProps & {
   ref?: React.Ref<HTMLDivElement>;
 }) {
-  const baseWidth = 1;
+  const baseThickness = 1;
+  const isSideDock = useContext(DockPlacementContext) !== "bottom";
+  const dividerMotion = DIVIDER_MOTION[isSideDock ? "side" : "bottom"];
+  const lineThickness = isDropTarget ? 4 : baseThickness;
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,12 +67,9 @@ export function DockDivider({
       ref={ref}
       layout
       layoutId={`dock-divider-${idKey}`}
-      initial={{ opacity: 0, scaleY: 0.8 }}
-      animate={{
-        opacity: 0.9,
-        scaleY: 1,
-      }}
-      exit={{ opacity: 0, scaleY: 0.8 }}
+      initial={dividerMotion.hidden}
+      animate={dividerMotion.shown}
+      exit={dividerMotion.hidden}
       transition={{ type: "spring", stiffness: 260, damping: 26 }}
       onDragOver={onDragOver as React.DragEventHandler<HTMLDivElement>}
       onDrop={onDrop as React.DragEventHandler<HTMLDivElement>}
@@ -69,8 +81,9 @@ export function DockDivider({
       onTouchMove={handleTouchMove}
       onTouchCancel={handleTouchCancel}
       style={{
-        height,
-        padding: "0 10px",
+        ...(isSideDock
+          ? { width: length, padding: "10px 0" }
+          : { height: length, padding: "0 10px" }),
         alignSelf: "center",
         cursor: resizable ? "ns-resize" : undefined,
         position: "relative",
@@ -82,13 +95,14 @@ export function DockDivider({
     >
       <div
         style={{
-          width: isDropTarget ? 4 : baseWidth,
-          height: "100%",
+          ...(isSideDock
+            ? { width: "100%", height: lineThickness }
+            : { width: lineThickness, height: "100%" }),
           backgroundColor: isDropTarget
             ? "rgba(255, 255, 255, 0.5)"
             : "rgba(0, 0, 0, 0.2)",
           borderRadius: 2,
-          transition: "width 0.15s ease, background-color 0.15s ease",
+          transition: `${isSideDock ? "height" : "width"} 0.15s ease, background-color 0.15s ease`,
         }}
       />
     </motion.div>

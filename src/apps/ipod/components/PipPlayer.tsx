@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { motion } from "motion/react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
@@ -5,10 +6,14 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useOffline } from "@/hooks/useOffline";
 import { useTranslation } from "react-i18next";
 import { useIsPhone } from "@/hooks/useIsPhone";
+import { useDockLayout } from "@/hooks/useDockLayout";
 import { getYouTubeVideoId, formatKugouImageUrl } from "../constants";
 import { youtubeThumbnailUrl } from "@/utils/youtubeUrl";
 import type { PipPlayerProps } from "../types";
 import { SkipBack, SkipForward, Play, Pause, MusicNote } from "@phosphor-icons/react";
+
+const CONTENT_WIDTH =
+  "(100vw - var(--desktop-content-left, 0px) - var(--desktop-content-right, 0px))";
 
 export function PipPlayer({
   currentTrack,
@@ -26,6 +31,8 @@ export function PipPlayer({
     isAquaGlass,
   } = useThemeFlags();
   const isPhone = useIsPhone();
+  const dockPlacement = useDockLayout().placement;
+  const dockOnSide = isMacOSX && dockPlacement !== "bottom";
 
   // Calculate bottom offset based on theme (similar to Sonner positioning).
   // The Aqua glass dock sits a bit higher than the classic dock (6px lift +
@@ -33,7 +40,7 @@ export function PipPlayer({
   const macOSBottom = isAquaGlass ? "82px" : "72px";
   const bottomOffset = isWinFamily
     ? "calc(env(safe-area-inset-bottom, 0px) + 42px)"
-    : isMacOSX
+    : isMacOSX && !dockOnSide
       ? `calc(env(safe-area-inset-bottom, 0px) + ${macOSBottom})`
       : "calc(env(safe-area-inset-bottom, 0px) + 16px)";
 
@@ -49,6 +56,21 @@ export function PipPlayer({
   // Determine horizontal positioning based on theme
   // On phones, match the dock's centered width + side padding/margins
   const shouldCenter = isPhone || isMacOSX;
+  const sizeStyle: CSSProperties = !isPhone
+    ? { maxWidth: "min(400px, calc(100vw - 2rem))" }
+    : dockOnSide
+      ? {
+          // Center in the content rect so the player stays clear of the
+          // side dock's safe-area strip.
+          left: `calc(var(--desktop-content-left, 0px) + ${CONTENT_WIDTH} / 2)`,
+          width: `calc(${CONTENT_WIDTH} * 0.92)`,
+          maxWidth: "980px",
+        }
+      : {
+          // Match Dock.tsx: maxWidth = min(92vw, 980px) and centered
+          width: "min(92vw, 980px)",
+          maxWidth: "min(92vw, 980px)",
+        };
 
   return createPortal(
     <motion.div
@@ -62,15 +84,7 @@ export function PipPlayer({
         shouldCenter ? "left-1/2" : "right-3"
       )}
       style={{
-        ...(isPhone
-          ? {
-              // Match Dock.tsx: maxWidth = min(92vw, 980px) and centered
-              width: "min(92vw, 980px)",
-              maxWidth: "min(92vw, 980px)",
-            }
-          : {
-              maxWidth: "min(400px, calc(100vw - 2rem))",
-            }),
+        ...sizeStyle,
         bottom: bottomOffset,
       }}
       onClick={onRestore}
