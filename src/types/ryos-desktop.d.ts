@@ -209,6 +209,12 @@ export interface RyosDesktopApi {
   /** iOS shell: play a native haptic. */
   playHaptic?: (pattern: RyosHapticPattern) => void;
   /**
+   * iOS shell: height in CSS px of the system status cluster (camera, clock,
+   * Wi-Fi) at the top of a vertical side status bar, 0 where there is none.
+   * Changes fire a `ryos-status-bar-extent` window event.
+   */
+  sideStatusBarExtent?: number;
+  /**
    * iOS shell: run a redirect-based sign-in in the system auth sheet
    * (ASWebAuthenticationSession). Resolves with the URL that reached
    * `callback`; rejects with "cancelled" when the user closes the sheet.
