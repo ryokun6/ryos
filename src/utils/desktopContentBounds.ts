@@ -85,6 +85,19 @@ export function windowUsesExplicitWidth(
 }
 
 /**
+ * Frame `min-width`. Phone-width frames always span the content rect, so an
+ * app's desktop minimum must not widen one past it into a status-bar strip.
+ */
+export function windowFrameMinWidth(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  appMinWidth: number | undefined;
+}): number | "100%" | undefined {
+  if (!windowUsesExplicitWidth(input.viewportWidth, input.bounds)) return "100%";
+  return input.viewportWidth >= 768 ? input.appMinWidth : undefined;
+}
+
+/**
  * Initial / resize fit. With no horizontal inset this matches the previous
  * overflow clamp (`x = max(0, innerWidth - width)` only when the window
  * extends past the viewport) and leaves a negative `x` alone.

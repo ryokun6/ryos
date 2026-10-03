@@ -8,6 +8,7 @@ import {
   SIDE_DOCK_MIN_INSET_PX,
   fitSideDockButtonSize,
   getDockLayout,
+  phoneWindowFlushEdge,
   resolveDockLayout,
   sideDockEndPadding,
   sideDockHiddenOffset,
@@ -135,6 +136,22 @@ describe("sideDockHiddenOffset", () => {
     expect(left).toBe(-right);
     // The bar's inner edge starts (strip + thickness) / 2 from the screen edge.
     expect(right).toBeGreaterThanOrEqual((stripWidth + thickness) / 2);
+  });
+});
+
+describe("phoneWindowFlushEdge", () => {
+  test("phone-width windows drop their padding on the side-dock edge only", () => {
+    expect(phoneWindowFlushEdge(466, layoutFor(466, { left: 0, right: 84 }))).toBe(
+      "right",
+    );
+    expect(phoneWindowFlushEdge(466, layoutFor(466, { left: 84, right: 0 }))).toBe(
+      "left",
+    );
+  });
+
+  test("bottom docks and md+ layouts keep the padding as it is today", () => {
+    expect(phoneWindowFlushEdge(393, layoutFor(393, { left: 0, right: 0 }))).toBeNull();
+    expect(phoneWindowFlushEdge(951, layoutFor(951, { left: 0, right: 84 }))).toBeNull();
   });
 });
 

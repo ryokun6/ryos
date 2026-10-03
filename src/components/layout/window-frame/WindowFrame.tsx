@@ -38,7 +38,12 @@ import { useWindowFrameDrawerSlot } from "./hooks/useWindowFrameDrawerSlot";
 import { useWindowFramePhoneSwipe } from "./hooks/useWindowFramePhoneSwipe";
 import { useWindowFrameNoTitlebarMouseHandlers } from "./hooks/useWindowFrameNoTitlebarMouseHandlers";
 import { useDesktopContentBounds } from "@/hooks/useDesktopContentBounds";
-import { windowUsesExplicitWidth } from "@/utils/desktopContentBounds";
+import { useDockLayout } from "@/hooks/useDockLayout";
+import { phoneWindowFlushEdge } from "@/components/layout/dock/dockPlacement";
+import {
+  windowFrameMinWidth,
+  windowUsesExplicitWidth,
+} from "@/utils/desktopContentBounds";
 
 export type { WindowFrameProps } from "./windowFrameTypes";
 
@@ -166,6 +171,10 @@ export function WindowFrame({
     window.innerWidth,
     contentBounds,
   );
+  const dockLayout = useDockLayout();
+  const flushEdge = isMacOSTheme
+    ? phoneWindowFlushEdge(window.innerWidth, dockLayout)
+    : null;
 
   const {
     handleTouchStart,
@@ -273,6 +282,8 @@ export function WindowFrame({
             data-window-instance-id={instanceId}
             className={cn(
               "absolute p-2 md:p-0",
+              flushEdge === "right" && "pr-0",
+              flushEdge === "left" && "pl-0",
               keepMountedWhenMinimized &&
                 isMinimized &&
                 "pointer-events-none"
@@ -313,7 +324,11 @@ export function WindowFrame({
               top: windowTopMotionValue,
               width: windowWidthMotionValue,
               height: windowHeightMotionValue,
-              minWidth: explicitWidth ? mergedConstraints.minWidth : "100%",
+              minWidth: windowFrameMinWidth({
+                viewportWidth: window.innerWidth,
+                bounds: contentBounds,
+                appMinWidth: mergedConstraints.minWidth,
+              }),
               minHeight: mergedConstraints.minHeight,
               maxWidth: mergedConstraints.maxWidth || undefined,
               maxHeight: mergedConstraints.maxHeight || undefined,
