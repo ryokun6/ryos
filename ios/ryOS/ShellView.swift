@@ -9,7 +9,7 @@ struct ShellView: View {
         GeometryReader { geo in
             let topIsClearanceEdge = Self.isTopClearanceEdge(geo.safeAreaInsets)
             let sideTruth = Self.sideStatusBarTruth(
-                isVerticalBar: !topIsClearanceEdge,
+                insets: geo.safeAreaInsets,
                 viewSize: geo.size
             )
             duoBody(
@@ -39,14 +39,19 @@ struct ShellView: View {
     static let sideStatusBarExtentOpenMeasured: CGFloat = 88
 
     /// One contract everywhere (always reported, 0 where meaningless): a
-    /// nonzero extent only where the vertical side bar exists (large side
-    /// inset — both Duo poses share the same 84pt trailing strip, confirmed
-    /// by on-page probe: T=20 L=0 R=84 in both). The extent is the cluster's
-    /// depth in that strip: 150 with the camera dot (closed), 88 without
-    /// (open). Regular iPhones have no vertical bar at all.
-    static func sideStatusBarTruth(isVerticalBar: Bool, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
-        guard isVerticalBar else { return (0, false) }
+    /// nonzero extent only where the vertical side bar exists. Both Duo
+    /// poses share the same 84pt trailing strip (probe-confirmed: env right
+    /// = 84 in both), so the extent is the cluster's depth in that strip:
+    /// 150 with the camera dot (closed), 88 without (open). Regular iPhones
+    /// have no vertical bar in portrait (zero side insets). In landscape a
+    /// notched iPhone rotates its bar to a side too (~59pt), which must NOT
+    /// read as the Duo open pose — the 70pt gate separates the measured 84
+    /// (Duo) from every iPhone's landscape bar width (≤ ~59).
+    static func sideStatusBarTruth(insets: EdgeInsets, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
+        let side = max(insets.leading, insets.trailing)
+        guard side >= 8 else { return (0, false) }
         if viewSize.height > viewSize.width { return (sideStatusBarExtentMeasured, true) }
+        guard side >= 70 else { return (0, false) }
         return (sideStatusBarExtentOpenMeasured, false)
     }
 
