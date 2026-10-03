@@ -19,6 +19,7 @@ import {
   type AssistantPosition,
 } from "@/stores/useAssistantStore";
 import { useWindowInsets } from "@/hooks/useWindowInsets";
+import { getDesktopContentBounds } from "@/utils/desktopContentBounds";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useAuth } from "@/hooks/useAuth";
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
@@ -172,11 +173,13 @@ function collectSnapEdges(
   topInset: number,
   bottomInset: number
 ): SnapEdges {
-  const vw = window.innerWidth;
   const vh = window.innerHeight;
+  // Side edges snap inside the content rect, so the character stays out of
+  // a side safe-area strip (the iPhone Duo status bar and side dock).
+  const content = getDesktopContentBounds();
   const xs: SnapAxisCandidate[] = [
-    { value: SNAP_MARGIN, windowRect: null },
-    { value: vw - width - SNAP_MARGIN, windowRect: null },
+    { value: content.x + SNAP_MARGIN, windowRect: null },
+    { value: content.right - width - SNAP_MARGIN, windowRect: null },
   ];
   // Bottom edge doubles as the dock snap: bottomInset already includes the
   // dock height, so this rests the character right on top of the dock.
@@ -443,7 +446,7 @@ function AssistantOverlayInner() {
     const insets = computeInsets();
     return clampToViewport(
       {
-        x: window.innerWidth - character.width - 24,
+        x: getDesktopContentBounds().right - character.width - 24,
         y: window.innerHeight - insets.bottomInset - character.height - 16,
       },
       character.width,
