@@ -220,6 +220,22 @@ export function hanziToZhuyin(text: string): string {
   return output || text;
 }
 
+/** Tone marks typeset in their own track beside the letters (ˉ ˊ ˇ ˋ ˪ ˫). */
+const ZHUYIN_SIDE_TONE_RE = /[\u02C9\u02CA\u02C7\u02CB\u02EA\u02EB]$/u;
+
+export type ZhuyinSyllableParts = {
+  /** Column glyphs, top to bottom; a neutral-tone ˙ stays first, in line with the letters. */
+  letters: string[];
+  /** Tone mark set beside the last letter; empty for first and neutral tones. */
+  tone: string;
+};
+
+export function splitZhuyinSyllable(reading: string): ZhuyinSyllableParts {
+  const tone = ZHUYIN_SIDE_TONE_RE.exec(reading)?.[0] ?? "";
+  const letters = [...(tone ? reading.slice(0, -tone.length) : reading)];
+  return { letters, tone };
+}
+
 /** Bopomofo letters (U+3105-U+312F). */
 const ZHUYIN_LETTER_RE = /[\u3105-\u312F]/;
 
