@@ -2254,6 +2254,15 @@ rt.lyrics-furigana-rt,
   margin-top: 1em;
 }
 
+/* Firefox applies block margins to ruby text (and ignores transform on it), */
+/* so the margin-top above drops the reading onto the base characters.      */
+/* Scoped to Gecko so Chromium and WebKit layout is untouched.              */
+@supports (-moz-appearance: none) {
+  :root ruby.lyrics-furigana > rt.lyrics-furigana-rt:not(.lyrics-zhuyin-rt) {
+    margin-top: 0;
+  }
+}
+
 
 ruby.lyrics-furigana rp {
   display: none;
