@@ -2288,3 +2288,49 @@ ruby.lyrics-furigana rp {
   font-size: clamp(14px, min(5vw, 5vh), 60px) !important;
 }
 
+/* Zhuyin (注音) ruby: a vertical column on the right of each hanzi, with tone */
+/* marks in a narrow track beside the last letter and a neutral-tone ˙ at the */
+/* top of the column (Taiwan MOE / W3C clreq). Laid out by hand rather than   */
+/* `ruby-position: inter-character`:                                          */
+/* Chromium (Electron) and Firefox reject that value, and WebKit stacks the   */
+/* tone marks inside the letter column. The column is absolutely positioned   */
+/* inside reserved padding so it never changes the lyric line height. WebKit  */
+/* forces <rt> to position: static, so the <rt> only carries the font size    */
+/* and an inner span is the positioned box.                                  */
+ruby.lyrics-zhuyin-ruby {
+  --lyrics-zhuyin-size: max(0.36em, 6px);
+  display: inline-block;
+  position: relative;
+  padding-inline-end: calc(var(--lyrics-zhuyin-size) * 1.5);
+}
+
+:root ruby.lyrics-zhuyin-ruby > rt.lyrics-zhuyin-rt {
+  display: contents;
+  font-size: var(--lyrics-zhuyin-size) !important;
+  line-height: 1 !important;
+}
+
+.lyrics-zhuyin-annotation {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  width: 1.5em;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+/* One block per letter instead of writing-mode: vertical-rl, which collapses */
+/* to zero height in Chromium/Firefox for fonts without vertical metrics.    */
+.lyrics-zhuyin-letters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1em;
+}
+
+.lyrics-zhuyin-tone {
+  margin-bottom: 0.3em;
+}
+

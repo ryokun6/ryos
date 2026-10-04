@@ -9,7 +9,7 @@ import { toRomaji } from "wanakana";
 import type { ChinesePhoneticSystem } from "@/types/lyrics";
 import { hasKoreanText, isChineseText } from "./languageDetection";
 import { getDisplayReading } from "./furigana";
-import { hanziToZhuyin, hanziToZhuyinReadings } from "./zhuyin";
+import { hanziToZhuyin, hanziToZhuyinReadings, splitZhuyinSyllable } from "./zhuyin";
 
 // Re-export detection utilities for convenience
 export { hasKoreanText, isChineseText, isJapaneseText, hasKanaText } from "./languageDetection";
@@ -128,6 +128,24 @@ export function renderKoreanWithRomanization(text: string, keyPrefix: string = "
 }
 
 /**
+ * Zhuyin ruby text split into letters and tone tracks so CSS can stack the
+ * letters vertically to the right of the hanzi (see `.lyrics-zhuyin-ruby`).
+ */
+function renderZhuyinAnnotation(reading: string): React.ReactNode {
+  const { letters, tone } = splitZhuyinSyllable(reading);
+  return (
+    <span className="lyrics-zhuyin-annotation">
+      <span className="lyrics-zhuyin-letters">
+        {letters.map((letter, index) => (
+          <span key={index}>{letter}</span>
+        ))}
+      </span>
+      {tone && <span className="lyrics-zhuyin-tone">{tone}</span>}
+    </span>
+  );
+}
+
+/**
  * Render text with Chinese pinyin or Zhuyin as ruby annotation.
  * Note: pinyin-pro may give less accurate readings for some Traditional Chinese characters.
  * Zhuyin uses `traditional: true` so zh-TW lyrics keep Traditional-friendly 注音.
@@ -159,7 +177,9 @@ export function renderChineseWithPhonetics(
     <>
       {charEntries.map(({ char, position, reading }) => {
         CHINESE_REGEX.lastIndex = 0;
-        if (CHINESE_REGEX.test(char)) {
+        // Zhuyin reserves a column beside the hanzi, so skip ruby when there is no reading.
+        const hasAnnotation = system !== "zhuyin" || reading !== "";
+        if (hasAnnotation && CHINESE_REGEX.test(char)) {
           return (
             <ruby
               key={`${keyPrefix}-${position}-${char}`}
@@ -167,7 +187,9 @@ export function renderChineseWithPhonetics(
             >
               {char}
               <rp>(</rp>
-              <rt className={`lyrics-furigana-rt ${rtClass}`}>{reading}</rt>
+              <rt className={`lyrics-furigana-rt ${rtClass}`}>
+                {system === "zhuyin" ? renderZhuyinAnnotation(reading) : reading}
+              </rt>
               <rp>)</rp>
             </ruby>
           );
