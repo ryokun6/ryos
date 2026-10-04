@@ -135,7 +135,7 @@ async function testChatBasicRequest(): Promise<void> {
 }
 
 async function testChatWithModelQuery(): Promise<void> {
-  const res = await fetchWithOrigin(`${BASE_URL}/api/chat?model=claude-sonnet`, {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/chat?model=gpt-6`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

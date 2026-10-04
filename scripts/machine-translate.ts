@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 
 /**
- * Script to machine translate [TODO] marked keys in translation files using Gemini 2.5 Flash
+ * Script to machine translate [TODO] marked keys in translation files using gpt-6
  * 
  * This script:
  * - Reads translation files for each language
  * - Finds keys marked with [TODO] prefix
- * - Uses Gemini 2.5 Flash to translate from English
+ * - Uses gpt-6 to translate from English
  * - Updates the translation files with translated values
  * - Supports batch translation with rate limiting
  * 
@@ -19,8 +19,8 @@
 
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { DEFAULT_MODEL, getModelInstance } from "../api/_utils/_aiModels.js";
 import {
   formatAppleContextualTerminologyForPrompt,
   formatAppleTerminologyForPrompt,
@@ -162,14 +162,13 @@ Return ONLY a valid JSON array of strings, nothing else.`;
 
   try {
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: getModelInstance(DEFAULT_MODEL),
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.3,
     });
 
     // Parse the response - it should be a JSON array

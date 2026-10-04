@@ -77,7 +77,7 @@ describe("AI SDK 7 prompt cache helper", () => {
       messages,
       model: {
         provider: "anthropic.messages",
-        modelId: "claude-sonnet-4-6",
+        modelId: "claude-opus-5-5",
       } as never,
     });
 
@@ -116,7 +116,7 @@ describe("AI SDK 7 prompt cache helper", () => {
       messages,
       model: {
         provider: "anthropic.messages",
-        modelId: "claude-sonnet-4-6",
+        modelId: "claude-opus-5-5",
       } as never,
     });
 

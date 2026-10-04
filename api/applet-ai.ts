@@ -1,6 +1,5 @@
 import {
   generateText,
-  uploadFile,
   type FilePart,
   type ModelMessage,
   type SystemModelMessage,
@@ -8,16 +7,17 @@ import {
   type UserContent,
 } from "ai";
 import {
-  google,
-  type GoogleProviderOptions,
-} from "@ai-sdk/google";
+  DEFAULT_MODEL,
+  getModelInstance,
+  modelSupportsTemperature,
+} from "./_utils/_aiModels.js";
+import { uploadProviderFileForModel } from "./_utils/upload-provider-file.js";
 import { z } from "zod";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
 import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
-import { GOOGLE_FILES_POLL_TIMEOUT_MS } from "./_utils/upload-provider-file.js";
 
 // ============================================================================
 // Constants and Schemas
@@ -122,16 +122,6 @@ const AUTH_TEXT_LIMIT_PER_HOUR = 50;
 const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
-export const APPLET_IMAGE_PROVIDER_OPTIONS = {
-  google: {
-    responseModalities: ["IMAGE", "TEXT"],
-    // Keep generated applet imagery bounded so shared applets do not embed oversized assets.
-    imageConfig: {
-      imageSize: "1K",
-    },
-  } satisfies GoogleProviderOptions,
-} as const;
-
 type ParsedMessage = z.infer<typeof MessageSchema>;
 
 // ============================================================================
@@ -221,30 +211,24 @@ const createMessageParts = async (
         );
       }
 
-      let filePart: FilePart;
-      try {
-        const uploaded = await uploadFile({
-          api: google.files(),
-          data: imageData,
-          mediaType: attachment.mediaType,
-          filename: `applet-attachment-${messageIndex}-${attachmentIndex}`,
-          providerOptions: {
-            google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
-          },
-        });
-        filePart = {
-          type: "file",
-          // Full MIME required for provider references (not top-level "image").
-          mediaType: uploaded.mediaType || attachment.mediaType,
-          data: uploaded.providerReference,
-        };
-      } catch {
-        filePart = {
-          type: "file",
-          mediaType: attachment.mediaType,
-          data: { type: "data", data: imageData },
-        };
-      }
+      const uploaded = await uploadProviderFileForModel({
+        modelId: DEFAULT_MODEL,
+        data: imageData,
+        mediaType: attachment.mediaType,
+        filename: `applet-attachment-${messageIndex}-${attachmentIndex}`,
+      });
+      const filePart: FilePart = uploaded
+        ? {
+            type: "file",
+            // Full MIME required for provider references (not top-level "image").
+            mediaType: uploaded.mediaType,
+            data: uploaded.providerReference,
+          }
+        : {
+            type: "file",
+            mediaType: attachment.mediaType,
+            data: { type: "data", data: imageData },
+          };
       parts.push(filePart);
     }
   }
@@ -524,29 +508,26 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
             );
           }
 
-          try {
-            const uploaded = await uploadFile({
-              api: google.files(),
-              data: imageData,
-              mediaType: image.mediaType,
-              filename: `applet-image-${index}`,
-              providerOptions: {
-                google: { pollTimeoutMs: GOOGLE_FILES_POLL_TIMEOUT_MS },
-              },
-            });
-            promptParts.push({
-              type: "file",
-              // Full MIME required for provider references (not top-level "image").
-              mediaType: uploaded.mediaType || image.mediaType,
-              data: uploaded.providerReference,
-            });
-          } catch {
-            promptParts.push({
-              type: "file",
-              mediaType: image.mediaType,
-              data: { type: "data", data: imageData },
-            });
-          }
+          const uploaded = await uploadProviderFileForModel({
+            modelId: DEFAULT_MODEL,
+            data: imageData,
+            mediaType: image.mediaType,
+            filename: `applet-image-${index}`,
+          });
+          promptParts.push(
+            uploaded
+              ? {
+                  type: "file",
+                  // Full MIME required for provider references (not top-level "image").
+                  mediaType: uploaded.mediaType,
+                  data: uploaded.providerReference,
+                }
+              : {
+                  type: "file",
+                  mediaType: image.mediaType,
+                  data: { type: "data", data: imageData },
+                }
+          );
         }
       }
     } catch (error) {
@@ -565,17 +546,18 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     }
 
     try {
-      logger.info("Starting image generation (Gemini)", { promptPartsCount: promptParts.length });
+      logger.info("Starting image generation", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
-        model: google("gemini-3.1-flash-image-preview"),
+        model: getModelInstance(DEFAULT_MODEL),
         messages: [
           {
             role: "user",
             content: promptParts,
           },
         ],
-        ...(typeof temperature === "number" ? { temperature } : {}),
-        providerOptions: APPLET_IMAGE_PROVIDER_OPTIONS,
+        ...(typeof temperature === "number" && modelSupportsTemperature(DEFAULT_MODEL)
+          ? { temperature }
+          : {}),
       });
 
       const imageFile = imageResult.files?.find((file) =>
@@ -644,7 +626,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
       messageCount: prepared.messages.length,
       dynamicContextCount: prepared.dynamicContextMessages.length,
     });
-    const appletModel = google("gemini-3-flash-preview");
+    const appletModel = getModelInstance(DEFAULT_MODEL);
     const { text } = await generateText({
       model: appletModel,
       instructions: prepared.instructions,
@@ -661,7 +643,9 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           }),
         };
       },
-      temperature: temperature ?? 0.6,
+      ...(modelSupportsTemperature(DEFAULT_MODEL)
+        ? { temperature: temperature ?? 0.6 }
+        : {}),
       maxOutputTokens: 4000,
       timeout: {
         totalMs: 60_000,

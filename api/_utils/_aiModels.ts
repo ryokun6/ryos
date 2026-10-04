@@ -1,6 +1,5 @@
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
 import type { LanguageModel } from "ai";
 import {
   AI_MODELS,
@@ -60,18 +59,11 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
   const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
 
   switch (modelToUse) {
-    case "sonnet-4.6":
-      return anthropic("claude-sonnet-4-6");
     case "opus-5.5":
       return anthropic("claude-opus-5-5");
-    case "gpt-6":
-      return openai("gpt-6-astra");
     case "gpt-5.5":
       return openai("gpt-5.5");
-    case "gemini-3-flash":
-      return google("gemini-3-flash-preview");
-    case "gemini-3.1-pro-preview":
-      return google("gemini-3.1-pro-preview");
+    case "gpt-6":
     default:
       return openai("gpt-6-astra");
   }

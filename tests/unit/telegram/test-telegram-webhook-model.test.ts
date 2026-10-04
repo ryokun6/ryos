@@ -18,12 +18,15 @@ describe("telegram webhook model selection", () => {
     expect(logMessages).toHaveLength(0);
   });
 
-  test("uses the configured TELEGRAM_BOT_MODEL when supported", () => {
-    const model = getTelegramModel(() => undefined, {
-      TELEGRAM_BOT_MODEL: "gpt-5.5",
-    });
+  test("ignores a non-default TELEGRAM_BOT_MODEL", () => {
+    const logMessages: string[] = [];
+    const model = getTelegramModel(
+      (message) => logMessages.push(String(message)),
+      { TELEGRAM_BOT_MODEL: "gpt-5.5" }
+    );
 
-    expect(model).toBe("gpt-5.5");
+    expect(model).toBe("gpt-6");
+    expect(logMessages[0]).toContain("Restricted TELEGRAM_BOT_MODEL");
   });
 
   test("falls back to gpt-6 for unsupported TELEGRAM_BOT_MODEL", () => {

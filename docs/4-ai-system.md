@@ -6,26 +6,21 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 
 | Provider | SDK | Models |
 |----------|-----|--------|
-| OpenAI | `@ai-sdk/openai` | `gpt-6` (API: `gpt-6-astra`), `gpt-5.5` |
-| Anthropic | `@ai-sdk/anthropic` | `sonnet-4.6`, `opus-5.5` (API: `claude-opus-5-5`, Ryo + debug only) |
-| Google | `@ai-sdk/google` | `gemini-3-flash`, `gemini-3.1-pro-preview` |
+| OpenAI | `@ai-sdk/openai` | `gpt-6` (API: `gpt-6-astra`, default), `gpt-5.5` (Ryo + debug only) |
+| Anthropic | `@ai-sdk/anthropic` | `opus-5.5` (API: `claude-opus-5-5`, Ryo + debug only) |
 
 Default model: `gpt-6`
 
-Specialized models used by specific flows:
-- `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)
-- `gemini-3.1-flash-image-preview` (applet image generation)
+Internal flows (proactive greetings, applet text and image generation, chat-room auto replies, memory extraction, daily-notes processing, and title parsing) use the default model.
 
 ```mermaid
 graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
     C -->|OpenAI| D[gpt-6 / gpt-5.5]
-    C -->|Anthropic| E[claude-sonnet-4-6 / claude-opus-5-5]
-    C -->|Google| F[gemini-3-flash / gemini-3.1-pro-preview]
+    C -->|Anthropic| E[claude-opus-5-5]
     D --> G[AI SDK Stream]
     E --> G
-    F --> G
     G --> H[Tool Loop + Response Handler]
     H --> I[UI Update]
 ```
@@ -58,8 +53,7 @@ graph TD
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
 | `songLibraryControl` | Telegram/server-side song library search and cached metadata access |
-| `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
-| `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
+| `web_search` | OpenAI provider web search (`gpt-6` and `gpt-5.5`, authenticated users, with geolocation context) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
 | `runJs` | Run pure JavaScript (ES2023) in a server-side QuickJS WASM sandbox; returns captured console output and the completion value (no network, timers, or DOM) |
 | `cursorCloudAgent` | Async Cursor Cloud repo-agent runs against `ryokun6/ryos` (owner account + `CURSOR_API_KEY`): live stream card, PR link, follow-up turns |
@@ -262,11 +256,11 @@ Common endpoint configurations in this AI stack:
 
 ## Additional AI Capabilities
 
-- **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gemini-3-flash-preview` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
+- **Proactive greetings**: `/api/chat` supports a proactive greeting mode for logged-in users with memories. Uses `gpt-6` to generate a short, context-aware greeting referencing recent activity or memories. Triggers background daily-note processing on each greeting.
 - **Telegram bot DM chat**: `/api/webhooks/telegram` enables private Telegram DM conversations with Ryo. Supports image attachments (downloaded and injected as multimodal content), web search, and server-side tool execution (memory, calendar, stickies, contacts, documents). Users link accounts via `/api/telegram/link/*` endpoints. Includes per-user burst and account-window rate limiting.
 - **Telegram heartbeat insights**: `/api/cron/telegram-heartbeat` runs on a 30-minute cron schedule. Analyzes today's daily notes, recent Telegram conversation, and heartbeat history to decide whether to proactively message the user. Processes daily notes and extracts memories from new chat messages before each decision. Uses gating logic to avoid redundant or stale nudges.
-- **Web search**: Authenticated users get a search tool based on the selected model: `web_search` (OpenAI) for `gpt-6` / `gpt-5.5` with geolocation context, or `google_search` (Google) for `gemini-3-flash`. Anonymous users do not get search tools.
-- **Restricted models**: `opus-5.5` is selectable only for the signed-in `ryo` account while Control Panels debug mode is on. `/api/chat` and `/api/ie-generate` reject it with `403 model_not_allowed` unless both checks pass (auth username `ryo` + `debugMode` / `dbg=1`).
+- **Web search**: Authenticated users get OpenAI `web_search` (with geolocation context) when the selected model is `gpt-6` or `gpt-5.5`. Anonymous users and `opus-5.5` do not get a search tool.
+- **Restricted models**: Every model other than the default `gpt-6` (`gpt-5.5`, `opus-5.5`) is selectable only for the signed-in `ryo` account while Control Panels debug mode is on. `/api/chat` and `/api/ie-generate` reject them with `403 model_not_allowed` unless both checks pass (auth username `ryo` + `debugMode` / `dbg=1`). Telegram cannot use restricted models.
 - **Chat-room auto replies**: `/api/ai/ryo-reply` generates room messages as `ryo` with dedicated rate limits.
 - **Applet multimodal AI**: `/api/applet-ai` supports text chat, image attachments in message history, and binary image generation responses.
 - **Infinite Mac visual loop**: `infiniteMacControl` can return screenshots for model-visible state inspection.
