@@ -41,7 +41,7 @@ export function resolveChineseScriptReadingLanguage(
   return fallbackLanguage;
 }
 
-async function loadChineseConverter(
+export async function loadChineseConverter(
   target: ConverterTarget
 ): Promise<ConverterFunction> {
   if (target === "simplified") {
