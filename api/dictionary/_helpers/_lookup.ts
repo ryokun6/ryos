@@ -1,6 +1,7 @@
 import {
   detectDictionaryLanguage,
   hasCjkScript,
+  isHanOnlyQuery,
   normalizeDictionaryQuery,
   type DictionaryEntry,
   type DictionaryKanjiInfo,
@@ -133,7 +134,7 @@ async function lookupCjk(
   query: string,
   lang: Exclude<DictionaryLanguage, "en">,
   deps: DictionaryLookupDeps
-): Promise<DictionaryLookupResponse> {
+): Promise<DictionaryLookupResponse & { wholeWordMatch: boolean }> {
   const response = emptyResponse(query, lang);
   let index: DictionaryIndex | null = null;
   try {
@@ -196,6 +197,13 @@ async function lookupCjk(
   if (index && response.notFound && hasCjkScript(query)) {
     response.suggestions = index.suggest(Array.from(query)[0] ?? query, 8);
   }
+  return Object.assign(response, { wholeWordMatch: !segmented && !response.notFound });
+}
+
+function withoutMatchFlag({
+  wholeWordMatch: _wholeWordMatch,
+  ...response
+}: DictionaryLookupResponse & { wholeWordMatch: boolean }): DictionaryLookupResponse {
   return response;
 }
 
@@ -208,5 +216,12 @@ export async function lookupDictionary(
   const lang = detectDictionaryLanguage(query, preferred);
   if (!query) return emptyResponse(query, lang);
   if (lang === "en") return lookupEnglish(query, deps);
-  return lookupCjk(query, lang, deps);
+  const response = await lookupCjk(query, lang, deps);
+  // Han-only text defaults to Chinese; in auto mode prefer Japanese when only
+  // JMdict knows the whole word (学習, 手紙 in its Japanese sense, …).
+  if (preferred === "auto" && lang === "zh" && !response.wholeWordMatch && isHanOnlyQuery(query)) {
+    const japanese = await lookupCjk(query, "ja", deps);
+    if (japanese.wholeWordMatch) return withoutMatchFlag(japanese);
+  }
+  return withoutMatchFlag(response);
 }

@@ -49,7 +49,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "maps"
     | "books"
     | "calculator"
-    | "stuff";
+    | "stuff"
+    | "dictionary";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
@@ -129,6 +130,11 @@ export interface StuffInitialData {
   itemId?: string;
 }
 
+export interface DictionaryInitialData {
+  word?: string;
+  lang?: "auto" | "en" | "zh" | "ja" | "ko";
+}
+
 export interface FinderInitialData {
   path?: string;
 }
@@ -154,6 +160,7 @@ export type AnyApp =
   | BaseApp<VideosInitialData>
   | BaseApp<BooksInitialData>
   | BaseApp<StuffInitialData>
+  | BaseApp<DictionaryInitialData>
   | BaseApp<AppletViewerInitialData>
   | BaseApp<TerminalInitialData>
   | BaseApp<ChatsInitialData>
@@ -170,6 +177,7 @@ export type AnyInitialData =
   | VideosInitialData
   | BooksInitialData
   | StuffInitialData
+  | DictionaryInitialData
   | FinderInitialData
   | AppletViewerInitialData
   | TerminalInitialData

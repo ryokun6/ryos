@@ -51,6 +51,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "calculator": { sectionNum: "2.27", docName: "calculator" },
   "preview": { sectionNum: "2.28", docName: "preview" },
   "stuff": { sectionNum: "2.29", docName: "stuff" },
+  "dictionary": { sectionNum: "2.30", docName: "dictionary" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -334,6 +335,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
       defaultSize: { width: 920, height: 580 },
       minSize: { width: 560, height: 400 },
     },
+    dictionary: {
+      defaultSize: { width: 860, height: 580 },
+      minSize: { width: 420, height: 380 },
+    },
   };
 
   return configs[appId] || {
@@ -610,6 +615,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     maps: "Apple MapKit search and pins; national Taiwan YouBike overlay; in-map YouBike directions and spoken navigation; driving directions open in Apple Maps",
     calculator: "Basic, scientific, and unit conversion calculator with theme-specific chrome and live currency rates",
     stuff: "Wooden inventory shelf with barcodes, tags, locations, cutout covers, sharing, and print labels",
+    dictionary: "English, Chinese, Japanese, and Korean dictionary with pinyin/zhuyin, furigana/romaji, Korean romanization, handwriting input, favorites, SM-2 flashcards, and AI fallback",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;

@@ -96,6 +96,19 @@ export function previewSrsIntervals(
   ) as Record<SrsGrade, number>;
 }
 
+/** Compact delay label for grade buttons: 10m, 3h, 6d, 2mo, 1.5y. */
+export function formatSrsInterval(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${Math.max(1, minutes)}m`;
+  const hours = Math.round(ms / 3_600_000);
+  if (ms < DAY_MS) return `${hours}h`;
+  const days = Math.round(ms / DAY_MS);
+  if (days < 30) return `${days}d`;
+  const months = Math.round(days / 30);
+  if (months < 12) return `${months}mo`;
+  return `${Math.round((days / 365) * 10) / 10}y`;
+}
+
 export function isCardDue(card: SrsCardState, now: number = Date.now()): boolean {
   return card.dueAt <= now;
 }

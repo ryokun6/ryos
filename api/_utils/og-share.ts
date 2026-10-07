@@ -34,6 +34,7 @@ const APP_NAMES: Record<string, string> = {
   books: "Books",
   calculator: "Calculator",
   stuff: "Stuff",
+  dictionary: "Dictionary",
 };
 
 const APP_DESCRIPTIONS: Record<string, string> = {
@@ -66,6 +67,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   books: "Read EPUB books",
   calculator: "Basic, scientific, and unit conversion calculator",
   stuff: "Catalog your stuff on a wooden shelf",
+  dictionary: "Look up words in English, Chinese, Japanese, and Korean",
 };
 
 const APP_ICONS: Record<string, string> = {
@@ -98,6 +100,7 @@ const APP_ICONS: Record<string, string> = {
   books: "books.png",
   calculator: "calculator.png",
   stuff: "stuff.png",
+  dictionary: "dictionary.png",
 };
 
 export type SongShareMetadata = {

@@ -1,0 +1,202 @@
+import type { ReactNode } from "react";
+import {
+  Cards,
+  HandPointing,
+  MagnifyingGlass,
+  SidebarSimple,
+  Star,
+} from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
+import { cn } from "@/lib/utils";
+import {
+  DICTIONARY_QUERY_LANGUAGES,
+  type DictionaryQueryLanguage,
+} from "@/shared/dictionary";
+import type { DictionaryView } from "@/stores/useDictionaryStore";
+import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
+
+function ToolbarButton({
+  l,
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  l: DictionaryLogic;
+  active?: boolean;
+  onClick: () => void;
+  label: string;
+  children: ReactNode;
+}) {
+  if (l.isMacOSTheme) {
+    return (
+      <button
+        type="button"
+        className="metal-inset-btn metal-inset-icon"
+        data-state={active ? "on" : "off"}
+        onClick={onClick}
+        title={label}
+        aria-label={label}
+        aria-pressed={active}
+      >
+        {children}
+      </button>
+    );
+  }
+  return (
+    <Button
+      type="button"
+      variant={l.isSystem7Theme ? "player" : "ghost"}
+      data-state={active ? "on" : "off"}
+      onClick={onClick}
+      className={cn(
+        "size-6 px-0",
+        l.isWindowsTheme && "text-black",
+        active && !l.isSystem7Theme && "bg-black/10"
+      )}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+    >
+      {children}
+    </Button>
+  );
+}
+
+function ButtonGroup({ l, children }: { l: DictionaryLogic; children: ReactNode }) {
+  return (
+    <div className={l.isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0"}>
+      {children}
+    </div>
+  );
+}
+
+export function DictionaryToolbar({
+  l,
+  isMobileLayout,
+}: {
+  l: DictionaryLogic;
+  isMobileLayout: boolean;
+}) {
+  const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme, view } = l;
+  const viewButtons: { id: DictionaryView; label: string; icon: ReactNode }[] = [
+    {
+      id: "lookup",
+      label: t("apps.dictionary.views.lookup"),
+      icon: <MagnifyingGlass size={14} />,
+    },
+    {
+      id: "favorites",
+      label: t("apps.dictionary.views.favorites"),
+      icon: <Star size={14} />,
+    },
+    {
+      id: "flashcards",
+      label: t("apps.dictionary.views.flashcards"),
+      icon: <Cards size={14} />,
+    },
+  ];
+  const languageLabel = (lang: DictionaryQueryLanguage) =>
+    t(`apps.dictionary.languages.${lang}`);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 py-1.5",
+        isMacOSTheme ? "px-1" : "px-2",
+        osToolbarSurfaceClassName({ isMacOSTheme, isSystem7Theme, isWindowsTheme })
+      )}
+    >
+      <div className="flex items-center gap-1.5">
+        {!isMobileLayout && view !== "flashcards" ? (
+          <ButtonGroup l={l}>
+            <ToolbarButton
+              l={l}
+              active={l.isSidebarVisible}
+              onClick={() => l.setSidebarVisible(!l.isSidebarVisible)}
+              label={t("apps.dictionary.menu.showSidebar")}
+            >
+              <SidebarSimple size={14} />
+            </ToolbarButton>
+          </ButtonGroup>
+        ) : null}
+        <ButtonGroup l={l}>
+          {viewButtons.map((button) => (
+            <ToolbarButton
+              key={button.id}
+              l={l}
+              active={view === button.id}
+              onClick={() => l.setView(button.id)}
+              label={button.label}
+            >
+              {button.icon}
+            </ToolbarButton>
+          ))}
+        </ButtonGroup>
+      </div>
+      <div className="flex-1" />
+      {view === "lookup" ? (
+        <div className={cn("flex min-w-0 items-center gap-1.5", isMobileLayout && "flex-1")}>
+          <Select
+            value={l.queryLanguage}
+            onValueChange={(value) => l.setQueryLanguage(value as DictionaryQueryLanguage)}
+          >
+            <SelectTrigger
+              className={cn(
+                "h-6 w-[92px] shrink-0 text-[11px]",
+                (isMacOSTheme || isSystem7Theme) && "font-geneva-12"
+              )}
+              aria-label={t("apps.dictionary.language")}
+              title={t("apps.dictionary.language")}
+            >
+              <SelectValue>{languageLabel(l.queryLanguage)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {DICTIONARY_QUERY_LANGUAGES.map((lang) => (
+                <SelectItem key={lang} value={lang} className="text-[12px]">
+                  {languageLabel(lang)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <ButtonGroup l={l}>
+            <ToolbarButton
+              l={l}
+              active={l.isHandwritingOpen}
+              onClick={() => l.setHandwritingOpen(!l.isHandwritingOpen)}
+              label={t("apps.dictionary.menu.handwriting")}
+            >
+              <HandPointing size={14} />
+            </ToolbarButton>
+          </ButtonGroup>
+          <SearchInput
+            value={l.query}
+            onChange={l.setQuery}
+            inputRef={l.searchInputRef}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                l.submitQuery();
+              }
+            }}
+            ariaBusy={l.status === "loading"}
+            placeholder={t("apps.dictionary.searchPlaceholder")}
+            ariaLabel={t("apps.dictionary.searchPlaceholder")}
+            title={t("apps.dictionary.searchPlaceholder")}
+            clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
+            className={cn(isMobileLayout ? "min-w-0 flex-1 max-w-none" : "w-[190px]")}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}

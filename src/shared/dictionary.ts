@@ -6,6 +6,10 @@
 export const DICTIONARY_LANGUAGES = ["en", "zh", "ja", "ko"] as const;
 export type DictionaryLanguage = (typeof DICTIONARY_LANGUAGES)[number];
 export type DictionaryQueryLanguage = DictionaryLanguage | "auto";
+export const DICTIONARY_QUERY_LANGUAGES: readonly DictionaryQueryLanguage[] = [
+  "auto",
+  ...DICTIONARY_LANGUAGES,
+];
 
 export const DICTIONARY_SOURCES = [
   "cc-cedict",
@@ -192,13 +196,18 @@ export function detectDictionaryLanguage(
   return preferred === "auto" ? "en" : preferred;
 }
 
+/** Han characters only (no kana / Hangul) — could be Chinese or Japanese. */
+export function isHanOnlyQuery(query: string): boolean {
+  return HAN_RE.test(query) && !HANGUL_RE.test(query) && !KANA_RE.test(query);
+}
+
 export function hasCjkScript(query: string): boolean {
   return HANGUL_RE.test(query) || KANA_RE.test(query) || HAN_RE.test(query);
 }
 
 export function normalizeDictionaryQuery(query: string): string {
   return query
-    .normalize("NFC")
+    .normalize("NFKC")
     .replace(/[\u200b-\u200d\ufeff]/g, "")
     .replace(/\s+/g, " ")
     .trim()
