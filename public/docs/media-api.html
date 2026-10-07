@@ -670,12 +670,17 @@ console.log('Transcription:', text);</code></pre>
 <pre><code>{
   "error": "Invalid request body"
 }</code></pre>
-<strong>Error (403) - API access denied:</strong>
+<strong>Error (503) - Every key out of quota:</strong>
 <pre><code>{
-  "error": "YouTube API access denied",
-  "code": 403,
-  "hint": "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
+  "error": "All YouTube API keys have exceeded their daily quota",
+  "code": "youtube_quota_exhausted"
 }</code></pre>
+<strong>Error (502) - YouTube rejected the request:</strong>
+<pre><code>{
+  "error": "YouTube search is unavailable",
+  "code": "youtube_unavailable"
+}</code></pre>
+<p>The raw Google error is only written to server logs; clients map <code>code</code> to a localized message.</p>
 <strong>Error (500) - Not configured:</strong>
 <pre><code>{
   "error": "YouTube API is not configured",
@@ -689,8 +694,8 @@ console.log('Transcription:', text);</code></pre>
 <h3>Rate Limits</h3>
 <table><thead><tr><th>Scope</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Burst</td><td>20 requests</td><td>1 minute</td></tr><tr><td>Daily</td><td>200 requests</td><td>24 hours</td></tr></tbody></table>
 <h3>API Key Rotation</h3>
-<p>The endpoint supports multiple YouTube API keys for quota rotation: <ul><li><code>YOUTUBE_API_KEY</code> - Primary key</li></ul><ul><li><code>YOUTUBE_API_KEY_2</code> - Backup key</li></ul><ul><li><code>YOUTUBE_API_KEY_3</code> - Second backup key</li></ul></p>
-<p>When the primary key's quota is exceeded, requests automatically fall back to backup keys.</p>
+<p>The endpoint supports multiple YouTube API keys for quota rotation: <ul><li><code>YOUTUBE_API_KEY</code> - Primary key</li></ul><ul><li><code>YOUTUBE_API_KEY_2</code> - Backup key</li><li><code>YOUTUBE_API_KEY_3</code> - Second backup key</li></ul></p>
+<p>Keys are tried in order. A request moves on to the next key when Google reports a quota or rate-limit error (HTTP 429, or 403 with reason <code>quotaExceeded</code>, <code>dailyLimitExceeded</code>, <code>rateLimitExceeded</code>, etc.), when the key itself is rejected (invalid, referrer/IP-restricted, API not enabled in that project), or on a network error. Request errors that no key can fix (e.g. <code>invalidParameter</code>) stop immediately. Each failed attempt is logged with its key index, label, HTTP status, and Google reason, never the key. Quota is per Google Cloud project, so keys only add capacity if they belong to different projects.</p>
 <h3>Example</h3>
 <strong>Request:</strong>
 <pre><code>curl -X POST https://your-domain.com/api/youtube-search \
