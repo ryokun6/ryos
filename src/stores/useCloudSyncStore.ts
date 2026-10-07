@@ -50,6 +50,7 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "stuffCoverKeys",
   "stuffLocationIds",
   "dictionaryFavoriteIds",
+  "dictionaryDeckIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -81,6 +82,7 @@ export function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     stuffCoverKeys: {},
     stuffLocationIds: {},
     dictionaryFavoriteIds: {},
+    dictionaryDeckIds: {},
   };
 }
 

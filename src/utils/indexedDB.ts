@@ -4,7 +4,7 @@ import { createClientLogger } from "@/utils/logger";
 
 export const DB_NAME = "ryOS";
 /** Bump when adding/removing object stores or changing upgrade logic. */
-export const DB_VERSION = 18;
+export const DB_VERSION = 19;
 let hasLoggedOpenSuccess = false;
 const log = createClientLogger("IndexedDB");
 
@@ -62,6 +62,9 @@ export const STORES = {
   // Stuff inventory cover images (Sync v2 `stuff-images` blob namespace).
   // Kept separate from Finder `images` so covers are not keyed as VFS files.
   STUFF_IMAGES: "stuff_images",
+  // Audio/images imported with Anki decks, keyed `${mediaScope}/${filename}`.
+  // Device-local and re-importable, so excluded from sync and manual backup.
+  DICTIONARY_MEDIA: "dictionary_media",
   // Caches the user's Apple Music library so a page reload doesn't
   // re-paginate thousands of songs against the Apple Music API. Lives
   // in IndexedDB (not localStorage) because the library can easily
