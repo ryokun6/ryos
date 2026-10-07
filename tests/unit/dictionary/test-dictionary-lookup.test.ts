@@ -29,6 +29,11 @@ const CEDICT = `
 愛 爱 [ai4] /to love/affection/
 你 你 [ni3] /you (informal)/
 讀書 读书 [du2 shu1] /to read a book/to study/
+大 大 [da4] /big/large/
+大 大 [dai4] /doctor/
+大一統 大一统 [da4 yi1 tong3] /unification/
+大丈夫 大丈夫 [da4 zhang4 fu5] /a true man/
+偉大 伟大 [wei3 da4] /great/
 `;
 
 function jaEntry(
@@ -132,8 +137,22 @@ describe("Chinese lookup", () => {
 
   test("lists compounds and similar words for the top entry", async () => {
     const result = await lookupDictionary("学", "zh", makeDeps());
+    expect(headwords(result.entries)).toEqual(["学", "学习", "学生", "学校"]);
+    expect(headwords((await lookupDictionary("學", "zh", makeDeps())).entries)).toEqual([
+      "学",
+      "学习",
+      "学生",
+      "学校",
+    ]);
     expect(headwords(result.phrases)).toEqual(expect.arrayContaining(["学习", "学生", "学校"]));
     expect(headwords(result.similar)).toEqual(expect.arrayContaining(["学习", "读书"]));
+  });
+
+  test("includes prefix compounds in the results list", async () => {
+    const result = await lookupDictionary("大", "zh", makeDeps());
+    expect(headwords(result.entries)).toEqual(["大", "大", "大一统", "大丈夫"]);
+    expect(headwords(result.entries)).not.toContain("伟大");
+    expect(headwords(result.phrases)).toEqual(expect.arrayContaining(["大一统", "伟大"]));
   });
 
   test("segments sentences into dictionary words", async () => {

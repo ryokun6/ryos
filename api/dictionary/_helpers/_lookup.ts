@@ -24,6 +24,8 @@ export interface DictionaryLookupDeps {
 }
 
 const MAX_ENTRIES = 12;
+/** Prefix compounds shown with the exact hit (大 → 大一统, 大丈夫, …). */
+const MAX_COMPOUND_ENTRIES = 1200;
 const HAN_CHAR_RE = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/u;
 
 async function safely<T>(
@@ -192,6 +194,14 @@ async function lookupCjk(
     const compoundKey = hasCjkScript(query) ? query : top.headword;
     response.phrases = index.findCompounds(compoundKey, 12);
     response.similar = index.findSimilar(top, 10);
+    if (hasCjkScript(query)) {
+      const seen = new Set(response.entries.map((entry) => entry.id));
+      for (const compound of index.findCompoundEntries(compoundKey, MAX_COMPOUND_ENTRIES)) {
+        if (seen.has(compound.id)) continue;
+        seen.add(compound.id);
+        response.entries.push(compound);
+      }
+    }
   }
   response.notFound = response.entries.length === 0;
   if (index && response.notFound && hasCjkScript(query)) {

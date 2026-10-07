@@ -27,12 +27,14 @@ import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
 function ToolbarButton({
   l,
   active,
+  disabled,
   onClick,
   label,
   children,
 }: {
   l: DictionaryLogic;
   active?: boolean;
+  disabled?: boolean;
   onClick: () => void;
   label: string;
   children: ReactNode;
@@ -42,11 +44,12 @@ function ToolbarButton({
       <button
         type="button"
         className="metal-inset-btn metal-inset-icon"
-        data-state={active ? "on" : "off"}
+        data-state={active && !disabled ? "on" : "off"}
         onClick={onClick}
+        disabled={disabled}
         title={label}
         aria-label={label}
-        aria-pressed={active}
+        aria-pressed={disabled ? undefined : active}
       >
         {children}
       </button>
@@ -56,16 +59,18 @@ function ToolbarButton({
     <Button
       type="button"
       variant={l.isSystem7Theme ? "player" : "ghost"}
-      data-state={active ? "on" : "off"}
+      data-state={active && !disabled ? "on" : "off"}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "size-6 px-0",
         l.isWindowsTheme && "text-black",
-        active && !l.isSystem7Theme && "bg-black/10"
+        disabled && "opacity-40",
+        active && !disabled && !l.isSystem7Theme && "bg-black/10"
       )}
       title={label}
       aria-label={label}
-      aria-pressed={active}
+      aria-pressed={disabled ? undefined : active}
     >
       {children}
     </Button>
@@ -125,6 +130,7 @@ export function DictionaryToolbar({
       title={t("apps.dictionary.searchPlaceholder")}
       clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
       className={cn(isMobileLayout ? "w-full min-w-0 max-w-none" : "w-[190px]")}
+      inputClassName="h-[26px]"
     />
   );
 
@@ -136,13 +142,14 @@ export function DictionaryToolbar({
         osToolbarSurfaceClassName({ isMacOSTheme, isSystem7Theme, isWindowsTheme })
       )}
     >
-      <div className="flex min-w-0 items-center gap-2">
+      <div className="flex h-[26px] min-w-0 items-center gap-2">
         <div className="flex shrink-0 items-center gap-1.5">
-          {!isMobileLayout && view !== "flashcards" ? (
+          {!isMobileLayout ? (
             <ButtonGroup l={l}>
               <ToolbarButton
                 l={l}
-                active={l.isSidebarVisible}
+                disabled={view === "flashcards"}
+                active={view !== "flashcards" && l.isSidebarVisible}
                 onClick={() => l.setSidebarVisible(!l.isSidebarVisible)}
                 label={t("apps.dictionary.menu.showSidebar")}
               >
@@ -206,7 +213,7 @@ export function DictionaryToolbar({
           </div>
         ) : null}
       </div>
-      {view === "lookup" && isMobileLayout ? searchInput : null}
+      {isMobileLayout && view === "lookup" ? searchInput : null}
     </div>
   );
 }

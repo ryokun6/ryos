@@ -166,6 +166,37 @@ export class DictionaryIndex {
       .map((index) => this.entryAt(index));
   }
 
+  /**
+   * Full entries for words that start with `headword` (大 → 大一统, 大丈夫),
+   * excluding the headword itself. Shorter, higher-ranked compounds come first.
+   */
+  findCompoundEntries(headword: string, limit = 40): DictionaryEntry[] {
+    if (!headword) return [];
+    const matches: { index: number; length: number }[] = [];
+    for (let index = 0; index < this.keyStrings.length; index++) {
+      const keys = this.keyStrings[index].split(KEY_SEPARATOR);
+      if (keys.some((key) => key === headword)) continue;
+      let length = 0;
+      for (const key of keys) {
+        if (!key.startsWith(headword)) continue;
+        const keyLength = Array.from(key).length;
+        if (length === 0 || keyLength < length) length = keyLength;
+      }
+      if (length === 0) continue;
+      matches.push({ index, length });
+    }
+    matches.sort(
+      (a, b) =>
+        this.ranks[a.index] - this.ranks[b.index] || a.length - b.length || a.index - b.index
+    );
+    const entries: DictionaryEntry[] = [];
+    for (const { index } of matches) {
+      entries.push(this.entryAt(index));
+      if (entries.length >= limit) break;
+    }
+    return entries;
+  }
+
   /** Words whose written form contains `headword` (compounds, set phrases). */
   findCompounds(headword: string, limit = 12): DictionaryPhrase[] {
     if (!headword) return [];

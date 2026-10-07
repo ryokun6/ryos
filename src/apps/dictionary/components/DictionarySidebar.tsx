@@ -82,17 +82,24 @@ function ListRow({
 export function DictionarySidebar({
   l,
   className,
+  isMobileLayout = false,
   selectedFavoriteId,
   onSelectFavorite,
 }: {
   l: DictionaryLogic;
   className?: string;
+  isMobileLayout?: boolean;
   selectedFavoriteId: string | null;
   onSelectFavorite: (id: string) => void;
 }) {
   const { t, isMacOSTheme, isSystem7Theme, view, chineseScript } = l;
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const now = Date.now();
+  const listClassName = cn(
+    "min-h-0 overflow-y-auto",
+    !isMobileLayout && "flex-1",
+    !isMobileLayout && view === "lookup" && l.isHandwritingOpen && "pb-56"
+  );
 
   return (
     <AppSidebarPanel
@@ -107,7 +114,7 @@ export function DictionarySidebar({
             useGeneva={useGeneva}
             bordered={isMacOSTheme}
           />
-          <div className="flex-1 overflow-y-auto">
+          <div className={listClassName}>
             {l.favorites.length === 0 ? (
               <p className="px-3 py-4 text-center text-[11px] opacity-50">
                 {t("apps.dictionary.empty.noFavorites")}
@@ -146,7 +153,7 @@ export function DictionarySidebar({
                 useGeneva={useGeneva}
                 bordered={isMacOSTheme}
               />
-              <div className="min-h-0 flex-1 overflow-y-auto">
+              <div className={listClassName}>
                 {l.entries.map((entry) => (
                   <ListRow
                     key={entry.id}
@@ -171,7 +178,7 @@ export function DictionarySidebar({
                 useGeneva={useGeneva}
                 bordered={isMacOSTheme}
               />
-              <div className="flex-1 overflow-y-auto">
+              <div className={listClassName}>
                 {l.history.length === 0 ? (
                   <p className="px-3 py-4 text-center text-[11px] opacity-50">
                     {t("apps.dictionary.empty.noHistory")}

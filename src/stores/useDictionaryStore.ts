@@ -46,7 +46,7 @@ export interface DictionaryFavorite {
   srs: SrsCardState;
 }
 
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 const HISTORY_LIMIT = 50;
 const SNAPSHOT_SENSES = 4;
 const SNAPSHOT_GLOSSES = 6;
@@ -150,7 +150,7 @@ export const useDictionaryStore = create<DictionaryStoreState>()(
     (set, get) => ({
       view: "lookup",
       queryLanguage: "auto",
-      chineseScript: "simplified",
+      chineseScript: "traditional",
       phonetics: DEFAULT_DICTIONARY_PHONETICS,
       isSidebarVisible: true,
       isHandwritingOpen: false,
@@ -254,6 +254,13 @@ export const useDictionaryStore = create<DictionaryStoreState>()(
         history: state.history,
         favorites: state.favorites,
       }),
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<DictionaryStoreState>;
+        if (version < 2) {
+          return { ...state, chineseScript: "traditional" as const };
+        }
+        return state;
+      },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<DictionaryStoreState>;
         return {

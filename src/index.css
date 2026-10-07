@@ -592,12 +592,17 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-smooth: always;
   }
 
-  /* Serif lyrics font utility (JP-first Source Han/Noto CJK fallback) */
-  .font-lyrics-serif {
+  /* Serif stack shared with lyrics: Charter, then the CJK serif fallbacks. */
+  .font-lyrics-serif,
+  .font-dictionary {
     font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Lyrics stay bold and tight. Dictionary display keeps normal text metrics. */
+  .font-lyrics-serif {
     font-weight: 700;
     line-height: 1.1;
-    -webkit-font-smoothing: antialiased;
     font-smooth: always;
   }
 
@@ -1073,6 +1078,38 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     background-color: transparent !important;
     outline: none !important;
   }
+}
+
+/* Dictionary display uses the lyrics serif stack. Unlayered so it wins over
+   theme rules that force the UI font on buttons (result rows, phrase links). */
+:root[data-os-theme="macosx"] .font-dictionary :is(button, input, select, textarea, label),
+:root[data-os-theme="system7"] .font-dictionary :is(button, input, select, textarea, label),
+:root[data-os-platform="windows"] .font-dictionary :is(button, input, select, textarea, label) {
+  font-family: Charter, var(--font-cjk-serif-jp), "Times New Roman", serif !important;
+}
+
+/* Flashcard turn. Faces share one grid cell so the card stays the size of the taller side. */
+.dictionary-flashcard {
+  perspective: 1200px;
+}
+.dictionary-flashcard-inner {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  transform-style: preserve-3d;
+  transition: transform 0.5s ease-in-out;
+}
+.dictionary-flashcard-inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.dictionary-flashcard-face {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.dictionary-flashcard-back {
+  transform: rotateY(180deg);
 }
 
 /*

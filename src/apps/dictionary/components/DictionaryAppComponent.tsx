@@ -81,7 +81,7 @@ export function DictionaryAppComponent({
     l.isSidebarVisible &&
     !(isMobileLayout && isLookupSidebarEmpty);
   const sidebarClassName = isMobileLayout
-    ? "h-[150px] w-full max-w-none shrink-0 basis-auto self-stretch"
+    ? "max-h-[150px] w-full max-w-none shrink-0 basis-auto self-stretch"
     : "w-[210px] shrink-0";
 
   return (
@@ -103,14 +103,14 @@ export function DictionaryAppComponent({
       <div
         ref={containerRef}
         className={cn(
-          "flex size-full flex-col overflow-hidden font-os-ui",
+          "relative flex size-full flex-col overflow-hidden font-os-ui",
           isMacOSTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-[#efede4]"
         )}
       >
         <DictionaryToolbar l={l} isMobileLayout={isMobileLayout} />
         <div
           className={cn(
-            "flex min-h-0 flex-1 overflow-hidden",
+            "flex min-h-0 flex-1 overflow-hidden font-dictionary",
             isMobileLayout ? "flex-col" : "flex-row",
             !isMobileLayout && isMacOSTheme && "gap-[5px]"
           )}
@@ -119,6 +119,7 @@ export function DictionaryAppComponent({
             <DictionarySidebar
               l={l}
               className={sidebarClassName}
+              isMobileLayout={isMobileLayout}
               selectedFavoriteId={selectedFavorite?.id ?? null}
               onSelectFavorite={setSelectedFavoriteId}
             />
@@ -127,11 +128,15 @@ export function DictionaryAppComponent({
             bordered={isMacOSTheme}
             className="flex min-h-0 min-w-0 flex-1 flex-col self-stretch"
           >
-            {view === "lookup" && l.isHandwritingOpen ? <DictionaryHandwritingPad l={l} /> : null}
             {view === "flashcards" ? (
               <DictionaryFlashcardsView l={l} />
             ) : (
-              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+              <div
+                className={cn(
+                  "min-h-0 flex-1 overflow-y-auto overflow-x-hidden",
+                  view === "lookup" && l.isHandwritingOpen && "pb-56"
+                )}
+              >
                 {view === "favorites" ? (
                   <DictionaryFavoritesPanel l={l} favorite={selectedFavorite} />
                 ) : (
@@ -141,6 +146,11 @@ export function DictionaryAppComponent({
             )}
           </AppSidebarPanel>
         </div>
+        {view === "lookup" && l.isHandwritingOpen ? (
+          <div className="absolute inset-x-0 bottom-0 z-20 font-dictionary">
+            <DictionaryHandwritingPad l={l} />
+          </div>
+        ) : null}
       </div>
       <AppHelpAboutDialogs
         appId="dictionary"

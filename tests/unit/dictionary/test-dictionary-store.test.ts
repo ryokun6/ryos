@@ -68,6 +68,10 @@ describe("favorite snapshots", () => {
 });
 
 describe("dictionary store", () => {
+  test("defaults Chinese script to traditional", () => {
+    expect(useDictionaryStore.getState().chineseScript).toBe("traditional");
+  });
+
   beforeEach(() => {
     useDictionaryStore.setState({ favorites: [], history: [] });
     useCloudSyncStore.setState((state) => ({

@@ -62,6 +62,8 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
   const entry = currentCard.entry;
   const intervals = previewSrsIntervals(currentCard.srs);
   const example = entry.senses.flatMap((sense) => sense.examples ?? [])[0];
+  const faceClass =
+    "dictionary-flashcard-face flex h-full flex-col items-center justify-center rounded-lg border border-black/15 bg-white px-6 py-5 text-center text-black shadow-[0_2px_8px_rgba(0,0,0,0.12)]";
 
   return (
     <div className="flex flex-1 flex-col items-center overflow-y-auto p-4">
@@ -79,42 +81,51 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
             ? t("apps.dictionary.flashcards.showFront")
             : t("apps.dictionary.flashcards.showAnswer")
         }
-        className={cn(
-          "flex w-full max-w-[460px] flex-1 flex-col items-center justify-center rounded-lg border border-black/15 bg-white px-6 py-5 text-center text-black shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
-          "min-h-[220px]"
-        )}
+        className="dictionary-flashcard flex w-full max-w-[460px] flex-1"
       >
-        <DictionaryHeadword
-          entry={entry}
-          chineseScript={l.chineseScript}
-          phonetics={isCardFlipped ? l.phonetics : NO_PHONETICS}
-          size="card"
-        />
-        {isCardFlipped ? (
-          <div className="mt-3 w-full space-y-1.5 text-left">
-            {entry.senses.slice(0, 3).map((sense, index) => (
-              <div key={index} className="text-[13px]">
-                <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
-                {sense.partOfSpeech ? (
-                  <span className="mr-1 text-[11px] italic opacity-55">{sense.partOfSpeech}</span>
-                ) : null}
-                {sense.glosses.slice(0, 4).join("; ")}
-              </div>
-            ))}
-            {example ? (
-              <div className="border-l-2 border-black/10 pl-2.5 pt-1">
-                <DictionaryExampleText
-                  example={example}
-                  lang={entry.lang}
-                  chineseScript={l.chineseScript}
-                  phonetics={l.phonetics}
-                />
-              </div>
-            ) : null}
+        <div
+          key={entry.id}
+          className={cn("dictionary-flashcard-inner", isCardFlipped && "is-flipped")}
+        >
+          <div className={faceClass}>
+            <DictionaryHeadword
+              entry={entry}
+              chineseScript={l.chineseScript}
+              phonetics={NO_PHONETICS}
+              size="card"
+            />
+            <p className="mt-4 text-[11px] opacity-45">{t("apps.dictionary.flashcards.tapToFlip")}</p>
           </div>
-        ) : (
-          <p className="mt-4 text-[11px] opacity-45">{t("apps.dictionary.flashcards.tapToFlip")}</p>
-        )}
+          <div className={cn(faceClass, "dictionary-flashcard-back")}>
+            <DictionaryHeadword
+              entry={entry}
+              chineseScript={l.chineseScript}
+              phonetics={l.phonetics}
+              size="card"
+            />
+            <div className="mt-3 w-full space-y-1.5 text-left">
+              {entry.senses.slice(0, 3).map((sense, index) => (
+                <div key={index} className="text-[13px]">
+                  <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
+                  {sense.partOfSpeech ? (
+                    <span className="mr-1 text-[11px] italic opacity-55">{sense.partOfSpeech}</span>
+                  ) : null}
+                  {sense.glosses.slice(0, 4).join("; ")}
+                </div>
+              ))}
+              {example ? (
+                <div className="border-l-2 border-black/10 pl-2.5 pt-1">
+                  <DictionaryExampleText
+                    example={example}
+                    lang={entry.lang}
+                    chineseScript={l.chineseScript}
+                    phonetics={l.phonetics}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
       </button>
       <div className="mt-3 flex w-full max-w-[460px] justify-center gap-2">
         {isCardFlipped ? (
