@@ -30,6 +30,11 @@ import {
 } from "../utils/dictionaryApi";
 import { buildStudyQueue, type SrsGrade } from "../utils/srs";
 import type { AnkiImportProgress } from "../utils/anki/import";
+import {
+  getDictionaryMediaBytes,
+  pruneDictionaryMedia,
+  putDictionaryMediaBatch,
+} from "../utils/anki/media";
 import { useDictionarySpeech } from "./useDictionarySpeech";
 
 const SEARCH_DEBOUNCE_MS = 350;
@@ -424,14 +429,14 @@ export function useDictionaryLogic({
       actions.renameDeck(selectedDeck.id, deckNameDraft);
     } else if (deckDialog === "delete" && selectedDeck) {
       actions.deleteDeck(selectedDeck.id);
-      void import("../utils/anki/media").then(({ pruneDictionaryMedia }) => {
-        const scopes = new Set(
-          useDictionaryStore
-            .getState()
-            .favorites.flatMap((fav) => (fav.card?.mediaScope ? [fav.card.mediaScope] : []))
-        );
-        return pruneDictionaryMedia(scopes);
-      }).catch((error) => console.error("[Dictionary] Media cleanup failed:", error));
+      const scopes = new Set(
+        useDictionaryStore
+          .getState()
+          .favorites.flatMap((fav) => (fav.card?.mediaScope ? [fav.card.mediaScope] : []))
+      );
+      pruneDictionaryMedia(scopes).catch((error) =>
+        console.error("[Dictionary] Media cleanup failed:", error)
+      );
     }
     setDeckDialog(null);
   }, [actions, deckDialog, deckNameDraft, selectedDeck]);
@@ -441,12 +446,7 @@ export function useDictionaryLogic({
       if (ankiProgress) return;
       setAnkiProgress({ phase: "reading", done: 0, total: 1 });
       try {
-        const [{ importAnkiPackage }, { loadSqlJs }, { putDictionaryMediaBatch }] =
-          await Promise.all([
-            import("../utils/anki/import"),
-            import("../utils/anki/sqljs"),
-            import("../utils/anki/media"),
-          ]);
+        const { importAnkiPackage, loadSqlJs } = await import("../utils/anki/packages");
         const [SQL, buffer] = await Promise.all([loadSqlJs(), file.arrayBuffer()]);
         const result = await importAnkiPackage(new Uint8Array(buffer), {
           SQL,
@@ -499,12 +499,7 @@ export function useDictionaryLogic({
     }
     setIsExportingAnki(true);
     try {
-      const [{ exportAnkiPackage }, { loadSqlJs }, { getDictionaryMediaBytes }] =
-        await Promise.all([
-          import("../utils/anki/export"),
-          import("../utils/anki/sqljs"),
-          import("../utils/anki/media"),
-        ]);
+      const { exportAnkiPackage, loadSqlJs } = await import("../utils/anki/packages");
       const result = await exportAnkiPackage({
         SQL: await loadSqlJs(),
         decks: state.decks,
@@ -512,7 +507,8 @@ export function useDictionaryLogic({
         defaultDeckName: t("apps.dictionary.decks.default"),
         loadMedia: getDictionaryMediaBytes,
       });
-      const baseName = (selectedDeck ? deckLabel(selectedDeck).split("::").pop() : null) ??
+      const baseName =
+        (selectedDeck ? deckLabel(selectedDeck).split("::").pop() : null) ??
         t("apps.dictionary.title");
       const url = URL.createObjectURL(
         new Blob([result.data as BlobPart], { type: "application/octet-stream" })
