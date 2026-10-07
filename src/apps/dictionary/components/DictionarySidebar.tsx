@@ -110,19 +110,19 @@ export function DictionarySidebar({
       {view === "favorites" ? (
         <>
           <PanelHeader
-            title={t("apps.dictionary.views.favorites")}
+            title={l.selectedDeck ? l.deckLabel(l.selectedDeck) : t("apps.dictionary.views.favorites")}
             useGeneva={useGeneva}
             bordered={isMacOSTheme}
           />
           <div className={listClassName}>
-            {l.favorites.length === 0 ? (
+            {l.deckFavorites.length === 0 ? (
               <p className="px-3 py-4 text-center text-[11px] opacity-50">
                 {t("apps.dictionary.empty.noFavorites")}
               </p>
             ) : (
-              l.favorites.map((fav) => {
+              l.deckFavorites.map((fav) => {
                 const label = entryListLabel(fav.entry, chineseScript);
-                const due = isNewCard(fav.srs) || isCardDue(fav.srs, now);
+                const due = !fav.suspended && (isNewCard(fav.srs) || isCardDue(fav.srs, now));
                 return (
                   <ListRow
                     key={fav.id}

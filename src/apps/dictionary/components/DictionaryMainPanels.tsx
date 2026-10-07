@@ -1,7 +1,17 @@
 import { BookOpenText, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { DictionaryFavorite } from "@/stores/useDictionaryStore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  resolveFavoriteDeckId,
+  type DictionaryFavorite,
+} from "@/stores/useDictionaryStore";
 import {
   isHanOnlyQuery,
   normalizeDictionaryQuery,
@@ -15,6 +25,9 @@ import {
   DICTIONARY_NOTE_BOX_CLASS,
 } from "../utils/styles";
 import { DictionaryEntryView } from "./DictionaryEntryView";
+import { DictionaryCardHtml } from "./DictionaryCardHtml";
+import { soundSpeakKey } from "../utils/anki/cardHtml";
+import { dictionaryMediaKey } from "../utils/anki/media";
 
 const SAMPLE_WORDS: { word: string; lang: DictionaryQueryLanguage }[] = [
   { word: "serendipity", lang: "en" },
@@ -192,6 +205,35 @@ export function DictionaryFavoritesPanel({
   }
 
   const { srs } = favorite;
+  const deckIds = new Set(l.decks.map((deck) => deck.id));
+  const currentDeckId = resolveFavoriteDeckId(favorite, deckIds);
+  const currentDeck = l.decks.find((deck) => deck.id === currentDeckId) ?? null;
+  const deckSelect = (
+    <Select
+      value={currentDeckId}
+      onValueChange={(deckId) => l.moveFavoritesToDeck([favorite.id], deckId)}
+    >
+      <SelectTrigger
+        className={cn(
+          "h-6 w-[150px] min-w-0 text-[11px]",
+          (l.isMacOSTheme || l.isSystem7Theme) && "font-geneva-12"
+        )}
+        aria-label={t("apps.dictionary.decks.moveTo")}
+        title={t("apps.dictionary.decks.moveTo")}
+      >
+        <SelectValue>
+          <span className="truncate">{l.deckLabel(currentDeck).split("::").pop()}</span>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="max-h-[300px] max-w-[min(420px,90vw)]">
+        {l.decks.map((deck) => (
+          <SelectItem key={deck.id} value={deck.id} className="text-[12px]">
+            {l.deckLabel(deck).replaceAll("::", " › ")}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
   const footer = (
     <div
       className={cn(
@@ -199,7 +241,9 @@ export function DictionaryFavoritesPanel({
         DICTIONARY_NOTE_BOX_CLASS
       )}
     >
+      {deckSelect}
       <span className="opacity-70">
+        {favorite.suspended ? `${t("apps.dictionary.decks.suspended")} · ` : ""}
         {isNewCard(srs)
           ? t("apps.dictionary.flashcards.statusNew")
           : t("apps.dictionary.flashcards.statusReview", {
@@ -228,6 +272,46 @@ export function DictionaryFavoritesPanel({
       ) : null}
     </div>
   );
+
+  const card = favorite.card;
+  if (card) {
+    const playingSound = l.speech.speakingKey?.startsWith(`${favorite.id}:sound:`)
+      ? l.speech.speakingKey.slice(`${favorite.id}:sound:`.length)
+      : null;
+    const face = (html: string) => (
+      <DictionaryCardHtml
+        html={html}
+        css={card.styleId ? l.deckStyles.get(card.styleId) : undefined}
+        mediaScope={card.mediaScope}
+        isDark={l.isDarkMode}
+        playLabel={t("apps.dictionary.decks.playAudio")}
+        playingSound={playingSound}
+        onPlaySound={(filename) =>
+          l.speech.speak({
+            key: soundSpeakKey(favorite.id, filename),
+            text: "",
+            lang: favorite.lang,
+            mediaKey: card.mediaScope ? dictionaryMediaKey(card.mediaScope, filename) : undefined,
+          })
+        }
+      />
+    );
+    return (
+      <div className="px-5 py-4">
+        <div className={cn("rounded-lg p-4", DICTIONARY_NOTE_BOX_CLASS)}>{face(card.back)}</div>
+        {card.tags?.length ? (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {card.tags.map((tag) => (
+              <span key={tag} className={cn(DICTIONARY_CHIP_CLASS, "px-2 py-0.5 text-[10px]")}>
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {footer}
+      </div>
+    );
+  }
 
   return (
     <DictionaryEntryView

@@ -4059,10 +4059,58 @@
           "title": "Flashcards",
           "description": "Study your favorites with spaced repetition. Flip a card, then grade your recall: Again, Hard, Good, or Easy."
         },
+        "decks": {
+          "title": "Decks & Anki",
+          "description": "Group cards into decks from the Deck menu and pick one to study. Import Anki .apkg or .colpkg files with their audio and review history, or export a deck to open in Anki."
+        },
         "ai": {
           "title": "Ask AI",
           "description": "When a word isn't in the dictionaries, or you want usage notes and more examples, ask AI. AI answers may contain mistakes."
         }
+      },
+      "decks": {
+        "menu": "Deck",
+        "picker": "Deck",
+        "default": "Default",
+        "all": "All Decks",
+        "new": "New Deck…",
+        "rename": "Rename Deck…",
+        "delete": "Delete Deck…",
+        "importAnki": "Import Anki Deck…",
+        "exportAnki": "Export Deck to Anki…",
+        "exportAllAnki": "Export All Decks to Anki…",
+        "newTitle": "New Deck",
+        "newDescription": "Enter a name for the new deck.",
+        "newSubmit": "Create",
+        "renameTitle": "Rename Deck",
+        "renameDescription": "Enter a new name for “{{name}}”.",
+        "renameSubmit": "Rename",
+        "deleteTitle": "Delete Deck",
+        "deleteDescription_one": "Delete “{{name}}” and its {{count}} card? This can’t be undone.",
+        "deleteDescription_other": "Delete “{{name}}” and its {{count}} cards? This can’t be undone.",
+        "moveTo": "Move to Deck",
+        "suspended": "Suspended",
+        "playAudio": "Play Audio",
+        "emptyDeckTitle": "No cards in this deck",
+        "emptyDeckDescription": "Pick another deck, or add words to this one from Look Up.",
+        "importing": "Importing Anki Deck",
+        "importProgressReading": "Reading file…",
+        "importProgressCards": "Converting cards… {{done}} of {{total}}",
+        "importProgressMedia": "Saving audio and images… {{done}} of {{total}}",
+        "importDone_one": "Imported {{count}} card",
+        "importDone_other": "Imported {{count}} cards",
+        "importDecks_one": "{{count}} deck",
+        "importDecks_other": "{{count}} decks",
+        "importMedia_one": "{{count}} media file",
+        "importMedia_other": "{{count}} media files",
+        "importMissingMedia_one": "{{count}} media file missing",
+        "importMissingMedia_other": "{{count}} media files missing",
+        "importEmpty": "No cards found in this Anki file",
+        "importError": "Couldn’t import this Anki file",
+        "exportDone_one": "Exported {{count}} card to Anki",
+        "exportDone_other": "Exported {{count}} cards to Anki",
+        "exportEmpty": "No cards to export",
+        "exportError": "Couldn’t export to Anki"
       }
     },
     "dashboard": {

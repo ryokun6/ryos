@@ -43,6 +43,12 @@ export const helpItems = [
       "Study your favorites with spaced repetition. Flip a card, then grade your recall: Again, Hard, Good, or Easy.",
   },
   {
+    icon: "🗂️",
+    title: "Decks & Anki",
+    description:
+      "Group cards into decks from the Deck menu and pick one to study. Import Anki .apkg or .colpkg files with their audio and review history, or export a deck to open in Anki.",
+  },
+  {
     icon: "✨",
     title: "Ask AI",
     description:
