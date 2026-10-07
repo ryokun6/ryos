@@ -76,7 +76,11 @@ export type YouTubeSearchResult = YouTubeSearchSuccess | YouTubeSearchFailure;
 export function getYouTubeApiKeys(
   env: Record<string, string | undefined>
 ): string[] {
-  return [env.YOUTUBE_API_KEY, env.YOUTUBE_API_KEY_2].filter(
+  return [
+    env.YOUTUBE_API_KEY,
+    env.YOUTUBE_API_KEY_2,
+    env.YOUTUBE_API_KEY_3,
+  ].filter(
     (key): key is string => Boolean(key)
   );
 }
