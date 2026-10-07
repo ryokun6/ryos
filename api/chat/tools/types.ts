@@ -109,6 +109,7 @@ export interface ServerToolContext {
   env: {
     YOUTUBE_API_KEY?: string;
     YOUTUBE_API_KEY_2?: string;
+    YOUTUBE_API_KEY_3?: string;
   };
   /**
    * Approximate IP-derived geolocation for the current request, when known.

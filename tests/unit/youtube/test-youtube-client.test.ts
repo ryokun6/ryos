@@ -24,6 +24,70 @@ describe("youtube-client", () => {
         YOUTUBE_API_KEY_2: "backup",
       })
     ).toEqual(["backup"]);
+
+    expect(
+      getYouTubeApiKeys({
+        YOUTUBE_API_KEY: "primary",
+        YOUTUBE_API_KEY_2: "backup",
+        YOUTUBE_API_KEY_3: "backup-2",
+      })
+    ).toEqual(["primary", "backup", "backup-2"]);
+
+    expect(
+      getYouTubeApiKeys({
+        YOUTUBE_API_KEY: "primary",
+        YOUTUBE_API_KEY_3: "backup-2",
+      })
+    ).toEqual(["primary", "backup-2"]);
+  });
+
+  test("falls through to the third API key when the first two are exhausted", async () => {
+    const attemptedKeys: string[] = [];
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      {
+        apiKeys: getYouTubeApiKeys({
+          YOUTUBE_API_KEY: "primary",
+          YOUTUBE_API_KEY_2: "backup",
+          YOUTUBE_API_KEY_3: "backup-2",
+        }),
+        fetch: async (input) => {
+          const key = new URL(String(input)).searchParams.get("key") || "";
+          attemptedKeys.push(key);
+          if (key !== "backup-2") {
+            return new Response(
+              JSON.stringify({
+                error: { code: 403, message: "quota exceeded" },
+              }),
+              { status: 403, headers: { "Content-Type": "application/json" } }
+            );
+          }
+
+          return new Response(
+            JSON.stringify({
+              items: [
+                {
+                  id: { videoId: "yt_third" },
+                  snippet: {
+                    title: "Third",
+                    channelTitle: "Artist",
+                    publishedAt: "2024-01-01T00:00:00Z",
+                  },
+                },
+              ],
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+        },
+      }
+    );
+
+    expect(attemptedKeys).toEqual(["primary", "backup", "backup-2"]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.keyLabel).toBe("backup-2");
+      expect(result.hits[0]?.videoId).toBe("yt_third");
+    }
   });
 
   test("detects quota errors only on 403 quota-like responses", () => {
