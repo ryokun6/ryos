@@ -5,8 +5,8 @@
  * configuration, used by every feature that speaks locally without the AI
  * `/api/speech` endpoint: the desktop assistant, Calculator key/result
  * speech, Books read-aloud (page speech + Ask Ryo replies), Maps YouBike
- * navigation, and TextEdit read-aloud. Ryo ElevenLabs voices stay on
- * `/api/speech` for in-OS Ryo chat only.
+ * navigation, TextEdit read-aloud, and Dictionary pronunciation. Ryo
+ * ElevenLabs voices stay on `/api/speech` for in-OS Ryo chat only.
  *
  * Voice resolution priority (see {@link resolveSpeechVoice}):
  *   1. the user's preferred voice from Control Panels → Sound (language-gated)

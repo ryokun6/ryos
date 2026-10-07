@@ -3,7 +3,7 @@ import { useSpeechSynthesisVoices } from "@/hooks/useSpeechSynthesisVoices";
 import type { DictionaryLanguage } from "@/shared/dictionary";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import type { DictionaryChineseScript } from "@/stores/useDictionaryStore";
-import { getBrowserSpeechSynthesis } from "@/utils/browserSpeech";
+import { createSpeechUtterance, getBrowserSpeechSynthesis } from "@/utils/browserSpeech";
 import { pickDictionaryVoice } from "../utils/speech";
 
 const SPEECH_RATE = 0.9;
@@ -58,10 +58,11 @@ export function useDictionarySpeech(chineseScript: DictionaryChineseScript) {
         finish(request.key);
         return;
       }
-      const utterance = new SpeechSynthesisUtterance(request.text);
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
-      utterance.rate = SPEECH_RATE;
+      const utterance = createSpeechUtterance(request.text, {
+        lang: voice.lang,
+        rate: SPEECH_RATE,
+        voices: [voice],
+      });
       utterance.onend = () => finish(request.key);
       utterance.onerror = () => finish(request.key);
       synth.cancel();
