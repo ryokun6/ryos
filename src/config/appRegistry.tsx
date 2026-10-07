@@ -15,6 +15,7 @@ import type {
   VideosInitialData,
   BooksInitialData,
   StuffInitialData,
+  DictionaryInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
@@ -195,6 +196,14 @@ const LazyStuffApp = createLazyComponent<StuffInitialData>(
   "stuff"
 );
 
+const LazyDictionaryApp = createLazyComponent<DictionaryInitialData>(
+  () =>
+    import("@/apps/dictionary/components/DictionaryAppComponent").then((m) => ({
+      default: m.DictionaryAppComponent,
+    })),
+  "dictionary"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -235,6 +244,7 @@ import { appMetadata as mapsMetadata, helpItems as mapsHelpItems } from "@/apps/
 import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/apps/books/metadata";
 import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
 import { appMetadata as stuffMetadata, helpItems as stuffHelpItems } from "@/apps/stuff/metadata";
+import { appMetadata as dictionaryMetadata, helpItems as dictionaryHelpItems } from "@/apps/dictionary/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -631,6 +641,19 @@ export const appRegistry = {
       minSize: { width: 560, height: 400 },
     } as WindowConstraints,
   },
+  ["dictionary"]: {
+    id: "dictionary",
+    name: "Dictionary",
+    icon: { type: "image", src: dictionaryMetadata.icon },
+    description: "Look up words in English, Chinese, Japanese, and Korean",
+    component: LazyDictionaryApp,
+    helpItems: dictionaryHelpItems,
+    metadata: dictionaryMetadata,
+    windowConfig: {
+      defaultSize: { width: 860, height: 580 },
+      minSize: { width: 420, height: 380 },
+    } as WindowConstraints,
+  } as BaseApp<DictionaryInitialData> & { windowConfig: WindowConstraints },
 } as const;
 
 // ============================================================================

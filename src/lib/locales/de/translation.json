@@ -1770,6 +1770,7 @@
         "contacts": "Kontakte",
         "daysAgo": "vor {{count}}T",
         "description": "Synchronisiert ausgewählte Daten und Einstellungen nach wichtigen Änderungen automatisch mit der Cloud",
+        "dictionary": "Lexikon",
         "error": "Synchronisierungsproblem: {{error}}",
         "fetching": "Wird abgerufen",
         "files": "Dateien",
@@ -2414,6 +2415,153 @@
         "terrarium": "Terrarium",
         "translation": "Übersetzung",
         "weather": "Wetter"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "Zu Favoriten hinzufügen",
+        "listen": "Anhören",
+        "openFullEntry": "Nachschlagen",
+        "removeFavorite": "Aus Favoriten entfernen",
+        "resetProgress": "Fortschritt zurücksetzen"
+      },
+      "ai": {
+        "askExtras": "Verwendung erklären",
+        "askFallback": "KI fragen",
+        "disclaimer": "Von KI generiert — kann Fehler enthalten.",
+        "error": "KI ist derzeit nicht verfügbar.",
+        "extrasTitle": "KI-Notizen",
+        "notFound": "KI konnte dieses Wort ebenfalls nicht finden.",
+        "rateLimited": "KI-Limit erreicht. Melde dich an oder versuche es später erneut.",
+        "thinking": "Überlegen …"
+      },
+      "description": "Wörter auf Englisch, Chinesisch, Japanisch und Koreanisch nachschlagen",
+      "empty": {
+        "noFavorites": "Noch keine Favoriten",
+        "noFavoritesDescription": "Markiere ein Wort beim Nachschlagen mit einem Stern, um es hier zu sichern und als Karteikarte zu lernen.",
+        "noHistory": "Keine letzten Suchanfragen"
+      },
+      "flashcards": {
+        "checkAgain": "Nochmal prüfen",
+        "doneDescription_one": "Du hast {{count}} Karte wiederholt. Gut gemacht!",
+        "doneDescription_other": "Du hast {{count}} Karten wiederholt. Gute Arbeit!",
+        "doneTitle": "Alles erledigt",
+        "due": "Fällig zur Wiederholung",
+        "emptyDescription": "Füge Wörter zu den Favoriten hinzu, um sie mit verteilter Wiederholung zu lernen.",
+        "emptyTitle": "Noch keine Karteikarten",
+        "grades": {
+          "again": "Nochmal",
+          "easy": "Einfach",
+          "good": "Gut",
+          "hard": "Schwer"
+        },
+        "nothingDue": "Momentan sind keine Karten fällig. Komm später wieder.",
+        "progress": "{{remaining}} übrig · {{reviewed}} wiederholt",
+        "showAnswer": "Antwort einblenden",
+        "showFront": "Vorderseite einblenden",
+        "statusNew": "Neue Karte — noch nicht gelernt",
+        "statusReview": "Nächste Wiederholung {{date}} · {{reps}}-mal hintereinander richtig",
+        "tapToFlip": "Klicken, um die Antwort anzuzeigen"
+      },
+      "handwriting": {
+        "canvas": "Handschrift-Feld",
+        "clear": "Löschen",
+        "credit": "Erkennung durch HanziLookupJS",
+        "error": "Handschrifterkennung konnte nicht geladen werden.",
+        "hint": "Zeichne ein chinesisches Schriftzeichen oder Kanji Strich für Strich.",
+        "loading": "Erkennung wird geladen …",
+        "title": "Handschrift",
+        "undo": "Widerrufen"
+      },
+      "help": {
+        "ai": {
+          "description": "Wenn ein Wort nicht in den Wörterbüchern enthalten ist oder du Verwendungshinweise und weitere Beispiele benötigst, frage die KI. KI-Antworten können Fehler enthalten.",
+          "title": "KI fragen"
+        },
+        "favorites": {
+          "description": "Markiere Wörter mit einem Stern, um sie zu sichern. Favoriten werden geräteübergreifend synchronisiert, wenn die Cloud-Synchronisierung aktiviert ist.",
+          "title": "Favoriten"
+        },
+        "flashcards": {
+          "description": "Lerne deine Favoriten mit verteilter Wiederholung. Drehe eine Karte um und bewerte dann dein Erinnerungsvermögen: Nochmal, Schwer, Gut oder Einfach.",
+          "title": "Lernkarten"
+        },
+        "handwriting": {
+          "description": "Öffne das Handschriftfeld und zeichne ein chinesisches Schriftzeichen oder Kanji. Wähle einen Vorschlag aus, um ihn deiner Suche hinzuzufügen.",
+          "title": "Handschrift"
+        },
+        "lookup": {
+          "description": "Suche auf Englisch, Chinesisch, Japanisch oder Koreanisch. Gib ein Wort, Pinyin, Romaji oder eine englische Bedeutung ein, um Definitionen, Synonyme und Beispielsätze zu finden.",
+          "title": "Wörter nachschlagen"
+        },
+        "phonetics": {
+          "description": "Lasse dir Pinyin und Zhuyin für Chinesisch, Furigana und Romaji für Japanisch sowie die Romanisierung für Koreanisch anzeigen. Du kannst sie im Menü „Lesarten“ ein- und ausschalten.",
+          "title": "Lesarten"
+        }
+      },
+      "labels": {
+        "antonymsShort": "Ant.",
+        "kanji": "Kanji",
+        "kunyomi": "Kun",
+        "onyomi": "On",
+        "phrases": "Wörter & Wendungen",
+        "similar": "Ähnliche Wörter",
+        "strokes_one": "{{count}} Strich",
+        "strokes_other": "{{count}} Striche",
+        "synonyms": "Synonyme",
+        "synonymsShort": "Syn."
+      },
+      "language": "Sprache",
+      "languages": {
+        "auto": "Automatisch",
+        "en": "Englisch",
+        "ja": "Japanisch",
+        "ko": "Koreanisch",
+        "zh": "Chinesisch"
+      },
+      "menu": {
+        "about": "Über Lexikon",
+        "aiNotes": "KI-Notizen automatisch einblenden",
+        "clearHistory": "Verlauf löschen",
+        "furigana": "Furigana",
+        "handwriting": "Handschrifteingabe",
+        "help": "Lexikon-Hilfe",
+        "koreanRomanization": "Koreanische Romanisierung",
+        "newLookup": "Neues Nachschlagen",
+        "pinyin": "Pinyin",
+        "readings": "Lesungen",
+        "romaji": "Romaji",
+        "showSidebar": "Seitenleiste einblenden",
+        "simplified": "Vereinfachte Zeichen",
+        "syncFavorites": "Favoriten synchronisieren",
+        "traditional": "Traditionelle Zeichen",
+        "zhuyin": "Zhuyin (Bopomofo)"
+      },
+      "name": "Lexikon",
+      "searchPlaceholder": "Wort nachschlagen",
+      "sidebar": {
+        "recent": "Verlauf",
+        "results": "Ergebnisse"
+      },
+      "sources": "Quellen:",
+      "status": {
+        "alsoIn": "Auch nachschlagen in:",
+        "didYouMean": "Meintest du:",
+        "errorDescription": "Der Lexikon-Dienst hat nicht geantwortet. Überprüfe die Verbindung und versuche es erneut.",
+        "errorTitle": "Nachschlagen nicht möglich",
+        "notFound": "Keine Ergebnisse für „{{query}}“",
+        "retry": "Erneut versuchen",
+        "searching": "Suchen …"
+      },
+      "title": "Lexikon",
+      "views": {
+        "favorites": "Favoriten",
+        "flashcards": "Lernkarten",
+        "lookup": "Nachschlagen"
+      },
+      "welcome": {
+        "description": "Suche auf Englisch, Chinesisch, Japanisch oder Koreanisch. Du kannst auch Pinyin, Romaji oder eine englische Bedeutung eingeben.",
+        "title": "Ein Wort nachschlagen"
       }
     },
     "finder": {

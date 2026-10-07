@@ -1471,6 +1471,7 @@
         "contacts": "Contacts",
         "maps": "Maps",
         "stuff": "Stuff",
+        "dictionary": "Dictionary",
         "waiting": "Waiting for the next eligible change",
         "neverSynced": "Not yet synced",
         "checking": "Checking for cloud updates…",
@@ -1588,6 +1589,10 @@
     "contacts": {
       "name": "Contacts",
       "description": "Address book with vCard import"
+    },
+    "dictionary": {
+      "name": "Dictionary",
+      "description": "Look up words in English, Chinese, Japanese, and Korean"
     },
     "dashboard": {
       "name": "Dashboard",

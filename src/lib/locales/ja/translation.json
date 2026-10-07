@@ -1770,6 +1770,7 @@
         "contacts": "連絡先",
         "daysAgo": "{{count}}日前",
         "description": "重要な更新後に、選択したデータと設定を自動的にクラウドへ同期します",
+        "dictionary": "辞書",
         "error": "同期の問題: {{error}}",
         "fetching": "取得中",
         "files": "ファイル",
@@ -2414,6 +2415,153 @@
         "terrarium": "テラリウム",
         "translation": "翻訳",
         "weather": "天気"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "お気に入りに追加",
+        "listen": "再生",
+        "openFullEntry": "調べる",
+        "removeFavorite": "お気に入りから削除",
+        "resetProgress": "進捗をリセット"
+      },
+      "ai": {
+        "askExtras": "使い方を解説",
+        "askFallback": "AIに尋ねる",
+        "disclaimer": "AIによって生成されました。誤りが含まれる可能性があります。",
+        "error": "現在AIを利用できません。",
+        "extrasTitle": "AIノート",
+        "notFound": "AIでもこの単語は見つかりませんでした。",
+        "rateLimited": "AIの制限に達しました。サインインするか、後でもう一度お試しください。",
+        "thinking": "考え中…"
+      },
+      "description": "英語、中国語、日本語、韓国語の単語を調べます",
+      "empty": {
+        "noFavorites": "お気に入りはまだありません",
+        "noFavoritesDescription": "単語を調べているときに星を付けると、ここに保存してフラッシュカードとして学習できます。",
+        "noHistory": "最近調べた単語はありません"
+      },
+      "flashcards": {
+        "checkAgain": "もう一度確認",
+        "doneDescription_one": "{{count}}枚のカードを復習しました。お疲れ様でした！",
+        "doneDescription_other": "{{count}}枚のカードを復習しました。お疲れ様でした！",
+        "doneTitle": "すべて完了しました",
+        "due": "復習が必要",
+        "emptyDescription": "単語を「よく使う項目」に追加して、間隔反復で学習しましょう。",
+        "emptyTitle": "フラッシュカードがまだありません",
+        "grades": {
+          "again": "もう一度",
+          "easy": "かんたん",
+          "good": "良好",
+          "hard": "むずかしい"
+        },
+        "nothingDue": "現在、復習が必要なカードはありません。また後で確認してください。",
+        "progress": "残り{{remaining}}枚 · 復習済み{{reviewed}}枚",
+        "showAnswer": "答えを表示",
+        "showFront": "表を表示",
+        "statusNew": "新規カード — 未学習",
+        "statusReview": "次回の復習: {{date}} · {{reps}}回連続正解",
+        "tapToFlip": "クリックして答えを表示"
+      },
+      "handwriting": {
+        "canvas": "手書きキャンバス",
+        "clear": "消去",
+        "credit": "認識エンジン: HanziLookupJS",
+        "error": "手書き認識を読み込めませんでした。",
+        "hint": "漢字を一画ずつ書いてください。",
+        "loading": "認識プログラムを読み込み中…",
+        "title": "手書き",
+        "undo": "取り消す"
+      },
+      "help": {
+        "ai": {
+          "description": "辞書に単語がない場合や、使い方の注意点、より多くの例文が必要な場合は、AIに尋ねてください。AIの回答には誤りが含まれる場合があります。",
+          "title": "AIに尋ねる"
+        },
+        "favorites": {
+          "description": "単語に星を付けて保存します。クラウド同期がオンの場合、お気に入りはデバイス間で同期されます。",
+          "title": "お気に入り"
+        },
+        "flashcards": {
+          "description": "間隔反復学習法でお気に入りを学習します。カードをめくり、「もう一度」「難しい」「普通」「簡単」のいずれかで記憶度を評価します。",
+          "title": "フラッシュカード"
+        },
+        "handwriting": {
+          "description": "手書きパッドを開いて、漢字を書きます。候補を選択して検索に追加します。",
+          "title": "手書き"
+        },
+        "lookup": {
+          "description": "英語、中国語、日本語、韓国語を検索できます。単語、ピンイン、ローマ字、または英語の意味を入力して、定義、類義語、例文を見つけます。",
+          "title": "単語を調べる"
+        },
+        "phonetics": {
+          "description": "中国語のピンインと注音、日本語のふりがなとローマ字、韓国語のローマ字表記を確認できます。「読み」メニューから表示を切り替えられます。",
+          "title": "読み"
+        }
+      },
+      "labels": {
+        "antonymsShort": "対",
+        "kanji": "漢字",
+        "kunyomi": "訓",
+        "onyomi": "音",
+        "phrases": "語句",
+        "similar": "類語",
+        "strokes_one": "{{count}} 画",
+        "strokes_other": "{{count}} 画",
+        "synonyms": "同義語",
+        "synonymsShort": "同義語"
+      },
+      "language": "言語",
+      "languages": {
+        "auto": "自動",
+        "en": "英語",
+        "ja": "日本語",
+        "ko": "韓国語",
+        "zh": "中国語"
+      },
+      "menu": {
+        "about": "辞書について",
+        "aiNotes": "AIノートを自動的に表示",
+        "clearHistory": "履歴を消去",
+        "furigana": "ふりがな",
+        "handwriting": "手書きパッド",
+        "help": "辞書ヘルプ",
+        "koreanRomanization": "韓国語のローマ字表記",
+        "newLookup": "新規検索",
+        "pinyin": "ピンイン",
+        "readings": "読み",
+        "romaji": "ローマ字",
+        "showSidebar": "サイドバーを表示",
+        "simplified": "簡体字",
+        "syncFavorites": "お気に入りを同期",
+        "traditional": "繁体字",
+        "zhuyin": "注音 (ボポモフォ)"
+      },
+      "name": "辞書",
+      "searchPlaceholder": "単語を検索",
+      "sidebar": {
+        "recent": "履歴",
+        "results": "検索結果"
+      },
+      "sources": "出典:",
+      "status": {
+        "alsoIn": "以下でも検索:",
+        "didYouMean": "もしかして:",
+        "errorDescription": "辞書サービスが応答しませんでした。接続を確認して、もう一度やり直してください。",
+        "errorTitle": "検索できませんでした",
+        "notFound": "“{{query}}”の検索結果はありません",
+        "retry": "再試行",
+        "searching": "検索中…"
+      },
+      "title": "辞書",
+      "views": {
+        "favorites": "お気に入り",
+        "flashcards": "単語カード",
+        "lookup": "調べる"
+      },
+      "welcome": {
+        "description": "英語、中国語、日本語、または韓国語で検索できます。ピンイン、ローマ字、または英語の意味を入力することもできます。",
+        "title": "単語を調べる"
       }
     },
     "finder": {

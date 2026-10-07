@@ -159,6 +159,20 @@ export function renderChineseWithPhonetics(
     system === "zhuyin"
       ? hanziToZhuyinReadings(text)
       : pinyin(text, { type: "array", toneType: "none" });
+  return renderChineseWithReadings(text, readings, keyPrefix, system);
+}
+
+/**
+ * Render hanzi with caller-supplied per-character readings (pinyin with tone
+ * marks or Zhuyin), e.g. dictionary readings that are more accurate than
+ * pinyin-pro's guesses. `readings[i]` annotates the i-th code point.
+ */
+export function renderChineseWithReadings(
+  text: string,
+  readings: readonly string[],
+  keyPrefix: string = "cn",
+  system: ChinesePhoneticSystem = "pinyin"
+): React.ReactNode {
   const chars = [...text];
   const rubyClass =
     system === "zhuyin" ? "lyrics-zhuyin-ruby" : "lyrics-pinyin-ruby";

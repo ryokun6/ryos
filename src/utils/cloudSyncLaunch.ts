@@ -16,6 +16,7 @@ const APPS_THAT_TRIGGER_CLOUD_SYNC_CHECK_ON_LAUNCH = new Set<AppId>([
   "videos",
   "tv",
   "dashboard",
+  "dictionary",
 ]);
 
 export function shouldRequestCloudSyncOnAppLaunch(appId: AppId): boolean {

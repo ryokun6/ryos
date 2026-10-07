@@ -39,6 +39,11 @@ import { useCalendarStore } from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
 import { useStuffStore } from "@/stores/useStuffStore";
+import {
+  sanitizeDictionaryFavorite,
+  useDictionaryStore,
+  type DictionaryFavorite,
+} from "@/stores/useDictionaryStore";
 import type { StuffItem, StuffLocation, StuffTag } from "@/apps/stuff/types";
 import {
   invalidateStuffCoverCache,
@@ -148,6 +153,7 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   stuffTagIds: "stuff/tag:",
   stuffCoverKeys: "stuff-images/item:",
   stuffLocationIds: "stuff/location:",
+  dictionaryFavoriteIds: "dictionary/favorite:",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1732,6 +1738,64 @@ const stuffCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Dictionary codec
+//
+// Keys:
+//   dictionary/favorite:<entryId> — favorite word snapshot + SM-2 card state
+//
+// Settings, lookup history, and the current view stay device-local.
+// ---------------------------------------------------------------------------
+
+const DICTIONARY_FAVORITE_PREFIX = "dictionary/favorite:";
+
+const dictionaryCodec: SyncCodec = {
+  namespace: "dictionary",
+  collect() {
+    const docs = new Map<string, unknown>();
+    for (const favorite of useDictionaryStore.getState().favorites) {
+      if (favorite?.id) docs.set(`${DICTIONARY_FAVORITE_PREFIX}${favorite.id}`, favorite);
+    }
+    return docs;
+  },
+  apply(ops) {
+    const state = useDictionaryStore.getState();
+    const byId = new Map<string, DictionaryFavorite>(
+      state.favorites.map((favorite) => [favorite.id, favorite])
+    );
+    let changed = false;
+    for (const op of ops) {
+      if (!op.k.startsWith(DICTIONARY_FAVORITE_PREFIX)) continue;
+      const id = op.k.slice(DICTIONARY_FAVORITE_PREFIX.length);
+      if (!id) continue;
+      if (op.del) {
+        changed = byId.delete(id) || changed;
+      } else {
+        const favorite = sanitizeDictionaryFavorite(op.v, id);
+        if (favorite) {
+          byId.set(id, favorite);
+          changed = true;
+        }
+      }
+    }
+    if (!changed) return;
+    state.replaceFavoritesFromSync(
+      Array.from(byId.values()).sort((a, b) => b.addedAt - a.addedAt)
+    );
+  },
+  subscribe(onChange) {
+    return useDictionaryStore.subscribe((state, prev) => {
+      if (state.favorites !== prev.favorites) {
+        if (!useDictionaryStore.persist.hasHydrated()) return;
+        onChange();
+      }
+    });
+  },
+  isReady() {
+    return useDictionaryStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Bookshelf codec (Books app reading state: progress + ordering + last-opened)
 //
 // The EPUB *files* sync via the `books` blob namespace (under the "files"
@@ -2245,6 +2309,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   wallpapers: wallpapersCodec,
   stuff: stuffCodec,
   "stuff-images": stuffImagesCodec,
+  dictionary: dictionaryCodec,
 };
 
 export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
@@ -2274,4 +2339,5 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "contacts",
   "maps",
   "stuff",
+  "dictionary",
 ];
