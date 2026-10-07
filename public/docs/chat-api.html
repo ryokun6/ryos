@@ -471,6 +471,12 @@
     <a href="/docs/terms" class="">11. Terms of Service</a>
   </div>
 </div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/support" class="">12. Support</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -479,15 +485,15 @@
 <p>The main AI chat endpoint for ryOS that powers the Chats application. This endpoint handles conversational AI interactions with the "Ryo" persona, supports multiple AI providers, and includes extensive tool calling capabilities for controlling the ryOS system.</p>
 <p>This endpoint is implemented with the shared <code>apiHandler</code> utility and optional auth via <code>request-auth</code>.</p>
 <h2>Endpoint</h2>
-<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/chat</code></td><td>Main AI chat with streaming responses and tool calling</td></tr><tr><td>GET</td><td><code>/api/ai/conversations/:channel</code></td><td>Read the authenticated user's paginated <code>chat</code> or <code>assistant</code> history</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/import</code></td><td>One-time import into an empty server conversation</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/reset</code></td><td>Clear history and rotate to a new conversation ID</td></tr><tr><td>POST</td><td><code>/api/ai/attachments</code></td><td>Upload an authenticated chat image</td></tr><tr><td>GET</td><td><code>/api/ai/attachments/:id</code></td><td>Read an authenticated chat image</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/chat</code></td><td>Main AI chat with streaming responses and tool calling</td></tr><tr><td>GET</td><td><code>/api/ai/conversations/:channel</code></td><td>Read the authenticated user's paginated <code>chat</code> or <code>assistant</code> history</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/greeting</code></td><td>Server-owned proactive greeting for the <code>chat</code> channel</td></tr><tr><td>POST</td><td><code>/api/ai/conversations/:channel/reset</code></td><td>Clear history and rotate to a new conversation ID</td></tr><tr><td>POST</td><td><code>/api/ai/attachments</code></td><td>Upload an authenticated chat image</td></tr><tr><td>GET</td><td><code>/api/ai/attachments/:id</code></td><td>Read an authenticated chat image</td></tr></tbody></table>
 <h2>Server conversation history</h2>
 <p>Authenticated <code>chat</code> and floating <code>assistant</code> conversations are stored separately. The server is the canonical history: a normal authenticated request appends one user action, loads prior messages from Redis, streams one response, then commits only the assembled assistant message. Clients do not resend or overwrite the stored transcript. The server assigns sequence numbers, maintains a monotonic revision, and keeps at most 200 messages within a 4 MiB history budget. Completed AI SDK message parts are retained, including text, tool state, sources, and private image references. A message may contain up to 128,000 text characters and 768 KiB of serialized parts.</p>
 <code>GET /api/ai/conversations/:channel</code> accepts <code>limit</code> (1–100) and an opaque
 <code>cursor</code>. Pages contain chronological messages and a <code>nextCursor</code>. A cursor
 from a cleared conversation returns <code>409 conversation_changed</code>.
-<p>Import and reset requests use operation IDs for idempotency. Import additionally requires the current conversation ID and revision <code>0</code>; it is rejected once the server conversation contains messages or after that conversation has been reset. Reset requires the current conversation ID and returns a new ID. It also schedules memory extraction from the cleared server snapshot exactly once for that reset operation. Conversation records are removed by account deletion.</p>
+<p>Reset requests use an operation ID for idempotency. Reset requires the current conversation ID and returns a new ID. It also schedules memory extraction from the cleared server snapshot exactly once for that reset operation. Conversation records are removed by account deletion. Proactive greetings are not part of <code>POST /api/chat</code>; the client calls <code>POST /api/ai/conversations/chat/greeting</code>.</p>
 <h3>Realtime cross-device updates</h3>
-<p>Every canonical conversation write is announced on the owner's authorized <code>private-ai-{username}</code> realtime channel as an <code>ai-conversation-updated</code> event carrying <code>{ channel, conversationId, revision, reason, operationId }</code> with <code>reason</code> one of <code>turn-begin</code>, <code>turn-complete</code>, <code>greeting</code>, <code>import</code>, or <code>reset</code>. Other signed-in devices listening on the channel re-hydrate the conversation immediately (the user's message appears at <code>turn-begin</code>, the assistant reply at <code>turn-complete</code>); the originating device recognizes its own <code>operationId</code> and skips the echo. Delivery is best-effort — the focus/visibility refresh remains the catch-up path.</p>
+<p>Every canonical conversation write is announced on the owner's authorized <code>private-ai-{username}</code> realtime channel as an <code>ai-conversation-updated</code> event carrying <code>{ channel, conversationId, revision, reason, operationId }</code> with <code>reason</code> one of <code>turn-begin</code>, <code>turn-complete</code>, <code>greeting</code>, or <code>reset</code>. Other signed-in devices listening on the channel re-hydrate the conversation immediately (the user's message appears at <code>turn-begin</code>, the assistant reply at <code>turn-complete</code>); the originating device recognizes its own <code>operationId</code> and skips the echo. Delivery is best-effort — the focus/visibility refresh remains the catch-up path.</p>
 <h2>Request</h2>
 <h3>Headers</h3>
 <table><thead><tr><th>Header</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td><code>Authorization</code></td><td>Yes<em></td><td>Bearer token (<code>Bearer {token}</code>)</td></tr><tr><td><code>X-Username</code></td><td>Yes</em></td><td>Username paired with the token</td></tr><tr><td><code>Content-Type</code></td><td>Yes</td><td>Must be <code>application/json</code></td></tr></tbody></table>
@@ -502,9 +508,6 @@ from a cleared conversation returns <code>409 conversation_changed</code>.
   // Required together with the ryo auth account to call opus-5.5
   debugMode?: boolean;
   
-  // Optional proactive greeting mode (non-streaming JSON response)
-  proactiveGreeting?: boolean;
-
   // System state context (optional but recommended)
   systemState?: SystemState;
 
@@ -621,7 +624,7 @@ interface TrackInfo {
 }</code></pre>
 <h2>Response</h2>
 <p>The endpoint returns a <strong>Server-Sent Events (SSE)</strong> stream using the Vercel AI SDK's UI message stream format.</p>
-<p>If <code>proactiveGreeting</code> is <code>true</code> (authenticated only), the endpoint returns JSON instead of SSE. The greeting is <strong>server-owned</strong>: eligibility is decided against the canonical conversation (empty thread, or last message idle for 5+ minutes and not already a greeting, and no turn in flight), and the generated greeting is persisted as a real conversation message (<code>proactive-&lt;uuid&gt;</code> id) so it survives hydration and syncs across devices.</p>
+<p>Proactive greetings use <code>POST /api/ai/conversations/chat/greeting</code> (authenticated). The body may include an optional <code>operationId</code>. The greeting is <strong>server-owned</strong>: eligibility is decided against the canonical <code>chat</code> conversation (empty thread, or last message idle for 5+ minutes and not already a greeting, and no turn in flight), and the generated greeting is persisted as a real conversation message (<code>proactive-&lt;uuid&gt;</code> id) so it survives hydration and syncs across devices. Other channels return <code>404</code>.</p>
 <pre><code>{
   "greeting": "hey, how's the cursor roadmap coming along?",
   "message": {

@@ -471,6 +471,12 @@
     <a href="/docs/terms" class="">11. Terms of Service</a>
   </div>
 </div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/support" class="">12. Support</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -584,6 +590,9 @@
 <table><thead><tr><th>User Type</th><th>Limit</th><th>Window</th></tr></thead><tbody><tr><td>Authenticated</td><td>10/hour</td><td>1 hour</td></tr><tr><td><code>ryo</code></td><td>Bypass</td><td>—</td></tr></tbody></table>
 <h3>Model</h3>
 <p>OpenAI <code>gpt-image-1</code> via official OpenAI SDK <code>images.edit</code> (<code>background: "transparent"</code>, <code>output_format: "png"</code>). Multipart upload uses <code>toFile</code> so the image part includes a filename (required by <code>/v1/images/edits</code>). The edit prompt asks for a shelf-ready cutout (grounded pose, subject near the bottom of the frame) rather than a floating mid-frame knock-out.</p>
+<h3>Related Stuff routes</h3>
+<p>These sit next to background removal and are not generation endpoints:</p>
+<table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/stuff/barcode-lookup</code></td><td>Look up a product by <code>barcode</code></td></tr><tr><td>GET</td><td><code>/api/stuff/product-lookup</code></td><td>Look up products by keyword <code>q</code></td></tr><tr><td>GET</td><td><code>/api/stuff/product-image</code></td><td>Fetch a product cover by <code>url</code> (avoids browser CORS)</td></tr><tr><td>GET, POST, DELETE</td><td><code>/api/stuff/shares</code></td><td>Read (<code>?id=</code>), publish, or delete a shared shelf</td></tr><tr><td>POST</td><td><code>/api/stuff/shares/:id/reserve</code></td><td>Reserve one item (signed in)</td></tr><tr><td>POST</td><td><code>/api/stuff/shares/:id/bid</code></td><td>Place an offer on one item (signed in)</td></tr></tbody></table>
 <hr>
 <h2>Internet Explorer Generator</h2>
 <p>The Internet Explorer Generator creates "time-travel" web pages, reimagining how websites might have looked in different eras (past or future). It generates complete HTML pages styled to match historical design trends or speculative future aesthetics.</p>

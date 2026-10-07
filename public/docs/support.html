@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Overview - ryOS Docs</title>
+  <title>Support - ryOS Docs</title>
   <link rel="icon" href="/icons/mac-192.png">
   <meta name="color-scheme" content="light dark">
   <script>
@@ -327,14 +327,14 @@
   
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-group expanded">
-  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="true">
-    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(90deg);">
+      <div class="nav-group ">
+  <button class="nav-toggle" onclick="toggleNavGroup(this)" aria-expanded="false">
+    <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor" style="transition: transform 0.2s; transform: rotate(0deg);">
       <path d="M2 0v8l4-4z"/>
     </svg>
-    <a href="/docs/overview" class="active">1. Overview</a>
+    <a href="/docs/overview" class="">1. Overview</a>
   </button>
-  <div class="nav-children" style="display: block;">
+  <div class="nav-children" style="display: none;">
     <a href="/docs/architecture" class="nav-child ">1.1 Architecture & Build</a>
     <a href="/docs/api-architecture" class="nav-child ">1.2 API Architecture</a>
     <a href="/docs/self-hosting-vps" class="nav-child ">1.3 Self-hosting ryOS on a VPS or Coolify</a>
@@ -474,85 +474,36 @@
 <div class="nav-group">
   <div class="nav-toggle nav-no-toggle">
     <span class="nav-spacer"></span>
-    <a href="/docs/support" class="">12. Support</a>
+    <a href="/docs/support" class="active">12. Support</a>
   </div>
 </div>
     </nav>
     
     <main class="content">
       <article>
-        <h1>Overview</h1>
-<p>ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 29 fully-functional apps, an AI assistant, and a complete virtual file system.</p>
-<p>Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.</p>
-<style>
-.latest-changelog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 16px 0 24px; }
-.latest-changelog-card { display: flex; flex-direction: column; border: 1px solid var(--doc-border); border-radius: 12px; overflow: hidden; background: var(--doc-surface-alt); text-decoration: none; color: inherit; }
-.latest-changelog-card:hover { border-color: var(--doc-text-faint); }
-.latest-changelog-card img { display: block; width: 100%; height: auto; object-fit: contain; border-bottom: 1px solid var(--doc-border); background: var(--doc-surface); }
-.latest-changelog-card-copy { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
-.latest-changelog-card h3 { font-size: 14px; margin: 0 0 6px; }
-.latest-changelog-card p { color: var(--doc-text-secondary); font-size: 12px; margin: 0; }
-.latest-changelog-card p.latest-changelog-card-label { color: var(--doc-text-tertiary); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
-.latest-changelog-card p.latest-changelog-card-cta { color: var(--doc-link); font-size: 11px; margin-top: auto; padding-top: 8px; }
-@media screen and (max-width: 768px) { .latest-changelog-grid { grid-template-columns: 1fr; gap: 14px; } .latest-changelog-card-copy { padding: 12px 14px 14px; } }
-</style>
-<div class="latest-changelog-grid">
-<a class="latest-changelog-card" href="/docs/changelog">
-<img src="/docs-assets/changelog/2026-09-05-ryo-pvc-speech-16x9.webp" alt="Ryo PVC speech in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy">
-<div class="latest-changelog-card-copy">
-<p class="latest-changelog-card-label">September 2026</p>
-<h3>Ryo PVC speech</h3>
-<p>Chats defaults to ElevenLabs Ryo PVC with Instant v4, and Ryo voices stay in Ryo chat.</p>
-<p class="latest-changelog-card-cta">See what's new →</p>
-</div>
-</a>
-<a class="latest-changelog-card" href="/docs/changelog">
-<img src="/docs-assets/changelog/2026-09-04-youbike-navigation-16x9.webp" alt="YouBike navigation in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy">
-<div class="latest-changelog-card-copy">
-<p class="latest-changelog-card-label">September 2026</p>
-<h3>YouBike navigation</h3>
-<p>Start and Stop spoken turn-by-turn guidance on in-map YouBike trips.</p>
-<p class="latest-changelog-card-cta">See what's new →</p>
-</div>
-</a>
-</div>
-<h2>Quick Start</h2>
-<table><thead><tr><th>I want to...</th><th>Go to</th></tr></thead><tbody><tr><td>Learn about the apps</td><td><a href="/docs/apps">Apps Overview</a></td></tr><tr><td>Understand the architecture</td><td><a href="/docs/architecture">Architecture</a></td></tr><tr><td>Understand the API layer</td><td><a href="/docs/api-architecture">API Architecture</a></td></tr><tr><td>Build with the framework</td><td><a href="/docs/application-framework">Application Framework</a></td></tr><tr><td>Work with AI features</td><td><a href="/docs/ai-system">AI System</a></td></tr><tr><td>Use the APIs</td><td><a href="/docs/api-reference">API Reference</a></td></tr></tbody></table>
-<h2>Key Features</h2>
-<ul><li><strong><a href="/docs/theme-system">Multi-Theme Support</a>:</strong> system7/System 7, macosx/Aqua, xp/XP, win98/98</li></ul><ul><li><strong><a href="/docs/apps">Built-in Apps</a>:</strong> Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, Maps, Books (EPUB reader), Stuff (inventory shelf), and more</li><li><strong><a href="/docs/ai-system">AI Assistant (Ryo)</a>:</strong> Chat, tool calling, app control, code generation</li><li><strong><a href="/docs/file-system">Virtual File System</a>:</strong> IndexedDB-backed with lazy loading and cloud sync</li><li><strong><a href="/docs/rooms-api">Real-time Chat</a>:</strong> RESTful rooms with AI integration</li><li><strong><a href="/docs/audio-system">Audio System</a>:</strong> Synthesizer, soundboard, TTS, and UI sounds</li><li><strong><a href="/docs/component-library">Component Library</a>:</strong> shadcn/ui + custom components with i18n</li><li><strong><a href="/docs/api-architecture">Cloud Sync</a>:</strong> Journal-based Cloud Sync v2 with per-key documents, realtime sync ops, lazy legacy import, and S3-compatible blob storage <!-- pragma: allowlist secret --></li><li><strong><a href="/docs/api-architecture">Unified API Layer</a>:</strong> Shared <code>apiHandler</code> + middleware utilities for consistent CORS, method routing, auth, and error handling</li><li><strong>Usage Analytics:</strong> Lightweight per-day API analytics with admin dashboard</li><li><strong>Runtime Reliability & Performance:</strong> App/desktop error boundaries, typed app event bus primitives, lazy-loaded non-default locales, and worker-offloaded Spotlight indexing</li></ul>
-<h2>Tech Stack</h2>
-<table><thead><tr><th>Category</th><th>Technologies</th></tr></thead><tbody><tr><td>Frontend</td><td>React 19, TypeScript, Tailwind CSS v4, shadcn/ui, Motion</td></tr><tr><td>State</td><td>Zustand with localStorage/IndexedDB persistence</td></tr><tr><td>Audio</td><td>Tone.js, WaveSurfer.js, Web Audio API</td></tr><tr><td>3D</td><td>Three.js (shaders)</td></tr><tr><td>Text Editor</td><td>TipTap</td></tr><tr><td>Storage</td><td>IndexedDB, LocalStorage, Redis (Upstash REST / standard), S3 compatible object storage</td></tr><tr><td>API Runtime</td><td>Standalone Bun server (Node-style handlers)</td></tr><tr><td>AI</td><td>OpenAI, Anthropic, Google via Vercel AI SDK</td></tr><tr><td>Real-time</td><td>Pusher or local WebSocket (with Redis pub/sub fanout)</td></tr><tr><td>Package Manager</td><td>Bun (<code>bun@1.3.9</code> in <code>package.json</code>)</td></tr><tr><td>Build</td><td>Vite, Bun</td></tr><tr><td>Desktop</td><td>Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured)</td></tr><tr><td>Deployment</td><td>Docker / Coolify (standalone Bun server), Electron releases</td></tr></tbody></table>
-<h2>Project Structure</h2>
-<pre><code>├── api/              # Node-style API endpoints (standalone Bun server)
-│   └── _utils/       # Shared API utilities (api-handler, request-auth, redis, storage, realtime, analytics, etc.)
-├── index.html        # Vite entry / app shell
-├── electron/         # Electron main/preload/menu/updater
-├── public/           # Static assets
-├── tests/            # bun:test suites (unit/&lt;domain&gt;, integration/api, helpers)
-├── src/
-│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc, aiConversations)
-│   ├── apps/         # 29 app modules
-│   ├── components/   # Shared React components
-│   ├── config/       # App registry
-│   ├── hooks/        # 81 custom hooks
-│   ├── lib/          # Libraries (including locales/)
-│   ├── lib/locales/  # i18n translation files (11 languages)
-│   ├── services/     # VFS and realtime service facades
-│   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 42 Zustand store modules
-│   ├── styles/       # CSS
-│   ├── sync/         # Cloud Sync v2 client engine
-│   ├── themes/       # 4 theme definitions
-│   ├── types/        # TypeScript types
-│   ├── utils/        # Utility functions
-│   └── workers/      # Web workers
-├── Dockerfile        # Coolify / GHCR image
-└── scripts/          # Build scripts</code></pre>
+        <h1>Support</h1>
+<em>Last updated: October 1, 2026.</em>
+<p>ryOS is a web-based desktop environment at <a href="https://os.ryo.lu">os.ryo.lu</a>, also available as a native iPhone app, <strong>ryOS Mobile</strong>. This page covers support for both. For how ryOS handles data, see the <a href="/docs/privacy">privacy policy</a>; for the app's notification feature specifically, see <a href="/docs/privacy#notifications-on-the-iphone-app-ryos-mobile">its section in the privacy policy</a>.</p>
+<h2>Contact</h2>
+<p>Email <a href="mailto:support@ryo.lu">support@ryo.lu</a> — we usually reply within two business days. The same address is the feedback contact shown in TestFlight for ryOS Mobile.</p>
+<h2>Frequently asked questions</h2>
+<h3>I'm not getting chat notifications in the iPhone app.</h3>
+<p>Notifications need two things: permission granted when ryOS asks, and being signed in to ryOS inside the app. If you answered no to the notification prompt, reinstalling the app gives you the prompt again. When the app is closed, notifications arrive through Apple's push service — allow a minute or two for the first one.</p>
+<h3>The desktop loads slowly the first time (iPhone app).</h3>
+<p>The first launch downloads the desktop from the web. Every launch after that comes from the cache on your phone and starts fast. The download only happens once.</p>
+<h3>Does the iPhone app work with no internet?</h3>
+<p>Yes. Once the desktop has been loaded once, it starts from the cache on your phone without a network. A banner tells you when the app is offline.</p>
+<h3>How do I sign out or delete my account?</h3>
+<p>Everything about your ryOS account — signing out, deleting your account, exporting your data — lives in the desktop's Control Panels, on the web and inside the iPhone app alike.</p>
+<h3>Does the iPhone app work on iPhone Duo?</h3>
+<p>Yes. Fold it open and the desktop fills the large inner display; fold it closed and it fits the cover display.</p>
+<h3>Can I use ryOS without an account?</h3>
+<p>Yes. Most of the desktop works without signing in. An account is optional and only needed for features like cloud sync and sign-in-only chat features.</p>
       </article>
       
       <nav class="nav">
+        <a href="/docs/terms">← Terms of Service</a>
         <span></span>
-        <a href="/docs/architecture">Architecture & Build →</a>
       </nav>
       
     </main>

@@ -471,6 +471,12 @@
     <a href="/docs/terms" class="">11. Terms of Service</a>
   </div>
 </div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/support" class="">12. Support</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -485,14 +491,14 @@
     end
     
     subgraph Presentation["Presentation Layer"]
-        Apps[27 App Modules]
+        Apps[29 App Modules]
         Layout[Layout Components]
         UI[UI Components]
         Themes[4 OS Themes]
     end
     
     subgraph State["State Layer"]
-        Zustand[40 Zustand Stores]
+        Zustand[42 Zustand Stores]
     end
     
     subgraph Persistence["Persistence Layer"]
@@ -554,10 +560,10 @@
     E --> H[localhost + HMR]</pre>
 <h2>API Runtime Modes</h2>
 <p>The API layer is shared across two execution environments: <ul><li><strong>Standalone Bun server:</strong> <code><a href="https://github.com/ryokun6/ryos/blob/main/scripts/api-standalone-server.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">scripts/api-standalone-server.ts</a></code> uses <code>Bun.serve</code> and adapts requests/responses to the Node-style handler shape used by <code>api/*</code> routes.</li></ul></p>
-<p>Shared utilities under <code>api/_utils/</code> (~45 modules including <code>api-handler.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>realtime-auth.ts</code>, <code>runtime-config.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_sse.ts</code>, <code>_memory.ts</code>, <code>auth/</code>, <code>irc/</code>, and MapKit/MusicKit JWT signers) provide consistent API patterns across routes. Domain constants live in owning modules (e.g. <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/auth/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/auth/_constants.ts</a></code>). OG share responses for SPA routes are served by the standalone server via <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/og-share.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/og-share.ts</a></code>.</p>
-<p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, <code>listen</code>, <code>core</code>, <code>telegram</code>, and <code>irc</code>) centralize request logic for app modules; the Cloud Sync v2 client engine lives in <code>src/sync/</code>.</p>
+<p>Shared utilities under <code>api/_utils/</code> (79 TypeScript modules, including <code>api-handler.ts</code>, <code>request-auth.ts</code>, <code>redis.ts</code>, <code>storage.ts</code>, <code>realtime.ts</code>, <code>realtime-auth.ts</code>, <code>runtime-config.ts</code>, <code>_cors.ts</code>, <code>_ssrf.ts</code>, <code>_rate-limit.ts</code>, <code>_validation.ts</code>, <code>_logging.ts</code>, <code>_analytics.ts</code>, <code>_memory.ts</code>, <code>auth/</code>, <code>irc/</code>, and MapKit/MusicKit JWT signers) provide consistent API patterns across routes. Domain constants live in owning modules (e.g. <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/auth/_constants.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/auth/_constants.ts</a></code>). OG share responses for SPA routes are served by the standalone server via <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/og-share.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/og-share.ts</a></code>.</p>
+<p>Frontend clients under <code>src/api/</code> (<code>auth</code>, <code>rooms</code>, <code>admin</code>, <code>songs</code>, <code>listen</code>, <code>core</code>, <code>telegram</code>, <code>irc</code>, and <code>aiConversations</code>) centralize request logic for app modules; the Cloud Sync v2 client engine lives in <code>src/sync/</code>.</p>
 <h2>Chunk Splitting Strategy</h2>
-<p>The build system uses intelligent chunk splitting to optimize initial load time while enabling on-demand loading of heavy dependencies. Vendor groups live in <code><a href="https://github.com/ryokun6/ryos/blob/main/vite/vendorChunks.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">vite/vendorChunks.ts</a></code> and are captured in priority order (boot groups first), so a shared dependency never drags a lazy chunk onto the boot path. <code>bun run build</code> finishes with <code>bun run inspect:boot</code>, which fails if a lazy vendor chunk is modulepreloaded by <code>index.html</code> or the boot JavaScript exceeds its gzip budget.</p>
+<p>The build system uses intelligent chunk splitting to optimize initial load time while enabling on-demand loading of heavy dependencies. Vendor groups live in <code><a href="https://github.com/ryokun6/ryos/blob/main/vite/vendorChunks.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">vite/vendorChunks.ts</a></code> and are captured in priority order (boot groups first), so a shared dependency never drags a lazy chunk onto the boot path. <code>bun run build</code> finishes with <code>bun run inspect:precache</code> and then <code>bun run inspect:boot</code>. The boot check fails if a lazy vendor chunk is modulepreloaded by <code>index.html</code> or the boot JavaScript exceeds its gzip budget.</p>
 <h3>Core Chunks (Immediate Load)</h3>
 <p>These chunks are loaded on initial page load:</p>
 <table><thead><tr><th>Chunk</th><th>Packages</th><th>Size</th></tr></thead><tbody><tr><td><code>react</code></td><td>react, react-dom (client only), scheduler, use-sync-external-store</td><td>~190KB</td></tr><tr><td><code>ui-core</code></td><td>@radix-ui/<em> used by the shell (dialog, dropdown-menu, menubar, slider, tabs, etc.)</td><td>~110KB</td></tr><tr><td><code>zustand</code></td><td>zustand, persist middleware</td><td>~10KB</td></tr><tr><td><code>motion</code></td><td>motion</td><td>~100KB</td></tr></tbody></table>

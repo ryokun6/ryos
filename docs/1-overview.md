@@ -45,7 +45,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 | API Runtime | Standalone Bun server (Node-style handlers) |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
-| Package Manager | Bun (`bun@1.3.5` in `package.json`; CI/Docker currently use Bun 1.3.9) |
+| Package Manager | Bun (`bun@1.3.9` in `package.json`) |
 | Build | Vite, Bun |
 | Desktop | Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured) |
 | Deployment | Docker / Coolify (standalone Bun server), Electron releases |
@@ -60,16 +60,16 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 ├── public/           # Static assets
 ├── tests/            # bun:test suites (unit/<domain>, integration/api, helpers)
 ├── src/
-│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc)
+│   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc, aiConversations)
 │   ├── apps/         # 29 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
-│   ├── hooks/        # ~75 custom hooks
+│   ├── hooks/        # 81 custom hooks
 │   ├── lib/          # Libraries (including locales/)
 │   ├── lib/locales/  # i18n translation files (11 languages)
 │   ├── services/     # VFS and realtime service facades
 │   ├── shared/       # Contracts, sync helpers, domain types
-│   ├── stores/       # 41 Zustand store modules
+│   ├── stores/       # 42 Zustand store modules
 │   ├── styles/       # CSS
 │   ├── sync/         # Cloud Sync v2 client engine
 │   ├── themes/       # 4 theme definitions

@@ -53,7 +53,7 @@ graph LR
 
 The UI system follows a layered approach:
 
-1. **Base Layer**: ~20 shadcn/ui primitives in `src/components/ui/`
+1. **Base Layer**: 21 shadcn/ui primitives in `src/components/ui/`
 2. **Custom Layer**: ~12 specialized UI components in the same folder (activity indicators, aqua-checkbox, audio-bars, dial, playback-bars, search-input, right-click-menu, etc.)
 3. **Layout Layer**: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure
 4. **Application Layer**: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)
