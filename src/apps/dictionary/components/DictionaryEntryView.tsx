@@ -13,7 +13,9 @@ import {
   DictionaryHeadword,
   ReadingLine,
 } from "./DictionaryReading";
+import { renderChineseWithReadings } from "@/utils/romanization";
 import {
+  chineseCharacterReadings,
   displayChineseHeadword,
   formatChineseReading,
   japaneseRomaji,
@@ -49,7 +51,9 @@ function WordChip({
 function phraseReading(phrase: DictionaryPhrase, l: DictionaryLogic): string | null {
   if (!phrase.reading) return null;
   if (phrase.lang === "zh") {
-    return formatChineseReading(phrase.reading, l.phonetics.zhuyin && !l.phonetics.pinyin ? "zhuyin" : "pinyin");
+    // Zhuyin sits beside each character. Keep pinyin as the inline line when it is on.
+    if (l.phonetics.zhuyin && !l.phonetics.pinyin) return null;
+    return formatChineseReading(phrase.reading, "pinyin");
   }
   if (phrase.lang === "ja") {
     return l.phonetics.romaji ? japaneseRomaji(phrase.reading) : phrase.reading;
@@ -75,15 +79,32 @@ function PhraseList({
           phrase.lang === "ko" && l.phonetics.koreanRomanization
             ? koreanRomanization(phrase.headword)
             : phraseReading(phrase, l);
+        const sideZhuyin = phrase.lang === "zh" && l.phonetics.zhuyin;
         return (
           <button
             key={`${phrase.headword}-${phrase.reading ?? ""}`}
             type="button"
             onClick={() => l.searchFor(headword, phrase.lang)}
-            className="flex min-w-0 items-baseline gap-2 rounded px-1 py-0.5 text-left hover:bg-black/5 dark:hover:bg-white/10"
+            className={cn(
+              "flex min-w-0 items-center gap-2 rounded px-1 text-left hover:bg-black/5 dark:hover:bg-white/10",
+              sideZhuyin ? "py-1" : "py-0.5"
+            )}
           >
-            <span className="shrink-0 text-[14px]" lang={phrase.lang}>
-              {headword}
+            <span
+              className={cn(
+                "shrink-0 text-[14px]",
+                sideZhuyin && "[--lyrics-zhuyin-size:8px]"
+              )}
+              lang={phrase.lang}
+            >
+              {sideZhuyin
+                ? renderChineseWithReadings(
+                    headword,
+                    chineseCharacterReadings(headword, phrase.reading, "zhuyin"),
+                    `phrase-${headword}`,
+                    "zhuyin"
+                  )
+                : headword}
             </span>
             {reading ? (
               <span className="shrink-0 text-[11px] text-black/45 dark:text-white/45">
