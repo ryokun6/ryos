@@ -2421,9 +2421,11 @@
       "actions": {
         "addFavorite": "Zu Favoriten hinzufügen",
         "listen": "Anhören",
+        "listenExample": "Beispiel anhören",
         "openFullEntry": "Nachschlagen",
         "removeFavorite": "Aus Favoriten entfernen",
-        "resetProgress": "Fortschritt zurücksetzen"
+        "resetProgress": "Fortschritt zurücksetzen",
+        "stopSpeaking": "Sprechen stoppen"
       },
       "ai": {
         "askExtras": "Verwendung erklären",
@@ -2495,7 +2497,7 @@
           "title": "Wörter nachschlagen"
         },
         "phonetics": {
-          "description": "Lasse dir Pinyin und Zhuyin für Chinesisch, Furigana und Romaji für Japanisch sowie die Romanisierung für Koreanisch anzeigen. Du kannst sie im Menü „Lesarten“ ein- und ausschalten.",
+          "description": "Lasse dir Pinyin und Zhuyin für Chinesisch, Furigana und Romaji für Japanisch sowie die Romanisierung für Koreanisch anzeigen. Du kannst sie im Menü „Lesarten“ ein- und ausschalten. Klicke auf den Lautsprecher, um dir ein Wort oder Beispiel vorlesen zu lassen.",
           "title": "Lesarten"
         }
       },

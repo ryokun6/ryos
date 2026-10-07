@@ -682,7 +682,7 @@
         "speech": "말하기",
         "speechRate": "말하기 속도",
         "startSpeaking": "말하기 시작",
-        "stopSpeaking": "말하기 중단",
+        "stopSpeaking": "읽기 중단",
         "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
         "theme": "테마"
@@ -2421,9 +2421,11 @@
       "actions": {
         "addFavorite": "즐겨찾기에 추가",
         "listen": "듣기",
+        "listenExample": "예문 듣기",
         "openFullEntry": "찾아보기",
         "removeFavorite": "즐겨찾기에서 제거",
-        "resetProgress": "진행 상황 재설정"
+        "resetProgress": "진행 상황 재설정",
+        "stopSpeaking": "읽기 중단"
       },
       "ai": {
         "askExtras": "사용법 설명",
@@ -2495,7 +2497,7 @@
           "title": "단어 찾아보기"
         },
         "phonetics": {
-          "description": "중국어의 병음 및 주음, 일본어의 후리가나 및 로마자, 한국어의 로마자 표기를 확인하십시오. '읽기' 메뉴에서 표시 여부를 전환할 수 있습니다.",
+          "description": "중국어의 병음 및 주음부호, 일본어의 후리가나 및 로마자, 한국어의 로마자 표기법을 확인할 수 있습니다. ‘읽기’ 메뉴에서 이 항목들을 전환할 수 있으며, 스피커를 클릭하여 단어 또는 예문을 소리 내어 읽어주는 것을 들을 수 있습니다.",
           "title": "읽기"
         }
       },

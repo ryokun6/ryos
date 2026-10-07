@@ -2421,9 +2421,11 @@
       "actions": {
         "addFavorite": "添加到个人收藏",
         "listen": "收听",
+        "listenExample": "朗读例句",
         "openFullEntry": "查询",
         "removeFavorite": "从个人收藏中移除",
-        "resetProgress": "重置进度"
+        "resetProgress": "重置进度",
+        "stopSpeaking": "停止朗读"
       },
       "ai": {
         "askExtras": "解释用法",
@@ -2495,7 +2497,7 @@
           "title": "查找单词"
         },
         "phonetics": {
-          "description": "查看中文的拼音和注音、日语的振假名和罗马字，以及韩语的罗马拼音。从“读音”菜单中切换显示。",
+          "description": "查看中文的拼音和注音、日文的假名和罗马字以及韩文的罗马拼音。从“读音”菜单中切换这些选项，并点按扬声器以听取单词或例句的朗读。",
           "title": "读音"
         }
       },

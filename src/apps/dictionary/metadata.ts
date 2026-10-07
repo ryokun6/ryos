@@ -22,7 +22,7 @@ export const helpItems = [
     icon: "🗣️",
     title: "Readings",
     description:
-      "See pinyin and zhuyin for Chinese, furigana and romaji for Japanese, and romanization for Korean. Toggle them from the Readings menu.",
+      "See pinyin and zhuyin for Chinese, furigana and romaji for Japanese, and romanization for Korean. Toggle them from the Readings menu, and click the speaker to hear a word or example read aloud.",
   },
   {
     icon: "✍️",

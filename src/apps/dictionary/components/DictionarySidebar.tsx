@@ -58,7 +58,7 @@ function ListRow({
       data-selected={isSelected ? "true" : undefined}
       className={cn(
         "flex w-full items-center gap-2 px-2.5 py-1 text-left",
-        !isSelected && "transition-colors hover:bg-black/5"
+        !isSelected && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
       )}
     >
       <div className="min-w-0 flex-1">

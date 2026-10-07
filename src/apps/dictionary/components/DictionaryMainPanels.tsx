@@ -1,5 +1,6 @@
 import { BookOpenText, Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { DictionaryFavorite } from "@/stores/useDictionaryStore";
 import {
   isHanOnlyQuery,
@@ -8,6 +9,11 @@ import {
 } from "@/shared/dictionary";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
 import { isNewCard } from "../utils/srs";
+import {
+  DICTIONARY_CHIP_CLASS,
+  DICTIONARY_ERROR_TEXT_CLASS,
+  DICTIONARY_NOTE_BOX_CLASS,
+} from "../utils/styles";
 import { DictionaryEntryView } from "./DictionaryEntryView";
 
 const SAMPLE_WORDS: { word: string; lang: DictionaryQueryLanguage }[] = [
@@ -37,7 +43,7 @@ function AiErrorText({ l }: { l: DictionaryLogic }) {
       : l.aiError === "not_found"
         ? "apps.dictionary.ai.notFound"
         : "apps.dictionary.ai.error";
-  return <p className="text-[11px] text-red-600">{l.t(key)}</p>;
+  return <p className={cn("text-[11px]", DICTIONARY_ERROR_TEXT_CLASS)}>{l.t(key)}</p>;
 }
 
 export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
@@ -107,7 +113,7 @@ export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
                   key={word}
                   type="button"
                   onClick={() => l.searchFor(word, result.lang)}
-                  className="rounded-full border border-black/15 px-2 py-0.5 text-[12px] hover:bg-black/5"
+                  className={cn(DICTIONARY_CHIP_CLASS, "px-2 py-0.5 text-[12px]")}
                 >
                   {word}
                 </button>
@@ -144,7 +150,7 @@ export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
             type="button"
             lang={lang}
             onClick={() => l.searchFor(word, lang)}
-            className="rounded-full border border-black/15 bg-white/60 px-2.5 py-0.5 text-[13px] hover:bg-black/5"
+            className={cn(DICTIONARY_CHIP_CLASS, "px-2.5 py-0.5 text-[13px]")}
           >
             {word}
           </button>
@@ -187,7 +193,12 @@ export function DictionaryFavoritesPanel({
 
   const { srs } = favorite;
   const footer = (
-    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-black/10 bg-black/[0.025] p-3 text-[11px]">
+    <div
+      className={cn(
+        "mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]",
+        DICTIONARY_NOTE_BOX_CLASS
+      )}
+    >
       <span className="opacity-70">
         {isNewCard(srs)
           ? t("apps.dictionary.flashcards.statusNew")

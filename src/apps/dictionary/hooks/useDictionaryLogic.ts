@@ -25,6 +25,7 @@ import {
   lookupDictionaryWord,
 } from "../utils/dictionaryApi";
 import { buildStudyQueue, type SrsGrade } from "../utils/srs";
+import { useDictionarySpeech } from "./useDictionarySpeech";
 
 const SEARCH_DEBOUNCE_MS = 350;
 
@@ -91,6 +92,7 @@ export function useDictionaryLogic({
     }))
   );
 
+  const speech = useDictionarySpeech(chineseScript);
   const [query, setQuery] = useState(initialData?.word ?? "");
   const [result, setResult] = useState<DictionaryLookupResponse | null>(null);
   const [status, setStatus] = useState<DictionaryLookupStatus>("idle");
@@ -404,6 +406,8 @@ export function useDictionaryLogic({
     sessionReviewed,
     startStudySession,
     dueCount,
+    // speech
+    speech,
   };
 }
 

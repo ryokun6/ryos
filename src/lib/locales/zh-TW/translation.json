@@ -2421,9 +2421,11 @@
       "actions": {
         "addFavorite": "加入常用項目",
         "listen": "聆聽",
+        "listenExample": "朗讀例句",
         "openFullEntry": "查詢",
         "removeFavorite": "從常用項目移除",
-        "resetProgress": "重設進度"
+        "resetProgress": "重設進度",
+        "stopSpeaking": "停止朗讀"
       },
       "ai": {
         "askExtras": "解釋用法",
@@ -2495,7 +2497,7 @@
           "title": "查詢單字"
         },
         "phonetics": {
-          "description": "查看中文的拼音和注音、日文的振假名和羅馬字，以及韓文的羅馬拼音。可從「讀音」選單中切換。",
+          "description": "查看中文的拼音和注音、日文的振假名和羅馬字，以及韓文的羅馬拼音。從「讀音」選單切換顯示，並按一下揚聲器來聽取單字或範例的朗讀。",
           "title": "讀音"
         }
       },

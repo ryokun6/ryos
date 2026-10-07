@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowCounterClockwise, Trash, X } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { useThemeStore } from "@/stores/useThemeStore";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
+import { DICTIONARY_ERROR_TEXT_CLASS } from "../utils/styles";
 import {
   loadHandwritingRecognizer,
   recognizeHandwriting,
@@ -14,6 +16,8 @@ type RecognizerStatus = "loading" | "ready" | "error";
 
 export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
   const { t } = l;
+  const currentTheme = useThemeStore((s) => s.current);
+  const isDarkMode = useThemeStore((s) => s.isDark);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const strokesRef = useRef<HandwritingStroke[]>([]);
   const activeStrokeRef = useRef<HandwritingStroke | null>(null);
@@ -39,8 +43,11 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, PAD_SIZE, PAD_SIZE);
+    // Ink follows the theme text color (the canvas carries `text-os-text-primary`).
+    const ink = getComputedStyle(canvas).color || "#111";
 
-    ctx.strokeStyle = "rgba(0,0,0,0.12)";
+    ctx.strokeStyle = ink;
+    ctx.globalAlpha = 0.18;
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -50,8 +57,7 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
     ctx.lineTo(PAD_SIZE, PAD_SIZE / 2);
     ctx.stroke();
     ctx.setLineDash([]);
-
-    ctx.strokeStyle = "#111";
+    ctx.globalAlpha = 1;
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -76,6 +82,10 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
     canvas.height = PAD_SIZE * dpr;
     redraw();
   }, [redraw]);
+
+  useEffect(() => {
+    redraw();
+  }, [redraw, currentTheme, isDarkMode]);
 
   const runRecognition = useCallback(async () => {
     const id = ++recognizeIdRef.current;
@@ -147,16 +157,19 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
   };
 
   const iconButton =
-    "flex size-6 shrink-0 items-center justify-center rounded text-black/70 hover:bg-black/10 disabled:opacity-40";
+    "flex size-6 shrink-0 items-center justify-center rounded text-black/70 hover:bg-black/10 disabled:opacity-40 dark:text-white/70 dark:hover:bg-white/10";
 
   return (
     <div
-      className="flex flex-col gap-2 border-t border-black/15 bg-white/95 p-2.5 shadow-[0_-10px_28px_rgba(0,0,0,0.18)]"
+      className={cn(
+        "flex flex-col gap-2 border-t border-black/15 bg-white/95 p-2.5 shadow-[0_-10px_28px_rgba(0,0,0,0.18)]",
+        "dark:border-white/15 dark:bg-neutral-800 dark:shadow-[0_-10px_28px_rgba(0,0,0,0.55)]"
+      )}
       role="group"
       aria-label={t("apps.dictionary.handwriting.title")}
     >
       <div className="flex items-center gap-1">
-        <span className="text-[11px] font-semibold text-black/70">
+        <span className="text-[11px] font-semibold text-black/70 dark:text-white/70">
           {t("apps.dictionary.handwriting.title")}
         </span>
         <div className="min-w-2 flex-1" />
@@ -194,7 +207,7 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
         <canvas
           ref={canvasRef}
           style={{ width: PAD_SIZE, height: PAD_SIZE, touchAction: "none" }}
-          className="shrink-0 cursor-crosshair rounded border border-black/20 bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]"
+          className="shrink-0 cursor-crosshair rounded border border-black/20 bg-os-input-bg text-os-text-primary shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)] dark:border-white/20 dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]"
           aria-label={t("apps.dictionary.handwriting.canvas")}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -203,11 +216,11 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
         />
         <div className="flex min-w-0 flex-1 flex-wrap content-start gap-1">
           {status === "loading" ? (
-            <p className="text-[11px] text-black/50">{t("apps.dictionary.handwriting.loading")}</p>
+            <p className="text-[11px] text-black/50 dark:text-white/50">{t("apps.dictionary.handwriting.loading")}</p>
           ) : status === "error" ? (
-            <p className="text-[11px] text-red-600">{t("apps.dictionary.handwriting.error")}</p>
+            <p className={cn("text-[11px]", DICTIONARY_ERROR_TEXT_CLASS)}>{t("apps.dictionary.handwriting.error")}</p>
           ) : candidates.length === 0 ? (
-            <p className="text-[11px] text-black/50">{t("apps.dictionary.handwriting.hint")}</p>
+            <p className="text-[11px] text-black/50 dark:text-white/50">{t("apps.dictionary.handwriting.hint")}</p>
           ) : (
             candidates.map((character, index) => (
               <button
@@ -216,8 +229,9 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
                 lang="zh"
                 onClick={() => pickCandidate(character)}
                 className={cn(
-                  "flex size-9 items-center justify-center rounded border border-black/15 bg-white text-[20px] leading-none hover:bg-black/5",
-                  index === 0 && "border-black/40"
+                  "flex size-9 items-center justify-center rounded border border-black/15 bg-os-input-bg text-[20px] leading-none hover:bg-black/5",
+                  "dark:border-white/20 dark:hover:bg-white/15",
+                  index === 0 && "border-black/40 dark:border-white/55"
                 )}
               >
                 {character}

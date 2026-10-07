@@ -1,9 +1,10 @@
-import { Sparkle, SpeakerHigh, Star } from "@phosphor-icons/react";
+import { Sparkle, Star } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   DICTIONARY_SOURCE_INFO,
   type DictionaryEntry,
+  type DictionaryExample,
   type DictionaryPhrase,
   type DictionarySource,
 } from "@/shared/dictionary";
@@ -13,6 +14,13 @@ import {
   DictionaryHeadword,
   ReadingLine,
 } from "./DictionaryReading";
+import { DictionarySpeakButton } from "./DictionarySpeakButton";
+import { headwordSpeechText } from "../utils/speech";
+import {
+  DICTIONARY_CHIP_CLASS,
+  DICTIONARY_ERROR_TEXT_CLASS,
+  DICTIONARY_NOTE_BOX_CLASS,
+} from "../utils/styles";
 import { renderChineseWithReadings } from "@/utils/romanization";
 import {
   chineseCharacterReadings,
@@ -30,6 +38,39 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function ExampleItem({
+  l,
+  entry,
+  example,
+  speechKey,
+}: {
+  l: DictionaryLogic;
+  entry: DictionaryEntry;
+  example: DictionaryExample;
+  speechKey: string;
+}) {
+  return (
+    <li className="flex items-start gap-1">
+      <div className="min-w-0 flex-1">
+        <DictionaryExampleText
+          example={example}
+          lang={entry.lang}
+          chineseScript={l.chineseScript}
+          phonetics={l.phonetics}
+        />
+      </div>
+      <DictionarySpeakButton
+        speech={l.speech}
+        request={{ key: speechKey, text: example.text, lang: entry.lang }}
+        label={l.t("apps.dictionary.actions.listenExample")}
+        stopLabel={l.t("apps.dictionary.actions.stopSpeaking")}
+        size={14}
+        className="-mr-1 mt-0.5"
+      />
+    </li>
+  );
+}
+
 function WordChip({
   label,
   onClick,
@@ -41,7 +82,7 @@ function WordChip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border border-black/15 bg-black/[0.03] px-2 py-0.5 text-[12px] hover:bg-black/10 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/15"
+      className={cn(DICTIONARY_CHIP_CLASS, "px-2 py-0.5 text-[12px]")}
     >
       {label}
     </button>
@@ -151,7 +192,7 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
   const { t, aiExtras, aiStatus, aiError } = l;
   if (entry.source === "ai") return null;
   return (
-    <div className="mt-4 rounded-md border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5">
+    <div className={cn("mt-4", DICTIONARY_NOTE_BOX_CLASS)}>
       <div className="flex items-center gap-2">
         <Sparkle size={14} weight="fill" className="text-amber-500" />
         <span className="text-[12px] font-semibold">
@@ -173,7 +214,7 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
         ) : null}
       </div>
       {aiError && aiStatus === "error" ? (
-        <p className="mt-2 text-[11px] text-red-600">
+        <p className={cn("mt-2 text-[11px]", DICTIONARY_ERROR_TEXT_CLASS)}>
           {aiError === "rate_limited"
             ? t("apps.dictionary.ai.rateLimited", {
                 defaultValue: "AI limit reached. Sign in or try again later.",
@@ -195,14 +236,13 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
           {aiExtras.examples.length > 0 ? (
             <ul className="space-y-1.5">
               {aiExtras.examples.map((example) => (
-                <li key={example.text}>
-                  <DictionaryExampleText
-                    example={example}
-                    lang={entry.lang}
-                    chineseScript={l.chineseScript}
-                    phonetics={l.phonetics}
-                  />
-                </li>
+                <ExampleItem
+                  key={example.text}
+                  l={l}
+                  entry={entry}
+                  example={example}
+                  speechKey={`${entry.id}:ai:${example.text}`}
+                />
               ))}
             </ul>
           ) : null}
@@ -252,17 +292,19 @@ export function DictionaryEntryView({
           phonetics={l.phonetics}
         />
         <div className="flex-1" />
-        {entry.audioUrl ? (
-          <button
-            type="button"
-            className="mt-2 rounded p-1 text-black/60 hover:bg-black/5 dark:text-white/60 dark:hover:bg-white/10"
-            title={t("apps.dictionary.actions.listen", { defaultValue: "Listen" })}
-            aria-label={t("apps.dictionary.actions.listen", { defaultValue: "Listen" })}
-            onClick={() => void new Audio(entry.audioUrl).play().catch(() => {})}
-          >
-            <SpeakerHigh size={18} />
-          </button>
-        ) : null}
+        <DictionarySpeakButton
+          speech={l.speech}
+          request={{
+            key: `${entry.id}:headword`,
+            text: headwordSpeechText(entry, l.chineseScript),
+            lang: entry.lang,
+            audioUrl: entry.audioUrl,
+          }}
+          label={t("apps.dictionary.actions.listen")}
+          stopLabel={t("apps.dictionary.actions.stopSpeaking")}
+          size={18}
+          className="mt-2"
+        />
         <button
           type="button"
           className={cn(
@@ -315,14 +357,13 @@ export function DictionaryEntryView({
               {sense.examples?.length ? (
                 <ul className="mt-1.5 space-y-1.5 border-l-2 border-black/10 pl-2.5 dark:border-white/15">
                   {sense.examples.map((example) => (
-                    <li key={example.text}>
-                      <DictionaryExampleText
-                        example={example}
-                        lang={entry.lang}
-                        chineseScript={l.chineseScript}
-                        phonetics={l.phonetics}
-                      />
-                    </li>
+                    <ExampleItem
+                      key={example.text}
+                      l={l}
+                      entry={entry}
+                      example={example}
+                      speechKey={`${entry.id}:${index}:${example.text}`}
+                    />
                   ))}
                 </ul>
               ) : null}

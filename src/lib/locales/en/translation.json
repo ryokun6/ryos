@@ -3977,6 +3977,8 @@
       },
       "actions": {
         "listen": "Listen",
+        "listenExample": "Listen to Example",
+        "stopSpeaking": "Stop Speaking",
         "addFavorite": "Add to Favorites",
         "removeFavorite": "Remove from Favorites",
         "openFullEntry": "Look Up",
@@ -4043,7 +4045,7 @@
         },
         "phonetics": {
           "title": "Readings",
-          "description": "See pinyin and zhuyin for Chinese, furigana and romaji for Japanese, and romanization for Korean. Toggle them from the Readings menu."
+          "description": "See pinyin and zhuyin for Chinese, furigana and romaji for Japanese, and romanization for Korean. Toggle them from the Readings menu, and click the speaker to hear a word or example read aloud."
         },
         "handwriting": {
           "title": "Handwriting",
