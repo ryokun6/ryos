@@ -64,8 +64,12 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
   const entry = currentCard.entry;
   const intervals = previewSrsIntervals(currentCard.srs);
   const example = entry.senses.flatMap((sense) => sense.examples ?? [])[0];
-  const faceClass =
-    "dictionary-flashcard-face flex h-full flex-col items-center justify-center rounded-lg border border-black/15 bg-white px-6 py-5 text-center text-black shadow-[0_2px_8px_rgba(0,0,0,0.12)]";
+  // Not `bg-white`: the Aqua dark layer flattens it into the window background.
+  const faceClass = cn(
+    "dictionary-flashcard-face flex h-full flex-col items-center justify-center rounded-lg border px-6 py-5 text-center",
+    "border-black/15 bg-os-input-bg text-os-text-primary shadow-[0_2px_8px_rgba(0,0,0,0.12)]",
+    "dark:border-white/15 dark:bg-white/[0.07] dark:shadow-[0_4px_14px_rgba(0,0,0,0.45)]"
+  );
 
   return (
     <div className="flex flex-1 flex-col items-center overflow-y-auto p-4">
@@ -117,7 +121,7 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
                   </div>
                 ))}
                 {example ? (
-                  <div className="border-l-2 border-black/10 pl-2.5 pt-1">
+                  <div className="border-l-2 border-black/10 pl-2.5 pt-1 dark:border-white/15">
                     <DictionaryExampleText
                       example={example}
                       lang={entry.lang}
@@ -141,7 +145,6 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
           label={t("apps.dictionary.actions.listen")}
           stopLabel={t("apps.dictionary.actions.stopSpeaking")}
           size={18}
-          onLightSurface
           className="absolute right-2 top-2 z-10"
         />
       </div>

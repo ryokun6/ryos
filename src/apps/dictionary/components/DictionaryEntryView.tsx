@@ -16,6 +16,11 @@ import {
 } from "./DictionaryReading";
 import { DictionarySpeakButton } from "./DictionarySpeakButton";
 import { headwordSpeechText } from "../utils/speech";
+import {
+  DICTIONARY_CHIP_CLASS,
+  DICTIONARY_ERROR_TEXT_CLASS,
+  DICTIONARY_NOTE_BOX_CLASS,
+} from "../utils/styles";
 import { renderChineseWithReadings } from "@/utils/romanization";
 import {
   chineseCharacterReadings,
@@ -77,7 +82,7 @@ function WordChip({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-full border border-black/15 bg-black/[0.03] px-2 py-0.5 text-[12px] hover:bg-black/10 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/15"
+      className={cn(DICTIONARY_CHIP_CLASS, "px-2 py-0.5 text-[12px]")}
     >
       {label}
     </button>
@@ -187,7 +192,7 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
   const { t, aiExtras, aiStatus, aiError } = l;
   if (entry.source === "ai") return null;
   return (
-    <div className="mt-4 rounded-md border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5">
+    <div className={cn("mt-4", DICTIONARY_NOTE_BOX_CLASS)}>
       <div className="flex items-center gap-2">
         <Sparkle size={14} weight="fill" className="text-amber-500" />
         <span className="text-[12px] font-semibold">
@@ -209,7 +214,7 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
         ) : null}
       </div>
       {aiError && aiStatus === "error" ? (
-        <p className="mt-2 text-[11px] text-red-600">
+        <p className={cn("mt-2 text-[11px]", DICTIONARY_ERROR_TEXT_CLASS)}>
           {aiError === "rate_limited"
             ? t("apps.dictionary.ai.rateLimited", {
                 defaultValue: "AI limit reached. Sign in or try again later.",
