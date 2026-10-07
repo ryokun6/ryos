@@ -220,6 +220,123 @@ export function hanziToZhuyin(text: string): string {
   return output || text;
 }
 
+// ============================================================================
+// Numbered pinyin (CC-CEDICT style: "xue2 xi2", "lu:4", "nu:3", "r5")
+// ============================================================================
+
+const PINYIN_INITIALS = [
+  "zh", "ch", "sh",
+  "b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h",
+  "j", "q", "x", "r", "z", "c", "s", "y", "w",
+];
+
+const NUMBERED_PINYIN_RE = /^([a-zü:]+?)([1-5])$/i;
+
+/**
+ * Split one numbered pinyin syllable into the parts `pinyinSyllableToZhuyin`
+ * expects. Returns null for tokens that are not pinyin (punctuation, Latin
+ * letters in proper nouns like "A", "·").
+ */
+export function parseNumberedPinyinSyllable(
+  token: string
+): PinyinSyllableParts | null {
+  const match = NUMBERED_PINYIN_RE.exec(token.trim());
+  if (!match) return null;
+  const syllable = match[1]
+    .toLowerCase()
+    .replaceAll("u:", "\u00fc")
+    .replaceAll("v", "\u00fc");
+  if (/[^a-z\u00fc]/.test(syllable)) return null;
+  const tone = Number(match[2]);
+
+  if (syllable === "r" || syllable === "m" || syllable === "n" || syllable === "ng" || syllable === "hm" || syllable === "hng") {
+    return { pinyin: syllable, initial: "", final: syllable, tone };
+  }
+
+  const initial = PINYIN_INITIALS.find((candidate) => syllable.startsWith(candidate)) ?? "";
+  let final = syllable.slice(initial.length);
+  if (!final) return null;
+  if ((initial === "j" || initial === "q" || initial === "x") && final.startsWith("u")) {
+    final = `\u00fc${final.slice(1)}`;
+  }
+  if (!/[aeiou\u00fc]/.test(final) && final !== "ng") return null;
+  return { pinyin: syllable, initial, final, tone };
+}
+
+/** Convert one numbered syllable to Zhuyin; non-pinyin tokens pass through. */
+export function numberedPinyinSyllableToZhuyin(token: string): string {
+  const parts = parseNumberedPinyinSyllable(token);
+  if (!parts) return token;
+  if (parts.pinyin === "r") return "\u3126";
+  return pinyinSyllableToZhuyin(parts) || token;
+}
+
+/** "xue2 xi2" → "ㄒㄩㄝˊ ㄒㄧˊ" */
+export function numberedPinyinToZhuyin(reading: string): string {
+  return reading
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(numberedPinyinSyllableToZhuyin)
+    .join(" ");
+}
+
+const TONE_MARKS: Record<string, string[]> = {
+  a: ["\u0101", "\u00e1", "\u01ce", "\u00e0"],
+  e: ["\u0113", "\u00e9", "\u011b", "\u00e8"],
+  i: ["\u012b", "\u00ed", "\u01d0", "\u00ec"],
+  o: ["\u014d", "\u00f3", "\u01d2", "\u00f2"],
+  u: ["\u016b", "\u00fa", "\u01d4", "\u00f9"],
+  "\u00fc": ["\u01d6", "\u01d8", "\u01da", "\u01dc"],
+};
+
+function applyPinyinToneMark(syllable: string, tone: number): string {
+  if (tone < 1 || tone > 4) return syllable;
+  const lower = syllable.toLowerCase();
+  let index = lower.search(/[ae]/);
+  if (index === -1) index = lower.indexOf("ou");
+  if (index === -1) {
+    for (let i = lower.length - 1; i >= 0; i--) {
+      if ("iou\u00fc".includes(lower[i])) {
+        index = i;
+        break;
+      }
+    }
+  }
+  if (index === -1) return syllable;
+  const vowel = lower[index];
+  let marked = TONE_MARKS[vowel]?.[tone - 1] ?? vowel;
+  if (syllable[index] !== vowel) marked = marked.toUpperCase();
+  return syllable.slice(0, index) + marked + syllable.slice(index + 1);
+}
+
+/** Convert one numbered syllable ("Bei3", "lu:4") to tone-marked pinyin. */
+export function numberedPinyinSyllableToToneMarks(token: string): string {
+  const match = NUMBERED_PINYIN_RE.exec(token.trim());
+  if (!match || !parseNumberedPinyinSyllable(token)) return token;
+  const base = match[1].replaceAll("u:", "\u00fc").replaceAll("U:", "\u00dc").replaceAll("v", "\u00fc");
+  return applyPinyinToneMark(base, Number(match[2]));
+}
+
+/** "xue2 xi2" → "xué xí" */
+export function numberedPinyinToToneMarks(reading: string): string {
+  return reading
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(numberedPinyinSyllableToToneMarks)
+    .join(" ");
+}
+
+/** "Xue2 xi2" → "xuexi" (search key: lowercase, no tones, no spaces, ü → v). */
+export function normalizePinyinSearchKey(reading: string): string {
+  return reading
+    .toLowerCase()
+    .replaceAll("u:", "v")
+    .normalize("NFD")
+    .replaceAll("u\u0308", "v")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[1-5\s'·-]/g, "");
+}
+
 /** Tone marks typeset in their own track beside the letters (ˉ ˊ ˇ ˋ ˪ ˫). */
 const ZHUYIN_SIDE_TONE_RE = /[\u02C9\u02CA\u02C7\u02CB\u02EA\u02EB]$/u;
 
