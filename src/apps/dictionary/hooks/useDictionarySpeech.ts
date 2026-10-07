@@ -1,0 +1,102 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSpeechSynthesisVoices } from "@/hooks/useSpeechSynthesisVoices";
+import type { DictionaryLanguage } from "@/shared/dictionary";
+import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import type { DictionaryChineseScript } from "@/stores/useDictionaryStore";
+import { getBrowserSpeechSynthesis } from "@/utils/browserSpeech";
+import { pickDictionaryVoice } from "../utils/speech";
+
+const SPEECH_RATE = 0.9;
+
+export interface DictionarySpeakRequest {
+  /** Identifies the button so a second press stops it. */
+  key: string;
+  text: string;
+  lang: DictionaryLanguage;
+  /** Recorded pronunciation (Wiktionary); preferred over TTS when it plays. */
+  audioUrl?: string;
+}
+
+/**
+ * Read-aloud for the Dictionary: browser `speechSynthesis` with a voice
+ * matched to the entry language, or a recorded pronunciation when the entry
+ * has one. Only one clip plays at a time.
+ */
+export function useDictionarySpeech(chineseScript: DictionaryChineseScript) {
+  const voices = useSpeechSynthesisVoices();
+  const preferredVoiceURI = useAudioSettingsStore((s) => s.browserTtsVoiceURI);
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speakingKeyRef = useRef<string | null>(null);
+
+  const finish = useCallback((key: string) => {
+    if (speakingKeyRef.current !== key) return;
+    speakingKeyRef.current = null;
+    setSpeakingKey(null);
+  }, []);
+
+  const stop = useCallback(() => {
+    audioRef.current?.pause();
+    audioRef.current = null;
+    if (speakingKeyRef.current) getBrowserSpeechSynthesis()?.cancel();
+    speakingKeyRef.current = null;
+    setSpeakingKey(null);
+  }, []);
+
+  const canSpeak = useCallback(
+    (lang: DictionaryLanguage) => !!pickDictionaryVoice(voices, lang, chineseScript),
+    [voices, chineseScript]
+  );
+
+  const speakWithVoice = useCallback(
+    (request: DictionarySpeakRequest) => {
+      const synth = getBrowserSpeechSynthesis();
+      const voice = synth
+        ? pickDictionaryVoice(synth.getVoices(), request.lang, chineseScript, preferredVoiceURI)
+        : null;
+      if (!synth || !voice) {
+        finish(request.key);
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(request.text);
+      utterance.voice = voice;
+      utterance.lang = voice.lang;
+      utterance.rate = SPEECH_RATE;
+      utterance.onend = () => finish(request.key);
+      utterance.onerror = () => finish(request.key);
+      synth.cancel();
+      synth.speak(utterance);
+    },
+    [chineseScript, preferredVoiceURI, finish]
+  );
+
+  const speak = useCallback(
+    (request: DictionarySpeakRequest) => {
+      const wasSpeaking = speakingKeyRef.current === request.key;
+      stop();
+      if (wasSpeaking || !request.text.trim()) return;
+      speakingKeyRef.current = request.key;
+      setSpeakingKey(request.key);
+
+      if (!request.audioUrl) {
+        speakWithVoice(request);
+        return;
+      }
+      const audio = new Audio(request.audioUrl);
+      audioRef.current = audio;
+      audio.onended = () => finish(request.key);
+      audio.play().catch(() => {
+        if (audioRef.current !== audio) return;
+        audioRef.current = null;
+        speakWithVoice(request);
+      });
+    },
+    [stop, speakWithVoice, finish]
+  );
+
+  useEffect(() => stop, [stop]);
+
+  return { speak, stop, canSpeak, speakingKey };
+}
+
+export type DictionarySpeech = ReturnType<typeof useDictionarySpeech>;

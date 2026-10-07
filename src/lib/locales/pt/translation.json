@@ -2423,9 +2423,11 @@
       "actions": {
         "addFavorite": "Adicionar aos Favoritos",
         "listen": "Ouvir",
+        "listenExample": "Ouvir Exemplo",
         "openFullEntry": "Pesquisar",
         "removeFavorite": "Remover dos Favoritos",
-        "resetProgress": "Redefinir Progresso"
+        "resetProgress": "Redefinir Progresso",
+        "stopSpeaking": "Parar de Falar"
       },
       "ai": {
         "askExtras": "Explicar Uso",
@@ -2445,8 +2447,8 @@
       },
       "flashcards": {
         "checkAgain": "Verificar Novamente",
-        "doneDescription_one": "Você revisou {{count}} cartão. Bom trabalho!",
         "doneDescription_many": "Você revisou {{count}} cartões. Bom trabalho!",
+        "doneDescription_one": "Você revisou {{count}} cartão. Bom trabalho!",
         "doneDescription_other": "Você revisou {{count}} cartões. Bom trabalho!",
         "doneTitle": "Tudo em dia",
         "due": "Para revisar",
@@ -2498,7 +2500,7 @@
           "title": "Pesquisar Palavras"
         },
         "phonetics": {
-          "description": "Veja pinyin e zhuyin para chinês, furigana e romaji para japonês e a romanização para coreano. Ative-os ou desative-os no menu Leituras.",
+          "description": "Veja o pinyin e o zhuyin para chinês, o furigana e o romaji para japonês e a romanização para coreano. Ative ou desative-os no menu Leituras e clique no alto-falante para ouvir uma palavra ou exemplo lido em voz alta.",
           "title": "Leituras"
         }
       },
@@ -2509,8 +2511,8 @@
         "onyomi": "On",
         "phrases": "Palavras e Frases",
         "similar": "Palavras Similares",
-        "strokes_one": "{{count}} traço",
         "strokes_many": "{{count}} traços",
+        "strokes_one": "{{count}} traço",
         "strokes_other": "{{count}} traços",
         "synonyms": "Sinônimos",
         "synonymsShort": "sin."

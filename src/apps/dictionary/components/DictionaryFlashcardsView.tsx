@@ -10,6 +10,8 @@ import {
   type SrsGrade,
 } from "../utils/srs";
 import { DictionaryExampleText, DictionaryHeadword } from "./DictionaryReading";
+import { DictionarySpeakButton } from "./DictionarySpeakButton";
+import { headwordSpeechText } from "../utils/speech";
 
 const NO_PHONETICS: DictionaryPhoneticSettings = {
   pinyin: false,
@@ -73,60 +75,76 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
           reviewed: l.sessionReviewed,
         })}
       </div>
-      <button
-        type="button"
-        onClick={() => setIsCardFlipped(!isCardFlipped)}
-        aria-label={
-          isCardFlipped
-            ? t("apps.dictionary.flashcards.showFront")
-            : t("apps.dictionary.flashcards.showAnswer")
-        }
-        className="dictionary-flashcard flex w-full max-w-[460px] flex-1"
-      >
-        <div
-          key={entry.id}
-          className={cn("dictionary-flashcard-inner", isCardFlipped && "is-flipped")}
+      <div className="relative flex w-full max-w-[460px] flex-1">
+        <button
+          type="button"
+          onClick={() => setIsCardFlipped(!isCardFlipped)}
+          aria-label={
+            isCardFlipped
+              ? t("apps.dictionary.flashcards.showFront")
+              : t("apps.dictionary.flashcards.showAnswer")
+          }
+          className="dictionary-flashcard flex w-full max-w-[460px] flex-1"
         >
-          <div className={faceClass}>
-            <DictionaryHeadword
-              entry={entry}
-              chineseScript={l.chineseScript}
-              phonetics={NO_PHONETICS}
-              size="card"
-            />
-            <p className="mt-4 text-[11px] opacity-45">{t("apps.dictionary.flashcards.tapToFlip")}</p>
-          </div>
-          <div className={cn(faceClass, "dictionary-flashcard-back")}>
-            <DictionaryHeadword
-              entry={entry}
-              chineseScript={l.chineseScript}
-              phonetics={l.phonetics}
-              size="card"
-            />
-            <div className="mt-3 w-full space-y-1.5 text-left">
-              {entry.senses.slice(0, 3).map((sense, index) => (
-                <div key={index} className="text-[13px]">
-                  <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
-                  {sense.partOfSpeech ? (
-                    <span className="mr-1 text-[11px] italic opacity-55">{sense.partOfSpeech}</span>
-                  ) : null}
-                  {sense.glosses.slice(0, 4).join("; ")}
-                </div>
-              ))}
-              {example ? (
-                <div className="border-l-2 border-black/10 pl-2.5 pt-1">
-                  <DictionaryExampleText
-                    example={example}
-                    lang={entry.lang}
-                    chineseScript={l.chineseScript}
-                    phonetics={l.phonetics}
-                  />
-                </div>
-              ) : null}
+          <div
+            key={entry.id}
+            className={cn("dictionary-flashcard-inner", isCardFlipped && "is-flipped")}
+          >
+            <div className={faceClass}>
+              <DictionaryHeadword
+                entry={entry}
+                chineseScript={l.chineseScript}
+                phonetics={NO_PHONETICS}
+                size="card"
+              />
+              <p className="mt-4 text-[11px] opacity-45">{t("apps.dictionary.flashcards.tapToFlip")}</p>
+            </div>
+            <div className={cn(faceClass, "dictionary-flashcard-back")}>
+              <DictionaryHeadword
+                entry={entry}
+                chineseScript={l.chineseScript}
+                phonetics={l.phonetics}
+                size="card"
+              />
+              <div className="mt-3 w-full space-y-1.5 text-left">
+                {entry.senses.slice(0, 3).map((sense, index) => (
+                  <div key={index} className="text-[13px]">
+                    <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
+                    {sense.partOfSpeech ? (
+                      <span className="mr-1 text-[11px] italic opacity-55">{sense.partOfSpeech}</span>
+                    ) : null}
+                    {sense.glosses.slice(0, 4).join("; ")}
+                  </div>
+                ))}
+                {example ? (
+                  <div className="border-l-2 border-black/10 pl-2.5 pt-1">
+                    <DictionaryExampleText
+                      example={example}
+                      lang={entry.lang}
+                      chineseScript={l.chineseScript}
+                      phonetics={l.phonetics}
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
-        </div>
-      </button>
+        </button>
+        <DictionarySpeakButton
+          speech={l.speech}
+          request={{
+            key: `${entry.id}:flashcard`,
+            text: headwordSpeechText(entry, l.chineseScript),
+            lang: entry.lang,
+            audioUrl: entry.audioUrl,
+          }}
+          label={t("apps.dictionary.actions.listen")}
+          stopLabel={t("apps.dictionary.actions.stopSpeaking")}
+          size={18}
+          onLightSurface
+          className="absolute right-2 top-2 z-10"
+        />
+      </div>
       <div className="mt-3 flex w-full max-w-[460px] justify-center gap-2">
         {isCardFlipped ? (
           SRS_GRADES.map((grade) => (

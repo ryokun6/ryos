@@ -173,7 +173,9 @@ function voiceBaseName(name: string): string {
  * Rank a voice for the automatic per-language pick. Higher is better;
  * novelty voices rank below everything else.
  */
-export function scoreSpeechVoiceQuality(voice: SpeechSynthesisVoice): number {
+export function scoreSpeechVoiceQuality(
+  voice: Pick<SpeechSynthesisVoice, "name" | "default">
+): number {
   const name = voice.name.toLowerCase();
   const base = voiceBaseName(voice.name);
   if (NOVELTY_VOICE_NAMES.has(base)) return -1;

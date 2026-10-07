@@ -2423,9 +2423,11 @@
       "actions": {
         "addFavorite": "Ajouter aux favoris",
         "listen": "Écouter",
+        "listenExample": "Écouter l’exemple",
         "openFullEntry": "Rechercher",
         "removeFavorite": "Supprimer des favoris",
-        "resetProgress": "Réinitialiser la progression"
+        "resetProgress": "Réinitialiser la progression",
+        "stopSpeaking": "Arrêter l’énonciation"
       },
       "ai": {
         "askExtras": "Expliquer l’usage",
@@ -2445,8 +2447,8 @@
       },
       "flashcards": {
         "checkAgain": "Vérifier à nouveau",
-        "doneDescription_one": "Vous avez révisé {{count}} carte. Beau travail !",
         "doneDescription_many": "Vous avez révisé {{count}} cartes. Beau travail !",
+        "doneDescription_one": "Vous avez révisé {{count}} carte. Beau travail !",
         "doneDescription_other": "Vous avez révisé {{count}} cartes. Beau travail !",
         "doneTitle": "Tout est à jour",
         "due": "À réviser",
@@ -2498,7 +2500,7 @@
           "title": "Rechercher des mots"
         },
         "phonetics": {
-          "description": "Affichez le pinyin et le zhuyin pour le chinois, les furigana et le romaji pour le japonais, ainsi que la romanisation pour le coréen. Activez-les ou désactivez-les depuis le menu Lectures.",
+          "description": "Consultez le pinyin et le zhuyin pour le chinois, le furigana et le romaji pour le japonais, ainsi que la romanisation pour le coréen. Activez-les ou désactivez-les depuis le menu Prononciations, et cliquez sur le haut-parleur pour entendre la lecture à voix haute d’un mot ou d’un exemple.",
           "title": "Lectures"
         }
       },
@@ -2509,8 +2511,8 @@
         "onyomi": "On",
         "phrases": "Mots et expressions",
         "similar": "Mots similaires",
-        "strokes_one": "{{count}} trait",
         "strokes_many": "{{count}} traits",
+        "strokes_one": "{{count}} trait",
         "strokes_other": "{{count}} traits",
         "synonyms": "Synonymes",
         "synonymsShort": "syn."
