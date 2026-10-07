@@ -887,6 +887,13 @@ function validateEnv(): void {
     );
   }
 
+  const youtubeKeySlots = [
+    "YOUTUBE_API_KEY",
+    "YOUTUBE_API_KEY_2",
+    "YOUTUBE_API_KEY_3",
+  ].map((name) => `${name}=${process.env[name]?.trim() ? "set" : "unset"}`);
+  console.log(`[api-standalone] YouTube API keys: ${youtubeKeySlots.join(", ")}`);
+
   if (missing.length > 0) {
     console.error(
       `[api-standalone] Required env vars missing:\n` +

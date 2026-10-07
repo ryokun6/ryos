@@ -365,6 +365,47 @@ describe("song library chat tools", () => {
     });
   });
 
+  test("returns a friendly message once every YouTube key is out of quota", async () => {
+    const redis = new FakeRedis();
+    const tools = createChatTools(
+      createContext(redis, "alice", {
+        YOUTUBE_API_KEY: "key-1",
+        YOUTUBE_API_KEY_2: "key-2",
+        YOUTUBE_API_KEY_3: "key-3",
+      }),
+      { profile: "telegram" }
+    );
+    const attemptedKeys: string[] = [];
+    const googleMessage =
+      "Quota exceeded for quota metric 'Search Queries' and limit 'Search Queries per day' of service 'youtube.googleapis.com' for consumer 'project_number:864406575630'.";
+
+    await withMockedFetch(async (input) => {
+      attemptedKeys.push(new URL(String(input)).searchParams.get("key") || "");
+      return new Response(
+        JSON.stringify({
+          error: {
+            code: 429,
+            message: googleMessage,
+            errors: [{ reason: "rateLimitExceeded", message: googleMessage }],
+            status: "RESOURCE_EXHAUSTED",
+          },
+        }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }, async () => {
+      const result = await tools.songLibraryControl.execute?.({
+        action: "searchYoutube",
+        query: "anything",
+        limit: 1,
+      });
+
+      expect(attemptedKeys).toEqual(["key-1", "key-2", "key-3"]);
+      expect(result?.success).toBe(false);
+      expect(result?.message).toContain("daily quota");
+      expect(result?.message).not.toContain("project_number");
+    });
+  });
+
   test("adds a searched YouTube song into the user's library and cache", async () => {
     const redis = new FakeRedis();
     await seedSongs(redis);

@@ -30,6 +30,8 @@ import { apiHandler } from "../_utils/api-handler.js";
 import { decodeHtmlEntitiesOnce } from "../_utils/html-entities.js";
 import {
   getYouTubeApiKeys,
+  YOUTUBE_QUOTA_EXHAUSTED_CODE,
+  type YouTubeSearchFailure,
   youtubeSearch,
 } from "../_utils/youtube-client.js";
 
@@ -80,6 +82,16 @@ Rules:
 - All output strings should be in the same language as the user's description; keep proper nouns / titles in their original language.
 Respond with ONLY the structured object. No prose.`;
 
+class YouTubeQueryError extends Error {
+  readonly failure: YouTubeSearchFailure;
+
+  constructor(failure: YouTubeSearchFailure) {
+    super(failure.message);
+    this.failure = failure;
+    this.name = "YouTubeQueryError";
+  }
+}
+
 async function searchOneQuery(
   query: string,
   apiKeys: string[],
@@ -97,7 +109,7 @@ async function searchOneQuery(
   );
 
   if (!result.ok) {
-    throw new Error(result.message);
+    throw new YouTubeQueryError(result);
   }
 
   return result.hits.map((hit) => ({
@@ -242,13 +254,24 @@ export default apiHandler<CreateChannelRequest>(
 
     const seen = new Set<string>();
     const videos: ChannelVideo[] = [];
+    let quotaExhaustedQueries = 0;
     for (const result of settled) {
       if (result.status !== "fulfilled") {
+        const failure =
+          result.reason instanceof YouTubeQueryError
+            ? result.reason.failure
+            : null;
+        if (failure?.reason === "quota_exhausted") quotaExhaustedQueries++;
         logger.warn("Search query failed", {
-          reason:
+          reason: failure?.reason,
+          status: failure?.status,
+          googleReason: failure?.googleReason,
+          failedAttempts: failure?.failedAttempts,
+          upstreamMessage:
             result.reason instanceof Error
               ? result.reason.message
               : String(result.reason),
+          totalKeys: apiKeys.length,
         });
         continue;
       }
@@ -267,6 +290,20 @@ export default apiHandler<CreateChannelRequest>(
     // (`SYSTEM_PROMPT` above), so the lineup we ship here is already
     // mostly Shorts-free; the client just covers the long tail without
     // an extra videos.list round-trip.
+
+    if (videos.length === 0 && quotaExhaustedQueries > 0) {
+      logger.error("YouTube quota exhausted on every key", {
+        queries: plan.queries,
+        totalKeys: apiKeys.length,
+      });
+      logger.response(503, Date.now() - startTime);
+      res.setHeader("Retry-After", "3600");
+      res.status(503).json({
+        error: "All YouTube API keys have exceeded their daily quota",
+        code: YOUTUBE_QUOTA_EXHAUSTED_CODE,
+      });
+      return;
+    }
 
     if (videos.length === 0) {
       logger.error("No videos found for any query", {

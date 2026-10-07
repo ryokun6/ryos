@@ -6,6 +6,8 @@ import { getRuntimeEnv } from "./_utils/_cors.js";
 import {
   getYouTubeApiKeys,
   toYoutubeSearchRouteItem,
+  YOUTUBE_QUOTA_EXHAUSTED_CODE,
+  YOUTUBE_UNAVAILABLE_CODE,
   youtubeSearch,
 } from "./_utils/youtube-client.js";
 
@@ -83,6 +85,13 @@ export default apiHandler<YouTubeSearchRequest>(
             totalKeys: apiKeys.length,
           });
         },
+        onKeyFailure: (failure) => {
+          logger.warn("YouTube API key attempt failed", {
+            ...failure,
+            keyIndex: failure.keyIndex + 1,
+            totalKeys: apiKeys.length,
+          });
+        },
       }
     );
 
@@ -97,32 +106,39 @@ export default apiHandler<YouTubeSearchRequest>(
       return;
     }
 
-    if (result.reason === "network_error" || result.reason === "aborted") {
-      logger.error("YouTube search request failed", result);
-      logger.response(500, Date.now() - startTime);
-      res.status(500).json({ error: "Failed to search YouTube" });
+    logger.error("YouTube search failed", {
+      reason: result.reason,
+      status: result.status,
+      googleReason: result.googleReason,
+      upstreamMessage: result.message,
+      lastKeyLabel: result.lastKeyLabel,
+      failedAttempts: result.failedAttempts,
+      totalKeys: apiKeys.length,
+    });
+
+    if (result.reason === "quota_exhausted") {
+      logger.response(503, Date.now() - startTime);
+      res.setHeader("Retry-After", "3600");
+      res.status(503).json({
+        error: "All YouTube API keys have exceeded their daily quota",
+        code: YOUTUBE_QUOTA_EXHAUSTED_CODE,
+      });
       return;
     }
 
-    const status = result.status || 403;
-    const code = result.googleCode || status;
-    logger.error("YouTube API error", {
-      status,
-      error: result.message,
-      keyLabel: result.lastKeyLabel,
-      hint: code === 403
-        ? "Check if YouTube Data API v3 is enabled in Google Cloud Console and API key has no restrictive referrer settings"
-        : undefined
-    });
-    logger.response(status, Date.now() - startTime);
-    res.status(status).json({
-      error: result.message,
-      code,
-      hint: code === 403
-        ? result.reason === "quota_exhausted"
-          ? "All configured API keys have exceeded their quota. Please try again later."
-          : "YouTube API access denied. Ensure the API key is valid and YouTube Data API v3 is enabled in Google Cloud Console."
-        : undefined
+    if (result.reason === "network_error" || result.reason === "aborted") {
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({
+        error: "Failed to search YouTube",
+        code: YOUTUBE_UNAVAILABLE_CODE,
+      });
+      return;
+    }
+
+    logger.response(502, Date.now() - startTime);
+    res.status(502).json({
+      error: "YouTube search is unavailable",
+      code: YOUTUBE_UNAVAILABLE_CODE,
     });
   }
 );

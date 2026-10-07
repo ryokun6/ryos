@@ -1917,6 +1917,7 @@
         "toastSuccess": "Tuned in to {{name}}",
         "errorEmpty": "Describe a channel to get started.",
         "errorRateLimit": "Too many channels created. Wait a bit and try again.",
+        "errorYouTubeQuota": "YouTube search has reached its daily limit. Try creating a channel later.",
         "errorNoVideos": "No videos found for that idea. Try a different description.",
         "errorGeneric": "Couldn't create the channel. Try again.",
         "signInRequired": "Sign in to create channels",
@@ -2211,6 +2212,8 @@
         "songSearchHttpError": "Search failed (status {{status}})",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Invalid response from server",
+        "songSearchQuotaExhausted": "YouTube search has reached its daily limit. Please try again later.",
+        "songSearchUnavailable": "YouTube search is unavailable right now. Please try again later.",
         "songSearchAdding": "Adding song…",
         "appleMusicPlaylistsFailed": "Failed to load playlists"
       },

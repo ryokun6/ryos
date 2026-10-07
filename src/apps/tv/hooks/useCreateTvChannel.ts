@@ -77,9 +77,11 @@ export function useCreateTvChannel() {
             );
           }
           const msg =
-            response.status === 429
-              ? t("apps.tv.create.errorRateLimit")
-              : data?.error || t("apps.tv.create.errorGeneric");
+            data?.code === "youtube_quota_exhausted"
+              ? t("apps.tv.create.errorYouTubeQuota")
+              : response.status === 429
+                ? t("apps.tv.create.errorRateLimit")
+                : data?.error || t("apps.tv.create.errorGeneric");
           throw new Error(msg);
         }
 

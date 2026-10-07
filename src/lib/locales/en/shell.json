@@ -1374,6 +1374,8 @@
         "songSearchHttpError": "Search failed (status {{status}})",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Invalid response from server",
+        "songSearchQuotaExhausted": "YouTube search has reached its daily limit. Please try again later.",
+        "songSearchUnavailable": "YouTube search is unavailable right now. Please try again later.",
         "songSearchAdding": "Adding song…",
         "appleMusicPlaylistsFailed": "Failed to load playlists"
       },

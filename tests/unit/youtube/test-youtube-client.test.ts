@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildYouTubeSearchUrl,
+  classifyYouTubeError,
   getYouTubeApiKeys,
   isYouTubeQuotaError,
   mapYouTubeSearchItems,
@@ -8,6 +9,128 @@ import {
   toYoutubeSearchRouteItem,
   youtubeSearch,
 } from "../../../api/_utils/youtube-client.js";
+
+const PROJECT_QUOTA_429 = {
+  error: {
+    code: 429,
+    message:
+      "Quota exceeded for quota metric 'Search Queries' and limit 'Search Queries per day' of service 'youtube.googleapis.com' for consumer 'project_number:864406575630'.",
+    errors: [
+      {
+        message:
+          "Quota exceeded for quota metric 'Search Queries' and limit 'Search Queries per day' of service 'youtube.googleapis.com' for consumer 'project_number:864406575630'.",
+        domain: "global",
+        reason: "rateLimitExceeded",
+      },
+    ],
+    status: "RESOURCE_EXHAUSTED",
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason: "RATE_LIMIT_EXCEEDED",
+      },
+    ],
+  },
+};
+
+const REFERRER_BLOCKED_403 = {
+  error: {
+    code: 403,
+    message: "Requests from referer <empty> are blocked.",
+    errors: [
+      {
+        message: "Requests from referer <empty> are blocked.",
+        domain: "global",
+        reason: "forbidden",
+      },
+    ],
+    status: "PERMISSION_DENIED",
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason: "API_KEY_HTTP_REFERRER_BLOCKED",
+      },
+    ],
+  },
+};
+
+const KEY_INVALID_400 = {
+  error: {
+    code: 400,
+    message: "API key not valid. Please pass a valid API key.",
+    errors: [
+      {
+        message: "API key not valid. Please pass a valid API key.",
+        domain: "global",
+        reason: "badRequest",
+      },
+    ],
+    status: "INVALID_ARGUMENT",
+    details: [
+      {
+        "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+        reason: "API_KEY_INVALID",
+      },
+    ],
+  },
+};
+
+const BAD_PARAM_400 = {
+  error: {
+    code: 400,
+    message: "Invalid value for maxResults.",
+    errors: [
+      {
+        message: "Invalid value for maxResults.",
+        domain: "youtube.parameter",
+        reason: "invalidParameter",
+      },
+    ],
+    status: "INVALID_ARGUMENT",
+  },
+};
+
+function legacy403(reason: string, message: string) {
+  return {
+    error: {
+      code: 403,
+      message,
+      errors: [{ message, domain: "youtube.quota", reason }],
+    },
+  };
+}
+
+function json(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const OK_BODY = {
+  items: [
+    {
+      id: { videoId: "yt_ok" },
+      snippet: {
+        title: "OK",
+        channelTitle: "Artist",
+        publishedAt: "2024-01-01T00:00:00Z",
+      },
+    },
+  ],
+};
+
+/** Keys without a scripted handler succeed. */
+function scriptedFetch(handlers: Record<string, () => Response>) {
+  const attempted: string[] = [];
+  const fetch = (async (input: RequestInfo | URL) => {
+    const key = new URL(String(input)).searchParams.get("key") || "";
+    attempted.push(key);
+    const handler = handlers[key];
+    return handler ? handler() : json(200, OK_BODY);
+  }) as typeof globalThis.fetch;
+  return { fetch, attempted };
+}
 
 describe("youtube-client", () => {
   test("collects configured API keys in primary/fallback order", () => {
@@ -39,6 +162,14 @@ describe("youtube-client", () => {
         YOUTUBE_API_KEY_3: "backup-2",
       })
     ).toEqual(["primary", "backup-2"]);
+
+    expect(
+      getYouTubeApiKeys({
+        YOUTUBE_API_KEY: " primary ",
+        YOUTUBE_API_KEY_2: "primary",
+        YOUTUBE_API_KEY_3: "   ",
+      })
+    ).toEqual(["primary"]);
   });
 
   test("falls through to the third API key when the first two are exhausted", async () => {
@@ -90,11 +221,43 @@ describe("youtube-client", () => {
     }
   });
 
-  test("detects quota errors only on 403 quota-like responses", () => {
+  test("detects quota errors only on 403/429 quota-like responses", () => {
     expect(isYouTubeQuotaError(403, "quota exceeded")).toBe(true);
     expect(isYouTubeQuotaError(403, "daily limit reached")).toBe(true);
+    expect(isYouTubeQuotaError(429, "Quota exceeded for quota metric")).toBe(
+      true
+    );
     expect(isYouTubeQuotaError(403, "forbidden")).toBe(false);
     expect(isYouTubeQuotaError(500, "quota exceeded")).toBe(false);
+  });
+
+  test("classifies Google errors by reason, not just status", () => {
+    expect(
+      classifyYouTubeError(429, PROJECT_QUOTA_429.error, PROJECT_QUOTA_429.error.message)
+        .kind
+    ).toBe("quota");
+    for (const reason of [
+      "quotaExceeded",
+      "dailyLimitExceeded",
+      "rateLimitExceeded",
+      "userRateLimitExceeded",
+    ]) {
+      const body = legacy403(reason, "The request cannot be completed.");
+      expect(classifyYouTubeError(403, body.error, body.error.message)).toEqual({
+        kind: "quota",
+        googleReason: reason,
+      });
+    }
+    expect(
+      classifyYouTubeError(403, REFERRER_BLOCKED_403.error, REFERRER_BLOCKED_403.error.message)
+        .kind
+    ).toBe("key_rejected");
+    expect(
+      classifyYouTubeError(400, KEY_INVALID_400.error, KEY_INVALID_400.error.message).kind
+    ).toBe("key_rejected");
+    expect(
+      classifyYouTubeError(400, BAD_PARAM_400.error, BAD_PARAM_400.error.message).kind
+    ).toBe("request");
   });
 
   test("builds search URLs with caller-specific params", () => {
@@ -181,70 +344,160 @@ describe("youtube-client", () => {
     ]);
   });
 
-  test("rotates API keys on quota errors", async () => {
-    const attemptedUrls: string[] = [];
+  test("rolls over to key 2 on the production 429 RESOURCE_EXHAUSTED quota error", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      primary: () => json(429, PROJECT_QUOTA_429),
+    });
     const result = await youtubeSearch(
       { query: "lofi", maxResults: 1 },
-      {
-        apiKeys: ["primary", "backup"],
-        fetch: async (input) => {
-          attemptedUrls.push(String(input));
-          const key = new URL(String(input)).searchParams.get("key");
-          if (key === "primary") {
-            return new Response(
-              JSON.stringify({
-                error: { code: 403, message: "quota exceeded" },
-              }),
-              { status: 403, headers: { "Content-Type": "application/json" } }
-            );
-          }
-
-          return new Response(
-            JSON.stringify({
-              items: [
-                {
-                  id: { videoId: "yt_ok" },
-                  snippet: {
-                    title: "OK",
-                    channelTitle: "Artist",
-                    publishedAt: "2024-01-01T00:00:00Z",
-                  },
-                },
-              ],
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } }
-          );
-        },
-      }
+      { apiKeys: ["primary", "backup"], fetch }
     );
 
-    expect(attemptedUrls).toHaveLength(2);
+    expect(attempted).toEqual(["primary", "backup"]);
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.keyLabel).toBe("backup-1");
       expect(result.hits[0]?.videoId).toBe("yt_ok");
+      expect(result.failedAttempts).toEqual([
+        {
+          keyIndex: 0,
+          keyLabel: "primary",
+          kind: "quota",
+          status: 429,
+          googleReason: "RATE_LIMIT_EXCEEDED",
+        },
+      ]);
     }
   });
 
-  test("reports quota exhaustion when every key is exhausted", async () => {
+  test("rolls over to key 3 when keys 1 and 2 hit quotaExceeded / dailyLimitExceeded", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      "secret-key-1": () => json(403, legacy403("quotaExceeded", "The request cannot be completed because you have exceeded your quota.")),
+      "secret-key-2": () => json(403, legacy403("dailyLimitExceeded", "Daily Limit Exceeded.")),
+    });
+    const failures: unknown[] = [];
     const result = await youtubeSearch(
       { query: "lofi", maxResults: 1 },
       {
-        apiKeys: ["primary"],
-        fetch: async () =>
-          new Response(
-            JSON.stringify({
-              error: { code: 403, message: "quota exceeded" },
-            }),
-            { status: 403, headers: { "Content-Type": "application/json" } }
-          ),
+        apiKeys: ["secret-key-1", "secret-key-2", "secret-key-3"],
+        fetch,
+        onKeyFailure: (failure) => failures.push(failure),
       }
     );
 
+    expect(attempted).toEqual(["secret-key-1", "secret-key-2", "secret-key-3"]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.keyLabel).toBe("backup-2");
+    }
+    expect(failures).toHaveLength(2);
+    expect(JSON.stringify(failures)).not.toContain("secret-key");
+  });
+
+  test("skips a referrer-restricted or invalid key instead of stopping", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      primary: () => json(429, PROJECT_QUOTA_429),
+      backup: () => json(403, REFERRER_BLOCKED_403),
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup", "third"], fetch }
+    );
+    expect(attempted).toEqual(["primary", "backup", "third"]);
+    expect(result.ok).toBe(true);
+
+    const invalid = scriptedFetch({
+      primary: () => json(400, KEY_INVALID_400),
+    });
+    const invalidResult = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup"], fetch: invalid.fetch }
+    );
+    expect(invalid.attempted).toEqual(["primary", "backup"]);
+    expect(invalidResult.ok).toBe(true);
+  });
+
+  test("rolls over on network errors", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      primary: () => {
+        throw new TypeError("fetch failed");
+      },
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup"], fetch }
+    );
+    expect(attempted).toEqual(["primary", "backup"]);
+    expect(result.ok).toBe(true);
+  });
+
+  test("does not burn other keys on a request error that no key can fix", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      primary: () => json(400, BAD_PARAM_400),
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup", "third"], fetch }
+    );
+    expect(attempted).toEqual(["primary"]);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("api_error");
+    }
+  });
+
+  test("reports quota exhaustion only after every key has been tried", async () => {
+    const { fetch, attempted } = scriptedFetch({
+      primary: () => json(429, PROJECT_QUOTA_429),
+      backup: () => json(403, legacy403("quotaExceeded", "quota exceeded")),
+      third: () => json(429, PROJECT_QUOTA_429),
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup", "third"], fetch }
+    );
+
+    expect(attempted).toEqual(["primary", "backup", "third"]);
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.reason).toBe("quota_exhausted");
-      expect(result.status).toBe(403);
+      expect(result.status).toBe(429);
+      expect(result.lastKeyLabel).toBe("backup-2");
+      expect(result.failedAttempts.map((a) => a.kind)).toEqual([
+        "quota",
+        "quota",
+        "quota",
+      ]);
+    }
+  });
+
+  test("still reports quota exhaustion when the last key is merely misconfigured", async () => {
+    const { fetch } = scriptedFetch({
+      primary: () => json(429, PROJECT_QUOTA_429),
+      backup: () => json(403, REFERRER_BLOCKED_403),
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup"], fetch }
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("quota_exhausted");
+    }
+  });
+
+  test("reports a rejected-key api_error when no key hit quota", async () => {
+    const { fetch } = scriptedFetch({
+      primary: () => json(403, REFERRER_BLOCKED_403),
+      backup: () => json(400, KEY_INVALID_400),
+    });
+    const result = await youtubeSearch(
+      { query: "lofi", maxResults: 1 },
+      { apiKeys: ["primary", "backup"], fetch }
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("api_error");
     }
   });
 
