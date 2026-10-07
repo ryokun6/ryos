@@ -60,15 +60,25 @@ function parseTemplate(template: string): Node[] {
   return root;
 }
 
+/** Repeat until stable so overlapping input like `<scr<script>ipt>` can't reassemble a tag. */
+function removeUntilStable(text: string, pattern: RegExp): string {
+  let previous: string;
+  let current = text;
+  do {
+    previous = current;
+    current = current.replace(pattern, "");
+  } while (current !== previous);
+  return current;
+}
+
 export function stripAnkiHtml(html: string): string {
-  return decodeHtmlEntities(
-    html
-      .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<\/(div|p|li|tr|h\d)>/gi, "\n")
-      .replace(/<[^>]+>/g, "")
-      .replace(/\[sound:[^\]]*\]/g, "")
-  )
+  let text = removeUntilStable(html, /<(script|style)\b[\s\S]*?<\/\1\s*>/gi);
+  text = text.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(div|p|li|tr|h\d)>/gi, "\n");
+  // Field HTML escapes literal "<" as &lt;, so any raw "<" left is a broken tag.
+  text = removeUntilStable(text, /<[^>]*>/g)
+    .replace(/</g, "")
+    .replace(/\[sound:[^\]]*\]/g, "");
+  return decodeHtmlEntities(text)
     .replace(/[ \t\u00a0]+/g, " ")
     .replace(/\s*\n\s*/g, "\n")
     .trim();

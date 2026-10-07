@@ -106,6 +106,8 @@ describe("Anki template rendering", () => {
 
   test("HTML stripping and media references", () => {
     expect(stripAnkiHtml("<div>a&nbsp;b</div><br>c [sound:x.mp3]<style>p{}</style>")).toBe("a b\nc");
+    expect(stripAnkiHtml("x<scr<script>ipt>alert(1)</script>y")).not.toContain("<");
+    expect(stripAnkiHtml("<<b>i>mg src=x onerror=1> a &lt; b <script")).toBe("i>mg src=x onerror=1> a < b script");
     expect(
       extractMediaRefs('[sound:a.mp3] <img src="b.png"> <img src=\'https://x/c.png\'> <img src=d&amp;e.jpg>')
     ).toEqual(["a.mp3", "b.png", "d&e.jpg"]);
