@@ -16,8 +16,16 @@ const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
 /** Bump when parser output changes so cached entries are re-parsed. */
 const PARSER_CACHE_VERSION = "v3";
 
+/** HTML → plain text. Results are plain strings, so no `<`/`>` survive. */
 export function stripHtml(html: string): string {
-  return decodeHtmlEntitiesOnce(html.replace(/<[^>]+>/g, ""))
+  let text = html;
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<[^<>]*>/g, "");
+  } while (text !== previous);
+  return decodeHtmlEntitiesOnce(text)
+    .replace(/[<>]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

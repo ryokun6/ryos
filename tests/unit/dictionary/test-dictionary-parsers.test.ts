@@ -298,6 +298,8 @@ describe("remote dictionary parsers", () => {
       { text: "刻苦学习", reading: "kèkǔ xuéxí", translation: "to study hard" },
     ]);
     expect(stripHtml("a&nbsp;<i>b</i> &amp; c")).toBe("a b & c");
+    expect(stripHtml("<<script>script>alert(1)<</script>/script>")).toBe("alert(1)");
+    expect(stripHtml("&lt;script&gt;x")).toBe("scriptx");
   });
 
   test("Wiktionary: dedupes glosses and treats transliteration-only translations as readings", () => {
