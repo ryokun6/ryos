@@ -87,7 +87,8 @@ const blob = (value: SqlValue) =>
 
 export function formatAnkiDeckName(raw: string): string {
   return decodeHtmlEntities(raw)
-    .split(/\u001f|::/)
+    .replaceAll("\u001f", "::")
+    .split("::")
     .map((part) => part.trim())
     .filter(Boolean)
     .join("::");

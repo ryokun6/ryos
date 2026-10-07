@@ -100,10 +100,10 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
     "dark:border-white/15 dark:bg-white/[0.07] dark:shadow-[0_4px_14px_rgba(0,0,0,0.45)]"
   );
 
-  const playingSound =
-    speech.speakingKey?.startsWith(`${currentCard.id}:sound:`)
-      ? speech.speakingKey.slice(`${currentCard.id}:sound:`.length)
-      : null;
+  const soundKeyPrefix = soundSpeakKey(currentCard.id, "");
+  const playingSound = speech.speakingKey?.startsWith(soundKeyPrefix)
+    ? speech.speakingKey.slice(soundKeyPrefix.length)
+    : null;
   const renderCardFace = (side: "front" | "back") =>
     ankiCard ? (
       <DictionaryCardHtml
@@ -168,35 +168,41 @@ export function DictionaryFlashcardsView({ l }: { l: DictionaryLogic }) {
               )}
             </div>
             <div className={cn(faceClass, "dictionary-flashcard-back")}>
-              {ankiCard ? renderCardFace("back") : <>
-              <DictionaryHeadword
-                entry={entry}
-                chineseScript={l.chineseScript}
-                phonetics={l.phonetics}
-                size="card"
-              />
-              <div className="mt-3 w-full space-y-1.5 text-left">
-                {entry.senses.slice(0, 3).map((sense, index) => (
-                  <div key={index} className="text-[13px]">
-                    <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
-                    {sense.partOfSpeech ? (
-                      <span className="mr-1 text-[11px] italic opacity-55">{sense.partOfSpeech}</span>
+              {ankiCard ? (
+                renderCardFace("back")
+              ) : (
+                <>
+                  <DictionaryHeadword
+                    entry={entry}
+                    chineseScript={l.chineseScript}
+                    phonetics={l.phonetics}
+                    size="card"
+                  />
+                  <div className="mt-3 w-full space-y-1.5 text-left">
+                    {entry.senses.slice(0, 3).map((sense, index) => (
+                      <div key={index} className="text-[13px]">
+                        <span className="mr-1 font-semibold opacity-40">{index + 1}.</span>
+                        {sense.partOfSpeech ? (
+                          <span className="mr-1 text-[11px] italic opacity-55">
+                            {sense.partOfSpeech}
+                          </span>
+                        ) : null}
+                        {sense.glosses.slice(0, 4).join("; ")}
+                      </div>
+                    ))}
+                    {example ? (
+                      <div className="border-l-2 border-black/10 pl-2.5 pt-1 dark:border-white/15">
+                        <DictionaryExampleText
+                          example={example}
+                          lang={entry.lang}
+                          chineseScript={l.chineseScript}
+                          phonetics={l.phonetics}
+                        />
+                      </div>
                     ) : null}
-                    {sense.glosses.slice(0, 4).join("; ")}
                   </div>
-                ))}
-                {example ? (
-                  <div className="border-l-2 border-black/10 pl-2.5 pt-1 dark:border-white/15">
-                    <DictionaryExampleText
-                      example={example}
-                      lang={entry.lang}
-                      chineseScript={l.chineseScript}
-                      phonetics={l.phonetics}
-                    />
-                  </div>
-                ) : null}
-              </div>
-              </>}
+                </>
+              )}
             </div>
           </div>
         </button>
