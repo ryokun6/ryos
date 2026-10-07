@@ -1,17 +1,33 @@
 import { AppMenuBarShell } from "@/components/shared/menubar/AppMenuBarShell";
-import { AppMenuBarMenus } from "@/components/shared/menubar/AppMenuBarMenus";
+import {
+  AppMenuBarMenus,
+  type MenuItemDescriptor,
+} from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
-import type { DictionaryView } from "@/stores/useDictionaryStore";
+import {
+  DEFAULT_DICTIONARY_DECK_ID,
+  type DictionaryView,
+} from "@/stores/useDictionaryStore";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
 
 interface DictionaryMenuBarProps {
   l: DictionaryLogic;
   onClose: () => void;
   onNewLookup: () => void;
+  onImportAnki: () => void;
 }
 
-export function DictionaryMenuBar({ l, onClose, onNewLookup }: DictionaryMenuBarProps) {
+const ALL_DECKS_VALUE = "__all__";
+// Past this, the toolbar deck picker is the better place to switch decks.
+const MENU_DECK_LIMIT = 20;
+
+export function DictionaryMenuBar({
+  l,
+  onClose,
+  onNewLookup,
+  onImportAnki,
+}: DictionaryMenuBarProps) {
   const { t, phonetics, setPhonetic } = l;
   const {
     isShareDialogOpen,
@@ -21,6 +37,26 @@ export function DictionaryMenuBar({ l, onClose, onNewLookup }: DictionaryMenuBar
     appId,
     appName,
   } = useAppMenuBarChrome("dictionary");
+
+  const deckRadioItems: MenuItemDescriptor[] =
+    l.decks.length <= MENU_DECK_LIMIT
+      ? [
+          { type: "separator" },
+          {
+            type: "radioGroup",
+            value: l.selectedDeckId ?? ALL_DECKS_VALUE,
+            onValueChange: (value) =>
+              l.setSelectedDeckId(value === ALL_DECKS_VALUE ? null : value),
+            options: [
+              { value: ALL_DECKS_VALUE, label: t("apps.dictionary.decks.all") },
+              ...l.decks.map((deck) => ({
+                value: deck.id,
+                label: l.deckLabel(deck).replaceAll("::", " › "),
+              })),
+            ],
+          },
+        ]
+      : [];
 
   return (
     <AppMenuBarShell
@@ -98,6 +134,44 @@ export function DictionaryMenuBar({ l, onClose, onNewLookup }: DictionaryMenuBar
                 checked: l.aiExtrasEnabled,
                 onChange: l.setAiExtrasEnabled,
               },
+            ],
+          },
+          {
+            label: t("apps.dictionary.decks.menu"),
+            items: [
+              {
+                type: "action",
+                label: t("apps.dictionary.decks.new"),
+                onClick: () => l.openDeckDialog("new"),
+              },
+              {
+                type: "action",
+                label: t("apps.dictionary.decks.rename"),
+                onClick: () => l.openDeckDialog("rename"),
+                disabled: !l.selectedDeck,
+              },
+              {
+                type: "action",
+                label: t("apps.dictionary.decks.delete"),
+                onClick: () => l.openDeckDialog("delete"),
+                disabled: !l.selectedDeck || l.selectedDeck.id === DEFAULT_DICTIONARY_DECK_ID,
+              },
+              { type: "separator" },
+              {
+                type: "action",
+                label: t("apps.dictionary.decks.importAnki"),
+                onClick: onImportAnki,
+                disabled: !!l.ankiProgress,
+              },
+              {
+                type: "action",
+                label: l.selectedDeck
+                  ? t("apps.dictionary.decks.exportAnki")
+                  : t("apps.dictionary.decks.exportAllAnki"),
+                onClick: () => void l.exportAnki(),
+                disabled: l.isExportingAnki || l.deckFavorites.length === 0,
+              },
+              ...deckRadioItems,
             ],
           },
           {

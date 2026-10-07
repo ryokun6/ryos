@@ -20,6 +20,7 @@ export const DICTIONARY_SOURCES = [
   "free-dictionary",
   "datamuse",
   "ai",
+  "anki",
 ] as const;
 export type DictionarySource = (typeof DICTIONARY_SOURCES)[number];
 
@@ -69,6 +70,11 @@ export const DICTIONARY_SOURCE_INFO: Record<DictionarySource, DictionarySourceIn
     name: "AI",
     license: "Generated — may contain mistakes",
     url: "https://os.ryo.lu",
+  },
+  anki: {
+    name: "Anki deck",
+    license: "Imported by you",
+    url: "https://apps.ankiweb.net",
   },
 };
 

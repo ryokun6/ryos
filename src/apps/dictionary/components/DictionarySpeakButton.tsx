@@ -17,7 +17,7 @@ export function DictionarySpeakButton({
   size?: number;
   className?: string;
 }) {
-  if (!request.audioUrl && !speech.canSpeak(request.lang)) return null;
+  if (!request.audioUrl && !request.mediaKey && !speech.canSpeak(request.lang)) return null;
   const isSpeaking = speech.speakingKey === request.key;
   const title = isSpeaking ? stopLabel : label;
   return (

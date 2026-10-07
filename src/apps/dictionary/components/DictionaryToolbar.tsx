@@ -85,6 +85,58 @@ function ButtonGroup({ l, children }: { l: DictionaryLogic; children: ReactNode 
   );
 }
 
+const ALL_DECKS_VALUE = "__all__";
+
+function DeckPicker({ l, isMobileLayout }: { l: DictionaryLogic; isMobileLayout: boolean }) {
+  const { t, isMacOSTheme, isSystem7Theme } = l;
+  const label = t("apps.dictionary.decks.picker");
+  const leafLabel = (name: string) => name.split("::").pop() ?? name;
+  return (
+    <Select
+      value={l.selectedDeckId ?? ALL_DECKS_VALUE}
+      onValueChange={(value) => l.setSelectedDeckId(value === ALL_DECKS_VALUE ? null : value)}
+    >
+      <SelectTrigger
+        className={cn(
+          "h-6 min-w-0 text-[11px]",
+          isMobileLayout ? "w-[132px] shrink" : "w-[180px] shrink",
+          (isMacOSTheme || isSystem7Theme) && "font-geneva-12"
+        )}
+        aria-label={label}
+        title={l.selectedDeck ? l.deckLabel(l.selectedDeck) : label}
+      >
+        <SelectValue>
+          <span className="truncate">{leafLabel(l.deckLabel(l.selectedDeck))}</span>
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="max-h-[320px] max-w-[min(420px,90vw)]">
+        <SelectItem value={ALL_DECKS_VALUE} className="text-[12px]">
+          {t("apps.dictionary.decks.all")}
+        </SelectItem>
+        {l.decks.map((deck) => {
+          const name = l.deckLabel(deck);
+          const parents = name.split("::").slice(0, -1);
+          return (
+            <SelectItem
+              key={deck.id}
+              value={deck.id}
+              className="text-[12px]"
+              title={name.replaceAll("::", " › ")}
+            >
+              <span className="block truncate">
+                {parents.length ? (
+                  <span className="opacity-45">{parents.join(" › ")} › </span>
+                ) : null}
+                {leafLabel(name)}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export function DictionaryToolbar({
   l,
   isMobileLayout,
@@ -172,6 +224,7 @@ export function DictionaryToolbar({
           </ButtonGroup>
         </div>
         <div className="min-w-0 flex-1" />
+        {view !== "lookup" ? <DeckPicker l={l} isMobileLayout={isMobileLayout} /> : null}
         {view === "lookup" ? (
           <div className="flex min-w-0 items-center gap-1.5">
             <Select

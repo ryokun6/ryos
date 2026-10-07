@@ -14,6 +14,7 @@ import { DictionaryFavoritesPanel, DictionaryLookupPanel } from "./DictionaryMai
 import { DictionaryMenuBar } from "./DictionaryMenuBar";
 import { DictionarySidebar } from "./DictionarySidebar";
 import { DictionaryToolbar } from "./DictionaryToolbar";
+import { DictionaryAnkiProgress, DictionaryDeckDialogs } from "./DictionaryDeckDialogs";
 
 const MOBILE_BREAKPOINT = 560;
 
@@ -44,7 +45,7 @@ export function DictionaryAppComponent({
   const isMobileLayout = containerWidth < MOBILE_BREAKPOINT;
 
   const selectedFavorite =
-    l.favorites.find((fav) => fav.id === selectedFavoriteId) ?? l.favorites[0] ?? null;
+    l.deckFavorites.find((fav) => fav.id === selectedFavoriteId) ?? l.deckFavorites[0] ?? null;
 
   const { currentCard, isCardFlipped, setIsCardFlipped, gradeCard } = l;
   useEffect(() => {
@@ -72,7 +73,17 @@ export function DictionaryAppComponent({
     window.requestAnimationFrame(() => l.searchInputRef.current?.focus());
   };
 
-  const menuBar = <DictionaryMenuBar l={l} onClose={onClose} onNewLookup={handleNewLookup} />;
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const handleImportAnki = () => importInputRef.current?.click();
+
+  const menuBar = (
+    <DictionaryMenuBar
+      l={l}
+      onClose={onClose}
+      onNewLookup={handleNewLookup}
+      onImportAnki={handleImportAnki}
+    />
+  );
 
   const isLookupSidebarEmpty =
     view === "lookup" && l.entries.length === 0 && !l.isStartState;
@@ -151,7 +162,20 @@ export function DictionaryAppComponent({
             <DictionaryHandwritingPad l={l} />
           </div>
         ) : null}
+        <DictionaryAnkiProgress l={l} />
       </div>
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".apkg,.colpkg"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void l.importAnkiFile(file);
+        }}
+      />
+      <DictionaryDeckDialogs l={l} />
       <AppHelpAboutDialogs
         appId="dictionary"
         helpItems={l.translatedHelpItems}

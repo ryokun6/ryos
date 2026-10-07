@@ -2,9 +2,14 @@
 import "../../helpers/local-storage-stub";
 import { beforeEach, describe, expect, test } from "bun:test";
 import {
+  createDefaultDictionaryDeck,
+  DEFAULT_DICTIONARY_DECK_ID,
+  filterFavoritesByDeck,
+  sanitizeDictionaryCardContent,
   sanitizeDictionaryFavorite,
   snapshotDictionaryEntry,
   useDictionaryStore,
+  type DictionaryDeck,
 } from "../../../src/stores/useDictionaryStore";
 import { useCloudSyncStore } from "../../../src/stores/useCloudSyncStore";
 import { DELETION_BUCKET_PREFIXES, SYNC_CODECS } from "../../../src/sync/codecs";
@@ -124,11 +129,37 @@ describe("dictionary sync codec", () => {
     useDictionaryStore.setState({ favorites: [] });
   });
 
-  test("collects one doc per favorite", () => {
+  test("collects one doc per deck and per favorite", () => {
+    useDictionaryStore.setState({ decks: [createDefaultDictionaryDeck(1)] });
     useDictionaryStore.getState().addFavorite(entry);
     const docs = SYNC_CODECS.dictionary.collect({}) as Map<string, unknown>;
-    expect(Array.from(docs.keys())).toEqual([`dictionary/favorite:${entry.id}`]);
+    expect(Array.from(docs.keys())).toEqual([
+      "dictionary/deck:default",
+      `dictionary/favorite:${entry.id}`,
+    ]);
     expect(DELETION_BUCKET_PREFIXES.dictionaryFavoriteIds).toBe("dictionary/favorite:");
+    expect(DELETION_BUCKET_PREFIXES.dictionaryDeckIds).toBe("dictionary/deck:");
+  });
+
+  test("applies remote deck upserts and deletes", async () => {
+    useDictionaryStore.setState({
+      decks: [createDefaultDictionaryDeck(1), { id: "gone", name: "Gone", createdAt: 1, updatedAt: 1 }],
+      selectedDeckId: "gone",
+    });
+    await SYNC_CODECS.dictionary.apply(
+      [
+        { k: "dictionary/deck:gone", del: true, t },
+        { k: "dictionary/deck:hsk", v: { name: "  HSK  ", createdAt: 2 }, t },
+        { k: "dictionary/deck:bad", v: "nope", t },
+      ],
+      {}
+    );
+    const { decks, selectedDeckId } = useDictionaryStore.getState();
+    expect(decks.map((deck) => [deck.id, deck.name])).toEqual([
+      ["default", ""],
+      ["hsk", "HSK"],
+    ]);
+    expect(selectedDeckId).toBeNull();
   });
 
   test("applies remote upserts and deletes", async () => {
@@ -146,5 +177,125 @@ describe("dictionary sync codec", () => {
       {}
     );
     expect(useDictionaryStore.getState().favorites.map((fav) => fav.headword)).toEqual(["사랑"]);
+  });
+});
+
+describe("dictionary decks", () => {
+  const deck = (id: string, name: string): DictionaryDeck => ({
+    id,
+    name,
+    createdAt: 1,
+    updatedAt: 1,
+  });
+
+  beforeEach(() => {
+    useDictionaryStore.setState({
+      favorites: [],
+      decks: [createDefaultDictionaryDeck(1)],
+      selectedDeckId: null,
+    });
+    useCloudSyncStore.setState((state) => ({
+      deletionMarkers: {
+        ...state.deletionMarkers,
+        dictionaryFavoriteIds: {},
+        dictionaryDeckIds: {},
+      },
+    }));
+  });
+
+  test("v2 persisted favorites migrate into the default deck", () => {
+    const migrate = useDictionaryStore.persist.getOptions().migrate!;
+    const migrated = migrate(
+      { favorites: [{ id: "a", entry }], chineseScript: "simplified" },
+      2
+    ) as { favorites: { deckId?: string }[]; decks: DictionaryDeck[]; selectedDeckId: unknown };
+    expect(migrated.favorites[0].deckId).toBe(DEFAULT_DICTIONARY_DECK_ID);
+    expect(migrated.decks.map((d) => d.id)).toEqual([DEFAULT_DICTIONARY_DECK_ID]);
+    expect(migrated.selectedDeckId).toBeNull();
+  });
+
+  test("create, rename, and pick decks; new favorites land in the selected deck", () => {
+    const store = useDictionaryStore.getState();
+    expect(store.createDeck("   ")).toBeNull();
+    const created = store.createDeck("  Japanese   N5 ")!;
+    expect(created.name).toBe("Japanese N5");
+    expect(useDictionaryStore.getState().selectedDeckId).toBe(created.id);
+    store.addFavorite(entry);
+    expect(useDictionaryStore.getState().favorites[0].deckId).toBe(created.id);
+    store.renameDeck(created.id, "N5");
+    expect(useDictionaryStore.getState().decks.map((d) => d.name)).toEqual(["", "N5"]);
+    store.addFavorite({ ...entry, id: "x" }, DEFAULT_DICTIONARY_DECK_ID);
+    expect(useDictionaryStore.getState().favorites.find((f) => f.id === "x")?.deckId).toBe(
+      DEFAULT_DICTIONARY_DECK_ID
+    );
+  });
+
+  test("deleting a deck removes only its own cards and records tombstones", () => {
+    useDictionaryStore.setState({
+      decks: [createDefaultDictionaryDeck(1), deck("p", "Lang"), deck("c", "Lang::Kanji")],
+      selectedDeckId: "p",
+    });
+    const store = useDictionaryStore.getState();
+    store.addFavorite({ ...entry, id: "in-parent" }, "p");
+    store.addFavorite({ ...entry, id: "in-child" }, "c");
+    store.deleteDeck(DEFAULT_DICTIONARY_DECK_ID);
+    expect(useDictionaryStore.getState().decks).toHaveLength(3);
+    store.deleteDeck("p");
+    const state = useDictionaryStore.getState();
+    expect(state.decks.map((d) => d.id)).toEqual(["default", "c"]);
+    expect(state.favorites.map((f) => f.id)).toEqual(["in-child"]);
+    expect(state.selectedDeckId).toBeNull();
+    const markers = useCloudSyncStore.getState().deletionMarkers;
+    expect(Object.keys(markers.dictionaryDeckIds)).toEqual(["p"]);
+    expect(Object.keys(markers.dictionaryFavoriteIds)).toEqual(["in-parent"]);
+  });
+
+  test("deck filters include subdecks and fall back to default for orphaned cards", () => {
+    const decks = [createDefaultDictionaryDeck(1), deck("p", "Lang"), deck("c", "Lang::Kanji"), deck("o", "Language")];
+    const favorites = [
+      { id: "1", deckId: "p" },
+      { id: "2", deckId: "c" },
+      { id: "3", deckId: "o" },
+      { id: "4", deckId: "missing" },
+      { id: "5" },
+    ].map((f) => ({ ...sanitizeDictionaryFavorite({ entry }, f.id)!, ...f }));
+    const ids = (deckId: string | null) =>
+      filterFavoritesByDeck(favorites, decks, deckId).map((f) => f.id);
+    expect(ids("p")).toEqual(["1", "2"]);
+    expect(ids("c")).toEqual(["2"]);
+    expect(ids("default")).toEqual(["4", "5"]);
+    expect(ids(null)).toHaveLength(5);
+  });
+
+  test("moving cards and importing bundles", () => {
+    useDictionaryStore.setState({ decks: [createDefaultDictionaryDeck(1), deck("d", "D")] });
+    const store = useDictionaryStore.getState();
+    store.addFavorite(entry);
+    store.moveFavoritesToDeck([entry.id], "nope");
+    expect(useDictionaryStore.getState().favorites[0].deckId).toBe(DEFAULT_DICTIONARY_DECK_ID);
+    store.moveFavoritesToDeck([entry.id], "d");
+    expect(useDictionaryStore.getState().favorites[0].deckId).toBe("d");
+
+    useCloudSyncStore.getState().markDeletedKeys("dictionaryFavoriteIds", ["anki:g:0"]);
+    const imported = { ...sanitizeDictionaryFavorite({ entry }, "anki:g:0")!, deckId: "anki-9" };
+    store.importBundle({ decks: [deck("anki-9", "Imported")], favorites: [imported] });
+    const state = useDictionaryStore.getState();
+    expect(state.decks.map((d) => d.id)).toEqual(["default", "d", "anki-9"]);
+    expect(state.favorites.map((f) => f.id)).toEqual(["anki:g:0", entry.id]);
+    expect(useCloudSyncStore.getState().deletionMarkers.dictionaryFavoriteIds).toEqual({});
+  });
+
+  test("card content is sanitized and bounded", () => {
+    expect(sanitizeDictionaryCardContent({ front: 1 })).toBeUndefined();
+    const card = sanitizeDictionaryCardContent({
+      front: "<b>Q</b>",
+      back: "A",
+      fields: [{ name: "Front", value: "Q" }, { name: 3 }, ...Array(40).fill({ name: "x", value: "" })],
+      tags: ["a", 2, "b"],
+    });
+    expect(card?.front).toBe("<b>Q</b>");
+    expect(card?.fields.length).toBeLessThanOrEqual(32);
+    expect(card?.fields[0]).toEqual({ name: "Front", value: "Q" });
+    expect(card?.tags).toEqual(["a", "b"]);
   });
 });

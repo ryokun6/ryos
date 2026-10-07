@@ -4,5 +4,6 @@ export const DICTIONARY_HELP_I18N_KEYS = [
   "handwriting",
   "favorites",
   "flashcards",
+  "decks",
   "ai",
 ] as const;

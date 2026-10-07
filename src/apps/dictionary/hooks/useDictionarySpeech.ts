@@ -5,6 +5,7 @@ import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import type { DictionaryChineseScript } from "@/stores/useDictionaryStore";
 import { createSpeechUtterance, getBrowserSpeechSynthesis } from "@/utils/browserSpeech";
 import { pickDictionaryVoice } from "../utils/speech";
+import { getDictionaryMediaUrl } from "../utils/anki/media";
 
 const SPEECH_RATE = 0.9;
 
@@ -15,6 +16,8 @@ export interface DictionarySpeakRequest {
   lang: DictionaryLanguage;
   /** Recorded pronunciation (Wiktionary); preferred over TTS when it plays. */
   audioUrl?: string;
+  /** Imported Anki audio in the local media store; preferred over TTS. */
+  mediaKey?: string;
 }
 
 /**
@@ -75,22 +78,36 @@ export function useDictionarySpeech(chineseScript: DictionaryChineseScript) {
     (request: DictionarySpeakRequest) => {
       const wasSpeaking = speakingKeyRef.current === request.key;
       stop();
-      if (wasSpeaking || !request.text.trim()) return;
+      if (wasSpeaking) return;
+      if (!request.text.trim() && !request.audioUrl && !request.mediaKey) return;
       speakingKeyRef.current = request.key;
       setSpeakingKey(request.key);
 
+      const playUrl = (url: string) => {
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => finish(request.key);
+        audio.play().catch(() => {
+          if (audioRef.current !== audio) return;
+          audioRef.current = null;
+          speakWithVoice(request);
+        });
+      };
+
+      if (request.mediaKey) {
+        void getDictionaryMediaUrl(request.mediaKey).then((url) => {
+          if (speakingKeyRef.current !== request.key) return;
+          if (url) playUrl(url);
+          else if (request.audioUrl) playUrl(request.audioUrl);
+          else speakWithVoice(request);
+        });
+        return;
+      }
       if (!request.audioUrl) {
         speakWithVoice(request);
         return;
       }
-      const audio = new Audio(request.audioUrl);
-      audioRef.current = audio;
-      audio.onended = () => finish(request.key);
-      audio.play().catch(() => {
-        if (audioRef.current !== audio) return;
-        audioRef.current = null;
-        speakWithVoice(request);
-      });
+      playUrl(request.audioUrl);
     },
     [stop, speakWithVoice, finish]
   );

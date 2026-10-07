@@ -40,8 +40,10 @@ import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
 import { useStuffStore } from "@/stores/useStuffStore";
 import {
+  sanitizeDictionaryDeck,
   sanitizeDictionaryFavorite,
   useDictionaryStore,
+  type DictionaryDeck,
   type DictionaryFavorite,
 } from "@/stores/useDictionaryStore";
 import type { StuffItem, StuffLocation, StuffTag } from "@/apps/stuff/types";
@@ -154,6 +156,7 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   stuffCoverKeys: "stuff-images/item:",
   stuffLocationIds: "stuff/location:",
   dictionaryFavoriteIds: "dictionary/favorite:",
+  dictionaryDeckIds: "dictionary/deck:",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1742,17 +1745,24 @@ const stuffCodec: SyncCodec = {
 //
 // Keys:
 //   dictionary/favorite:<entryId> — favorite word snapshot + SM-2 card state
+//   dictionary/deck:<deckId>      — deck name/metadata (cards point at it)
 //
-// Settings, lookup history, and the current view stay device-local.
+// Settings, lookup history, the selected deck, and imported Anki media stay
+// device-local.
 // ---------------------------------------------------------------------------
 
 const DICTIONARY_FAVORITE_PREFIX = "dictionary/favorite:";
+const DICTIONARY_DECK_PREFIX = "dictionary/deck:";
 
 const dictionaryCodec: SyncCodec = {
   namespace: "dictionary",
   collect() {
     const docs = new Map<string, unknown>();
-    for (const favorite of useDictionaryStore.getState().favorites) {
+    const { favorites, decks } = useDictionaryStore.getState();
+    for (const deck of decks) {
+      if (deck?.id) docs.set(`${DICTIONARY_DECK_PREFIX}${deck.id}`, deck);
+    }
+    for (const favorite of favorites) {
       if (favorite?.id) docs.set(`${DICTIONARY_FAVORITE_PREFIX}${favorite.id}`, favorite);
     }
     return docs;
@@ -1762,29 +1772,49 @@ const dictionaryCodec: SyncCodec = {
     const byId = new Map<string, DictionaryFavorite>(
       state.favorites.map((favorite) => [favorite.id, favorite])
     );
-    let changed = false;
+    const deckById = new Map<string, DictionaryDeck>(
+      state.decks.map((deck) => [deck.id, deck])
+    );
+    let favoritesChanged = false;
+    let decksChanged = false;
     for (const op of ops) {
+      if (op.k.startsWith(DICTIONARY_DECK_PREFIX)) {
+        const id = op.k.slice(DICTIONARY_DECK_PREFIX.length);
+        if (!id) continue;
+        if (op.del) {
+          decksChanged = deckById.delete(id) || decksChanged;
+        } else {
+          const deck = sanitizeDictionaryDeck(op.v, id);
+          if (deck) {
+            deckById.set(id, deck);
+            decksChanged = true;
+          }
+        }
+        continue;
+      }
       if (!op.k.startsWith(DICTIONARY_FAVORITE_PREFIX)) continue;
       const id = op.k.slice(DICTIONARY_FAVORITE_PREFIX.length);
       if (!id) continue;
       if (op.del) {
-        changed = byId.delete(id) || changed;
+        favoritesChanged = byId.delete(id) || favoritesChanged;
       } else {
         const favorite = sanitizeDictionaryFavorite(op.v, id);
         if (favorite) {
           byId.set(id, favorite);
-          changed = true;
+          favoritesChanged = true;
         }
       }
     }
-    if (!changed) return;
-    state.replaceFavoritesFromSync(
-      Array.from(byId.values()).sort((a, b) => b.addedAt - a.addedAt)
-    );
+    if (decksChanged) state.replaceDecksFromSync(Array.from(deckById.values()));
+    if (favoritesChanged) {
+      state.replaceFavoritesFromSync(
+        Array.from(byId.values()).sort((a, b) => b.addedAt - a.addedAt)
+      );
+    }
   },
   subscribe(onChange) {
     return useDictionaryStore.subscribe((state, prev) => {
-      if (state.favorites !== prev.favorites) {
+      if (state.favorites !== prev.favorites || state.decks !== prev.decks) {
         if (!useDictionaryStore.persist.hasHydrated()) return;
         onChange();
       }
