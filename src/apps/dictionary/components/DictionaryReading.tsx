@@ -95,11 +95,8 @@ export function DictionaryHeadword({
           system
         )
       : text;
-    if (entry.reading) {
-      readingParts = [
-        phonetics.pinyin ? formatChineseReading(entry.reading, "pinyin") : null,
-        phonetics.zhuyin ? formatChineseReading(entry.reading, "zhuyin") : null,
-      ];
+    if (entry.reading && phonetics.pinyin && system !== "pinyin") {
+      readingParts = [formatChineseReading(entry.reading, "pinyin")];
     }
     secondary = alternateChineseHeadword(entry, chineseScript);
   } else if (entry.lang === "ja") {
