@@ -464,6 +464,7 @@
         "appletImported": "Апплет импортирован!",
         "appletImportedDescription": "{{fileName}} сохранен в /Applets{{iconText}}",
         "appletImportedIconSuffix": " с иконкой {{icon}}",
+        "appletInstalled": "Applet установлен",
         "appletNotFound": "Апплет не найден",
         "appletNotFoundDescription": "Общий апплет, возможно, был удален, или ссылка недействительна.",
         "appletSaved": "Апплет сохранен",
@@ -480,7 +481,10 @@
         "couldNotImportFile": "Не удалось импортировать файл.",
         "exportFailed": "Экспорт не удался",
         "failedToDeleteApplet": "Не удалось удалить апплет",
+        "failedToFetchApplet": "Не удалось получить Applet",
         "failedToFetchSharedApplet": "Не удалось получить общий апплет",
+        "failedToInstallApplet": "Не удалось установить Applet",
+        "failedToLaunchApplet": "Не удалось запустить Applet",
         "failedToLoadSharedApplet": "Не удалось загрузить общий апплет",
         "failedToSaveApplet": "Не удалось сохранить апплет",
         "failedToShareApplet": "Не удалось поделиться апплетом",
@@ -488,6 +492,7 @@
         "failedToUpdateApplets": "Не удалось обновить апплеты",
         "failedToUpdateFeaturedStatus": "Не удалось обновить статус избранного",
         "importFailed": "Импорт не удался",
+        "installRequiresInternet": "Для установки Applet требуется подключение к интернету",
         "loading": "Загрузка…",
         "loginRequired": "Требуется вход",
         "mustBeLoggedInToShare": "Вам необходимо войти в систему, чтобы поделиться апплетами.",
@@ -2206,10 +2211,10 @@
         "nova": "Nova",
         "onyx": "Onyx",
         "ryo": "Ryo",
-        "ryoV2": "Ryo v2",
-        "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Мерцание"
       },
       "ui": "Интерфейс",
@@ -4263,6 +4268,14 @@
       "price": {
         "free": "Бесплатно"
       },
+      "printLabels": {
+        "allowPopups": "Разрешите всплывающие окна для печати QR-этикеток.",
+        "documentTitle": "Этикетки Stuff",
+        "generateFailed": "Не удалось создать QR-этикетки.",
+        "item": "Объект",
+        "nothingToPrint": "Нечего печатать.",
+        "tag": "Тег"
+      },
       "scannedItemTitle": "Отсканированный предмет",
       "scanner": {
         "add": "Добавить",
@@ -4289,6 +4302,7 @@
       },
       "searchPlaceholder": "Искать вещи…",
       "share": {
+        "defaultTitle": "Мои вещи",
         "description": "Опубликуйте выбранные предметы. Посетители должны войти, чтобы резервировать или предлагать цену.",
         "empty": "Нет предметов для публикации.",
         "failed": "Не удалось опубликовать.",
@@ -4331,6 +4345,18 @@
         "printTag": "Печать этикетки тега",
         "status": "Статус",
         "tags": "Теги"
+      },
+      "sources": {
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "duckduckgo": "DuckDuckGo",
+        "googleBooks": "Google Books",
+        "itunes": "iTunes",
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library",
+        "openproductsfacts": "Open Products Facts",
+        "upcitemdb": "UPCitemdb",
+        "wikipedia": "Wikipedia"
       },
       "status": {
         "all": "Все статусы",

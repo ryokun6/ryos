@@ -460,6 +460,7 @@
         "appletImported": "Applet 已导入！",
         "appletImportedDescription": "{{fileName}} 已保存到 /Applets{{iconText}}",
         "appletImportedIconSuffix": "，图标为 {{icon}}",
+        "appletInstalled": "Applet 已安装",
         "appletNotFound": "找不到 Applet",
         "appletNotFoundDescription": "共享的 Applet 可能已被删除，或链接无效。",
         "appletSaved": "Applet 已保存",
@@ -476,7 +477,10 @@
         "couldNotImportFile": "无法导入文件。",
         "exportFailed": "导出失败",
         "failedToDeleteApplet": "无法删除 Applet",
+        "failedToFetchApplet": "获取 Applet 失败",
         "failedToFetchSharedApplet": "无法获取共享 Applet",
+        "failedToInstallApplet": "安装 Applet 失败",
+        "failedToLaunchApplet": "启动 Applet 失败",
         "failedToLoadSharedApplet": "无法加载共享 Applet",
         "failedToSaveApplet": "无法保存 Applet",
         "failedToShareApplet": "无法共享 Applet",
@@ -484,6 +488,7 @@
         "failedToUpdateApplets": "无法更新 Applet",
         "failedToUpdateFeaturedStatus": "无法更新精选状态",
         "importFailed": "导入失败",
+        "installRequiresInternet": "Applet 安装需要互联网连接",
         "loading": "正在加载…",
         "loginRequired": "需要登录",
         "mustBeLoggedInToShare": "您必须登录才能共享 Applet。",
@@ -2199,10 +2204,10 @@
         "nova": "Nova",
         "onyx": "Onyx",
         "ryo": "Ryo",
-        "ryoV2": "Ryo v2",
-        "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Shimmer"
       },
       "ui": "用户界面",
@@ -4254,6 +4259,14 @@
       "price": {
         "free": "免费"
       },
+      "printLabels": {
+        "allowPopups": "允许弹出式窗口以打印二维码标签。",
+        "documentTitle": "Stuff 标签",
+        "generateFailed": "无法生成二维码标签。",
+        "item": "项目",
+        "nothingToPrint": "没有可打印的内容。",
+        "tag": "标签"
+      },
       "scannedItemTitle": "扫描的项目",
       "scanner": {
         "add": "添加",
@@ -4280,6 +4293,7 @@
       },
       "searchPlaceholder": "搜索 Stuff…",
       "share": {
+        "defaultTitle": "我的 Stuff",
         "description": "发布所选项目。访客必须登录才能预订或竞投。",
         "empty": "没有可共享的项目。",
         "failed": "无法发布共享。",
@@ -4322,6 +4336,18 @@
         "printTag": "打印标签",
         "status": "状态",
         "tags": "标签"
+      },
+      "sources": {
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "duckduckgo": "DuckDuckGo",
+        "googleBooks": "Google Books",
+        "itunes": "iTunes",
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library",
+        "openproductsfacts": "Open Products Facts",
+        "upcitemdb": "UPCitemdb",
+        "wikipedia": "Wikipedia"
       },
       "status": {
         "all": "所有状态",

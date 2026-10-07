@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import {
@@ -46,6 +47,7 @@ export const extractEmojiIcon = (
 };
 
 export const useAppletActions = () => {
+  const { t } = useTranslation();
   const { saveFile } = useVfsFileOperations("/Applets");
   const files = useFileMetadataInPath("/Applets");
   const launchApp = useLaunchApp();
@@ -151,7 +153,7 @@ export const useAppletActions = () => {
           await openInstalledApplet(installedApplet);
         } catch (error) {
           console.error("Error launching applet from disk:", error);
-          toast.error("Failed to launch applet");
+          toast.error(t("apps.applet-viewer.dialogs.failedToLaunchApplet"));
         }
       }
     } else {
@@ -163,7 +165,7 @@ export const useAppletActions = () => {
   const handleInstall = async (applet: Applet, onSuccess?: () => void) => {
     // Check if offline
     if (typeof navigator !== "undefined" && "onLine" in navigator && !navigator.onLine) {
-      throw new Error("Applet installation requires an internet connection");
+      throw new Error(t("apps.applet-viewer.dialogs.installRequiresInternet"));
     }
 
     try {
@@ -177,7 +179,7 @@ export const useAppletActions = () => {
         }
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch applet");
+        throw new Error(t("apps.applet-viewer.dialogs.failedToFetchApplet"));
       }
 
       const data = await response.json();
@@ -245,11 +247,17 @@ export const useAppletActions = () => {
         });
       }
       
-      toast.success(isUpdate ? "Applet updated" : "Applet installed", {
-        description: `Saved to /Applets/${finalName}`,
+      toast.success(
+        isUpdate
+          ? t("apps.applet-viewer.dialogs.appletUpdated")
+          : t("apps.applet-viewer.dialogs.appletInstalled"),
+        {
+        description: t("apps.applet-viewer.dialogs.appletSavedDescription", {
+          fileName: finalName,
+        }),
         duration: 3000,
         action: {
-          label: "Open",
+          label: t("apps.applet-viewer.status.open"),
           onClick: () => {
             launchApp("applet-viewer", {
               initialData: {
@@ -277,8 +285,11 @@ export const useAppletActions = () => {
       }
     } catch (error) {
       console.error("Error installing applet:", error);
-      toast.error("Failed to install applet", {
-        description: error instanceof Error ? error.message : "Please try again later.",
+      toast.error(t("apps.applet-viewer.dialogs.failedToInstallApplet"), {
+        description:
+          error instanceof Error
+            ? error.message
+            : t("apps.applet-viewer.dialogs.pleaseTryAgainLater"),
       });
     }
   };

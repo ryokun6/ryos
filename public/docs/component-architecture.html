@@ -471,6 +471,12 @@
     <a href="/docs/terms" class="">11. Terms of Service</a>
   </div>
 </div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/support" class="">12. Support</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -595,7 +601,7 @@
 <h3>Dock (<code>Dock.tsx</code>)</h3>
 <p>macOS-style dock with magnification.</p>
 <strong>Features:</strong>
-<ul><li>Icon magnification on hover</li><li>Running app indicators</li><li>Pinned items management</li><li>Drag-to-reorder</li><li>Context menus</li></ul>
+<ul><li>Icon magnification on hover</li><li>Running app indicators</li><li>Pinned items management</li><li>Drag-to-reorder</li><li>Context menus</li><li>Side layout: when a side content inset is at least 72px (the iPhone Duo cover display's status-bar strip), the dock runs vertically inside that strip and windows stop reserving dock space at the bottom (<code>dockPlacement.ts</code>). Its top sits 12px below the system status cluster the iOS shell reports as <code>window.ryosDesktop.sideStatusBarExtent</code> (150px folded, 88px open; mirrored into <code>--side-bar-extent</code> and updated on each <code>ryos-status-bar-extent</code> event), it keeps a 12px bottom margin, and it scrolls when it has more icons than fit</li></ul>
 <h3>Component Hierarchy</h3>
 <pre class="mermaid">graph TD
     AM[AppManager] --> MB[MenuBar]

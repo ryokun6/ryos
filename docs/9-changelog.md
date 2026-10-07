@@ -25,7 +25,7 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-09-03-youbike-overlay-16x9.webp" alt="YouBike overlay in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>YouBike overlay</h3><p>Live YouBike 2.0 stations cover Taiwan, including Taichung and other cities beyond Taipei.</p></div></article>
 </div>
 <details>
-<summary>More from this month (21)</summary>
+<summary>More from this month (22)</summary>
 
 - **Ryo PVC speech**: default signed-in Ryo chat TTS to ElevenLabs Ryo PVC, add Instant v4, and play PVC a bit quieter so it does not clip.
 - Restrict Ryo ElevenLabs voices to Ryo chat so Maps, Books, and other speak features use browser speech.
@@ -48,6 +48,7 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 - Fix the blank ryo.lu page in Internet Explorer.
 - Fix Aqua Dark Calculator convert-divider and unit-select gloss.
 - Refresh local build stamps and record the Electron git-dependency integrity hash.
+- Localize Stuff print labels, catalog sources, and the default share title.
 
 </details>
 

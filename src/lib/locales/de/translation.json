@@ -460,6 +460,7 @@
         "appletImported": "Applet importiert!",
         "appletImportedDescription": "{{fileName}} in /Applets{{iconText}} gespeichert",
         "appletImportedIconSuffix": " mit {{icon}}-Symbol",
+        "appletInstalled": "Applet installiert",
         "appletNotFound": "Applet nicht gefunden",
         "appletNotFoundDescription": "Das geteilte Applet wurde möglicherweise gelöscht oder der Link ist ungültig.",
         "appletSaved": "Applet gespeichert",
@@ -476,7 +477,10 @@
         "couldNotImportFile": "Die Datei konnte nicht importiert werden.",
         "exportFailed": "Export fehlgeschlagen",
         "failedToDeleteApplet": "Applet konnte nicht gelöscht werden.",
+        "failedToFetchApplet": "Applet konnte nicht abgerufen werden",
         "failedToFetchSharedApplet": "Das freigegebene Applet konnte nicht abgerufen werden.",
+        "failedToInstallApplet": "Applet konnte nicht installiert werden",
+        "failedToLaunchApplet": "Applet konnte nicht gestartet werden",
         "failedToLoadSharedApplet": "Das freigegebene Applet konnte nicht geladen werden.",
         "failedToSaveApplet": "Applet konnte nicht gespeichert werden.",
         "failedToShareApplet": "Applet konnte nicht freigegeben werden.",
@@ -484,6 +488,7 @@
         "failedToUpdateApplets": "Applets konnten nicht aktualisiert werden.",
         "failedToUpdateFeaturedStatus": "Der Empfehlungsstatus konnte nicht aktualisiert werden.",
         "importFailed": "Import fehlgeschlagen",
+        "installRequiresInternet": "Die Applet-Installation erfordert eine Internetverbindung",
         "loading": "Laden …",
         "loginRequired": "Anmeldung erforderlich",
         "mustBeLoggedInToShare": "Sie müssen angemeldet sein, um Applets freizugeben.",
@@ -2199,10 +2204,10 @@
         "nova": "Nova",
         "onyx": "Onyx",
         "ryo": "Ryo",
-        "ryoV2": "Ryo v2",
-        "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Schimmer"
       },
       "ui": "UI",
@@ -4254,6 +4259,14 @@
       "price": {
         "free": "Gratis"
       },
+      "printLabels": {
+        "allowPopups": "Pop-ups erlauben, um QR-Etiketten zu drucken.",
+        "documentTitle": "Stuff-Etiketten",
+        "generateFailed": "QR-Etiketten konnten nicht erstellt werden.",
+        "item": "Objekt",
+        "nothingToPrint": "Nichts zu drucken.",
+        "tag": "Tag"
+      },
       "scannedItemTitle": "Gescanntes Objekt",
       "scanner": {
         "add": "Hinzufügen",
@@ -4280,6 +4293,7 @@
       },
       "searchPlaceholder": "Sachen suchen…",
       "share": {
+        "defaultTitle": "Mein Stuff",
         "description": "Ausgewählte Einträge veröffentlichen. Besucher müssen sich anmelden, um zu reservieren oder zu bieten.",
         "empty": "Keine Einträge zum Teilen.",
         "failed": "Freigabe konnte nicht veröffentlicht werden.",
@@ -4322,6 +4336,18 @@
         "printTag": "Schlagwortetikett drucken",
         "status": "Status",
         "tags": "Schlagwörter"
+      },
+      "sources": {
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "duckduckgo": "DuckDuckGo",
+        "googleBooks": "Google Books",
+        "itunes": "iTunes",
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library",
+        "openproductsfacts": "Open Products Facts",
+        "upcitemdb": "UPCitemdb",
+        "wikipedia": "Wikipedia"
       },
       "status": {
         "all": "Alle Status",

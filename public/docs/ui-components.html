@@ -471,6 +471,12 @@
     <a href="/docs/terms" class="">11. Terms of Service</a>
   </div>
 </div>
+<div class="nav-group">
+  <div class="nav-toggle nav-no-toggle">
+    <span class="nav-spacer"></span>
+    <a href="/docs/support" class="">12. Support</a>
+  </div>
+</div>
     </nav>
     
     <main class="content">
@@ -502,7 +508,7 @@
 <h2>Technologies</h2>
 <ul><li><strong>React 19</strong> with TypeScript for type-safe component development</li></ul><ul><li><strong>Tailwind CSS</strong> for utility-first styling and theme support</li><li><strong>shadcn/ui</strong> component library for accessible, customizable UI primitives</li><li><strong>Motion</strong> for animations and transitions</li></ul>
 <h2>Component Architecture</h2>
-<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: ~20 shadcn/ui primitives in <code>src/components/ui/</code></li></ol><ol><li><strong>Custom Layer</strong>: ~12 specialized UI components in the same folder (activity indicators, aqua-checkbox, audio-bars, dial, playback-bars, search-input, right-click-menu, etc.)</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
+<p>The UI system follows a layered approach: <ol><li><strong>Base Layer</strong>: 21 shadcn/ui primitives in <code>src/components/ui/</code></li></ol><ol><li><strong>Custom Layer</strong>: ~12 specialized UI components in the same folder (activity indicators, aqua-checkbox, audio-bars, dial, playback-bars, search-input, right-click-menu, etc.)</li><li><strong>Layout Layer</strong>: WindowFrame, MenuBar, Desktop, and Dock components manage the desktop environment structure</li><li><strong>Application Layer</strong>: Dialog, shared, and error components provide common patterns used across multiple apps (including runtime crash recovery)</li></ol></p>
 <pre class="mermaid">graph TD
     subgraph Layer 4: Application
         D1[Dialog Components]

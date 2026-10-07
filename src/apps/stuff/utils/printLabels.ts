@@ -175,13 +175,17 @@ export function tagToLabelTarget(tag: StuffTag): StuffLabelTarget {
     kind: "tag",
     id: tag.id,
     title: stuffTagDisplayName(tag, i18n.t.bind(i18n)),
-    subtitle: "Tag",
+    subtitle: i18n.t("apps.stuff.printLabels.tag", { defaultValue: "Tag" }),
   };
 }
 
 export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<void> {
   if (targets.length === 0) {
-    window.alert("Nothing to print.");
+    window.alert(
+      i18n.t("apps.stuff.printLabels.nothingToPrint", {
+        defaultValue: "Nothing to print.",
+      })
+    );
     return;
   }
 
@@ -190,7 +194,12 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
       const payload = encodeStuffId(target.kind, target.id);
       const qr = renderStuffIdQrSvg(target.kind, target.id, 128);
       if (!qr) return "";
-      const kindLabel = target.kind === "tag" ? "Tag" : "Item";
+      const kindLabel = i18n.t(
+        target.kind === "tag"
+          ? "apps.stuff.printLabels.tag"
+          : "apps.stuff.printLabels.item",
+        { defaultValue: target.kind === "tag" ? "Tag" : "Item" }
+      );
       return `<div class="label">
         <div class="kind">${escapeHtml(kindLabel)}</div>
         <div class="title">${escapeHtml(target.title)}</div>
@@ -207,14 +216,18 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
 
   const labels = rendered.filter(Boolean).join("\n");
   if (!labels) {
-    window.alert("Could not generate QR labels.");
+    window.alert(
+      i18n.t("apps.stuff.printLabels.generateFailed", {
+        defaultValue: "Could not generate QR labels.",
+      })
+    );
     return;
   }
 
   const html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Stuff Labels</title>
+  <title>${escapeHtml(i18n.t("apps.stuff.printLabels.documentTitle", { defaultValue: "Stuff Labels" }))}</title>
   <style>
     @page { margin: 0.4in; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; }
@@ -248,7 +261,11 @@ export async function printStuffLabels(targets: StuffLabelTarget[]): Promise<voi
 
   const win = window.open("", "_blank", "noopener,noreferrer,width=800,height=600");
   if (!win) {
-    window.alert("Allow pop-ups to print QR labels.");
+    window.alert(
+      i18n.t("apps.stuff.printLabels.allowPopups", {
+        defaultValue: "Allow pop-ups to print QR labels.",
+      })
+    );
     return;
   }
   win.document.open();

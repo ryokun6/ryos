@@ -61,9 +61,16 @@ graph LR
 | `/api/chat` | Main AI chat with tool calling |
 | `/api/ai/conversations/:channel` | Synced Chat and Assistant history |
 | `/api/ai/conversations/:channel/reset` | Clear synced history and process memories |
+| `/api/ai/conversations/:channel/greeting` | Server-owned proactive greeting (`chat` channel) |
 | `/api/ai/attachments/:id` | Private synced chat images |
 | `/api/applet-ai` | Applet text + image generation |
 | `/api/stuff/remove-background` | Stuff cover background removal (transparent PNG) |
+| `/api/stuff/barcode-lookup` | Barcode product lookup |
+| `/api/stuff/product-lookup` | Keyword product lookup |
+| `/api/stuff/product-image` | Server-side product cover fetch |
+| `/api/stuff/shares` | Read, publish, or delete a shared shelf |
+| `/api/stuff/shares/:id/reserve` | Reserve an item on a shared shelf |
+| `/api/stuff/shares/:id/bid` | Place an offer on a shared-shelf item |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |
 | `/api/ai/extract-memories` | Daily-note and long-term memory extraction |
@@ -172,7 +179,7 @@ graph TD
     AI --> ie["/ie-generate"]
     AI --> parse["/parse-title"]
     
-    Media --> song["/song/*"]
+    Media --> song["/songs"]
     Media --> speech["/speech"]
     Media --> transcribe["/audio-transcribe"]
     Media --> yt["/youtube-search"]
@@ -189,7 +196,7 @@ graph TD
     Util --> iframe["/iframe-check"]
     Util --> share["/share-applet"]
     Util --> stocks["/stocks"]
-    Util --> sync["/sync/v2/* + backup"]
+    Util --> sync["/sync/v2/*"]
     Util --> admin["/admin"]
 ```
 

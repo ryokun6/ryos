@@ -2946,6 +2946,11 @@
         "failedToUpdateApplets": "Failed to update applets",
         "failedToUpdateApplet": "Failed to update applet",
         "pleaseTryAgainLater": "Try again later.",
+        "failedToLaunchApplet": "Failed to launch applet",
+        "failedToInstallApplet": "Failed to install applet",
+        "failedToFetchApplet": "Failed to fetch applet",
+        "installRequiresInternet": "Applet installation requires an internet connection",
+        "appletInstalled": "Applet installed",
         "appletImported": "Applet imported!",
         "appletImportedDescription": "{{fileName}} saved to /Applets{{iconText}}",
         "appletImportedIconSuffix": " with {{icon}} icon",
@@ -5249,8 +5254,29 @@
         "unknownItem": "No item found for that ryOS label.",
         "unknownTag": "No tag found for that ryOS label."
       },
+      "sources": {
+        "upcitemdb": "UPCitemdb",
+        "openlibrary": "Open Library",
+        "googleBooks": "Google Books",
+        "openfoodfacts": "Open Food Facts",
+        "openproductsfacts": "Open Products Facts",
+        "duckduckgo": "DuckDuckGo",
+        "wikipedia": "Wikipedia",
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "itunes": "iTunes"
+      },
+      "printLabels": {
+        "documentTitle": "Stuff Labels",
+        "nothingToPrint": "Nothing to print.",
+        "generateFailed": "Could not generate QR labels.",
+        "allowPopups": "Allow pop-ups to print QR labels.",
+        "tag": "Tag",
+        "item": "Item"
+      },
       "share": {
         "title": "Share Stuff",
+        "defaultTitle": "My Stuff",
         "description": "Publish selected items. Visitors must sign in to reserve or bid.",
         "shelfTitle": "Share Title",
         "empty": "No items to share.",

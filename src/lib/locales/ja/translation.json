@@ -460,6 +460,7 @@
         "appletImported": "アプレットをインポートしました！",
         "appletImportedDescription": "{{fileName}}を /Applets{{iconText}}に保存しました",
         "appletImportedIconSuffix": "（{{icon}}アイコン付き）",
+        "appletInstalled": "Appletをインストールしました",
         "appletNotFound": "アプレットが見つかりません",
         "appletNotFoundDescription": "共有されたアプレットが削除されたか、リンクが無効な可能性があります。",
         "appletSaved": "アプレットを保存しました",
@@ -476,7 +477,10 @@
         "couldNotImportFile": "ファイルをインポートできませんでした。",
         "exportFailed": "エクスポートに失敗しました",
         "failedToDeleteApplet": "アプレットの削除に失敗しました",
+        "failedToFetchApplet": "Appletを取得できませんでした",
         "failedToFetchSharedApplet": "共有アプレットの取得に失敗しました",
+        "failedToInstallApplet": "Appletをインストールできませんでした",
+        "failedToLaunchApplet": "Appletを起動できませんでした",
         "failedToLoadSharedApplet": "共有アプレットの読み込みに失敗しました",
         "failedToSaveApplet": "アプレットの保存に失敗しました",
         "failedToShareApplet": "アプレットの共有に失敗しました",
@@ -484,6 +488,7 @@
         "failedToUpdateApplets": "アプレットの更新に失敗しました",
         "failedToUpdateFeaturedStatus": "注目のステータスの更新に失敗しました",
         "importFailed": "インポートに失敗しました",
+        "installRequiresInternet": "Appletのインストールにはインターネット接続が必要です",
         "loading": "読み込み中…",
         "loginRequired": "ログインが必要です",
         "mustBeLoggedInToShare": "アプレットを共有するにはログインしている必要があります。",
@@ -2199,10 +2204,10 @@
         "nova": "Nova",
         "onyx": "Onyx",
         "ryo": "Ryo",
-        "ryoV2": "Ryo v2",
-        "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "シマー"
       },
       "ui": "UI",
@@ -4254,6 +4259,14 @@
       "price": {
         "free": "無料"
       },
+      "printLabels": {
+        "allowPopups": "QRラベルをプリントするには、ポップアップを許可してください。",
+        "documentTitle": "Stuffラベル",
+        "generateFailed": "QRラベルを作成できませんでした。",
+        "item": "項目",
+        "nothingToPrint": "プリントするものがありません。",
+        "tag": "タグ"
+      },
       "scannedItemTitle": "スキャンしたアイテム",
       "scanner": {
         "add": "追加",
@@ -4280,6 +4293,7 @@
       },
       "searchPlaceholder": "持ち物を検索…",
       "share": {
+        "defaultTitle": "マイStuff",
         "description": "選択したアイテムを公開します。予約や入札にはサインインが必要です。",
         "empty": "共有するアイテムがありません。",
         "failed": "共有を公開できませんでした。",
@@ -4322,6 +4336,18 @@
         "printTag": "タグラベルをプリント",
         "status": "状況",
         "tags": "タグ"
+      },
+      "sources": {
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "duckduckgo": "DuckDuckGo",
+        "googleBooks": "Google Books",
+        "itunes": "iTunes",
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library",
+        "openproductsfacts": "Open Products Facts",
+        "upcitemdb": "UPCitemdb",
+        "wikipedia": "Wikipedia"
       },
       "status": {
         "all": "すべてのステータス",

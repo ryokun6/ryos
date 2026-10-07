@@ -58,7 +58,7 @@ graph TD
 | `memoryRead` | Unified memory reader (`long_term` by key or `daily` by date) |
 | `memoryDelete` | Delete long-term memory by key |
 | `songLibraryControl` | Telegram/server-side song library search and cached metadata access |
-| `web_search` | OpenAI provider web search (GPT-5.5 only, authenticated users, with geolocation context) |
+| `web_search` | OpenAI provider web search (`gpt-6` and `gpt-5.5`, authenticated users, with geolocation context) |
 | `google_search` | Google provider web search (Gemini 3 Flash only, authenticated users) |
 | `webFetch` | Server-side URL fetch with HTML-to-text extraction for Ryo (sanitized) |
 | `runJs` | Run pure JavaScript (ES2023) in a server-side QuickJS WASM sandbox; returns captured console output and the completion value (no network, timers, or DOM) |

@@ -7,6 +7,7 @@ import { extractMetadataFromHtml, injectMetadataIntoHtml, type AppletMetadata } 
 import { extractEmojiIcon } from "@/apps/applet-viewer/utils/appletActions";
 import { useFilesStore } from "@/stores/useFilesStore";
 import { toast } from "sonner";
+import i18n from "@/lib/i18n";
 import { saveBlobToDevice } from "@/utils/nativeFileDialogs";
 
 export interface ImportedAppletData {
@@ -250,15 +251,17 @@ export async function exportAppletAsApp(
       filters: [{ name: "ryOS Applet", extensions: ["app"] }],
     });
 
-    toast.success("Applet exported!", {
-      description: `${finalFilename}.app exported successfully.`,
+    toast.success(i18n.t("apps.applet-viewer.dialogs.appletExported"), {
+      description: i18n.t("apps.applet-viewer.dialogs.appletExportedDescription", {
+        fileName: finalFilename,
+      }),
     });
   } catch (compressionError) {
     console.error("Compression failed:", compressionError);
-    toast.error("Export failed", {
+    toast.error(i18n.t("apps.applet-viewer.dialogs.exportFailed"), {
       description: compressionError instanceof Error
         ? compressionError.message
-        : "Could not compress the applet file.",
+        : i18n.t("apps.applet-viewer.dialogs.couldNotCompressAppletFile"),
     });
     throw compressionError;
   }
