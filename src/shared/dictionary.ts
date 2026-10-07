@@ -74,7 +74,7 @@ export const DICTIONARY_SOURCE_INFO: Record<DictionarySource, DictionarySourceIn
 
 export interface DictionaryExample {
   text: string;
-  /** Kana (ja), numbered pinyin (zh) or romanization (ko) when known. */
+  /** Kana (ja), tone-marked pinyin (zh) or romanization (ko) when known. */
   reading?: string;
   /** ja: per-kanji readings for furigana rendering. */
   furigana?: { text: string; reading?: string }[];

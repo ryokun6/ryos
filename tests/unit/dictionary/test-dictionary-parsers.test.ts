@@ -79,7 +79,7 @@ describe("JMdict", () => {
       senses: [
         {
           glosses: ["study"],
-          partOfSpeech: "noun, noun or participle which takes the aux. verb suru",
+          partOfSpeech: "noun, suru verb",
           synonyms: ["学習"],
         },
       ],
@@ -103,6 +103,9 @@ describe("JMdict", () => {
   test("shortens tag descriptions", () => {
     expect(shortenJmdictTag("n", tags)).toBe("noun");
     expect(shortenJmdictTag("unknown", tags)).toBe("unknown");
+    expect(shortenJmdictTag("vs", tags)).toBe("suru verb");
+    expect(shortenJmdictTag("v5r")).toBe("godan verb");
+    expect(shortenJmdictTag("arch", { arch: "archaic (rare)" })).toBe("archaic");
   });
 });
 
@@ -273,6 +276,58 @@ describe("remote dictionary parsers", () => {
       },
     ]);
     expect(parseWiktionaryResponse({ en: [] }, "ko", "사랑")).toBeNull();
+
+    const zh = parseWiktionaryResponse(
+      {
+        zh: [
+          {
+            partOfSpeech: "Verb",
+            definitions: [
+              {
+                definition: "to learn",
+                examples: ["刻苦學習／刻苦学习 ― <i>kèkǔ xuéxí</i> ― to study hard"],
+              },
+            ],
+          },
+        ],
+      },
+      "zh",
+      "學習"
+    );
+    expect(zh?.senses[0].examples).toEqual([
+      { text: "刻苦学习", reading: "kèkǔ xuéxí", translation: "to study hard" },
+    ]);
     expect(stripHtml("a&nbsp;<i>b</i> &amp; c")).toBe("a b & c");
+  });
+
+  test("Wiktionary: dedupes glosses and treats transliteration-only translations as readings", () => {
+    const entry = parseWiktionaryResponse(
+      {
+        ja: [
+          {
+            partOfSpeech: "Noun",
+            definitions: [
+              {
+                definition: "studying",
+                parsedExamples: [
+                  {
+                    example: "成績(せいせき)のため",
+                    translation:
+                      '<i><span class="e-transliteration tr">seiseki no tame</span></i>',
+                  },
+                ],
+              },
+              { definition: "Studying" },
+            ],
+          },
+        ],
+      },
+      "ja",
+      "勉強"
+    );
+    expect(entry?.senses[0].glosses).toEqual(["studying"]);
+    const example = entry?.senses[0].examples?.[0];
+    expect(example?.translation).toBeUndefined();
+    expect(example?.reading).toBe("seiseki no tame");
   });
 });

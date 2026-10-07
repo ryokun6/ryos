@@ -13,6 +13,8 @@ const REMOTE_TIMEOUT_MS = 6000;
 const REMOTE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7;
 const REMOTE_MISS_TTL_SECONDS = 60 * 60 * 6;
 const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
+/** Bump when parser output changes so cached entries are re-parsed. */
+const PARSER_CACHE_VERSION = "v3";
 
 export function stripHtml(html: string): string {
   return decodeHtmlEntitiesOnce(html.replace(/<[^>]+>/g, ""))
@@ -138,16 +140,39 @@ function toExample(
   raw: { example: string; translation?: string; transliteration?: string },
   lang: DictionaryLanguage
 ): DictionaryExample | null {
-  const exampleText = stripHtml(raw.example);
+  let exampleText = stripHtml(raw.example);
   if (!exampleText) return null;
+  let inlineReading: string | undefined;
+  let inlineTranslation: string | undefined;
+  // Some entries inline everything: "刻苦學習／刻苦学习 ― kèkǔ xuéxí ― to study hard".
+  if (lang !== "en" && !raw.translation) {
+    const parts = exampleText.split(/\s+―\s+/).map((part) => part.trim());
+    if (parts.length === 3) [exampleText, inlineReading, inlineTranslation] = parts;
+    else if (parts.length === 2) [exampleText, inlineTranslation] = parts;
+  }
+  if (lang === "zh") {
+    // "traditional／simplified" — the client converts to the preferred script.
+    const scripts = exampleText.split("／");
+    if (scripts.length === 2) exampleText = scripts[1].trim();
+  }
   const example: DictionaryExample = { text: exampleText };
+  if (inlineReading) example.reading = inlineReading;
+  if (inlineTranslation) example.translation = inlineTranslation;
   if (lang === "ja") {
     const parsed = parseInlineFurigana(exampleText);
     example.text = parsed.text;
     if (parsed.segments.some((segment) => segment.reading)) example.furigana = parsed.segments;
   }
   if (raw.transliteration) example.reading = stripHtml(raw.transliteration);
-  if (raw.translation) example.translation = stripHtml(raw.translation);
+  if (raw.translation) {
+    // Wiktionary sometimes puts the romanization in `translation` when an
+    // example has no English rendering.
+    if (raw.translation.includes("e-transliteration")) {
+      example.reading ??= stripHtml(raw.translation);
+    } else {
+      example.translation = stripHtml(raw.translation);
+    }
+  }
   return example;
 }
 
@@ -166,7 +191,9 @@ export function parseWiktionaryResponse(
     const examples: DictionaryExample[] = [];
     for (const definition of definitions) {
       const gloss = stripHtml(definition.definition ?? "");
-      if (gloss) glosses.push(gloss);
+      if (gloss && !glosses.some((g) => g.toLowerCase() === gloss.toLowerCase())) {
+        glosses.push(gloss);
+      }
       const rawExamples =
         definition.parsedExamples ??
         (definition.examples ?? []).map((example) => ({ example }));
@@ -236,7 +263,7 @@ async function cached<T>(
 }
 
 export function dictionaryCacheKey(source: string, lang: string, term: string): string {
-  return redisKey("cache", "dictionary", source, lang, term);
+  return redisKey("cache", "dictionary", PARSER_CACHE_VERSION, source, lang, term);
 }
 
 export async function fetchFreeDictionary(

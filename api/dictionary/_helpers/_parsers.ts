@@ -95,8 +95,47 @@ export interface JmdictFile {
   words: JmdictWord[];
 }
 
+const JMDICT_SHORT_TAGS: Record<string, string> = {
+  n: "noun",
+  "n-suf": "suffix",
+  "n-pref": "prefix",
+  "n-adv": "adverbial noun",
+  "n-t": "temporal noun",
+  vs: "suru verb",
+  "vs-i": "suru verb",
+  "vs-s": "suru verb",
+  vt: "transitive",
+  vi: "intransitive",
+  v1: "ichidan verb",
+  vk: "kuru verb",
+  "adj-i": "i-adjective",
+  "adj-ix": "i-adjective",
+  "adj-na": "na-adjective",
+  "adj-no": "no-adjective",
+  "adj-pn": "pre-noun adjectival",
+  "adj-t": "taru-adjective",
+  "adj-f": "prenominal",
+  adv: "adverb",
+  "adv-to": "adverb (to)",
+  exp: "expression",
+  prt: "particle",
+  suf: "suffix",
+  pref: "prefix",
+  int: "interjection",
+  ctr: "counter",
+  conj: "conjunction",
+  pn: "pronoun",
+  num: "numeric",
+  cop: "copula",
+  "aux-v": "auxiliary verb",
+  "aux-adj": "auxiliary adjective",
+  aux: "auxiliary",
+};
+
 /** "noun (common) (futsuumeishi)" → "noun"; keeps short tags readable. */
 export function shortenJmdictTag(tag: string, tags: Record<string, string> = {}): string {
+  const short = JMDICT_SHORT_TAGS[tag] ?? (/^v5/.test(tag) ? "godan verb" : undefined);
+  if (short) return short;
   const description = tags[tag];
   if (!description) return tag;
   return description.replace(/\s*\([^)]*\)/g, "").trim() || tag;
