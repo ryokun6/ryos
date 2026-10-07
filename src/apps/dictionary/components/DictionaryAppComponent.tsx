@@ -74,7 +74,12 @@ export function DictionaryAppComponent({
 
   const menuBar = <DictionaryMenuBar l={l} onClose={onClose} onNewLookup={handleNewLookup} />;
 
-  const showSidebar = view !== "flashcards" && l.isSidebarVisible;
+  const isLookupSidebarEmpty =
+    view === "lookup" && l.entries.length === 0 && !l.isStartState;
+  const showSidebar =
+    view !== "flashcards" &&
+    l.isSidebarVisible &&
+    !(isMobileLayout && isLookupSidebarEmpty);
   const sidebarClassName = isMobileLayout
     ? "h-[150px] w-full max-w-none shrink-0 basis-auto self-stretch"
     : "w-[210px] shrink-0";

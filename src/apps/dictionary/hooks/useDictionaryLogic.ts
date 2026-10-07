@@ -221,6 +221,10 @@ export function useDictionaryLogic({
     return aiEntry ? [...list, aiEntry] : list;
   }, [result, aiEntry]);
 
+  /** Nothing typed and nothing looked up yet — the only state that lists recents. */
+  const isStartState =
+    status === "idle" && entries.length === 0 && !normalizeDictionaryQuery(query);
+
   const selectedEntry =
     entries.find((entry) => entry.id === selectedEntryId) ?? entries[0] ?? null;
 
@@ -380,6 +384,7 @@ export function useDictionaryLogic({
     status,
     error,
     entries,
+    isStartState,
     selectedEntry,
     setSelectedEntryId,
     resultLanguage,

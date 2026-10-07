@@ -146,7 +146,7 @@ export function DictionarySidebar({
                 useGeneva={useGeneva}
                 bordered={isMacOSTheme}
               />
-              <div className="max-h-[55%] shrink-0 overflow-y-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto">
                 {l.entries.map((entry) => (
                   <ListRow
                     key={entry.id}
@@ -164,28 +164,32 @@ export function DictionarySidebar({
               </div>
             </>
           ) : null}
-          <PanelHeader
-            title={t("apps.dictionary.sidebar.recent")}
-            useGeneva={useGeneva}
-            bordered={isMacOSTheme}
-          />
-          <div className="flex-1 overflow-y-auto">
-            {l.history.length === 0 ? (
-              <p className="px-3 py-4 text-center text-[11px] opacity-50">
-                {t("apps.dictionary.empty.noHistory")}
-              </p>
-            ) : (
-              l.history.map((item) => (
-                <ListRow
-                  key={`${item.lang}:${item.query}`}
-                  isSelected={false}
-                  onClick={() => l.searchFor(item.query, item.lang)}
-                  headword={item.query}
-                  lang={item.lang === "auto" ? undefined : item.lang}
-                />
-              ))
-            )}
-          </div>
+          {l.isStartState ? (
+            <>
+              <PanelHeader
+                title={t("apps.dictionary.sidebar.recent")}
+                useGeneva={useGeneva}
+                bordered={isMacOSTheme}
+              />
+              <div className="flex-1 overflow-y-auto">
+                {l.history.length === 0 ? (
+                  <p className="px-3 py-4 text-center text-[11px] opacity-50">
+                    {t("apps.dictionary.empty.noHistory")}
+                  </p>
+                ) : (
+                  l.history.map((item) => (
+                    <ListRow
+                      key={`${item.lang}:${item.query}`}
+                      isSelected={false}
+                      onClick={() => l.searchFor(item.query, item.lang)}
+                      headword={item.query}
+                      lang={item.lang === "auto" ? undefined : item.lang}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          ) : null}
         </>
       )}
     </AppSidebarPanel>
