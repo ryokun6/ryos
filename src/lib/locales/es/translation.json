@@ -462,6 +462,7 @@
         "appletImported": "Applet importado!",
         "appletImportedDescription": "{{fileName}} guardado en /Applets{{iconText}}",
         "appletImportedIconSuffix": " con el icono {{icon}}",
+        "appletInstalled": "Applet instalado",
         "appletNotFound": "Applet no encontrado",
         "appletNotFoundDescription": "El applet compartido puede haber sido eliminado o el enlace es inválido.",
         "appletSaved": "Applet guardado",
@@ -478,7 +479,10 @@
         "couldNotImportFile": "No se pudo importar el archivo.",
         "exportFailed": "Error de exportación",
         "failedToDeleteApplet": "No se pudo eliminar el applet",
+        "failedToFetchApplet": "No se ha podido obtener el applet",
         "failedToFetchSharedApplet": "Error al obtener el applet compartido",
+        "failedToInstallApplet": "No se ha podido instalar el applet",
+        "failedToLaunchApplet": "No se ha podido abrir el applet",
         "failedToLoadSharedApplet": "Error al cargar el applet compartido",
         "failedToSaveApplet": "Error al guardar applet",
         "failedToShareApplet": "Error al compartir applet",
@@ -486,6 +490,7 @@
         "failedToUpdateApplets": "Error al actualizar los applets",
         "failedToUpdateFeaturedStatus": "No se pudo actualizar el estado de destacado",
         "importFailed": "Error de importación",
+        "installRequiresInternet": "La instalación del applet requiere conexión a internet",
         "loading": "Cargando…",
         "loginRequired": "Inicio de sesión requerido",
         "mustBeLoggedInToShare": "Debe iniciar sesión para compartir applets.",
@@ -2201,10 +2206,10 @@
         "nova": "Nova",
         "onyx": "Onyx",
         "ryo": "Ryo",
-        "ryoV2": "Ryo v2",
-        "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Destello"
       },
       "ui": "Interfaz",
@@ -4257,6 +4262,14 @@
       "price": {
         "free": "Gratis"
       },
+      "printLabels": {
+        "allowPopups": "Permite las ventanas emergentes para imprimir etiquetas QR.",
+        "documentTitle": "Etiquetas de cosas",
+        "generateFailed": "No se han podido generar las etiquetas QR.",
+        "item": "Elemento",
+        "nothingToPrint": "Nada que imprimir.",
+        "tag": "Etiqueta"
+      },
       "scannedItemTitle": "Artículo escaneado",
       "scanner": {
         "add": "Añadir",
@@ -4283,6 +4296,7 @@
       },
       "searchPlaceholder": "Buscar cosas…",
       "share": {
+        "defaultTitle": "Mis cosas",
         "description": "Publica los artículos seleccionados. Los visitantes deben iniciar sesión para reservar u ofrecer.",
         "empty": "No hay artículos para compartir.",
         "failed": "No se pudo publicar el enlace.",
@@ -4325,6 +4339,18 @@
         "printTag": "Imprimir etiqueta del tag",
         "status": "Estado",
         "tags": "Etiquetas"
+      },
+      "sources": {
+        "amazon": "Amazon",
+        "apple": "Apple",
+        "duckduckgo": "DuckDuckGo",
+        "googleBooks": "Google Books",
+        "itunes": "iTunes",
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library",
+        "openproductsfacts": "Open Products Facts",
+        "upcitemdb": "UPCitemdb",
+        "wikipedia": "Wikipedia"
       },
       "status": {
         "all": "Todos los estados",

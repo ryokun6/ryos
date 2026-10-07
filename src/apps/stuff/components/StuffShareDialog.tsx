@@ -41,7 +41,9 @@ export function StuffShareDialog({
   const { t } = useTranslation();
   const auth = useAuth();
   const { isWindowsTheme, isMacOSTheme: isMacTheme } = useThemeFlags();
-  const [title, setTitle] = useState("My Stuff");
+  const [title, setTitle] = useState(() =>
+    t("apps.stuff.share.defaultTitle", { defaultValue: "My Stuff" })
+  );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(items.map((item) => item.id))
   );
@@ -128,7 +130,9 @@ export function StuffShareDialog({
         throwOnHttpError: false,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: title.trim() || "My Stuff",
+          title:
+            title.trim() ||
+            t("apps.stuff.share.defaultTitle", { defaultValue: "My Stuff" }),
           shareId: lastShareId ?? undefined,
           items: await Promise.all(
             shareableItems.map((item) => toSharedItemAsync(item, tags))

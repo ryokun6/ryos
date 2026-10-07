@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import type { ProductLookupResult } from "../utils/barcodeLookup";
 
 const listStyle: CSSProperties = {
@@ -41,29 +42,39 @@ function rowStyle(
   };
 }
 
-function sourceLabel(source?: string): string {
+function sourceLabel(t: TFunction, source?: string): string {
   switch (source) {
     case "upcitemdb":
-      return "UPCitemdb";
+      return t("apps.stuff.sources.upcitemdb", { defaultValue: "UPCitemdb" });
     case "openlibrary":
-      return "Open Library";
+      return t("apps.stuff.sources.openlibrary", {
+        defaultValue: "Open Library",
+      });
     case "google_books":
-      return "Google Books";
+      return t("apps.stuff.sources.googleBooks", {
+        defaultValue: "Google Books",
+      });
     case "openfoodfacts":
-      return "Open Food Facts";
+      return t("apps.stuff.sources.openfoodfacts", {
+        defaultValue: "Open Food Facts",
+      });
     case "openproductsfacts":
-      return "Open Products Facts";
+      return t("apps.stuff.sources.openproductsfacts", {
+        defaultValue: "Open Products Facts",
+      });
     case "duckduckgo_images":
-      return "DuckDuckGo";
+      return t("apps.stuff.sources.duckduckgo", {
+        defaultValue: "DuckDuckGo",
+      });
     case "wikipedia":
-      return "Wikipedia";
+      return t("apps.stuff.sources.wikipedia", { defaultValue: "Wikipedia" });
     case "amazon":
-      return "Amazon";
+      return t("apps.stuff.sources.amazon", { defaultValue: "Amazon" });
     case "apple":
-      return "Apple";
+      return t("apps.stuff.sources.apple", { defaultValue: "Apple" });
     case "itunes":
     case "itunes_music":
-      return "iTunes";
+      return t("apps.stuff.sources.itunes", { defaultValue: "iTunes" });
     default:
       return source?.trim() || "";
   }
@@ -245,7 +256,7 @@ export function StuffProductLookupDialog({
               const thumb = resultThumbnail(result);
               const rowSelected = selectedIndex === index;
               const price = formatPrice(result);
-              const source = sourceLabel(result.source);
+              const source = sourceLabel(t, result.source);
               const subtitleParts = [
                 result.brand,
                 price,
