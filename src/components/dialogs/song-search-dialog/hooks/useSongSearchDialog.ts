@@ -137,6 +137,12 @@ export function useSongSearchDialog({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (errorData.code === "youtube_quota_exhausted") {
+          throw new Error(t("apps.ipod.dialogs.songSearchQuotaExhausted"));
+        }
+        if (errorData.code === "youtube_unavailable") {
+          throw new Error(t("apps.ipod.dialogs.songSearchUnavailable"));
+        }
         let errorMsg =
           typeof errorData.error === "string" && errorData.error
             ? errorData.error

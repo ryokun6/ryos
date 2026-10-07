@@ -372,6 +372,7 @@ export const handleTvChannelAction = async (
           if (!response.ok) {
             const data = (await response.json().catch(() => ({}))) as {
               error?: string;
+              code?: string;
               scope?: string;
             };
             const isAuthRequired =
@@ -382,7 +383,12 @@ export const handleTvChannelAction = async (
             // UI's tool-error renderer can flag it differently from a
             // generic failure). Falls back to the generic failure text
             // for unknown statuses.
-            const errorText = isAuthRequired
+            const errorText = data?.code === "youtube_quota_exhausted"
+              ? i18n.t("apps.tv.create.errorYouTubeQuota", {
+                  defaultValue:
+                    "YouTube search has reached its daily limit. Try creating a channel later.",
+                })
+              : isAuthRequired
               ? i18n.t("apps.tv.create.signInRequired", {
                   defaultValue: "Sign in to create channels",
                 })
