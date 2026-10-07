@@ -33,6 +33,8 @@ export const SYNC_NAMESPACES = [
   // Stuff inventory metadata + cover image blobs (category: "stuff").
   "stuff",
   "stuff-images",
+  // Dictionary favorites + flashcard progress (category: "dictionary").
+  "dictionary",
 ] as const;
 
 export type SyncNamespace = (typeof SYNC_NAMESPACES)[number];
@@ -62,6 +64,7 @@ export const SYNC_CATEGORIES = [
   "maps",
   "books",
   "stuff",
+  "dictionary",
 ] as const;
 
 export type SyncCategory = (typeof SYNC_CATEGORIES)[number];
@@ -88,6 +91,7 @@ const NAMESPACE_TO_CATEGORY: Record<SyncNamespace, SyncCategory> = {
   wallpapers: "files",
   stuff: "stuff",
   "stuff-images": "stuff",
+  dictionary: "dictionary",
 };
 
 export function isSyncNamespace(value: unknown): value is SyncNamespace {

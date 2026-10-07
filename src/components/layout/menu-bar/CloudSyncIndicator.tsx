@@ -61,6 +61,10 @@ const SYNC_CATEGORY_META: Record<
   },
   books: { labelKey: "apps.control-panels.autoSync.books", appId: "books" },
   stuff: { labelKey: "apps.control-panels.autoSync.stuff", appId: "stuff" },
+  dictionary: {
+    labelKey: "apps.control-panels.autoSync.dictionary",
+    appId: "dictionary",
+  },
 };
 
 const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
@@ -75,6 +79,7 @@ const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
   "tv",
   "stickies",
   "stuff",
+  "dictionary",
 ];
 
 const MENU_VALUE = "cloud-sync";

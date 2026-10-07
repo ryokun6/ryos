@@ -188,6 +188,7 @@ export function ControlPanelsAppComponent({
     syncMaps,
     syncBooks,
     syncStuff,
+    syncDictionary,
     setSyncFiles,
     setSyncSettings,
     setSyncSongs,
@@ -199,6 +200,7 @@ export function ControlPanelsAppComponent({
     setSyncMaps,
     setSyncBooks,
     setSyncStuff,
+    setSyncDictionary,
     isAutoSyncChecking,
     autoSyncLastCheckedAt,
     autoSyncLastError,
@@ -338,6 +340,7 @@ export function ControlPanelsAppComponent({
       syncStickies={syncStickies}
       syncBooks={syncBooks}
       syncStuff={syncStuff}
+      syncDictionary={syncDictionary}
       setSyncFiles={setSyncFiles}
       setSyncSettings={setSyncSettings}
       setSyncCalendar={setSyncCalendar}
@@ -349,6 +352,7 @@ export function ControlPanelsAppComponent({
       setSyncStickies={setSyncStickies}
       setSyncBooks={setSyncBooks}
       setSyncStuff={setSyncStuff}
+      setSyncDictionary={setSyncDictionary}
       isCloudForceSyncing={isCloudForceSyncing}
       isCloudForceUploading={isCloudForceUploading}
       isCloudForceDownloading={isCloudForceDownloading}
