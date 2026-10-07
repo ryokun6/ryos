@@ -146,50 +146,62 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
     clear();
   };
 
-  const smallButton =
-    "flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-black/70 hover:bg-black/10 disabled:opacity-40";
+  const iconButton =
+    "flex size-6 shrink-0 items-center justify-center rounded text-black/70 hover:bg-black/10 disabled:opacity-40";
 
   return (
     <div
-      className="flex gap-3 border-b border-black/10 bg-white/70 p-2.5"
+      className="flex flex-col gap-2 border-t border-black/15 bg-white/95 p-2.5 shadow-[0_-10px_28px_rgba(0,0,0,0.18)]"
       role="group"
       aria-label={t("apps.dictionary.handwriting.title")}
     >
-      <canvas
-        ref={canvasRef}
-        style={{ width: PAD_SIZE, height: PAD_SIZE, touchAction: "none" }}
-        className="shrink-0 cursor-crosshair rounded border border-black/20 bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]"
-        aria-label={t("apps.dictionary.handwriting.canvas")}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishStroke}
-        onPointerCancel={finishStroke}
-      />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] font-semibold text-black/70">
-            {t("apps.dictionary.handwriting.title")}
-          </span>
-          <div className="flex-1" />
-          <button type="button" className={smallButton} onClick={undo} disabled={strokeCount === 0}>
-            <ArrowCounterClockwise size={12} />
-            {t("apps.dictionary.handwriting.undo")}
-          </button>
-          <button type="button" className={smallButton} onClick={clear} disabled={strokeCount === 0}>
-            <Trash size={12} />
-            {t("apps.dictionary.handwriting.clear")}
-          </button>
-          <button
-            type="button"
-            className={smallButton}
-            onClick={() => l.setHandwritingOpen(false)}
-            aria-label={t("common.menu.close")}
-            title={t("common.menu.close")}
-          >
-            <X size={12} />
-          </button>
-        </div>
-        <div className="mt-2 flex flex-1 flex-wrap content-start gap-1">
+      <div className="flex items-center gap-1">
+        <span className="text-[11px] font-semibold text-black/70">
+          {t("apps.dictionary.handwriting.title")}
+        </span>
+        <div className="min-w-2 flex-1" />
+        <button
+          type="button"
+          className={iconButton}
+          onClick={undo}
+          disabled={strokeCount === 0}
+          aria-label={t("apps.dictionary.handwriting.undo")}
+          title={t("apps.dictionary.handwriting.undo")}
+        >
+          <ArrowCounterClockwise size={14} />
+        </button>
+        <button
+          type="button"
+          className={iconButton}
+          onClick={clear}
+          disabled={strokeCount === 0}
+          aria-label={t("apps.dictionary.handwriting.clear")}
+          title={t("apps.dictionary.handwriting.clear")}
+        >
+          <Trash size={14} />
+        </button>
+        <button
+          type="button"
+          className={iconButton}
+          onClick={() => l.setHandwritingOpen(false)}
+          aria-label={t("common.menu.close")}
+          title={t("common.menu.close")}
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="flex min-w-0 gap-3">
+        <canvas
+          ref={canvasRef}
+          style={{ width: PAD_SIZE, height: PAD_SIZE, touchAction: "none" }}
+          className="shrink-0 cursor-crosshair rounded border border-black/20 bg-white shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]"
+          aria-label={t("apps.dictionary.handwriting.canvas")}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishStroke}
+          onPointerCancel={finishStroke}
+        />
+        <div className="flex min-w-0 flex-1 flex-wrap content-start gap-1">
           {status === "loading" ? (
             <p className="text-[11px] text-black/50">{t("apps.dictionary.handwriting.loading")}</p>
           ) : status === "error" ? (
@@ -213,7 +225,6 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
             ))
           )}
         </div>
-        <p className="mt-1 text-[10px] text-black/40">{t("apps.dictionary.handwriting.credit")}</p>
       </div>
     </div>
   );
