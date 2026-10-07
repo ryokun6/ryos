@@ -204,8 +204,8 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "lofi music" }),
       });
 
-      // 403/500 are acceptable: YouTube quota exceeded or API key not configured.
-      expect([200, 403, 429, 500]).toContain(res.status);
+      // 503 = every YouTube key out of quota, 502 = upstream rejected, 500 = not configured.
+      expect([200, 403, 429, 500, 502, 503]).toContain(res.status);
       if (res.status === 200) {
         const data = await res.json();
         expect(Array.isArray(data.results)).toBe(true);
@@ -229,7 +229,7 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "jazz music", maxResults: 5 }),
       });
 
-      expect([200, 403, 429, 500]).toContain(res.status);
+      expect([200, 403, 429, 500, 502, 503]).toContain(res.status);
       if (res.status === 200) {
         const data = await res.json();
         expect(Array.isArray(data.results)).toBe(true);
@@ -254,7 +254,7 @@ describe("youtube-search", () => {
         body: JSON.stringify({ query: "rate limit test" }),
       });
 
-      expect([200, 403, 429, 500]).toContain(res.status);
+      expect([200, 403, 429, 500, 502, 503]).toContain(res.status);
       if (res.status === 429) {
         const retryAfter = res.headers.get("Retry-After");
         expect(retryAfter).not.toBeNull();

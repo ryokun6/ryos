@@ -134,6 +134,11 @@ export async function executeSearchSongs(
           `[searchSongs] Trying ${keyLabel} API key (${keyIndex + 1}/${apiKeys.length})`
         );
       },
+      onKeyFailure: ({ keyIndex, keyLabel, kind, status, googleReason }) => {
+        context.log(
+          `[searchSongs] ${keyLabel} API key (${keyIndex + 1}/${apiKeys.length}) failed: ${kind}${status ? ` ${status}` : ""}${googleReason ? ` ${googleReason}` : ""}`
+        );
+      },
     }
   );
 
@@ -141,7 +146,7 @@ export async function executeSearchSongs(
     context.logError("[searchSongs] YouTube search failed", result);
     if (result.reason === "quota_exhausted") {
       throw new Error(
-        `All YouTube API keys exhausted. Last error: ${result.message || "Unknown"}`
+        "YouTube search is temporarily unavailable: every configured YouTube API key has used up its daily quota. Try again later."
       );
     }
     if (result.status) {
