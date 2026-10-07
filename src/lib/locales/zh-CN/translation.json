@@ -1765,6 +1765,7 @@
         "contacts": "通讯录",
         "daysAgo": "{{count}}天前",
         "description": "在有重要更新后，自动将所选数据和设置同步到云端",
+        "dictionary": "词典",
         "error": "同步问题：{{error}}",
         "fetching": "正在获取",
         "files": "文件",
@@ -2203,6 +2204,8 @@
         "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Shimmer"
       },
       "ui": "用户界面",
@@ -2409,6 +2412,153 @@
         "terrarium": "生态箱",
         "translation": "翻译",
         "weather": "天气"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "添加到个人收藏",
+        "listen": "收听",
+        "openFullEntry": "查询",
+        "removeFavorite": "从个人收藏中移除",
+        "resetProgress": "重置进度"
+      },
+      "ai": {
+        "askExtras": "解释用法",
+        "askFallback": "询问 AI",
+        "disclaimer": "由 AI 生成 — 可能包含错误。",
+        "error": "AI 目前不可用。",
+        "extrasTitle": "AI 笔记",
+        "notFound": "AI 也没有找到这个单词。",
+        "rateLimited": "已达到 AI 限制。登录或稍后再试。",
+        "thinking": "正在思考…"
+      },
+      "description": "查询英语、中文、日语和韩语单词",
+      "empty": {
+        "noFavorites": "尚无个人收藏",
+        "noFavoritesDescription": "在查询单词时将其加星标，即可将其保存在此处并作为记忆卡片进行学习。",
+        "noHistory": "没有最近的查询记录"
+      },
+      "flashcards": {
+        "checkAgain": "再次检查",
+        "doneDescription_one": "你复习了 {{count}} 张卡片。做得好！",
+        "doneDescription_other": "你复习了 {{count}} 张卡片。做得好！",
+        "doneTitle": "已全部复习",
+        "due": "待复习",
+        "emptyDescription": "将单词添加到“收藏”以通过间隔重复进行学习。",
+        "emptyTitle": "尚无抽认卡",
+        "grades": {
+          "again": "再次",
+          "easy": "简单",
+          "good": "良好",
+          "hard": "困难"
+        },
+        "nothingDue": "目前没有待复习的卡片。请稍后再来。",
+        "progress": "剩余 {{remaining}} · 已复习 {{reviewed}}",
+        "showAnswer": "显示答案",
+        "showFront": "显示正面",
+        "statusNew": "新卡片 — 尚未学习",
+        "statusReview": "下次复习 {{date}} · 连续正确 {{reps}} 次",
+        "tapToFlip": "点按以显示答案"
+      },
+      "handwriting": {
+        "canvas": "手写画布",
+        "clear": "清除",
+        "credit": "识别技术由 HanziLookupJS 提供",
+        "error": "无法载入手写识别。",
+        "hint": "逐笔画出汉字或日文汉字。",
+        "loading": "正在载入识别器…",
+        "title": "手写",
+        "undo": "撤销"
+      },
+      "help": {
+        "ai": {
+          "description": "当词典中没有某个单词，或者你想要用法说明和更多例句时，可以询问 AI。AI 的回答可能包含错误。",
+          "title": "询问 AI"
+        },
+        "favorites": {
+          "description": "为单词加星标以将其保存。开启“云端同步”后，“收藏”将在设备间同步。",
+          "title": "收藏"
+        },
+        "flashcards": {
+          "description": "通过间隔复习来学习收藏的内容。翻开卡片，然后对你的记忆程度进行评分：重来、困难、良好或简单。",
+          "title": "闪卡"
+        },
+        "handwriting": {
+          "description": "打开手写板并画出汉字或日文汉字。选取一个候选字将其添加到搜索中。",
+          "title": "手写"
+        },
+        "lookup": {
+          "description": "搜索英语、中文、日语或韩语。输入单词、拼音、罗马字或英文含义，以查找定义、同义词和例句。",
+          "title": "查找单词"
+        },
+        "phonetics": {
+          "description": "查看中文的拼音和注音、日语的振假名和罗马字，以及韩语的罗马拼音。从“读音”菜单中切换显示。",
+          "title": "读音"
+        }
+      },
+      "labels": {
+        "antonymsShort": "反义词",
+        "kanji": "日文汉字",
+        "kunyomi": "训",
+        "onyomi": "音",
+        "phrases": "词组与短语",
+        "similar": "近似词",
+        "strokes_one": "{{count}} 画",
+        "strokes_other": "{{count}} 画",
+        "synonyms": "同义词",
+        "synonymsShort": "同义词"
+      },
+      "language": "语言",
+      "languages": {
+        "auto": "自动",
+        "en": "英语",
+        "ja": "日语",
+        "ko": "韩语",
+        "zh": "中文"
+      },
+      "menu": {
+        "about": "关于词典",
+        "aiNotes": "自动显示 AI 笔记",
+        "clearHistory": "清除历史记录",
+        "furigana": "振假名",
+        "handwriting": "手写板",
+        "help": "词典帮助",
+        "koreanRomanization": "韩语罗马字",
+        "newLookup": "新建查询",
+        "pinyin": "拼音",
+        "readings": "读音",
+        "romaji": "罗马字",
+        "showSidebar": "显示边栏",
+        "simplified": "简体中文",
+        "syncFavorites": "同步个人收藏",
+        "traditional": "繁体中文",
+        "zhuyin": "注音 (注音符号)"
+      },
+      "name": "词典",
+      "searchPlaceholder": "查找字词",
+      "sidebar": {
+        "recent": "最近使用",
+        "results": "结果"
+      },
+      "sources": "来源：",
+      "status": {
+        "alsoIn": "也可查询：",
+        "didYouMean": "你是指：",
+        "errorDescription": "词典服务未响应。请检查网络连接并重试。",
+        "errorTitle": "无法查找",
+        "notFound": "未找到“{{query}}”的结果",
+        "retry": "重试",
+        "searching": "正在搜索…"
+      },
+      "title": "词典",
+      "views": {
+        "favorites": "个人收藏",
+        "flashcards": "抽认卡",
+        "lookup": "查询"
+      },
+      "welcome": {
+        "description": "使用英文、中文、日文或韩文搜索。你也可以输入拼音、罗马字或英文含义。",
+        "title": "查询字词"
       }
     },
     "finder": {

@@ -1765,6 +1765,7 @@
         "contacts": "연락처",
         "daysAgo": "{{count}}일 전",
         "description": "중요한 변경 후 선택한 데이터와 설정을 자동으로 클라우드와 동기화합니다",
+        "dictionary": "사전",
         "error": "동기화 문제: {{error}}",
         "fetching": "가져오는 중",
         "files": "파일",
@@ -2203,6 +2204,8 @@
         "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "쉬머"
       },
       "ui": "UI",
@@ -2409,6 +2412,153 @@
         "terrarium": "테라리움",
         "translation": "번역",
         "weather": "날씨"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "즐겨찾기에 추가",
+        "listen": "듣기",
+        "openFullEntry": "찾아보기",
+        "removeFavorite": "즐겨찾기에서 제거",
+        "resetProgress": "진행 상황 재설정"
+      },
+      "ai": {
+        "askExtras": "사용법 설명",
+        "askFallback": "AI에게 묻기",
+        "disclaimer": "AI가 생성함 — 실수가 있을 수 있습니다.",
+        "error": "현재 AI를 사용할 수 없습니다.",
+        "extrasTitle": "AI 노트",
+        "notFound": "AI도 이 단어를 찾을 수 없습니다.",
+        "rateLimited": "AI 제한에 도달했습니다. 로그인하거나 나중에 다시 시도하십시오.",
+        "thinking": "생각 중..."
+      },
+      "description": "영어, 중국어, 일본어 및 한국어 단어 찾아보기",
+      "empty": {
+        "noFavorites": "즐겨찾기 없음",
+        "noFavoritesDescription": "단어를 찾아보는 동안 별표를 표시하여 여기에 저장하고 플래시카드로 학습해 보세요.",
+        "noHistory": "최근 찾아본 항목 없음"
+      },
+      "flashcards": {
+        "checkAgain": "다시 확인",
+        "doneDescription_one": "{{count}}개의 카드를 복습했습니다. 잘하셨어요!",
+        "doneDescription_other": "{{count}}개의 카드를 복습했습니다. 잘하셨습니다!",
+        "doneTitle": "모두 완료",
+        "due": "복습 예정",
+        "emptyDescription": "단어를 즐겨찾기에 추가하여 간격 반복 학습법으로 공부해보세요.",
+        "emptyTitle": "아직 플래시카드가 없음",
+        "grades": {
+          "again": "다시",
+          "easy": "쉬움",
+          "good": "좋음",
+          "hard": "어려움"
+        },
+        "nothingDue": "현재 복습할 카드가 없습니다. 나중에 다시 확인해 주세요.",
+        "progress": "{{remaining}}개 남음 · {{reviewed}}개 복습함",
+        "showAnswer": "정답 보기",
+        "showFront": "앞면 보기",
+        "statusNew": "새로운 카드 — 아직 학습하지 않음",
+        "statusReview": "다음 복습 {{date}} · {{reps}}회 연속 정답",
+        "tapToFlip": "클릭하여 정답 확인"
+      },
+      "handwriting": {
+        "canvas": "필기 캔버스",
+        "clear": "지우기",
+        "credit": "HanziLookupJS 제공 인식 기술",
+        "error": "필기 인식을 로드할 수 없습니다.",
+        "hint": "한자를 한 획씩 그리십시오.",
+        "loading": "인식기 로드 중…",
+        "title": "필기",
+        "undo": "실행 취소"
+      },
+      "help": {
+        "ai": {
+          "description": "단어가 사전에 없거나 사용법 및 더 많은 예시가 필요한 경우 AI에게 물어보십시오. AI의 답변에는 오류가 있을 수 있습니다.",
+          "title": "AI에게 물어보기"
+        },
+        "favorites": {
+          "description": "단어에 별표를 표시하여 저장하십시오. 클라우드 동기화가 켜져 있으면 즐겨찾기가 기기 간에 동기화됩니다.",
+          "title": "즐겨찾기"
+        },
+        "flashcards": {
+          "description": "간격 반복 학습법으로 즐겨찾기를 공부하십시오. 카드를 뒤집은 다음 기억해 낸 정도를 평가하십시오. 다시 하기, 어려움, 좋음 또는 쉬움 중에서 선택할 수 있습니다.",
+          "title": "플래시 카드"
+        },
+        "handwriting": {
+          "description": "필기 패드를 열고 한자 또는 칸지를 그리십시오. 후보 단어를 선택하여 검색에 추가하십시오.",
+          "title": "필기"
+        },
+        "lookup": {
+          "description": "영어, 중국어, 일본어 또는 한국어를 검색하십시오. 단어, 병음, 로마자 또는 영어 의미를 입력하여 정의, 유의어 및 예문을 찾을 수 있습니다.",
+          "title": "단어 찾아보기"
+        },
+        "phonetics": {
+          "description": "중국어의 병음 및 주음, 일본어의 후리가나 및 로마자, 한국어의 로마자 표기를 확인하십시오. '읽기' 메뉴에서 표시 여부를 전환할 수 있습니다.",
+          "title": "읽기"
+        }
+      },
+      "labels": {
+        "antonymsShort": "반의어",
+        "kanji": "칸지",
+        "kunyomi": "훈독",
+        "onyomi": "음독",
+        "phrases": "단어 및 구문",
+        "similar": "유사어",
+        "strokes_one": "{{count}}획",
+        "strokes_other": "{{count}}획",
+        "synonyms": "유의어",
+        "synonymsShort": "유의어"
+      },
+      "language": "언어",
+      "languages": {
+        "auto": "자동",
+        "en": "영어",
+        "ja": "일본어",
+        "ko": "한국어",
+        "zh": "중국어"
+      },
+      "menu": {
+        "about": "사전 정보",
+        "aiNotes": "AI 노트를 자동으로 보기",
+        "clearHistory": "검색 기록 지우기",
+        "furigana": "후리가나",
+        "handwriting": "필기 인식 패드",
+        "help": "사전 도움말",
+        "koreanRomanization": "한국어 로마자 표기법",
+        "newLookup": "새로운 찾아보기",
+        "pinyin": "병음",
+        "readings": "읽기",
+        "romaji": "로마자",
+        "showSidebar": "사이드바 보기",
+        "simplified": "간체자",
+        "syncFavorites": "즐겨찾기 동기화",
+        "traditional": "번체자",
+        "zhuyin": "주음(보포모포)"
+      },
+      "name": "사전",
+      "searchPlaceholder": "단어 찾아보기",
+      "sidebar": {
+        "recent": "최근 항목",
+        "results": "결과"
+      },
+      "sources": "소스:",
+      "status": {
+        "alsoIn": "다음에서도 찾아보기:",
+        "didYouMean": "다음을 찾으셨나요:",
+        "errorDescription": "사전 서비스가 응답하지 않습니다. 연결 상태를 확인하고 다시 시도하십시오.",
+        "errorTitle": "검색할 수 없음",
+        "notFound": "“{{query}}”에 대한 결과 없음",
+        "retry": "다시 시도",
+        "searching": "검색 중…"
+      },
+      "title": "사전",
+      "views": {
+        "favorites": "즐겨찾기",
+        "flashcards": "플래시카드",
+        "lookup": "찾아보기"
+      },
+      "welcome": {
+        "description": "영어, 중국어, 일본어 또는 한국어로 검색하십시오. 병음, 로마자 또는 영어 의미를 입력할 수도 있습니다.",
+        "title": "단어 찾아보기"
       }
     },
     "finder": {

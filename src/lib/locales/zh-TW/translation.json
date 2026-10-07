@@ -1765,6 +1765,7 @@
         "contacts": "聯絡人",
         "daysAgo": "{{count}}天前",
         "description": "在重要更新後，自動將選取的資料與設定同步到雲端",
+        "dictionary": "辭典",
         "error": "同步問題：{{error}}",
         "fetching": "正在擷取",
         "files": "檔案",
@@ -2203,6 +2204,8 @@
         "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "微光"
       },
       "ui": "使用者介面",
@@ -2409,6 +2412,153 @@
         "terrarium": "動植物培養槽",
         "translation": "翻譯",
         "weather": "天氣"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "加入常用項目",
+        "listen": "聆聽",
+        "openFullEntry": "查詢",
+        "removeFavorite": "從常用項目移除",
+        "resetProgress": "重設進度"
+      },
+      "ai": {
+        "askExtras": "解釋用法",
+        "askFallback": "詢問 AI",
+        "disclaimer": "由 AI 產生 — 可能包含錯誤。",
+        "error": "AI 目前無法使用。",
+        "extrasTitle": "AI 筆記",
+        "notFound": "AI 也找不到這個單字。",
+        "rateLimited": "已達 AI 限制。請登入或稍後再試。",
+        "thinking": "思考中⋯"
+      },
+      "description": "查詢英文、中文、日文和韓文單字",
+      "empty": {
+        "noFavorites": "尚無常用項目",
+        "noFavoritesDescription": "在查詢單字時加上星號，即可將其儲存在此處並作為字卡學習。",
+        "noHistory": "無最近查詢紀錄"
+      },
+      "flashcards": {
+        "checkAgain": "再次檢查",
+        "doneDescription_one": "你複習了 {{count}} 張卡片。做得好！",
+        "doneDescription_other": "你已複習了 {{count}} 張卡片。做得好！",
+        "doneTitle": "已全部完成",
+        "due": "待複習",
+        "emptyDescription": "將單字加入「常用項目」即可透過間隔重複法進行學習。",
+        "emptyTitle": "尚無字卡",
+        "grades": {
+          "again": "再次",
+          "easy": "簡單",
+          "good": "良好",
+          "hard": "困難"
+        },
+        "nothingDue": "目前沒有待複習的卡片。請稍後再回來。",
+        "progress": "剩餘 {{remaining}} · 已複習 {{reviewed}}",
+        "showAnswer": "顯示答案",
+        "showFront": "顯示正面",
+        "statusNew": "新卡片 — 尚未學習",
+        "statusReview": "下次複習：{{date}} · 連續答對 {{reps}} 次",
+        "tapToFlip": "按一下以顯示答案"
+      },
+      "handwriting": {
+        "canvas": "手寫畫布",
+        "clear": "清除",
+        "credit": "辨識技術由 HanziLookupJS 提供",
+        "error": "無法載入手寫辨識。",
+        "hint": "逐筆畫出中文字或漢字。",
+        "loading": "正在載入辨識器⋯",
+        "title": "手寫",
+        "undo": "還原"
+      },
+      "help": {
+        "ai": {
+          "description": "當字典中沒有某個單字，或你想要查看用法說明和更多範例時，可以詢問 AI。AI 的回答可能包含錯誤。",
+          "title": "詢問 AI"
+        },
+        "favorites": {
+          "description": "為單字加上星號以將其儲存。「收藏」會在開啟「雲端同步」時在裝置間同步。",
+          "title": "收藏"
+        },
+        "flashcards": {
+          "description": "透過間隔重複學習你的收藏。翻轉字卡，然後為你的回想程度評分：重來、困難、良好或簡單。",
+          "title": "字卡"
+        },
+        "handwriting": {
+          "description": "打開手寫板並畫出中文字或漢字。選擇候選字以將其加入搜尋。",
+          "title": "手寫"
+        },
+        "lookup": {
+          "description": "搜尋英文、中文、日文或韓文。輸入單字、拼音、羅馬字或英文意義，以尋找定義、同義詞和例句。",
+          "title": "查詢單字"
+        },
+        "phonetics": {
+          "description": "查看中文的拼音和注音、日文的振假名和羅馬字，以及韓文的羅馬拼音。可從「讀音」選單中切換。",
+          "title": "讀音"
+        }
+      },
+      "labels": {
+        "antonymsShort": "反義",
+        "kanji": "漢字",
+        "kunyomi": "訓",
+        "onyomi": "音",
+        "phrases": "字詞與短語",
+        "similar": "相似字詞",
+        "strokes_one": "{{count}} 畫",
+        "strokes_other": "{{count}} 畫",
+        "synonyms": "同義詞",
+        "synonymsShort": "同義"
+      },
+      "language": "語言",
+      "languages": {
+        "auto": "自動",
+        "en": "英文",
+        "ja": "日文",
+        "ko": "韓文",
+        "zh": "中文"
+      },
+      "menu": {
+        "about": "關於字典",
+        "aiNotes": "自動顯示 AI 筆記",
+        "clearHistory": "清除記錄",
+        "furigana": "振假名",
+        "handwriting": "手寫板",
+        "help": "字典輔助說明",
+        "koreanRomanization": "韓語羅馬拼音",
+        "newLookup": "新增查詢",
+        "pinyin": "拼音",
+        "readings": "讀音",
+        "romaji": "羅馬字",
+        "showSidebar": "顯示側邊欄",
+        "simplified": "簡體中文",
+        "syncFavorites": "同步常用項目",
+        "traditional": "繁體中文",
+        "zhuyin": "注音 (Bopomofo)"
+      },
+      "name": "辭典",
+      "searchPlaceholder": "查詢單字",
+      "sidebar": {
+        "recent": "最近使用",
+        "results": "結果"
+      },
+      "sources": "來源：",
+      "status": {
+        "alsoIn": "也可查詢：",
+        "didYouMean": "你是指：",
+        "errorDescription": "辭典服務沒有回應。請檢查你的連線並再試一次。",
+        "errorTitle": "無法查詢",
+        "notFound": "找不到「{{query}}」的結果",
+        "retry": "再試一次",
+        "searching": "正在搜尋⋯"
+      },
+      "title": "辭典",
+      "views": {
+        "favorites": "常用項目",
+        "flashcards": "單字卡",
+        "lookup": "查詢"
+      },
+      "welcome": {
+        "description": "以英文、中文、日文或韓文搜尋。你也可以輸入拼音、羅馬字或英文意思。",
+        "title": "查詢單字"
       }
     },
     "finder": {

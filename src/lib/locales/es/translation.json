@@ -1767,6 +1767,7 @@
         "contacts": "Contactos",
         "daysAgo": "hace {{count}}d",
         "description": "Sincroniza automáticamente los datos y ajustes seleccionados con la nube tras cambios importantes",
+        "dictionary": "Diccionario",
         "error": "Problema de sincronización: {{error}}",
         "fetching": "Obteniendo",
         "files": "Archivos",
@@ -2205,6 +2206,8 @@
         "ryoV3": "Ryo v3",
         "ryoInstantV4": "Ryo Instant v4",
         "ryoPvc": "Ryo PVC",
+        "ryoV2": "Ryo v2",
+        "ryoV3": "Ryo v3",
         "shimmer": "Destello"
       },
       "ui": "Interfaz",
@@ -2411,6 +2414,155 @@
         "terrarium": "Terrario",
         "translation": "Traducción",
         "weather": "Tiempo"
+      }
+    },
+    "dictionary": {
+      "actions": {
+        "addFavorite": "Añadir a favoritos",
+        "listen": "Escuchar",
+        "openFullEntry": "Consultar",
+        "removeFavorite": "Eliminar de favoritos",
+        "resetProgress": "Restablecer progreso"
+      },
+      "ai": {
+        "askExtras": "Explicar uso",
+        "askFallback": "Preguntar a la IA",
+        "disclaimer": "Generado por IA; puede contener errores.",
+        "error": "La IA no está disponible en este momento.",
+        "extrasTitle": "Notas de la IA",
+        "notFound": "La IA tampoco ha podido encontrar esta palabra.",
+        "rateLimited": "Se ha alcanzado el límite de la IA. Inicia sesión o inténtalo de nuevo más tarde.",
+        "thinking": "Pensando…"
+      },
+      "description": "Consulta palabras en inglés, chino, japonés y coreano",
+      "empty": {
+        "noFavorites": "Aún no hay favoritos",
+        "noFavoritesDescription": "Marca una palabra con una estrella al consultarla para guardarla aquí y estudiarla con tarjetas de aprendizaje.",
+        "noHistory": "No hay consultas recientes"
+      },
+      "flashcards": {
+        "checkAgain": "Volver a comprobar",
+        "doneDescription_one": "Has repasado {{count}} tarjeta. ¡Buen trabajo!",
+        "doneDescription_many": "Has repasado {{count}} tarjetas. ¡Buen trabajo!",
+        "doneDescription_other": "Has repasado {{count}} tarjetas. ¡Buen trabajo!",
+        "doneTitle": "Todo al día",
+        "due": "Pendientes de revisión",
+        "emptyDescription": "Añade palabras a Favoritos para estudiarlas con repetición espaciada.",
+        "emptyTitle": "Aún no hay tarjetas de estudio",
+        "grades": {
+          "again": "Otra vez",
+          "easy": "Fácil",
+          "good": "Bien",
+          "hard": "Difícil"
+        },
+        "nothingDue": "No hay tarjetas pendientes ahora mismo. Vuelve más tarde.",
+        "progress": "Quedan {{remaining}} · {{reviewed}} revisadas",
+        "showAnswer": "Mostrar respuesta",
+        "showFront": "Mostrar anverso",
+        "statusNew": "Tarjeta nueva — aún sin estudiar",
+        "statusReview": "Próxima revisión: {{date}} · {{reps}} aciertos seguidos",
+        "tapToFlip": "Haz clic para ver la respuesta"
+      },
+      "handwriting": {
+        "canvas": "Lienzo de escritura a mano",
+        "clear": "Borrar",
+        "credit": "Reconocimiento por HanziLookupJS",
+        "error": "No se ha podido cargar el reconocimiento de escritura a mano.",
+        "hint": "Dibuja un carácter chino o kanji, trazo a trazo.",
+        "loading": "Cargando el reconocedor…",
+        "title": "Escritura a mano",
+        "undo": "Deshacer"
+      },
+      "help": {
+        "ai": {
+          "description": "Cuando una palabra no esté en los diccionarios, o si quieres notas de uso y más ejemplos, pregunta a la IA. Las respuestas de la IA pueden contener errores.",
+          "title": "Preguntar a la IA"
+        },
+        "favorites": {
+          "description": "Marca palabras con una estrella para guardarlas. Los favoritos se sincronizan entre dispositivos cuando la sincronización en la nube está activada.",
+          "title": "Favoritos"
+        },
+        "flashcards": {
+          "description": "Estudia tus favoritos con repetición espaciada. Voltea una tarjeta y califica cuánto recuerdas: Otra vez, Difícil, Bien o Fácil.",
+          "title": "Tarjetas de estudio"
+        },
+        "handwriting": {
+          "description": "Abre el panel de escritura a mano y dibuja un carácter chino o kanji. Elige un candidato para añadirlo a tu búsqueda.",
+          "title": "Escritura a mano"
+        },
+        "lookup": {
+          "description": "Busca en inglés, chino, japonés o coreano. Escribe una palabra, pinyin, romaji o un significado en inglés para encontrar definiciones, sinónimos y frases de ejemplo.",
+          "title": "Consultar palabras"
+        },
+        "phonetics": {
+          "description": "Consulta el pinyin y zhuyin para el chino, furigana y romaji para el japonés, y la romanización para el coreano. Actívalos o desactívalos desde el menú Lecturas.",
+          "title": "Lecturas"
+        }
+      },
+      "labels": {
+        "antonymsShort": "ant.",
+        "kanji": "Kanji",
+        "kunyomi": "Kun",
+        "onyomi": "On",
+        "phrases": "Palabras y frases",
+        "similar": "Palabras similares",
+        "strokes_one": "{{count}} trazo",
+        "strokes_many": "{{count}} trazos",
+        "strokes_other": "{{count}} trazos",
+        "synonyms": "Sinónimos",
+        "synonymsShort": "sin."
+      },
+      "language": "Idioma",
+      "languages": {
+        "auto": "Automático",
+        "en": "Inglés",
+        "ja": "Japonés",
+        "ko": "Coreano",
+        "zh": "Chino"
+      },
+      "menu": {
+        "about": "Acerca de Diccionario",
+        "aiNotes": "Mostrar notas de IA automáticamente",
+        "clearHistory": "Borrar historial",
+        "furigana": "Furigana",
+        "handwriting": "Panel de escritura a mano",
+        "help": "Ayuda de Diccionario",
+        "koreanRomanization": "Romanización del coreano",
+        "newLookup": "Nueva búsqueda",
+        "pinyin": "Pinyin",
+        "readings": "Lecturas",
+        "romaji": "Romaji",
+        "showSidebar": "Mostrar barra lateral",
+        "simplified": "Caracteres simplificados",
+        "syncFavorites": "Sincronizar favoritos",
+        "traditional": "Caracteres tradicionales",
+        "zhuyin": "Zhuyin (Bopomofo)"
+      },
+      "name": "Diccionario",
+      "searchPlaceholder": "Buscar una palabra",
+      "sidebar": {
+        "recent": "Recientes",
+        "results": "Resultados"
+      },
+      "sources": "Fuentes:",
+      "status": {
+        "alsoIn": "Buscar también en:",
+        "didYouMean": "¿Quiso decir:?",
+        "errorDescription": "El servicio de diccionario no ha respondido. Comprueba la conexión e inténtalo de nuevo.",
+        "errorTitle": "No se ha podido realizar la búsqueda",
+        "notFound": "No hay resultados para “{{query}}”",
+        "retry": "Intentar de nuevo",
+        "searching": "Buscando…"
+      },
+      "title": "Diccionario",
+      "views": {
+        "favorites": "Favoritos",
+        "flashcards": "Tarjetas de estudio",
+        "lookup": "Consultar"
+      },
+      "welcome": {
+        "description": "Busca en inglés, chino, japonés o coreano. También puedes escribir pinyin, romaji o un significado en inglés.",
+        "title": "Consultar una palabra"
       }
     },
     "finder": {
