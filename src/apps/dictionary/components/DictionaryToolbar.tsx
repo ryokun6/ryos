@@ -108,95 +108,105 @@ export function DictionaryToolbar({
   const languageLabel = (lang: DictionaryQueryLanguage) =>
     t(`apps.dictionary.languages.${lang}`);
 
+  const searchInput = (
+    <SearchInput
+      value={l.query}
+      onChange={l.setQuery}
+      inputRef={l.searchInputRef}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          l.submitQuery();
+        }
+      }}
+      ariaBusy={l.status === "loading"}
+      placeholder={t("apps.dictionary.searchPlaceholder")}
+      ariaLabel={t("apps.dictionary.searchPlaceholder")}
+      title={t("apps.dictionary.searchPlaceholder")}
+      clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
+      className={cn(isMobileLayout ? "w-full min-w-0 max-w-none" : "w-[190px]")}
+    />
+  );
+
   return (
     <div
       className={cn(
-        "flex items-center gap-2 py-1.5",
+        "flex flex-col gap-1.5 py-1.5",
         isMacOSTheme ? "px-1" : "px-2",
         osToolbarSurfaceClassName({ isMacOSTheme, isSystem7Theme, isWindowsTheme })
       )}
     >
-      <div className="flex items-center gap-1.5">
-        {!isMobileLayout && view !== "flashcards" ? (
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!isMobileLayout && view !== "flashcards" ? (
+            <ButtonGroup l={l}>
+              <ToolbarButton
+                l={l}
+                active={l.isSidebarVisible}
+                onClick={() => l.setSidebarVisible(!l.isSidebarVisible)}
+                label={t("apps.dictionary.menu.showSidebar")}
+              >
+                <SidebarSimple size={14} />
+              </ToolbarButton>
+            </ButtonGroup>
+          ) : null}
           <ButtonGroup l={l}>
-            <ToolbarButton
-              l={l}
-              active={l.isSidebarVisible}
-              onClick={() => l.setSidebarVisible(!l.isSidebarVisible)}
-              label={t("apps.dictionary.menu.showSidebar")}
-            >
-              <SidebarSimple size={14} />
-            </ToolbarButton>
+            {viewButtons.map((button) => (
+              <ToolbarButton
+                key={button.id}
+                l={l}
+                active={view === button.id}
+                onClick={() => l.setView(button.id)}
+                label={button.label}
+              >
+                {button.icon}
+              </ToolbarButton>
+            ))}
           </ButtonGroup>
-        ) : null}
-        <ButtonGroup l={l}>
-          {viewButtons.map((button) => (
-            <ToolbarButton
-              key={button.id}
-              l={l}
-              active={view === button.id}
-              onClick={() => l.setView(button.id)}
-              label={button.label}
-            >
-              {button.icon}
-            </ToolbarButton>
-          ))}
-        </ButtonGroup>
-      </div>
-      <div className="flex-1" />
-      {view === "lookup" ? (
-        <div className={cn("flex min-w-0 items-center gap-1.5", isMobileLayout && "flex-1")}>
-          <Select
-            value={l.queryLanguage}
-            onValueChange={(value) => l.setQueryLanguage(value as DictionaryQueryLanguage)}
-          >
-            <SelectTrigger
-              className={cn(
-                "h-6 w-[92px] shrink-0 text-[11px]",
-                (isMacOSTheme || isSystem7Theme) && "font-geneva-12"
-              )}
-              aria-label={t("apps.dictionary.language")}
-              title={t("apps.dictionary.language")}
-            >
-              <SelectValue>{languageLabel(l.queryLanguage)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {DICTIONARY_QUERY_LANGUAGES.map((lang) => (
-                <SelectItem key={lang} value={lang} className="text-[12px]">
-                  {languageLabel(lang)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <ButtonGroup l={l}>
-            <ToolbarButton
-              l={l}
-              active={l.isHandwritingOpen}
-              onClick={() => l.setHandwritingOpen(!l.isHandwritingOpen)}
-              label={t("apps.dictionary.menu.handwriting")}
-            >
-              <HandPointing size={14} />
-            </ToolbarButton>
-          </ButtonGroup>
-          <SearchInput
-            value={l.query}
-            onChange={l.setQuery}
-            inputRef={l.searchInputRef}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                l.submitQuery();
-              }
-            }}
-            ariaBusy={l.status === "loading"}
-            placeholder={t("apps.dictionary.searchPlaceholder")}
-            ariaLabel={t("apps.dictionary.searchPlaceholder")}
-            title={t("apps.dictionary.searchPlaceholder")}
-            clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
-            className={cn(isMobileLayout ? "min-w-0 flex-1 max-w-none" : "w-[190px]")}
-          />
         </div>
-      ) : null}
+        <div className="min-w-0 flex-1" />
+        {view === "lookup" ? (
+          <div className="flex min-w-0 items-center gap-1.5">
+            <Select
+              value={l.queryLanguage}
+              onValueChange={(value) => l.setQueryLanguage(value as DictionaryQueryLanguage)}
+            >
+              <SelectTrigger
+                className={cn(
+                  "h-6 min-w-0 text-[11px]",
+                  isMobileLayout ? "w-[84px] shrink" : "w-[92px] shrink-0",
+                  (isMacOSTheme || isSystem7Theme) && "font-geneva-12"
+                )}
+                aria-label={t("apps.dictionary.language")}
+                title={t("apps.dictionary.language")}
+              >
+                <SelectValue>{languageLabel(l.queryLanguage)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {DICTIONARY_QUERY_LANGUAGES.map((lang) => (
+                  <SelectItem key={lang} value={lang} className="text-[12px]">
+                    {languageLabel(lang)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="shrink-0">
+              <ButtonGroup l={l}>
+                <ToolbarButton
+                  l={l}
+                  active={l.isHandwritingOpen}
+                  onClick={() => l.setHandwritingOpen(!l.isHandwritingOpen)}
+                  label={t("apps.dictionary.menu.handwriting")}
+                >
+                  <HandPointing size={14} />
+                </ToolbarButton>
+              </ButtonGroup>
+            </div>
+            {isMobileLayout ? null : searchInput}
+          </div>
+        ) : null}
+      </div>
+      {view === "lookup" && isMobileLayout ? searchInput : null}
     </div>
   );
 }
