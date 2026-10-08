@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -38,6 +38,50 @@ import {
   ProgressBar,
   SmallSelect,
 } from "./FitnessUi";
+
+const SCROLL_FADE_PX = 24;
+
+/** Fade the edges of a horizontal scroller only while content is clipped there. */
+function horizontalScrollFade(el: HTMLElement): string {
+  const hidden = el.scrollWidth - el.clientWidth;
+  if (hidden <= 2) return "";
+  const atStart = el.scrollLeft <= 2;
+  const atEnd = hidden - el.scrollLeft <= 2;
+  if (atStart && !atEnd) {
+    return `linear-gradient(to right, #000 0, #000 calc(100% - ${SCROLL_FADE_PX}px), transparent 100%)`;
+  }
+  if (!atStart && atEnd) {
+    return `linear-gradient(to right, transparent 0, #000 ${SCROLL_FADE_PX}px, #000 100%)`;
+  }
+  if (!atStart && !atEnd) {
+    return `linear-gradient(to right, transparent 0, #000 ${SCROLL_FADE_PX}px, #000 calc(100% - ${SCROLL_FADE_PX}px), transparent 100%)`;
+  }
+  return "";
+}
+
+function useHorizontalScrollFade(listKey: string) {
+  const ref = useRef<HTMLUListElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !listKey) return;
+    const apply = () => {
+      const mask = horizontalScrollFade(el);
+      el.style.maskImage = mask;
+      el.style.setProperty("-webkit-mask-image", mask);
+    };
+    apply();
+    el.addEventListener("scroll", apply, { passive: true });
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", apply);
+      observer.disconnect();
+      el.style.maskImage = "";
+      el.style.setProperty("-webkit-mask-image", "");
+    };
+  }, [listKey]);
+  return ref;
+}
 
 function ExercisePhoto({ path }: { path: string | undefined }) {
   const [failed, setFailed] = useState(false);
@@ -109,6 +153,9 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
   const recommendations = useMemo(
     () => recommendExercises(selected.focus, { library: l.exercises, limit: 8 }),
     [selected.focus, l.exercises]
+  );
+  const recommendationRowRef = useHorizontalScrollFade(
+    selected.focus === "rest" ? "" : recommendations.map((rec) => rec.id).join("\0")
   );
   const addedOnSelectedDay = useMemo(() => {
     const workout = l.workouts
@@ -246,7 +293,10 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                         .join(", "),
                     })}
               </p>
-              <ul className="flex w-full min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
+              <ul
+                ref={recommendationRowRef}
+                className="flex w-full min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto pb-1"
+              >
                 {recommendations.map((rec) => {
                   const exercise = l.exerciseById.get(rec.id);
                   const added = addedOnSelectedDay.has(rec.id);
