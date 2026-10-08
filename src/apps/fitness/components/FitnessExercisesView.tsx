@@ -127,8 +127,8 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start justify-between gap-2">
           <h2 className="min-w-0">
             <ExerciseNameLines
               primary={names.primary}
@@ -138,18 +138,18 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
               secondaryClassName="text-[12px]"
             />
           </h2>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {chips.map((chip) => (
-              <span key={chip} className={FITNESS_CHIP_CLASS}>
-                {chip}
-              </span>
-            ))}
-          </div>
+          <Button size="sm" variant="default" onClick={handleAdd} className="h-7 shrink-0 gap-1 text-[12px]">
+            <Plus size={12} weight="bold" />
+            {t("apps.fitness.exercises.addToToday")}
+          </Button>
         </div>
-        <Button size="sm" variant="default" onClick={handleAdd} className="h-7 shrink-0 gap-1 text-[12px]">
-          <Plus size={12} weight="bold" />
-          {t("apps.fitness.exercises.addToToday")}
-        </Button>
+        <div className="flex flex-wrap gap-1">
+          {chips.map((chip) => (
+            <span key={chip} className={FITNESS_CHIP_CLASS}>
+              {chip}
+            </span>
+          ))}
+        </div>
       </div>
 
       {exercise.images.length ? (
