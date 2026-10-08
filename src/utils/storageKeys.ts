@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   contacts: "ryos:contacts",
   stuff: "ryos:stuff",
   dictionary: "ryos:dictionary",
+  fitness: "ryos:fitness",
   usernameRecovery: "ryos:auth:username-recovery",
   calculator: "ryos:calculator",
   assistant: "ryos:assistant",

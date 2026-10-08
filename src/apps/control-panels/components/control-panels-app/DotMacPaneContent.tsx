@@ -31,6 +31,7 @@ export type DotMacPaneContentProps = {
   syncBooks: boolean;
   syncStuff: boolean;
   syncDictionary: boolean;
+  syncFitness: boolean;
   setSyncFiles: (enabled: boolean) => void;
   setSyncSettings: (enabled: boolean) => void;
   setSyncCalendar: (enabled: boolean) => void;
@@ -43,6 +44,7 @@ export type DotMacPaneContentProps = {
   setSyncBooks: (enabled: boolean) => void;
   setSyncStuff: (enabled: boolean) => void;
   setSyncDictionary: (enabled: boolean) => void;
+  setSyncFitness: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
@@ -73,6 +75,7 @@ export function DotMacPaneContent({
   syncBooks,
   syncStuff,
   syncDictionary,
+  syncFitness,
   setSyncFiles,
   setSyncSettings,
   setSyncCalendar,
@@ -85,6 +88,7 @@ export function DotMacPaneContent({
   setSyncBooks,
   setSyncStuff,
   setSyncDictionary,
+  setSyncFitness,
   isCloudForceSyncing,
   isCloudForceUploading,
   isCloudForceDownloading,
@@ -215,6 +219,13 @@ export function DotMacPaneContent({
                 status={formatSyncStatus(autoSyncDomainStatus.dictionary, t)}
                 checked={syncDictionary}
                 onCheckedChange={setSyncDictionary}
+              />
+              <SyncDomainRow
+                appId={AUTO_SYNC_ITEM_ICONS.fitness}
+                label={t("apps.control-panels.autoSync.fitness")}
+                status={formatSyncStatus(autoSyncDomainStatus.fitness, t)}
+                checked={syncFitness}
+                onCheckedChange={setSyncFitness}
               />
             </div>
 

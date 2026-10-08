@@ -11,6 +11,7 @@ export const AUTO_SYNC_ITEM_ICONS = {
   stickies: "stickies",
   stuff: "stuff",
   dictionary: "dictionary",
+  fitness: "fitness",
 } as const;
 
 export const userAvatarInitialsTextShadow =

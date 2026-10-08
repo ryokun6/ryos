@@ -101,6 +101,7 @@ export type ControlPanelsMacPaneRendererProps = {
   syncBooks: boolean;
   syncStuff: boolean;
   syncDictionary: boolean;
+  syncFitness: boolean;
   setSyncFiles: (enabled: boolean) => void;
   setSyncSettings: (enabled: boolean) => void;
   setSyncCalendar: (enabled: boolean) => void;
@@ -113,6 +114,7 @@ export type ControlPanelsMacPaneRendererProps = {
   setSyncBooks: (enabled: boolean) => void;
   setSyncStuff: (enabled: boolean) => void;
   setSyncDictionary: (enabled: boolean) => void;
+  setSyncFitness: (enabled: boolean) => void;
   isCloudForceSyncing: boolean;
   isCloudForceUploading: boolean;
   isCloudForceDownloading: boolean;
@@ -293,6 +295,7 @@ export function ControlPanelsMacPaneRenderer(
           syncBooks={props.syncBooks}
           syncStuff={props.syncStuff}
           syncDictionary={props.syncDictionary}
+          syncFitness={props.syncFitness}
           setSyncFiles={props.setSyncFiles}
           setSyncSettings={props.setSyncSettings}
           setSyncCalendar={props.setSyncCalendar}
@@ -305,6 +308,7 @@ export function ControlPanelsMacPaneRenderer(
           setSyncBooks={props.setSyncBooks}
           setSyncStuff={props.setSyncStuff}
           setSyncDictionary={props.setSyncDictionary}
+          setSyncFitness={props.setSyncFitness}
           isCloudForceSyncing={props.isCloudForceSyncing}
           isCloudForceUploading={props.isCloudForceUploading}
           isCloudForceDownloading={props.isCloudForceDownloading}

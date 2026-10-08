@@ -44,6 +44,13 @@ import {
   useDictionaryStore,
   type DictionaryFavorite,
 } from "@/stores/useDictionaryStore";
+import {
+  sanitizeBodyStat,
+  sanitizeFoodEntry,
+  sanitizePlan,
+  sanitizeWorkout,
+  useFitnessStore,
+} from "@/stores/useFitnessStore";
 import type { StuffItem, StuffLocation, StuffTag } from "@/apps/stuff/types";
 import {
   invalidateStuffCoverCache,
@@ -154,6 +161,9 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   stuffCoverKeys: "stuff-images/item:",
   stuffLocationIds: "stuff/location:",
   dictionaryFavoriteIds: "dictionary/favorite:",
+  fitnessWorkoutIds: "fitness/workout:",
+  fitnessBodyStatIds: "fitness/body:",
+  fitnessFoodIds: "fitness/food:",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1796,6 +1806,110 @@ const dictionaryCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Fitness codec
+//
+// Keys:
+//   fitness/workout:<id>  — one logged workout (entries + sets)
+//   fitness/body:<id>     — one body stats measurement
+//   fitness/food:<id>     — one food log entry (items + macros, tiny thumbnail)
+//   fitness/plan          — weekly schedule + goals + profile
+//
+// The current view and unit preference stay device-local.
+// ---------------------------------------------------------------------------
+
+const FITNESS_WORKOUT_PREFIX = "fitness/workout:";
+const FITNESS_BODY_PREFIX = "fitness/body:";
+const FITNESS_FOOD_PREFIX = "fitness/food:";
+const FITNESS_PLAN_KEY = "fitness/plan";
+
+function applyFitnessCollection<T extends { id: string }>(
+  ops: AppliedSyncOp[],
+  prefix: string,
+  current: readonly T[],
+  sanitize: (value: unknown, id: string) => T | null
+): T[] | null {
+  const byId = new Map<string, T>(current.map((item) => [item.id, item]));
+  let changed = false;
+  for (const op of ops) {
+    if (!op.k.startsWith(prefix)) continue;
+    const id = op.k.slice(prefix.length);
+    if (!id) continue;
+    if (op.del) {
+      changed = byId.delete(id) || changed;
+    } else {
+      const item = sanitize(op.v, id);
+      if (item) {
+        byId.set(id, item);
+        changed = true;
+      }
+    }
+  }
+  return changed ? Array.from(byId.values()) : null;
+}
+
+const fitnessCodec: SyncCodec = {
+  namespace: "fitness",
+  collect() {
+    const state = useFitnessStore.getState();
+    const docs = new Map<string, unknown>();
+    for (const workout of state.workouts) {
+      docs.set(`${FITNESS_WORKOUT_PREFIX}${workout.id}`, workout);
+    }
+    for (const entry of state.bodyStats) {
+      docs.set(`${FITNESS_BODY_PREFIX}${entry.id}`, entry);
+    }
+    for (const entry of state.foodEntries) {
+      docs.set(`${FITNESS_FOOD_PREFIX}${entry.id}`, entry);
+    }
+    if (state.planUpdatedAt > 0) docs.set(FITNESS_PLAN_KEY, state.getPlan());
+    return docs;
+  },
+  apply(ops) {
+    const state = useFitnessStore.getState();
+    const workouts = applyFitnessCollection(
+      ops,
+      FITNESS_WORKOUT_PREFIX,
+      state.workouts,
+      sanitizeWorkout
+    );
+    if (workouts) state.replaceWorkoutsFromSync(workouts);
+    const bodyStats = applyFitnessCollection(
+      ops,
+      FITNESS_BODY_PREFIX,
+      state.bodyStats,
+      sanitizeBodyStat
+    );
+    if (bodyStats) state.replaceBodyStatsFromSync(bodyStats);
+    const foodEntries = applyFitnessCollection(
+      ops,
+      FITNESS_FOOD_PREFIX,
+      state.foodEntries,
+      sanitizeFoodEntry
+    );
+    if (foodEntries) state.replaceFoodEntriesFromSync(foodEntries);
+    const planOp = ops.find((op) => op.k === FITNESS_PLAN_KEY && !op.del);
+    const plan = planOp ? sanitizePlan(planOp.v) : null;
+    if (plan) state.applyPlanFromSync(plan);
+  },
+  subscribe(onChange) {
+    return useFitnessStore.subscribe((state, prev) => {
+      if (
+        state.workouts !== prev.workouts ||
+        state.bodyStats !== prev.bodyStats ||
+        state.foodEntries !== prev.foodEntries ||
+        state.planUpdatedAt !== prev.planUpdatedAt
+      ) {
+        if (!useFitnessStore.persist.hasHydrated()) return;
+        onChange();
+      }
+    });
+  },
+  isReady() {
+    return useFitnessStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Bookshelf codec (Books app reading state: progress + ordering + last-opened)
 //
 // The EPUB *files* sync via the `books` blob namespace (under the "files"
@@ -2310,6 +2424,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   stuff: stuffCodec,
   "stuff-images": stuffImagesCodec,
   dictionary: dictionaryCodec,
+  fitness: fitnessCodec,
 };
 
 export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
@@ -2340,4 +2455,5 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "maps",
   "stuff",
   "dictionary",
+  "fitness",
 ];

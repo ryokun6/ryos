@@ -65,6 +65,7 @@ const SYNC_CATEGORY_META: Record<
     labelKey: "apps.control-panels.autoSync.dictionary",
     appId: "dictionary",
   },
+  fitness: { labelKey: "apps.control-panels.autoSync.fitness", appId: "fitness" },
 };
 
 const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
@@ -80,6 +81,7 @@ const SYNC_CATEGORY_ORDER: CloudSyncCategory[] = [
   "stickies",
   "stuff",
   "dictionary",
+  "fitness",
 ];
 
 const MENU_VALUE = "cloud-sync";
