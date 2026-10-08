@@ -147,7 +147,7 @@ function badgeGradient(from: string, to: string): string {
 const DAY_BADGE = {
   workout: { from: "#ef4444", to: "#dc2626" },
   rest: { from: "#94a3b8", to: "#64748b" },
-  done: { from: "#34d399", to: "#059669" },
+  done: { from: "#6dce3a", to: "#2f9a28" },
 } as const;
 
 function FocusMark({ focus, done, missed }: { focus: FocusArea; done: boolean; missed: boolean }) {
