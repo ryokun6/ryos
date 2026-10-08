@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretRight, Plus, Trash, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,10 +54,11 @@ const EMPTY_DRAFT: Record<DraftField, string> = {
   thighCm: "",
 };
 
-function MeasurementForm({ l }: { l: FitnessLogic }) {
+function MeasurementForm({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, units } = l;
   const [date, setDate] = useState(l.todayKey);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [showMeasurements, setShowMeasurements] = useState(false);
   const lengthUnit = lengthUnitLabel(units);
 
   const submit = () => {
@@ -80,6 +81,7 @@ function MeasurementForm({ l }: { l: FitnessLogic }) {
     const id = useFitnessStore.getState().addBodyStat(entry);
     if (id) {
       setDraft(EMPTY_DRAFT);
+      setShowMeasurements(false);
       toast.success(t("apps.fitness.toasts.statsSaved"));
     } else {
       toast.error(t("apps.fitness.body.invalid"));
@@ -102,21 +104,38 @@ function MeasurementForm({ l }: { l: FitnessLogic }) {
 
   return (
     <Section title={t("apps.fitness.body.logStats")}>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <LabeledField label={t("apps.fitness.common.date")}>
-          <Input
-            type="date"
-            value={date}
-            max={l.todayKey}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-            className={cn(FITNESS_INPUT_CLASS, "w-full")}
-          />
-        </LabeledField>
+      <div className={cn("grid gap-2", isMobileLayout ? "grid-cols-2" : "grid-cols-3")}>
+        <div className={cn(isMobileLayout && "col-span-2")}>
+          <LabeledField label={t("apps.fitness.common.date")}>
+            <Input
+              type="date"
+              value={date}
+              max={l.todayKey}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+              className={cn(FITNESS_INPUT_CLASS, "w-full min-w-0")}
+            />
+          </LabeledField>
+        </div>
         {field("weight", t("apps.fitness.body.weightWithUnit", { unit: l.weightUnit }))}
         {field("bodyFat", t("apps.fitness.body.bodyFatPct"))}
-        {BODY_MEASUREMENTS.map((m) =>
-          field(m, t(`apps.fitness.body.measurements.${m}`, { unit: lengthUnit }))
-        )}
+      </div>
+      <div>
+        <button
+          type="button"
+          className={cn("inline-flex items-center gap-1 text-[11px]", FITNESS_MUTED_CLASS)}
+          aria-expanded={showMeasurements}
+          onClick={() => setShowMeasurements((open) => !open)}
+        >
+          <CaretRight size={10} className={cn(showMeasurements && "rotate-90")} />
+          {t("apps.fitness.body.moreDetails")}
+        </button>
+        {showMeasurements ? (
+          <div className={cn("mt-2 grid gap-2", isMobileLayout ? "grid-cols-2" : "grid-cols-3")}>
+            {BODY_MEASUREMENTS.map((m) =>
+              field(m, t(`apps.fitness.body.measurements.${m}`, { unit: lengthUnit }))
+            )}
+          </div>
+        ) : null}
       </div>
       <div>
         <Button size="sm" variant="default" onClick={submit} className="h-6 gap-1 text-[11px]">
@@ -268,7 +287,7 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
   return (
     <div className={cn("grid size-full min-h-0 gap-3 overflow-y-auto p-3", isMobileLayout ? "grid-cols-1" : "grid-cols-[1fr_260px]")}>
       <div className="flex min-w-0 flex-col gap-3">
-        <MeasurementForm l={l} />
+        <MeasurementForm l={l} isMobileLayout={isMobileLayout} />
         <Section
           title={t("apps.fitness.body.weightTrend")}
           actions={

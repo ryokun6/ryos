@@ -2764,6 +2764,7 @@
           "thighCm": "Cuisse ({{unit}})",
           "waistCm": "Taille ({{unit}})"
         },
+        "moreDetails": "Plus de détails",
         "noHistory": "Aucune donnée corporelle pour le moment.",
         "noWeight": "Consignez votre poids pour voir une tendance.",
         "save": "Enregistrer",

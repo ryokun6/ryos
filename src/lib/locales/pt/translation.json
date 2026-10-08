@@ -2764,6 +2764,7 @@
           "thighCm": "Coxa ({{unit}})",
           "waistCm": "Cintura ({{unit}})"
         },
+        "moreDetails": "Mais detalhes",
         "noHistory": "Ainda não há estatísticas corporais.",
         "noWeight": "Registre seu peso para ver uma tendência.",
         "save": "Salvar",

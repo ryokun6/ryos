@@ -2760,6 +2760,7 @@
           "thighCm": "Oberschenkel ({{unit}})",
           "waistCm": "Taille ({{unit}})"
         },
+        "moreDetails": "Weitere Details",
         "noHistory": "Noch keine Körperwerte vorhanden.",
         "noWeight": "Protokolliere dein Gewicht, um einen Trend zu sehen.",
         "save": "Sichern",

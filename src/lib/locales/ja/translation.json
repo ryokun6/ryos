@@ -2760,6 +2760,7 @@
           "thighCm": "太もも（{{unit}}）",
           "waistCm": "ウエスト（{{unit}}）"
         },
+        "moreDetails": "詳細",
         "noHistory": "身体統計がまだありません。",
         "noWeight": "体重を記録して傾向を表示します。",
         "save": "保存",

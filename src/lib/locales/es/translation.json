@@ -2764,6 +2764,7 @@
           "thighCm": "Muslo ({{unit}})",
           "waistCm": "Cintura ({{unit}})"
         },
+        "moreDetails": "Más detalles",
         "noHistory": "Aún no hay estadísticas corporales.",
         "noWeight": "Registra tu peso para ver la tendencia.",
         "save": "Guardar",

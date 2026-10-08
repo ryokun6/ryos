@@ -5708,6 +5708,7 @@
           "armCm": "Arm ({{unit}})",
           "thighCm": "Thigh ({{unit}})"
         },
+        "moreDetails": "More Details",
         "short": {
           "waistCm": "Waist",
           "chestCm": "Chest",

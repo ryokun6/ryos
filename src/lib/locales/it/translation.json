@@ -2764,6 +2764,7 @@
           "thighCm": "Coscia ({{unit}})",
           "waistCm": "Vita ({{unit}})"
         },
+        "moreDetails": "Altri dettagli",
         "noHistory": "Ancora nessun dato corporeo.",
         "noWeight": "Registra il tuo peso per vedere l'andamento.",
         "save": "Salva",

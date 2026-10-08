@@ -2760,6 +2760,7 @@
           "thighCm": "大腿 ({{unit}})",
           "waistCm": "腰圍 ({{unit}})"
         },
+        "moreDetails": "更多詳細資料",
         "noHistory": "尚無身體數據。",
         "noWeight": "記錄體重以查看趨勢。",
         "save": "儲存",

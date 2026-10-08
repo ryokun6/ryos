@@ -2760,6 +2760,7 @@
           "thighCm": "허벅지({{unit}})",
           "waistCm": "허리({{unit}})"
         },
+        "moreDetails": "세부 정보",
         "noHistory": "아직 신체 통계가 없습니다.",
         "noWeight": "추이를 확인하려면 체중을 기록하십시오.",
         "save": "저장",
