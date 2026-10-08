@@ -146,6 +146,17 @@ export function auditFitnessExerciseCatalogs(): ExerciseCatalogAuditIssue[] {
           kind: "untranslated",
           message: "name and instructions are still English",
         });
+      } else if (
+        source.instructions.some(
+          (step, index) => step.trim().length > 0 && copy.instructions[index].trim() === step.trim()
+        )
+      ) {
+        issues.push({
+          locale,
+          key: `${key}.instructions`,
+          kind: "untranslated",
+          message: "an instruction step is still English",
+        });
       }
       if (locale === "zh-TW") {
         const text = `${copy.name}\n${copy.instructions.join("\n")}`;

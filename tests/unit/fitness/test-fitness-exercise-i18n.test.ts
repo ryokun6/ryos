@@ -58,8 +58,11 @@ describe("fitness exercise names", () => {
     });
   });
 
-  test("uses localized instructions outside English and falls back when they are missing", () => {
-    expect(localizedInstructions(["Lower."], ["下ろす。"], "ja")).toEqual(["下ろす。"]);
+  test("uses localized instructions outside English and does not append the English steps", () => {
+    expect(localizedInstructions(["Lower the bar.", "Press it up."], ["バーを下ろす。", "押し上げる。"], "ja")).toEqual([
+      "バーを下ろす。",
+      "押し上げる。",
+    ]);
     expect(localizedInstructions(["Lower."], ["下ろす。"], "en")).toEqual(["Lower."]);
     expect(localizedInstructions(["Lower."], [], "ja")).toEqual(["Lower."]);
   });

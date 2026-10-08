@@ -12,7 +12,10 @@ export type ExerciseCatalog = Record<string, ExerciseCopy>;
 export interface ExerciseNameDisplay {
   /** Name shown as the title. English when the UI language is English. */
   primary: string;
-  /** English name under a non-English title. Null when it would repeat the title. */
+  /**
+   * English name under the title in the exercise view.
+   * Null when the UI is English or the names match. Not used for instructions.
+   */
   secondary: string | null;
 }
 
@@ -54,6 +57,10 @@ export function exerciseSearchLabels(
   return [englishName, localized];
 }
 
+/**
+ * Instruction steps for the exercise view. Non-English locales show the
+ * localized steps only — the English wording is not repeated under them.
+ */
 export function localizedInstructions(
   english: readonly string[],
   localized: readonly string[] | null | undefined,

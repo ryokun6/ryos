@@ -212,7 +212,6 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                   const equipment = exercise
                     ? t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)
                     : "";
-                  const meta = [names.secondary, equipment].filter(Boolean).join(" · ");
                   return (
                     <li
                       key={rec.id}
@@ -225,11 +224,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                       >
                         <div
                           className={cn("text-[12px] leading-snug", isMobileLayout ? "line-clamp-2 break-words" : "truncate")}
-                          title={names.secondary ? `${names.primary} — ${names.secondary}` : names.primary}
+                          title={names.primary}
                         >
                           {names.primary}
                         </div>
-                        {meta ? <div className="truncate text-[10px] opacity-60">{meta}</div> : null}
+                        {equipment ? <div className="truncate text-[10px] opacity-60">{equipment}</div> : null}
                       </button>
                       <button
                         type="button"

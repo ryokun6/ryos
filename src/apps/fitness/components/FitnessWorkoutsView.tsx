@@ -21,7 +21,6 @@ import { focusForDate, recommendExercises } from "../utils/schedule";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
 import {
   EmptyNote,
-  ExerciseNameLines,
   FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
   NumberField,
@@ -73,11 +72,7 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           onClick={() => l.openExercise(entry.exerciseId)}
         >
           <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
-          <ExerciseNameLines
-            primary={names.primary}
-            secondary={names.secondary}
-            primaryClassName="hover:underline"
-          />
+          <span className="block truncate hover:underline">{names.primary}</span>
         </button>
       }
       actions={
@@ -212,7 +207,7 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
                   setQuery("");
                 }}
               >
-                <ExerciseNameLines primary={names.primary} secondary={names.secondary} />
+                <span className="block truncate">{names.primary}</span>
               </button>
             </li>
             );
@@ -319,13 +314,8 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
               {recommendations.map((rec) => {
                 const names = l.displayName(rec.id, rec.name);
                 return (
-                <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "inline-flex max-w-full flex-col items-start")} onClick={() => add(rec)}>
-                  <span className="max-w-full truncate">+ {names.primary}</span>
-                  {names.secondary ? (
-                    <span className={cn("max-w-full truncate text-[10px] font-normal", FITNESS_MUTED_CLASS)}>
-                      {names.secondary}
-                    </span>
-                  ) : null}
+                <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "max-w-full truncate")} onClick={() => add(rec)}>
+                  + {names.primary}
                 </button>
                 );
               })}
@@ -382,11 +372,7 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
                 return (
                 <li key={r.exerciseId} className="flex justify-between gap-2">
                   <button type="button" className="min-w-0 text-left" onClick={() => l.openExercise(r.exerciseId)}>
-                    <ExerciseNameLines
-                      primary={names.primary}
-                      secondary={names.secondary}
-                      primaryClassName="hover:underline"
-                    />
+                    <span className="block truncate hover:underline">{names.primary}</span>
                   </button>
                   <span className="shrink-0 text-[11px]" title={t("apps.fitness.workouts.e1rm")}>
                     {r.reps}×{l.formatWeight(r.weightKg)}
