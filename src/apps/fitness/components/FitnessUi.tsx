@@ -32,7 +32,7 @@ export function Section({
     <section className={cn(FITNESS_CARD_CLASS, "flex flex-col gap-2", className)}>
       {title || actions ? (
         <div className="flex min-h-6 items-center justify-between gap-2">
-          {title ? <h3 className="text-[12px] font-bold">{title}</h3> : <span />}
+          {title ? <h3 className="min-w-0 text-[12px] font-bold">{title}</h3> : <span />}
           {actions ? <div className="flex items-center gap-1.5">{actions}</div> : null}
         </div>
       ) : null}

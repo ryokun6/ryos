@@ -3,6 +3,7 @@ import { CaretLeft, CaretRight, Plus, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
+import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea, type Workout, type WorkoutEntry } from "../types";
@@ -30,6 +31,24 @@ import {
 const ICON_BUTTON_CLASS =
   "inline-flex size-6 items-center justify-center rounded hover:bg-black/10 disabled:opacity-40 dark:hover:bg-white/15";
 
+function ExerciseThumb({ path }: { path: string | undefined }) {
+  const [failed, setFailed] = useState(false);
+  if (!path || failed) {
+    return <div className="size-6 shrink-0 rounded bg-black/5 dark:bg-white/10" aria-hidden />;
+  }
+  return (
+    <img
+      src={exerciseImageUrl(path)}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => setFailed(true)}
+      className="size-6 shrink-0 rounded bg-black/5 object-cover dark:bg-white/10"
+    />
+  );
+}
+
 function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; entry: WorkoutEntry }) {
   const { t, units } = l;
   const store = useFitnessStore.getState();
@@ -46,8 +65,13 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
   return (
     <Section
       title={
-        <button type="button" className="text-left hover:underline" onClick={() => l.openExercise(entry.exerciseId)}>
-          {entry.name}
+        <button
+          type="button"
+          className="flex min-w-0 items-center gap-1.5 text-left"
+          onClick={() => l.openExercise(entry.exerciseId)}
+        >
+          <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
+          <span className="truncate hover:underline">{entry.name}</span>
         </button>
       }
       actions={
