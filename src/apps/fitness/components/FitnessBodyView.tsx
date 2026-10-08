@@ -137,7 +137,7 @@ function MeasurementForm({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayou
           </div>
         ) : null}
       </div>
-      <div>
+      <div className="flex justify-end">
         <Button size="sm" variant="default" onClick={submit} className="h-6 gap-1 text-[11px]">
           <Plus size={11} weight="bold" />
           {t("apps.fitness.body.save")}
