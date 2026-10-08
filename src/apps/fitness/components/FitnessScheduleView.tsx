@@ -187,7 +187,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                         .join(", "),
                     })}
               </p>
-              <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              <ul className="grid grid-cols-2 gap-1">
                 {recommendations.map((rec) => {
                   const exercise = l.exerciseById.get(rec.id);
                   return (
@@ -196,7 +196,12 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                       className="flex items-center gap-2 rounded-md border border-black/10 bg-white/60 p-1.5 dark:border-white/10 dark:bg-white/5"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[12px]">{rec.name}</div>
+                        <div
+                          className={cn("text-[12px] leading-snug", isMobileLayout ? "line-clamp-2 break-words" : "truncate")}
+                          title={rec.name}
+                        >
+                          {rec.name}
+                        </div>
                         {exercise ? (
                           <div className="truncate text-[10px] opacity-60">
                             {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
