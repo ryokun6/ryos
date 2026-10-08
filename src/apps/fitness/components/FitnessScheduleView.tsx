@@ -95,7 +95,8 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
 
   const addToDay = (exercise: { id: string; name: string }) => {
     if (l.addExerciseToDay(selected.date, exercise)) {
-      toast.success(t("apps.fitness.toasts.addedToDay", { name: exercise.name, date: formatShortDate(selected.date, locale) }));
+      const names = l.displayName(exercise.id, exercise.name);
+      toast.success(t("apps.fitness.toasts.addedToDay", { name: names.primary, date: formatShortDate(selected.date, locale) }));
     }
   };
 
@@ -207,6 +208,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               <ul className="grid grid-cols-2 gap-1">
                 {recommendations.map((rec) => {
                   const exercise = l.exerciseById.get(rec.id);
+                  const names = l.displayName(rec.id, rec.name);
+                  const equipment = exercise
+                    ? t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)
+                    : "";
+                  const meta = [names.secondary, equipment].filter(Boolean).join(" · ");
                   return (
                     <li
                       key={rec.id}
@@ -219,15 +225,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                       >
                         <div
                           className={cn("text-[12px] leading-snug", isMobileLayout ? "line-clamp-2 break-words" : "truncate")}
-                          title={rec.name}
+                          title={names.secondary ? `${names.primary} — ${names.secondary}` : names.primary}
                         >
-                          {rec.name}
+                          {names.primary}
                         </div>
-                        {exercise ? (
-                          <div className="truncate text-[10px] opacity-60">
-                            {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
-                          </div>
-                        ) : null}
+                        {meta ? <div className="truncate text-[10px] opacity-60">{meta}</div> : null}
                       </button>
                       <button
                         type="button"

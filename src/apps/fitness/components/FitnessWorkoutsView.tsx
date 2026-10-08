@@ -8,7 +8,7 @@ import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea, type Workout, type WorkoutEntry } from "../types";
 import { addDays } from "../utils/dates";
-import { DEFAULT_EXERCISE_FILTERS, filterExercises } from "../utils/exerciseLibrary";
+import { DEFAULT_EXERCISE_FILTERS, exerciseQueryMatches, filterExercises } from "../utils/exerciseLibrary";
 import { formatLongDate, formatShortDate } from "../utils/format";
 import {
   estimateOneRepMax,
@@ -21,6 +21,7 @@ import { focusForDate, recommendExercises } from "../utils/schedule";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
 import {
   EmptyNote,
+  ExerciseNameLines,
   FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
   NumberField,
@@ -50,7 +51,8 @@ function ExerciseThumb({ path }: { path: string | undefined }) {
 }
 
 function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; entry: WorkoutEntry }) {
-  const { t, units } = l;
+  const { t, units, displayName } = l;
+  const names = displayName(entry.exerciseId, entry.name);
   const store = useFitnessStore.getState();
   const previous = useMemo(
     () => lastSetsFor(l.workouts, entry.exerciseId, workout.date),
@@ -71,7 +73,11 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           onClick={() => l.openExercise(entry.exerciseId)}
         >
           <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
-          <span className="truncate hover:underline">{entry.name}</span>
+          <ExerciseNameLines
+            primary={names.primary}
+            secondary={names.secondary}
+            primaryClassName="hover:underline"
+          />
         </button>
       }
       actions={
@@ -165,11 +171,14 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
   const [query, setQuery] = useState("");
   const matches = useMemo(() => {
     if (!query.trim()) return [];
-    const fromLibrary = filterExercises(l.exercises, { ...DEFAULT_EXERCISE_FILTERS, query }).slice(0, 8);
+    const fromLibrary = filterExercises(l.exercises, { ...DEFAULT_EXERCISE_FILTERS, query }, {
+      names: (exercise) => l.searchLabels(exercise.id, exercise.name),
+    }).slice(0, 8);
     if (fromLibrary.length) return fromLibrary.map((e) => ({ id: e.id, name: e.name }));
-    const q = query.toLowerCase();
-    return loggedExerciseIds(l.workouts).filter((e) => e.name.toLowerCase().includes(q)).slice(0, 8);
-  }, [query, l.exercises, l.workouts]);
+    return loggedExerciseIds(l.workouts)
+      .filter((e) => exerciseQueryMatches(query, l.searchLabels(e.id, e.name)))
+      .slice(0, 8);
+  }, [query, l.exercises, l.workouts, l.searchLabels]);
 
   return (
     <div className="relative">
@@ -191,7 +200,9 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
       />
       {matches.length ? (
         <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-black/15 bg-white py-1 shadow-lg dark:border-white/15 dark:bg-neutral-800">
-          {matches.map((match) => (
+          {matches.map((match) => {
+            const names = l.displayName(match.id, match.name);
+            return (
             <li key={match.id}>
               <button
                 type="button"
@@ -201,10 +212,11 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
                   setQuery("");
                 }}
               >
-                {match.name}
+                <ExerciseNameLines primary={names.primary} secondary={names.secondary} />
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : null}
     </div>
@@ -304,11 +316,19 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
               {t("apps.fitness.workouts.suggested", { focus: t(`apps.fitness.focus.${focus}`) })}
             </span>
             <div className="flex flex-wrap items-center gap-1">
-              {recommendations.map((rec) => (
-                <button key={rec.id} type="button" className={FITNESS_CHIP_CLASS} onClick={() => add(rec)}>
-                  + {rec.name}
+              {recommendations.map((rec) => {
+                const names = l.displayName(rec.id, rec.name);
+                return (
+                <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "inline-flex max-w-full flex-col items-start")} onClick={() => add(rec)}>
+                  <span className="max-w-full truncate">+ {names.primary}</span>
+                  {names.secondary ? (
+                    <span className={cn("max-w-full truncate text-[10px] font-normal", FITNESS_MUTED_CLASS)}>
+                      {names.secondary}
+                    </span>
+                  ) : null}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -357,16 +377,23 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
         <Section title={t("apps.fitness.workouts.records")}>
           {records.length ? (
             <ul className="flex flex-col gap-0.5 text-[12px]">
-              {records.map((r) => (
+              {records.map((r) => {
+                const names = l.displayName(r.exerciseId, r.name);
+                return (
                 <li key={r.exerciseId} className="flex justify-between gap-2">
-                  <button type="button" className="truncate text-left hover:underline" onClick={() => l.openExercise(r.exerciseId)}>
-                    {r.name}
+                  <button type="button" className="min-w-0 text-left" onClick={() => l.openExercise(r.exerciseId)}>
+                    <ExerciseNameLines
+                      primary={names.primary}
+                      secondary={names.secondary}
+                      primaryClassName="hover:underline"
+                    />
                   </button>
                   <span className="shrink-0 text-[11px]" title={t("apps.fitness.workouts.e1rm")}>
                     {r.reps}×{l.formatWeight(r.weightKg)}
                   </span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           ) : (
             <EmptyNote>{t("apps.fitness.workouts.noRecords")}</EmptyNote>
