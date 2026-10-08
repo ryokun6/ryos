@@ -14,6 +14,11 @@ export function formatShortDate(key: string, locale: string): string {
   return fromDateKey(key).toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
+/** Month/day only, numeric, so a narrow day cell stays on one line. */
+export function formatCompactDate(key: string, locale: string): string {
+  return fromDateKey(key).toLocaleDateString(locale, { month: "numeric", day: "numeric" });
+}
+
 export function formatLongDate(key: string, locale: string): string {
   return fromDateKey(key).toLocaleDateString(locale, {
     weekday: "long",

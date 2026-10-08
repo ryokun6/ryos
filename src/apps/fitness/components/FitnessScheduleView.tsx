@@ -1,12 +1,26 @@
 import { useMemo, useState } from "react";
-import { Check, Info, Plus } from "@phosphor-icons/react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Barbell,
+  Check,
+  Footprints,
+  Info,
+  Moon,
+  PersonArmsSpread,
+  PersonSimpleRun,
+  PersonSimpleTaiChi,
+  PersonSimpleWalk,
+  Plus,
+  Trophy,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea } from "../types";
-import { enumKey, formatShortDate, formatWeekdayShort } from "../utils/format";
+import { enumKey, formatCompactDate, formatShortDate, formatWeekdayShort } from "../utils/format";
 import { weeklyWorkoutProgress } from "../utils/goals";
 import {
   FOCUS_MUSCLES,
@@ -26,17 +40,22 @@ import {
   SmallSelect,
 } from "./FitnessUi";
 
-const FOCUS_EMOJI: Record<FocusArea, string> = {
-  upper: "💪",
-  lower: "🦵",
-  push: "🫸",
-  pull: "🪢",
-  legs: "🦿",
-  core: "🧘",
-  cardio: "🏃",
-  full: "🏋️",
-  rest: "😴",
+const FOCUS_ICON: Record<FocusArea, typeof Barbell> = {
+  upper: Barbell,
+  lower: PersonSimpleWalk,
+  push: ArrowUp,
+  pull: ArrowDown,
+  legs: Footprints,
+  core: PersonSimpleTaiChi,
+  cardio: PersonSimpleRun,
+  full: PersonArmsSpread,
+  rest: Moon,
 };
+
+function FocusMark({ focus }: { focus: FocusArea }) {
+  const Icon = FOCUS_ICON[focus];
+  return <Icon size={22} />;
+}
 
 export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, todayKey } = l;
@@ -99,14 +118,16 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               day.focus === "rest" && "opacity-75"
             )}
           >
-            <div className="flex w-full items-center justify-between text-[10px]">
-              <span className={cn("font-bold uppercase", day.isToday && "text-os-link")}>
+            <div className="flex w-full flex-col items-center leading-tight">
+              <span className={cn("whitespace-nowrap text-[10px] font-bold uppercase", day.isToday && "text-os-link")}>
                 {formatWeekdayShort(day.date, locale)}
               </span>
-              <span className={FITNESS_MUTED_CLASS}>{formatShortDate(day.date, locale)}</span>
+              <span className={cn("whitespace-nowrap text-[10px]", FITNESS_MUTED_CLASS)}>
+                {formatCompactDate(day.date, locale)}
+              </span>
             </div>
-            <div className="text-[22px] leading-none" aria-hidden>
-              {FOCUS_EMOJI[day.focus]}
+            <div className="text-black/80 dark:text-white/80" aria-hidden>
+              <FocusMark focus={day.focus} />
             </div>
             <div onClick={(e) => e.stopPropagation()} className="w-full">
               <SmallSelect
@@ -217,7 +238,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                   target: weekly.target,
                 })}
               </span>
-              {weekly.achieved ? <span aria-hidden>🎉</span> : null}
+              {weekly.achieved ? <Trophy size={14} weight="fill" aria-hidden /> : null}
             </div>
             <ProgressBar fraction={weekly.fraction} label={t("apps.fitness.schedule.weeklyGoal")} />
             <div className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
