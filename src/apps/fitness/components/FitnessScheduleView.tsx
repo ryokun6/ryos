@@ -429,8 +429,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               {streak > 0
                 ? t("apps.fitness.schedule.streak", { count: streak })
                 : t("apps.fitness.schedule.noStreak")}
-            </div>
-            <div className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
+              {" · "}
               {t("apps.fitness.schedule.plannedDays", { count: planned })}
             </div>
       </section>
