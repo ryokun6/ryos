@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Barbell, CalendarCheck, ForkKnife, Notebook, Scales, SidebarSimple } from "@phosphor-icons/react";
+import { Barbell, CalendarCheck, ForkKnife, MagnifyingGlass, Person, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
@@ -61,9 +61,9 @@ function ToolbarButton({
 
 const VIEW_ICONS: Record<FitnessView, ReactNode> = {
   schedule: <CalendarCheck size={14} />,
-  exercises: <Barbell size={14} />,
-  workouts: <Notebook size={14} />,
-  body: <Scales size={14} />,
+  exercises: <MagnifyingGlass size={14} />,
+  workouts: <Barbell size={14} />,
+  body: <Person size={14} />,
   food: <ForkKnife size={14} />,
 };
 
