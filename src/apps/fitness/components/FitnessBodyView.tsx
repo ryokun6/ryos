@@ -171,7 +171,6 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
   return (
     <div className={cn("grid size-full min-h-0 gap-3 overflow-y-auto p-3", isMobileLayout ? "grid-cols-1" : "grid-cols-[1fr_260px]")}>
       <div className="flex min-w-0 flex-col gap-3">
-        <MeasurementForm l={l} isMobileLayout={isMobileLayout} />
         <Section
           title={t("apps.fitness.body.weightTrend")}
           actions={
@@ -205,6 +204,7 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
             />
           ) : null}
         </Section>
+        <MeasurementForm l={l} isMobileLayout={isMobileLayout} />
         <Section title={t("apps.fitness.body.history")}>
           {history.length ? (
             <ul className="flex flex-col text-[12px]">
