@@ -76,7 +76,7 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
       }
       actions={
         <>
-          <Button size="sm" variant="default" onClick={addSet} className="h-6 gap-1 text-[11px]">
+          <Button size="sm" variant="secondary" onClick={addSet} className="h-6 gap-1 text-[11px]">
             <Plus size={11} weight="bold" />
             {t("apps.fitness.workouts.addSet")}
           </Button>
