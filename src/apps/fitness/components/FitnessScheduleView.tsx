@@ -282,7 +282,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             className={cn(
               "gap-1.5",
               isMobileLayout
-                ? "flex w-full min-w-0 snap-x snap-mandatory overflow-x-auto pb-1"
+                ? "flex w-full min-w-0 snap-x snap-mandatory overflow-x-auto p-1"
                 : "grid grid-cols-7"
             )}
           >
