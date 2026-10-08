@@ -35,7 +35,6 @@ import {
   EmptyNote,
   FITNESS_CARD_CLASS,
   FITNESS_MUTED_CLASS,
-  ProgressBar,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -83,6 +82,32 @@ function useHorizontalScrollFade(listKey: string) {
   return ref;
 }
 
+function WeeklyGoalMarks({ current, target, label }: { current: number; target: number; label: string }) {
+  const total = Math.max(current, target);
+  if (total <= 0) return null;
+  const { from, to } = DAY_BADGE.done;
+  return (
+    <div role="img" aria-label={label} className="flex flex-wrap items-center gap-1.5">
+      {Array.from({ length: total }, (_, index) => {
+        const filled = index < current;
+        return (
+          <span
+            key={index}
+            aria-hidden
+            className={cn(
+              "inline-flex size-5 shrink-0 items-center justify-center rounded-full",
+              filled ? "text-white" : "border border-black/25 bg-transparent dark:border-white/40"
+            )}
+            style={filled ? { backgroundImage: badgeGradient(from, to) } : undefined}
+          >
+            {filled ? <Check size={12} weight="bold" /> : null}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 function ExercisePhoto({ path }: { path: string | undefined }) {
   const [failed, setFailed] = useState(false);
   const className = "h-20 w-full bg-black/5 object-cover dark:bg-white/10";
@@ -122,16 +147,19 @@ function badgeGradient(from: string, to: string): string {
 const DAY_BADGE = {
   workout: { from: "#ef4444", to: "#dc2626" },
   rest: { from: "#94a3b8", to: "#64748b" },
+  done: { from: "#34d399", to: "#059669" },
 } as const;
 
 function FocusMark({ focus, done, missed }: { focus: FocusArea; done: boolean; missed: boolean }) {
   if (done) {
+    const { from, to } = DAY_BADGE.done;
     return (
       <div
-        className="flex size-6 shrink-0 items-center justify-center text-emerald-600 dark:text-emerald-400"
+        className="aqua-icon-badge flex size-6 shrink-0 items-center justify-center text-white"
+        style={{ backgroundImage: badgeGradient(from, to) }}
         aria-hidden
       >
-        <Check size={16} weight="bold" />
+        <Check size={15} weight="bold" />
       </div>
     );
   }
@@ -389,7 +417,14 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               </span>
               {weekly.achieved ? <Trophy size={14} weight="fill" aria-hidden /> : null}
             </div>
-            <ProgressBar fraction={weekly.fraction} label={t("apps.fitness.schedule.weeklyGoal")} />
+            <WeeklyGoalMarks
+              current={weekly.current}
+              target={weekly.target}
+              label={t("apps.fitness.schedule.workoutsThisWeek", {
+                current: weekly.current,
+                target: weekly.target,
+              })}
+            />
             <div className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
               {streak > 0
                 ? t("apps.fitness.schedule.streak", { count: streak })
