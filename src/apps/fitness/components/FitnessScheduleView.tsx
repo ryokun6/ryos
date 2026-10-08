@@ -5,7 +5,6 @@ import {
   Barbell,
   Check,
   Footprints,
-  Info,
   Moon,
   PersonArmsSpread,
   PersonSimpleRun,
@@ -193,9 +192,13 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                   return (
                     <li
                       key={rec.id}
-                      className="flex items-center gap-2 rounded-md border border-black/10 bg-white/60 p-1.5 dark:border-white/10 dark:bg-white/5"
+                      className="flex items-center gap-1 rounded-md border border-black/10 bg-white/60 p-1 dark:border-white/10 dark:bg-white/5"
                     >
-                      <div className="min-w-0 flex-1">
+                      <button
+                        type="button"
+                        className="min-w-0 flex-1 rounded px-0.5 py-0.5 text-left hover:bg-black/10 dark:hover:bg-white/15"
+                        onClick={() => l.openExercise(rec.id)}
+                      >
                         <div
                           className={cn("text-[12px] leading-snug", isMobileLayout ? "line-clamp-2 break-words" : "truncate")}
                           title={rec.name}
@@ -207,19 +210,10 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                             {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
                           </div>
                         ) : null}
-                      </div>
-                      <button
-                        type="button"
-                        className="inline-flex size-6 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15"
-                        onClick={() => l.openExercise(rec.id)}
-                        aria-label={t("apps.fitness.schedule.viewExercise")}
-                        title={t("apps.fitness.schedule.viewExercise")}
-                      >
-                        <Info size={14} />
                       </button>
                       <button
                         type="button"
-                        className="inline-flex size-6 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15"
+                        className="inline-flex size-6 shrink-0 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15"
                         onClick={() => addToDay(rec)}
                         aria-label={t("apps.fitness.schedule.addToDay")}
                         title={t("apps.fitness.schedule.addToDay")}
