@@ -3336,6 +3336,7 @@
         "maps": "Maps",
         "stuff": "Stuff",
         "dictionary": "Dictionary",
+        "fitness": "Fitness",
         "waiting": "Waiting for the next eligible change",
         "neverSynced": "Not yet synced",
         "checking": "Checking for cloud updates…",
@@ -5481,6 +5482,348 @@
         "print": {
           "title": "Print Labels",
           "description": "Print ryOS ID barcodes for items or tags from Print ▸ Print Item/Tag Labels. Scanning a printed label opens that item or filters by tag."
+        }
+      }
+    },
+    "fitness": {
+      "name": "Fitness",
+      "title": "Fitness",
+      "description": "Exercise guide, training schedule, and food log",
+      "views": {
+        "schedule": "Schedule",
+        "exercises": "Exercises",
+        "workouts": "Workouts",
+        "body": "Body",
+        "food": "Food"
+      },
+      "menu": {
+        "help": "Fitness Help",
+        "about": "About Fitness",
+        "logWorkout": "Log Workout",
+        "logFood": "Log Food",
+        "logStats": "Log Body Stats",
+        "sync": "Sync Now",
+        "units": "Units",
+        "plan": "Plan",
+        "goals": "Goals…"
+      },
+      "units": {
+        "metric": "Metric (kg, cm)",
+        "imperial": "Imperial (lb, in)"
+      },
+      "common": {
+        "previousDay": "Previous Day",
+        "nextDay": "Next Day",
+        "today": "Today",
+        "date": "Date",
+        "delete": "Delete",
+        "edit": "Edit",
+        "cancel": "Cancel"
+      },
+      "toasts": {
+        "addedToWorkout": "Added {{name}} to today's workout",
+        "addedToDay": "Added {{name}} to {{date}}",
+        "templateApplied": "Applied the {{name}} plan",
+        "statsSaved": "Body stats saved",
+        "foodSaved": "Saved {{name}} to your food log"
+      },
+      "categories": {
+        "strength": "Strength",
+        "stretching": "Stretching",
+        "plyometrics": "Plyometrics",
+        "powerlifting": "Powerlifting",
+        "olympicWeightlifting": "Olympic Weightlifting",
+        "strongman": "Strongman",
+        "cardio": "Cardio"
+      },
+      "levels": {
+        "beginner": "Beginner",
+        "intermediate": "Intermediate",
+        "expert": "Expert"
+      },
+      "equipment": {
+        "barbell": "Barbell",
+        "dumbbell": "Dumbbell",
+        "bodyOnly": "Body Only",
+        "cable": "Cable",
+        "machine": "Machine",
+        "kettlebells": "Kettlebells",
+        "bands": "Bands",
+        "medicineBall": "Medicine Ball",
+        "exerciseBall": "Exercise Ball",
+        "foamRoll": "Foam Roll",
+        "ezCurlBar": "EZ Curl Bar",
+        "other": "Other"
+      },
+      "muscles": {
+        "abdominals": "Abdominals",
+        "abductors": "Abductors",
+        "adductors": "Adductors",
+        "biceps": "Biceps",
+        "calves": "Calves",
+        "chest": "Chest",
+        "forearms": "Forearms",
+        "glutes": "Glutes",
+        "hamstrings": "Hamstrings",
+        "lats": "Lats",
+        "lowerBack": "Lower Back",
+        "middleBack": "Middle Back",
+        "neck": "Neck",
+        "quadriceps": "Quadriceps",
+        "shoulders": "Shoulders",
+        "traps": "Traps",
+        "triceps": "Triceps"
+      },
+      "mechanic": {
+        "compound": "Compound",
+        "isolation": "Isolation"
+      },
+      "force": {
+        "push": "Push",
+        "pull": "Pull",
+        "static": "Static"
+      },
+      "focus": {
+        "upper": "Upper Body",
+        "lower": "Lower Body",
+        "push": "Push",
+        "pull": "Pull",
+        "legs": "Legs",
+        "core": "Core",
+        "cardio": "Cardio",
+        "full": "Full Body",
+        "rest": "Rest"
+      },
+      "exercises": {
+        "search": "Search exercises",
+        "count_one": "{{count}} exercise",
+        "count_other": "{{count}} exercises",
+        "refine_one": "{{count}} more — refine your search",
+        "refine_other": "{{count}} more — refine your search",
+        "loading": "Loading exercises…",
+        "loadError": "Couldn't load the exercise library.",
+        "retry": "Try Again",
+        "noResults": "No exercises match these filters.",
+        "select": "Select an exercise to see how it's done.",
+        "back": "Exercises",
+        "addToToday": "Add to Today",
+        "imageAlt": "{{name}}, step {{step}}",
+        "primaryMuscles": "Primary Muscles",
+        "secondaryMuscles": "Secondary Muscles",
+        "instructions": "Instructions",
+        "instructionsError": "Couldn't load instructions.",
+        "progress": "Your Progress",
+        "bestSet": "Best: {{reps}} × {{weight}}",
+        "e1rmChart": "Estimated one-rep max",
+        "e1rmHint": "Estimated one-rep max per session (Epley formula).",
+        "repsHint": "Most reps per session.",
+        "noProgress": "Log this exercise in a workout to track progress."
+      },
+      "attribution": {
+        "prefix": "Exercise data and images from",
+        "license": "(public domain, Unlicense)."
+      },
+      "filters": {
+        "all": "All",
+        "muscle": "Muscle",
+        "equipment": "Equipment",
+        "category": "Type",
+        "allMuscles": "All Muscles",
+        "allEquipment": "All Equipment",
+        "allTypes": "All Types"
+      },
+      "workouts": {
+        "focus": "Focus",
+        "deleteWorkout": "Delete Workout",
+        "addExercisePlaceholder": "Add an exercise…",
+        "suggested": "Suggested for {{focus}}",
+        "empty": "No exercises logged for this day yet.",
+        "lastTime": "Last time: {{sets}}",
+        "set": "Set",
+        "reps": "Reps",
+        "weight": "Weight ({{unit}})",
+        "e1rm": "Est. 1RM",
+        "addSet": "Add Set",
+        "removeSet": "Remove Set",
+        "removeExercise": "Remove Exercise",
+        "history": "History",
+        "noHistory": "No workouts yet.",
+        "exerciseCount_one": "{{count}} exercise",
+        "exerciseCount_other": "{{count}} exercises",
+        "records": "Personal Records",
+        "noRecords": "Log weighted sets to see records."
+      },
+      "schedule": {
+        "thisWeek": "This Week",
+        "template": "Template",
+        "applyTemplate": "Apply Template",
+        "dayFocus": "{{day}} focus",
+        "done": "Done",
+        "missed": "Missed",
+        "recommendedFor": "Recommended for {{focus}}",
+        "targets": "Targets: {{muscles}}",
+        "cardioHint": "Aim for 20–40 minutes of steady cardio or intervals.",
+        "restDay": "Rest day. Recover, stretch, or take a walk.",
+        "viewExercise": "View Exercise",
+        "addToDay": "Add to Workout",
+        "startWorkout": "Start Workout",
+        "weeklyGoal": "Weekly Goal",
+        "workoutsThisWeek": "{{current}} of {{target}} workouts this week",
+        "streak_one": "{{count}}-week streak",
+        "streak_other": "{{count}}-week streak",
+        "noStreak": "No streak yet",
+        "plannedDays_one": "{{count}} training day planned",
+        "plannedDays_other": "{{count}} training days planned"
+      },
+      "templates": {
+        "upperLower": "Upper / Lower",
+        "ppl": "Push / Pull / Legs",
+        "fullBody": "Full Body ×3",
+        "balanced": "Balanced"
+      },
+      "goals": {
+        "title": "Goals",
+        "targetWeight": "Target Weight",
+        "reached": "Goal reached!",
+        "toGo": "{{value}} to go",
+        "logWeightFirst": "Log your weight to track progress toward your target.",
+        "weeklyTarget": "Weekly Workouts",
+        "perWeek_one": "{{count}} per week",
+        "perWeek_other": "{{count}} per week",
+        "strength": "Strength Goals",
+        "findExercise": "Find an exercise…",
+        "targetOneRepMax": "Target 1RM ({{unit}})",
+        "add": "Add Goal",
+        "removeGoal": "Remove Goal",
+        "noStrengthGoals": "No strength goals yet."
+      },
+      "body": {
+        "logStats": "Log Body Stats",
+        "weightWithUnit": "Weight ({{unit}})",
+        "bodyFatPct": "Body Fat (%)",
+        "measurements": {
+          "waistCm": "Waist ({{unit}})",
+          "chestCm": "Chest ({{unit}})",
+          "hipsCm": "Hips ({{unit}})",
+          "armCm": "Arm ({{unit}})",
+          "thighCm": "Thigh ({{unit}})"
+        },
+        "short": {
+          "waistCm": "Waist",
+          "chestCm": "Chest",
+          "hipsCm": "Hips",
+          "armCm": "Arm",
+          "thighCm": "Thigh"
+        },
+        "save": "Save",
+        "invalid": "Enter at least one value.",
+        "weightTrend": "Weight",
+        "bodyFatTrend": "Body Fat",
+        "change": "{{value}} since first entry",
+        "noWeight": "Log your weight to see a trend.",
+        "history": "History",
+        "noHistory": "No body stats yet."
+      },
+      "profile": {
+        "title": "Profile",
+        "sex": "Sex",
+        "male": "Male",
+        "female": "Female",
+        "birthYear": "Birth Year",
+        "height": "Height",
+        "activity": "Activity",
+        "activityLevels": {
+          "sedentary": "Sedentary",
+          "light": "Lightly Active",
+          "moderate": "Moderately Active",
+          "active": "Very Active",
+          "veryActive": "Extremely Active"
+        }
+      },
+      "nutrition": {
+        "targets": "Daily Nutrition Targets",
+        "personalized": "Based on about {{tdee}} kcal/day to maintain, adjusted to {{direction}}.",
+        "defaults": "Add your weight, height, birth year, and sex for personalized targets.",
+        "direction": {
+          "lose": "lose weight",
+          "maintain": "maintain weight",
+          "gain": "gain weight"
+        },
+        "calories": "Calories",
+        "protein": "Protein",
+        "carbs": "Carbs",
+        "fat": "Fat",
+        "overrideHint": "Enter a number to override a target. Leave blank to use the estimate."
+      },
+      "food": {
+        "addFood": "Add Food",
+        "review": "Review & Save",
+        "photo": "Photo",
+        "addPhoto": "Add Photo",
+        "removePhoto": "Remove Photo",
+        "describePlaceholder": "Describe what you ate, e.g. \"2 eggs, toast with butter, coffee\"",
+        "analyze": "Estimate with AI",
+        "analyzing": "Estimating…",
+        "manual": "Manual",
+        "entryName": "Meal name",
+        "meal": "Meal",
+        "confidence": "{{value}}% confidence",
+        "item": "Item",
+        "portion": "Portion",
+        "addItem": "Add Item",
+        "removeItem": "Remove Item",
+        "total": "Total",
+        "saveToLog": "Save to Log",
+        "update": "Update",
+        "aiDisclaimer": "AI estimates can be wrong. Check portions and numbers before saving.",
+        "empty": "Nothing logged for this day.",
+        "macroSummary": "{{calories}} kcal · P {{protein}} g · C {{carbs}} g · F {{fat}} g",
+        "remaining": "{{value}} kcal left",
+        "over": "{{value}} kcal over",
+        "history": "Last 14 Days",
+        "noHistory": "No food logged yet.",
+        "targetsFromProfile": "Targets are based on your profile and goals.",
+        "targetsDefault": "Using default targets.",
+        "editTargets": "Edit Targets",
+        "errors": {
+          "generic": "Couldn't estimate this meal. Try again or enter it manually.",
+          "rateLimited": "You've reached the AI limit for now. Try again later or enter food manually.",
+          "tooLarge": "That photo is too large. Try a smaller image.",
+          "invalid": "Add a photo or a description first.",
+          "notFood": "No food was recognized. Try another photo or describe the meal.",
+          "photo": "Couldn't read that photo."
+        }
+      },
+      "meals": {
+        "breakfast": "Breakfast",
+        "lunch": "Lunch",
+        "dinner": "Dinner",
+        "snack": "Snack"
+      },
+      "help": {
+        "exercises": {
+          "title": "Exercise Guide",
+          "description": "Browse 800+ exercises with pictures, step-by-step instructions, target muscles, and equipment. Filter by muscle, equipment, or type."
+        },
+        "logging": {
+          "title": "Log Workouts",
+          "description": "Add exercises to a day and log sets, reps, and weight. Your last session is shown as a hint, and charts track your estimated one-rep max over time."
+        },
+        "schedule": {
+          "title": "Weekly Schedule",
+          "description": "Plan each weekday's focus (upper, lower, push, pull, legs, core, cardio, full body, or rest) and get exercise recommendations for it. Start from a template."
+        },
+        "body": {
+          "title": "Body & Goals",
+          "description": "Record weight, body fat, and measurements. Set a target weight, strength goals, and a weekly workout target, and watch your progress."
+        },
+        "food": {
+          "title": "Food Log",
+          "description": "Snap or upload a meal photo and AI estimates the items, calories, and macros. Review and edit before saving, or add food manually. Estimates may be inaccurate."
+        },
+        "sync": {
+          "title": "Sync",
+          "description": "Workouts, body stats, food, schedule, and goals sync across devices when Cloud Sync is on. Units and the current view stay on this device."
         }
       }
     }

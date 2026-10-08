@@ -1776,6 +1776,7 @@
         "error": "Problème de synchronisation : {{error}}",
         "fetching": "Récupération",
         "files": "Fichiers",
+        "fitness": "Forme",
         "hoursAgo": "il y a {{count}}h",
         "justNow": "à l’instant",
         "lastChecked": "Dernière vérification {{date}}",
@@ -2744,6 +2745,354 @@
         "macintoshHd": "Macintosh HD"
       }
     },
+    "fitness": {
+      "attribution": {
+        "license": "(domaine public, Unlicense).",
+        "prefix": "Données d’exercice et images de"
+      },
+      "body": {
+        "bodyFatPct": "Masse grasse (%)",
+        "bodyFatTrend": "Masse grasse",
+        "change": "{{value}} depuis la première saisie",
+        "history": "Historique",
+        "invalid": "Saisissez au moins une valeur.",
+        "logStats": "Consigner les données corporelles",
+        "measurements": {
+          "armCm": "Bras ({{unit}})",
+          "chestCm": "Poitrine ({{unit}})",
+          "hipsCm": "Hanches ({{unit}})",
+          "thighCm": "Cuisse ({{unit}})",
+          "waistCm": "Taille ({{unit}})"
+        },
+        "noHistory": "Aucune donnée corporelle pour le moment.",
+        "noWeight": "Consignez votre poids pour voir une tendance.",
+        "save": "Enregistrer",
+        "short": {
+          "armCm": "Bras",
+          "chestCm": "Poitrine",
+          "hipsCm": "Hanches",
+          "thighCm": "Cuisse",
+          "waistCm": "Taille"
+        },
+        "weightTrend": "Poids",
+        "weightWithUnit": "Poids ({{unit}})"
+      },
+      "categories": {
+        "cardio": "Cardio",
+        "olympicWeightlifting": "Haltérophilie",
+        "plyometrics": "Pliométrie",
+        "powerlifting": "Force athlétique",
+        "strength": "Musculation",
+        "stretching": "Étirements",
+        "strongman": "Strongman"
+      },
+      "common": {
+        "cancel": "Annuler",
+        "date": "Date",
+        "delete": "Supprimer",
+        "edit": "Modifier",
+        "nextDay": "Jour suivant",
+        "previousDay": "Jour précédent",
+        "today": "Aujourd’hui"
+      },
+      "description": "Guide d’exercices, programme d’entraînement et journal alimentaire",
+      "equipment": {
+        "bands": "Élastiques",
+        "barbell": "Barre",
+        "bodyOnly": "Poids du corps",
+        "cable": "Câble",
+        "dumbbell": "Haltère",
+        "exerciseBall": "Ballon d'exercice",
+        "ezCurlBar": "Barre EZ",
+        "foamRoll": "Rouleau en mousse",
+        "kettlebells": "Kettlebells",
+        "machine": "Machine",
+        "medicineBall": "Medicine ball",
+        "other": "Autre"
+      },
+      "exercises": {
+        "addToToday": "Ajouter à Aujourd’hui",
+        "back": "Exercices",
+        "bestSet": "Meilleur : {{reps}} × {{weight}}",
+        "count_one": "{{count}} exercice",
+        "count_other": "{{count}} exercices",
+        "e1rmChart": "1RM estimé",
+        "e1rmHint": "1RM estimé par séance (formule d'Epley).",
+        "imageAlt": "{{name}}, étape {{step}}",
+        "instructions": "Instructions",
+        "instructionsError": "Impossible de charger les instructions.",
+        "loadError": "Impossible de charger la bibliothèque d’exercices.",
+        "loading": "Chargement des exercices…",
+        "noProgress": "Consignez cet exercice dans une séance pour suivre votre progression.",
+        "noResults": "Aucun exercice ne correspond à ces filtres.",
+        "primaryMuscles": "Muscles principaux",
+        "progress": "Votre progression",
+        "refine_one": "{{count}} de plus — affinez votre recherche",
+        "refine_other": "{{count}} de plus — affinez votre recherche",
+        "repsHint": "Nombre maximal de répétitions par séance.",
+        "retry": "Réessayer",
+        "search": "Rechercher des exercices",
+        "secondaryMuscles": "Muscles secondaires",
+        "select": "Sélectionnez un exercice pour voir comment l’exécuter.",
+        "count_many": "{{count}} exercices",
+        "refine_many": "{{count}} de plus — affinez votre recherche"
+      },
+      "filters": {
+        "all": "Tout",
+        "allEquipment": "Tout l’équipement",
+        "allMuscles": "Tous les muscles",
+        "allTypes": "Tous les types",
+        "category": "Type",
+        "equipment": "Équipement",
+        "muscle": "Muscle"
+      },
+      "focus": {
+        "cardio": "Cardio",
+        "core": "Sangle abdominale",
+        "full": "Tout le corps",
+        "legs": "Jambes",
+        "lower": "Bas du corps",
+        "pull": "Tirage",
+        "push": "Poussée",
+        "rest": "Repos",
+        "upper": "Haut du corps"
+      },
+      "food": {
+        "addFood": "Ajouter un aliment",
+        "addItem": "Ajouter un élément",
+        "addPhoto": "Ajouter une photo",
+        "aiDisclaimer": "Les estimations de l’IA peuvent être erronées. Vérifiez les portions et les chiffres avant d’enregistrer.",
+        "analyze": "Estimer avec l’IA",
+        "analyzing": "Estimation en cours…",
+        "confidence": "{{value}} % de confiance",
+        "describePlaceholder": "Décrivez ce que vous avez mangé, par ex. « 2 œufs, du pain grillé avec du beurre, un café »",
+        "editTargets": "Modifier les objectifs",
+        "empty": "Rien n’a été consigné pour cette journée.",
+        "entryName": "Nom du repas",
+        "errors": {
+          "generic": "Impossible d’estimer ce repas. Réessayez ou saisissez-le manuellement.",
+          "invalid": "Ajoutez d’abord une photo ou une description.",
+          "notFood": "Aucun aliment n’a été reconnu. Essayez une autre photo ou décrivez le repas.",
+          "photo": "Impossible de lire cette photo.",
+          "rateLimited": "Vous avez atteint la limite de l’IA pour le moment. Réessayez plus tard ou saisissez les aliments manuellement.",
+          "tooLarge": "Cette photo est trop volumineuse. Essayez une image plus petite."
+        },
+        "history": "14 derniers jours",
+        "item": "Élément",
+        "macroSummary": "{{calories}} kcal · P {{protein}} g · G {{carbs}} g · L {{fat}} g",
+        "manual": "Manuel",
+        "meal": "Repas",
+        "noHistory": "Aucun aliment consigné pour le moment.",
+        "over": "{{value}} kcal de trop",
+        "photo": "Photo",
+        "portion": "Portion",
+        "remaining": "{{value}} kcal restantes",
+        "removeItem": "Supprimer l’élément",
+        "removePhoto": "Supprimer la photo",
+        "review": "Vérifier et enregistrer",
+        "saveToLog": "Enregistrer dans le journal",
+        "targetsDefault": "Utilisation des objectifs par défaut.",
+        "targetsFromProfile": "Les objectifs sont basés sur votre profil et vos objectifs.",
+        "total": "Total",
+        "update": "Mettre à jour"
+      },
+      "force": {
+        "pull": "Tirage",
+        "push": "Poussée",
+        "static": "Statique"
+      },
+      "goals": {
+        "add": "Ajouter un objectif",
+        "findExercise": "Trouver un exercice…",
+        "logWeightFirst": "Enregistrez votre poids pour suivre vos progrès vers votre objectif.",
+        "noStrengthGoals": "Aucun objectif de force pour le moment.",
+        "perWeek_one": "{{count}} par semaine",
+        "perWeek_other": "{{count}} par semaine",
+        "reached": "Objectif atteint !",
+        "removeGoal": "Supprimer l’objectif",
+        "strength": "Objectifs de force",
+        "targetOneRepMax": "Objectif 1RM ({{unit}})",
+        "targetWeight": "Poids cible",
+        "title": "Objectifs",
+        "toGo": "{{value}} restants",
+        "weeklyTarget": "Séances hebdomadaires",
+        "perWeek_many": "{{count}} par semaine"
+      },
+      "help": {
+        "body": {
+          "description": "Enregistrez votre poids, votre masse grasse et vos mensurations. Définissez un poids cible, des objectifs de force et un objectif de séances hebdomadaires, puis suivez vos progrès.",
+          "title": "Corps et objectifs"
+        },
+        "exercises": {
+          "description": "Parcourez plus de 800 exercices avec photos, instructions étape par étape, muscles ciblés et équipement. Filtrez par muscle, équipement ou type.",
+          "title": "Guide d’exercices"
+        },
+        "food": {
+          "description": "Prenez ou téléchargez une photo de repas et l’IA estimera les aliments, les calories et les macros. Vérifiez et modifiez avant d’enregistrer, ou ajoutez des aliments manuellement. Les estimations peuvent être inexactes.",
+          "title": "Journal alimentaire"
+        },
+        "logging": {
+          "description": "Ajoutez des exercices à une journée et enregistrez les séries, les répétitions et le poids. Votre dernière séance s’affiche à titre indicatif et des graphiques suivent l’évolution de votre maximum estimé sur une répétition.",
+          "title": "Enregistrer les séances"
+        },
+        "schedule": {
+          "description": "Planifiez l’objectif de chaque jour de la semaine (haut du corps, bas du corps, poussée, tirage, jambes, sangle abdominale, cardio, corps complet ou repos) et obtenez des recommandations d’exercices. Commencez à partir d’un modèle.",
+          "title": "Programme hebdomadaire"
+        },
+        "sync": {
+          "description": "Les séances, les statistiques corporelles, l’alimentation, le programme et les objectifs se synchronisent sur tous vos appareils lorsque la synchronisation Cloud est activée. Les unités et la vue actuelle restent sur cet appareil.",
+          "title": "Synchronisation"
+        }
+      },
+      "levels": {
+        "beginner": "Débutant",
+        "expert": "Expert",
+        "intermediate": "Intermédiaire"
+      },
+      "meals": {
+        "breakfast": "Petit-déjeuner",
+        "dinner": "Dîner",
+        "lunch": "Déjeuner",
+        "snack": "Collation"
+      },
+      "mechanic": {
+        "compound": "Polyarticulaire",
+        "isolation": "Isolation"
+      },
+      "menu": {
+        "about": "À propos de Fitness",
+        "goals": "Objectifs…",
+        "help": "Aide Fitness",
+        "logFood": "Consigner les aliments",
+        "logStats": "Consigner les données corporelles",
+        "logWorkout": "Consigner l’entraînement",
+        "plan": "Programme",
+        "sync": "Synchroniser maintenant",
+        "units": "Unités"
+      },
+      "muscles": {
+        "abdominals": "Abdominaux",
+        "abductors": "Abducteurs",
+        "adductors": "Adducteurs",
+        "biceps": "Biceps",
+        "calves": "Mollets",
+        "chest": "Pectoraux",
+        "forearms": "Avant-bras",
+        "glutes": "Fessiers",
+        "hamstrings": "Ischio-jambiers",
+        "lats": "Dorsaux",
+        "lowerBack": "Lombaires",
+        "middleBack": "Milieu du dos",
+        "neck": "Cou",
+        "quadriceps": "Quadriceps",
+        "shoulders": "Épaules",
+        "traps": "Trapèzes",
+        "triceps": "Triceps"
+      },
+      "name": "Forme",
+      "nutrition": {
+        "calories": "Calories",
+        "carbs": "Glucides",
+        "defaults": "Ajoutez votre poids, votre taille, votre année de naissance et votre sexe pour obtenir des objectifs personnalisés.",
+        "direction": {
+          "gain": "prendre du poids",
+          "lose": "perdre du poids",
+          "maintain": "maintenir votre poids"
+        },
+        "fat": "Lipides",
+        "overrideHint": "Saisissez un nombre pour modifier un objectif. Laissez le champ vide pour utiliser l’estimation.",
+        "personalized": "Basé sur environ {{tdee}} kcal/jour pour le maintien, ajusté pour {{direction}}.",
+        "protein": "Protéines",
+        "targets": "Objectifs nutritionnels quotidiens"
+      },
+      "profile": {
+        "activity": "Activité",
+        "activityLevels": {
+          "active": "Très actif",
+          "light": "Légèrement actif",
+          "moderate": "Modérément actif",
+          "sedentary": "Sédentaire",
+          "veryActive": "Extrêmement actif"
+        },
+        "birthYear": "Année de naissance",
+        "female": "Femme",
+        "height": "Taille",
+        "male": "Homme",
+        "sex": "Sexe",
+        "title": "Profil"
+      },
+      "schedule": {
+        "addToDay": "Ajouter à la séance",
+        "applyTemplate": "Appliquer le modèle",
+        "cardioHint": "Visez 20 à 40 minutes de cardio continu ou d’intervalles.",
+        "dayFocus": "Objectif du {{day}}",
+        "done": "Terminé",
+        "missed": "Manqué",
+        "noStreak": "Aucune série pour le moment",
+        "plannedDays_one": "{{count}} jour d’entraînement prévu",
+        "plannedDays_other": "{{count}} jours d’entraînement prévus",
+        "recommendedFor": "Recommandé pour {{focus}}",
+        "restDay": "Jour de repos. Récupérez, étirez-vous ou allez marcher.",
+        "startWorkout": "Démarrer l’entraînement",
+        "streak_one": "Série de {{count}} semaine",
+        "streak_other": "Série de {{count}} semaines",
+        "targets": "Cibles : {{muscles}}",
+        "template": "Modèle",
+        "thisWeek": "Cette semaine",
+        "viewExercise": "Afficher l’exercice",
+        "weeklyGoal": "Objectif hebdomadaire",
+        "workoutsThisWeek": "{{current}} sur {{target}} entraînements cette semaine",
+        "streak_many": "Série de {{count}} semaines",
+        "plannedDays_many": "{{count}} jours d’entraînement prévus"
+      },
+      "templates": {
+        "balanced": "Équilibré",
+        "fullBody": "Corps complet ×3",
+        "ppl": "Pousser / Tirer / Jambes",
+        "upperLower": "Haut / Bas"
+      },
+      "title": "Fitness",
+      "toasts": {
+        "addedToDay": "{{name}} ajouté au {{date}}",
+        "addedToWorkout": "{{name}} ajouté à l’entraînement d’aujourd’hui",
+        "foodSaved": "Enregistré {{name}} dans votre journal alimentaire",
+        "statsSaved": "Données corporelles enregistrées",
+        "templateApplied": "Programme {{name}} appliqué"
+      },
+      "units": {
+        "imperial": "Impérial (lb, po)",
+        "metric": "Métrique (kg, cm)"
+      },
+      "views": {
+        "body": "Corps",
+        "exercises": "Exercices",
+        "food": "Alimentation",
+        "schedule": "Planning",
+        "workouts": "Séances"
+      },
+      "workouts": {
+        "addExercisePlaceholder": "Ajouter un exercice…",
+        "addSet": "Ajouter une série",
+        "deleteWorkout": "Supprimer la séance",
+        "e1rm": "1RM est.",
+        "empty": "Aucun exercice enregistré pour cette journée.",
+        "exerciseCount_one": "{{count}} exercice",
+        "exerciseCount_other": "{{count}} exercices",
+        "focus": "Objectif",
+        "history": "Historique",
+        "lastTime": "Dernière fois : {{sets}}",
+        "noHistory": "Aucun entraînement pour le moment.",
+        "noRecords": "Enregistrez des séries avec poids pour voir vos records.",
+        "records": "Records personnels",
+        "removeExercise": "Supprimer l’exercice",
+        "removeSet": "Supprimer la série",
+        "reps": "Répétitions",
+        "set": "Série",
+        "suggested": "Suggéré pour {{focus}}",
+        "weight": "Poids ({{unit}})",
+        "exerciseCount_many": "{{count}} exercices"
+      }
+    },
     "infinite-mac": {
       "description": "Émulateurs Classic Mac OS",
       "help": {
@@ -3098,14 +3447,14 @@
         "songSearchHttpError": "La recherche a echoue (statut {{status}})",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Réponse invalide du serveur",
-        "songSearchQuotaExhausted": "La recherche YouTube a atteint sa limite quotidienne. Réessayez plus tard.",
-        "songSearchUnavailable": "La recherche YouTube est indisponible pour le moment. Réessayez plus tard.",
         "songSearchNoResults": "Aucun résultat trouvé",
         "songSearchPlaceholder": "Rechercher ou coller une URL…",
+        "songSearchQuotaExhausted": "La recherche YouTube a atteint sa limite quotidienne. Réessayez plus tard.",
         "songSearchSearch": "Rechercher",
         "songSearchSearching": "Recherche…",
         "songSearchSelectResult": "Sélectionnez un morceau à ajouter :",
         "songSearchTitle": "Rechercher des morceaux",
+        "songSearchUnavailable": "La recherche YouTube est indisponible pour le moment. Réessayez plus tard.",
         "syncFailed": "Échec de la synchronisation",
         "unknownError": "Erreur inconnue",
         "updateCheckFailed": "Échec de la vérification des mises à jour",

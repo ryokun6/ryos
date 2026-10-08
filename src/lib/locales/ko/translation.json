@@ -1774,6 +1774,7 @@
         "error": "동기화 문제: {{error}}",
         "fetching": "가져오는 중",
         "files": "파일",
+        "fitness": "피트니스",
         "hoursAgo": "{{count}}시간 전",
         "justNow": "방금",
         "lastChecked": "마지막 확인 {{date}}",
@@ -2740,6 +2741,348 @@
         "macintoshHd": "Macintosh HD"
       }
     },
+    "fitness": {
+      "attribution": {
+        "license": "(퍼블릭 도메인, Unlicense).",
+        "prefix": "운동 데이터 및 이미지 출처:"
+      },
+      "body": {
+        "bodyFatPct": "체지방률(%)",
+        "bodyFatTrend": "체지방",
+        "change": "첫 기록 이후 {{value}}",
+        "history": "기록",
+        "invalid": "값을 하나 이상 입력하십시오.",
+        "logStats": "신체 통계 기록",
+        "measurements": {
+          "armCm": "팔({{unit}})",
+          "chestCm": "가슴({{unit}})",
+          "hipsCm": "엉덩이({{unit}})",
+          "thighCm": "허벅지({{unit}})",
+          "waistCm": "허리({{unit}})"
+        },
+        "noHistory": "아직 신체 통계가 없습니다.",
+        "noWeight": "추이를 확인하려면 체중을 기록하십시오.",
+        "save": "저장",
+        "short": {
+          "armCm": "팔",
+          "chestCm": "가슴",
+          "hipsCm": "엉덩이",
+          "thighCm": "허벅지",
+          "waistCm": "허리"
+        },
+        "weightTrend": "체중",
+        "weightWithUnit": "체중({{unit}})"
+      },
+      "categories": {
+        "cardio": "유산소",
+        "olympicWeightlifting": "역도",
+        "plyometrics": "플라이오메트릭",
+        "powerlifting": "파워리프팅",
+        "strength": "근력",
+        "stretching": "스트레칭",
+        "strongman": "스트롱맨"
+      },
+      "common": {
+        "cancel": "취소",
+        "date": "날짜",
+        "delete": "삭제",
+        "edit": "편집",
+        "nextDay": "다음 날",
+        "previousDay": "이전 날",
+        "today": "오늘"
+      },
+      "description": "운동 가이드, 트레이닝 일정 및 식단 기록",
+      "equipment": {
+        "bands": "밴드",
+        "barbell": "바벨",
+        "bodyOnly": "맨몸",
+        "cable": "케이블",
+        "dumbbell": "덤벨",
+        "exerciseBall": "짐볼",
+        "ezCurlBar": "EZ 컬 바",
+        "foamRoll": "폼 롤러",
+        "kettlebells": "케틀벨",
+        "machine": "머신",
+        "medicineBall": "메디신 볼",
+        "other": "기타"
+      },
+      "exercises": {
+        "addToToday": "오늘에 추가",
+        "back": "운동",
+        "bestSet": "최고 기록: {{reps}} × {{weight}}",
+        "count_one": "운동 {{count}}개",
+        "count_other": "운동 {{count}}개",
+        "e1rmChart": "예상 1RM",
+        "e1rmHint": "세션당 예상 1RM(Epley 공식).",
+        "imageAlt": "{{name}}, {{step}}단계",
+        "instructions": "설명",
+        "instructionsError": "설명을 불러올 수 없습니다.",
+        "loadError": "운동 라이브러리를 불러올 수 없습니다.",
+        "loading": "운동 불러오는 중…",
+        "noProgress": "진행 상황을 추적하려면 운동 기록에 이 운동을 추가하십시오.",
+        "noResults": "이 필터와 일치하는 운동이 없습니다.",
+        "primaryMuscles": "주동근",
+        "progress": "나의 진행 상황",
+        "refine_one": "{{count}}개 더 있음 — 검색 범위 좁히기",
+        "refine_other": "{{count}}개 더 있음 — 검색 범위 좁히기",
+        "repsHint": "세션당 최대 반복 횟수.",
+        "retry": "다시 시도",
+        "search": "운동 검색",
+        "secondaryMuscles": "보조근",
+        "select": "운동 방법을 확인하려면 운동을 선택하십시오."
+      },
+      "filters": {
+        "all": "전체",
+        "allEquipment": "모든 기구",
+        "allMuscles": "모든 근육",
+        "allTypes": "모든 유형",
+        "category": "유형",
+        "equipment": "기구",
+        "muscle": "근육"
+      },
+      "focus": {
+        "cardio": "유산소",
+        "core": "코어",
+        "full": "전신",
+        "legs": "다리",
+        "lower": "하체",
+        "pull": "당기기",
+        "push": "밀기",
+        "rest": "휴식",
+        "upper": "상체"
+      },
+      "food": {
+        "addFood": "음식 추가",
+        "addItem": "항목 추가",
+        "addPhoto": "사진 추가",
+        "aiDisclaimer": "AI 추정치는 정확하지 않을 수 있습니다. 저장하기 전에 양과 수치를 확인하십시오.",
+        "analyze": "AI로 추정",
+        "analyzing": "추정 중…",
+        "confidence": "신뢰도 {{value}}%",
+        "describePlaceholder": "먹은 음식을 설명해 주세요(예: \"계란 2개, 버터를 바른 토스트, 커피\").",
+        "editTargets": "목표 편집",
+        "empty": "이날 기록된 내용이 없습니다.",
+        "entryName": "식사 이름",
+        "errors": {
+          "generic": "이 식사를 추정할 수 없습니다. 다시 시도하거나 직접 입력하십시오.",
+          "invalid": "먼저 사진이나 설명을 추가하십시오.",
+          "notFood": "음식을 인식하지 못했습니다. 다른 사진을 사용하거나 식사를 설명해 주세요.",
+          "photo": "사진을 읽을 수 없습니다.",
+          "rateLimited": "현재 AI 사용 한도에 도달했습니다. 나중에 다시 시도하거나 음식을 직접 입력하십시오.",
+          "tooLarge": "사진 용량이 너무 큽니다. 더 작은 이미지를 사용해 보십시오."
+        },
+        "history": "최근 14일",
+        "item": "항목",
+        "macroSummary": "{{calories}} kcal · 단 {{protein}} g · 탄 {{carbs}} g · 지 {{fat}} g",
+        "manual": "직접 입력",
+        "meal": "식사",
+        "noHistory": "아직 기록된 음식이 없습니다.",
+        "over": "{{value}} kcal 초과",
+        "photo": "사진",
+        "portion": "양",
+        "remaining": "{{value}} kcal 남음",
+        "removeItem": "항목 제거",
+        "removePhoto": "사진 제거",
+        "review": "검토 및 저장",
+        "saveToLog": "기록에 저장",
+        "targetsDefault": "기본 목표를 사용 중입니다.",
+        "targetsFromProfile": "목표는 사용자의 프로필 및 목표를 기반으로 합니다.",
+        "total": "합계",
+        "update": "업데이트"
+      },
+      "force": {
+        "pull": "당기기",
+        "push": "밀기",
+        "static": "정적"
+      },
+      "goals": {
+        "add": "목표 추가",
+        "findExercise": "운동 찾기…",
+        "logWeightFirst": "목표를 향한 진행 상황을 추적하려면 체중을 기록하십시오.",
+        "noStrengthGoals": "아직 근력 목표가 없습니다.",
+        "perWeek_one": "주당 {{count}}회",
+        "perWeek_other": "주당 {{count}}회",
+        "reached": "목표 달성!",
+        "removeGoal": "목표 제거",
+        "strength": "근력 목표",
+        "targetOneRepMax": "목표 1RM({{unit}})",
+        "targetWeight": "목표 체중",
+        "title": "목표",
+        "toGo": "{{value}} 남음",
+        "weeklyTarget": "주간 운동"
+      },
+      "help": {
+        "body": {
+          "description": "체중, 체지방 및 신체 치수를 기록하십시오. 목표 체중, 근력 목표 및 주간 운동 목표를 설정하고 진행 상황을 확인하십시오.",
+          "title": "신체 및 목표"
+        },
+        "exercises": {
+          "description": "사진, 단계별 지침, 타겟 근육 및 기구가 포함된 800개 이상의 운동을 찾아보십시오. 근육, 기구 또는 유형별로 필터링할 수 있습니다.",
+          "title": "운동 가이드"
+        },
+        "food": {
+          "description": "식사 사진을 찍거나 업로드하면 AI가 항목, 칼로리 및 영양 성분을 추정합니다. 저장하기 전에 검토 및 편집하거나 음식을 직접 추가하십시오. 추정치는 부정확할 수 있습니다.",
+          "title": "음식 기록"
+        },
+        "logging": {
+          "description": "하루 일정에 운동을 추가하고 세트, 횟수 및 중량을 기록하십시오. 지난 세션이 힌트로 표시되며, 차트를 통해 시간 경과에 따른 추정 1RM을 추적합니다.",
+          "title": "운동 기록"
+        },
+        "schedule": {
+          "description": "각 요일의 집중 부위(상체, 하체, 밀기, 당기기, 다리, 코어, 유산소, 전신 또는 휴식)를 계획하고 그에 맞는 운동 추천을 받으십시오. 템플릿에서 시작할 수 있습니다.",
+          "title": "주간 일정"
+        },
+        "sync": {
+          "description": "클라우드 동기화가 켜져 있으면 운동, 신체 통계, 음식, 일정 및 목표가 모든 기기에서 동기화됩니다. 단위 및 현재 보기는 이 기기에만 유지됩니다.",
+          "title": "동기화"
+        }
+      },
+      "levels": {
+        "beginner": "초보자",
+        "expert": "전문가",
+        "intermediate": "중급자"
+      },
+      "meals": {
+        "breakfast": "아침",
+        "dinner": "저녁",
+        "lunch": "점심",
+        "snack": "간식"
+      },
+      "mechanic": {
+        "compound": "복합",
+        "isolation": "고립"
+      },
+      "menu": {
+        "about": "Fitness 정보",
+        "goals": "목표…",
+        "help": "Fitness 도움말",
+        "logFood": "음식 기록",
+        "logStats": "신체 통계 기록",
+        "logWorkout": "운동 기록",
+        "plan": "계획",
+        "sync": "지금 동기화",
+        "units": "단위"
+      },
+      "muscles": {
+        "abdominals": "복근",
+        "abductors": "외전근",
+        "adductors": "내전근",
+        "biceps": "이두근",
+        "calves": "종아리",
+        "chest": "가슴",
+        "forearms": "전완근",
+        "glutes": "둔근",
+        "hamstrings": "햄스트링",
+        "lats": "광배근",
+        "lowerBack": "허리 하부",
+        "middleBack": "등 중간",
+        "neck": "목",
+        "quadriceps": "대퇴사두근",
+        "shoulders": "어깨",
+        "traps": "승모근",
+        "triceps": "삼두근"
+      },
+      "name": "피트니스",
+      "nutrition": {
+        "calories": "칼로리",
+        "carbs": "탄수화물",
+        "defaults": "맞춤형 목표를 위해 체중, 키, 출생 연도 및 성별을 추가하십시오.",
+        "direction": {
+          "gain": "체중 증량",
+          "lose": "체중 감량",
+          "maintain": "체중 유지"
+        },
+        "fat": "지방",
+        "overrideHint": "목표를 직접 설정하려면 숫자를 입력하십시오. 추정치를 사용하려면 비워 두십시오.",
+        "personalized": "유지에 필요한 약 {{tdee}}kcal/일을 기준으로 {{direction}}에 맞춰 조정되었습니다.",
+        "protein": "단백질",
+        "targets": "일일 영양 목표"
+      },
+      "profile": {
+        "activity": "활동",
+        "activityLevels": {
+          "active": "활동적임",
+          "light": "가벼운 활동",
+          "moderate": "보통 활동",
+          "sedentary": "활동이 거의 없음",
+          "veryActive": "매우 활동적임"
+        },
+        "birthYear": "출생 연도",
+        "female": "여성",
+        "height": "키",
+        "male": "남성",
+        "sex": "성별",
+        "title": "프로필"
+      },
+      "schedule": {
+        "addToDay": "운동에 추가",
+        "applyTemplate": "템플릿 적용",
+        "cardioHint": "20~40분 동안 꾸준한 유산소 운동 또는 인터벌 운동을 목표로 하십시오.",
+        "dayFocus": "{{day}} 집중",
+        "done": "완료",
+        "missed": "미완료",
+        "noStreak": "아직 연속 기록 없음",
+        "plannedDays_one": "{{count}}일의 훈련 계획됨",
+        "plannedDays_other": "{{count}}일의 훈련 계획됨",
+        "recommendedFor": "{{focus}}에 권장됨",
+        "restDay": "휴식일입니다. 회복하거나 스트레칭을 하거나 산책을 하십시오.",
+        "startWorkout": "운동 시작",
+        "streak_one": "{{count}}주 연속",
+        "streak_other": "{{count}}주 연속",
+        "targets": "목표: {{muscles}}",
+        "template": "템플릿",
+        "thisWeek": "이번 주",
+        "viewExercise": "운동 보기",
+        "weeklyGoal": "주간 목표",
+        "workoutsThisWeek": "이번 주 운동 {{target}}회 중 {{current}}회"
+      },
+      "templates": {
+        "balanced": "밸런스",
+        "fullBody": "전신 ×3",
+        "ppl": "밀기 / 당기기 / 하체",
+        "upperLower": "상체 / 하체"
+      },
+      "title": "피트니스",
+      "toasts": {
+        "addedToDay": "{{date}}에 {{name}} 추가됨",
+        "addedToWorkout": "오늘의 운동에 {{name}} 추가됨",
+        "foodSaved": "{{name}}을(를) 음식 기록에 저장했습니다",
+        "statsSaved": "신체 통계 저장됨",
+        "templateApplied": "{{name}} 플랜이 적용되었습니다"
+      },
+      "units": {
+        "imperial": "야드파운드법 (lb, in)",
+        "metric": "미터법 (kg, cm)"
+      },
+      "views": {
+        "body": "신체",
+        "exercises": "운동 종목",
+        "food": "음식",
+        "schedule": "일정",
+        "workouts": "운동"
+      },
+      "workouts": {
+        "addExercisePlaceholder": "운동 추가…",
+        "addSet": "세트 추가",
+        "deleteWorkout": "운동 삭제",
+        "e1rm": "예상 1RM",
+        "empty": "오늘 기록된 운동이 아직 없습니다.",
+        "exerciseCount_one": "운동 {{count}}개",
+        "exerciseCount_other": "운동 {{count}}개",
+        "focus": "집중 부위",
+        "history": "기록",
+        "lastTime": "마지막 기록: {{sets}}",
+        "noHistory": "아직 운동 기록이 없습니다.",
+        "noRecords": "기록을 보려면 중량 세트를 기록하십시오.",
+        "records": "개인 기록",
+        "removeExercise": "운동 제거",
+        "removeSet": "세트 제거",
+        "reps": "횟수",
+        "set": "세트",
+        "suggested": "{{focus}} 추천 운동",
+        "weight": "중량 ({{unit}})"
+      }
+    },
     "infinite-mac": {
       "description": "클래식 Mac OS 에뮬레이터",
       "help": {
@@ -3094,14 +3437,14 @@
         "songSearchHttpError": "검색 실패(상태 {{status}})",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "서버 응답이 유효하지 않습니다",
-        "songSearchQuotaExhausted": "YouTube 검색이 일일 한도에 도달했습니다. 나중에 다시 시도하세요.",
-        "songSearchUnavailable": "지금은 YouTube 검색을 사용할 수 없습니다. 나중에 다시 시도하세요.",
         "songSearchNoResults": "검색 결과 없음",
         "songSearchPlaceholder": "검색 또는 URL 붙여넣기…",
+        "songSearchQuotaExhausted": "YouTube 검색이 일일 한도에 도달했습니다. 나중에 다시 시도하세요.",
         "songSearchSearch": "검색",
         "songSearchSearching": "검색 중…",
         "songSearchSelectResult": "추가할 노래를 선택하세요:",
         "songSearchTitle": "노래 검색",
+        "songSearchUnavailable": "지금은 YouTube 검색을 사용할 수 없습니다. 나중에 다시 시도하세요.",
         "syncFailed": "동기화 실패",
         "unknownError": "알 수 없는 오류",
         "updateCheckFailed": "업데이트 확인 실패",
