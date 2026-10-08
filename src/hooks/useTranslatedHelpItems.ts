@@ -4,6 +4,7 @@ import { CALCULATOR_HELP_I18N_KEYS } from "@/apps/calculator/helpKeys";
 import { INTERNET_EXPLORER_HELP_I18N_KEYS } from "@/apps/internet-explorer/helpKeys";
 import { MAPS_HELP_I18N_KEYS } from "@/apps/maps/helpKeys";
 import { DICTIONARY_HELP_I18N_KEYS } from "@/apps/dictionary/helpKeys";
+import { FITNESS_HELP_I18N_KEYS } from "@/apps/fitness/helpKeys";
 import type { AppId } from "@/utils/i18n";
 
 export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
@@ -213,6 +214,7 @@ export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
   calculator: [...CALCULATOR_HELP_I18N_KEYS],
   stuff: ["shelf", "scan", "tags", "prices", "share", "print"],
   dictionary: [...DICTIONARY_HELP_I18N_KEYS],
+  fitness: [...FITNESS_HELP_I18N_KEYS],
 };
 
 /**

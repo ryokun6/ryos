@@ -52,6 +52,7 @@ const APP_CONFIGS: Record<string, { sectionNum: string; docName: string }> = {
   "preview": { sectionNum: "2.28", docName: "preview" },
   "stuff": { sectionNum: "2.29", docName: "stuff" },
   "dictionary": { sectionNum: "2.30", docName: "dictionary" },
+  "fitness": { sectionNum: "2.31", docName: "fitness" },
 };
 
 const APP_IDS = Object.keys(APP_CONFIGS) as (keyof typeof APP_CONFIGS)[];
@@ -339,6 +340,10 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
       defaultSize: { width: 860, height: 580 },
       minSize: { width: 420, height: 380 },
     },
+    fitness: {
+      defaultSize: { width: 880, height: 600 },
+      minSize: { width: 400, height: 420 },
+    },
   };
 
   return configs[appId] || {
@@ -616,6 +621,7 @@ async function generateAppDocumentation(appId: string, dryRun: boolean = false, 
     calculator: "Basic, scientific, and unit conversion calculator with theme-specific chrome and live currency rates",
     stuff: "Wooden inventory shelf with barcodes, tags, locations, cutout covers, sharing, and print labels",
     dictionary: "English, Chinese, Japanese, and Korean dictionary with pinyin/zhuyin, furigana/romaji, Korean romanization, handwriting input, favorites, SM-2 flashcards, and AI fallback",
+    fitness: "Exercise guide (free-exercise-db), workout logging with e1RM progress charts, weekly training schedule with recommendations, body stats and goals, and an AI photo food log with macro targets",
   };
 
   appInfo.description = descriptions[appId] || `A ${metadata.name} application for ryOS`;

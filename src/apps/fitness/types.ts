@@ -1,10 +1,11 @@
 import type { FoodItem } from "@/shared/fitness";
 
 export type FitnessView = "exercises" | "workouts" | "schedule" | "body" | "food";
+/** Display order for the toolbar and View menu. */
 export const FITNESS_VIEWS: readonly FitnessView[] = [
+  "schedule",
   "exercises",
   "workouts",
-  "schedule",
   "body",
   "food",
 ];
