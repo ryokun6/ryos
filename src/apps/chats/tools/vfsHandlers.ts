@@ -46,6 +46,13 @@ import {
   persistChatDocument,
   type SaveFileHandler,
 } from "../utils/chatFilePersistence";
+import {
+  APPLETS_STORE_LIST_PAGE,
+  MUSIC_LIST_PAGE,
+  describePageRange,
+  formatPaginationFooter,
+  paginate,
+} from "@/shared/tools/pagination";
 import { handleMediaControl } from "./mediaHandler";
 import type { ToolContext } from "./types";
 
@@ -62,6 +69,7 @@ export interface VfsListInput {
   path: string;
   query?: string;
   limit?: number;
+  offset?: number;
   librarySource?: IpodLibrarySelection;
 }
 
@@ -151,7 +159,7 @@ export async function handleVfsList(
   context: VfsToolContext
 ): Promise<void> {
   const { addToolOutput } = context;
-  const { path, query, limit, librarySource } = input;
+  const { path, query, limit, offset, librarySource } = input;
 
   if (!path) {
     addToolOutput({
@@ -163,7 +171,7 @@ export async function handleVfsList(
     return;
   }
 
-  log.debug("Tool list", { path, query, limit });
+  log.debug("Tool list", { path, query, limit, offset });
 
   try {
     // Route based on path
@@ -177,7 +185,6 @@ export async function handleVfsList(
         ? normalizedQuery.split(/\s+/).filter(Boolean)
         : [];
       const hasQuery = normalizedQuery.length > 0;
-      const maxResults = limit ? Math.min(Math.max(limit, 1), 50) : 25;
       const activeTracks = getIpodTracksForLibrary(ipodStore, selectedLibrary);
       const scoredTracks = activeTracks.map((track) => {
         const fields = [
@@ -204,7 +211,8 @@ export async function handleVfsList(
       const matchingTracks = scoredTracks
         .filter(({ score }) => score >= scoreThreshold)
         .sort((a, b) => (hasQuery ? b.score - a.score : 0));
-      const library = matchingTracks.slice(0, maxResults).map(({ track }) => ({
+      const page = paginate(matchingTracks, { offset, limit }, MUSIC_LIST_PAGE);
+      const library = page.items.map(({ track }) => ({
         path: `/Music/${track.id}`,
         id: track.id,
         title: track.title,
@@ -215,7 +223,6 @@ export async function handleVfsList(
             ? ipodStore.librarySource
             : selectedLibrary),
       }));
-      const hiddenCount = Math.max(matchingTracks.length - library.length, 0);
       const resolvedLibrary =
         selectedLibrary === "active" ? ipodStore.librarySource : selectedLibrary;
       const libraryName =
@@ -231,14 +238,16 @@ export async function handleVfsList(
                 : i18n.t("apps.chats.toolCalls.foundSongsInMusicPlural", {
                     count: library.length,
                   })
-            } (${libraryName})${
-              hiddenCount > 0
-                ? `; showing ${library.length} of ${matchingTracks.length}. Use query or limit to narrow results.`
-                : ""
-            }:\n${JSON.stringify(library, null, 2)}`
-          : hasQuery
-            ? `No songs matched "${query}" in ${libraryName}.`
-            : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
+            } (${libraryName})${describePageRange(page)}:\n${JSON.stringify(
+              library,
+              null,
+              2
+            )}${formatPaginationFooter(page)}`
+          : page.total > 0
+            ? `Found 0 songs at offset ${page.offset} (${libraryName} has ${page.total} matching songs).${formatPaginationFooter(page)}`
+            : hasQuery
+              ? `No songs matched "${query}" in ${libraryName}.`
+              : i18n.t("apps.chats.toolCalls.musicLibraryEmpty");
 
       addToolOutput({
         tool: toolName,
@@ -252,7 +261,6 @@ export async function handleVfsList(
         ? normalizedKeyword.split(/\s+/).filter(Boolean)
         : [];
       const hasKeyword = normalizedKeyword.length > 0;
-      const maxResults = limit ? Math.min(Math.max(limit, 1), 100) : 50;
 
       const allApplets = await fetchAppletCatalog();
       const scoreThreshold = hasKeyword
@@ -295,14 +303,17 @@ export async function handleVfsList(
         return (b.applet.createdAt ?? 0) - (a.applet.createdAt ?? 0);
       });
 
-      const limitedApplets = filteredApplets
-        .slice(0, maxResults)
-        .map(({ applet }) => ({
-          path: `/Applets Store/${applet.id}`,
-          id: applet.id,
-          title: applet.title ?? applet.name ?? "Untitled",
-          name: applet.name,
-        }));
+      const page = paginate(
+        filteredApplets,
+        { offset, limit },
+        APPLETS_STORE_LIST_PAGE
+      );
+      const limitedApplets = page.items.map(({ applet }) => ({
+        path: `/Applets Store/${applet.id}`,
+        id: applet.id,
+        title: applet.title ?? applet.name ?? "Untitled",
+        name: applet.name,
+      }));
 
       const resultMessage =
         limitedApplets.length > 0
@@ -314,10 +325,16 @@ export async function handleVfsList(
                 : i18n.t("apps.chats.toolCalls.foundSharedAppletsPlural", {
                     count: limitedApplets.length,
                   })
-            }:\n${JSON.stringify(limitedApplets, null, 2)}`
-          : hasKeyword
-            ? i18n.t("apps.chats.toolCalls.noSharedAppletsMatched", { query })
-            : i18n.t("apps.chats.toolCalls.noSharedAppletsAvailable");
+            }${describePageRange(page)}:\n${JSON.stringify(
+              limitedApplets,
+              null,
+              2
+            )}${formatPaginationFooter(page)}`
+          : page.total > 0
+            ? `Found 0 shared applets at offset ${page.offset} (${page.total} matching applets).${formatPaginationFooter(page)}`
+            : hasKeyword
+              ? i18n.t("apps.chats.toolCalls.noSharedAppletsMatched", { query })
+              : i18n.t("apps.chats.toolCalls.noSharedAppletsAvailable");
 
       addToolOutput({
         tool: toolName,
