@@ -142,7 +142,9 @@ export const TOOL_DESCRIPTIONS = {
     "Render a playful emoji aquarium inside the chat bubble. Use when the user asks for an aquarium / fish tank / fishes / sam's aquarium.",
   
   list:
-    "List items from the ryOS virtual file system. Returns a JSON array with metadata for each item. For '/Music', pass librarySource 'youtube' when checking songs for Karaoke because Karaoke always uses the YouTube library even if iPod is viewing Apple Music. CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
+    "List items from the ryOS virtual file system. Returns a JSON array with metadata for each item. For '/Music', pass librarySource 'youtube' when checking songs for Karaoke because Karaoke always uses the YouTube library even if iPod is viewing Apple Music. " +
+    "'/Music' and '/Applets Store' results are paginated: pass limit (page size, default 50, max 100) and offset, and read the trailing 'Pagination:' JSON (total, hasMore, nextOffset). Prefer query to find specific songs/applets; to enumerate a larger library, call list again with the same path/query/librarySource and offset = nextOffset while hasMore is true. Do not say an item is missing unless you searched for it or paged through every result. " +
+    "CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
   
   open:
     "Open a file, application, or media item from the virtual file system. Routes to the appropriate app based on path:\n" +
@@ -191,6 +193,7 @@ export const TOOL_DESCRIPTIONS = {
     "Search ryOS song libraries and cached song metadata from server-side contexts like Telegram. " +
     "Actions: 'list' returns recent songs, 'search' finds songs by id/title/artist/album, 'get' returns metadata for one song id, 'searchYoutube' searches YouTube for songs to add, and 'add' saves a YouTube song into the shared cache plus the signed-in user's library. " +
     "Scopes: 'user' searches the signed-in user's synced song library, 'global' searches the server song/lyrics cache, and 'any' searches both with user-library matches preferred. " +
+    "'list' and 'search' are paginated: pass limit (page size, max 25) and offset; results include total, hasMore, and nextOffset. Prefer 'search' with a query to find specific songs; to enumerate a larger library, keep calling with offset = nextOffset while hasMore is true. Never claim a song is missing from the library unless you searched for it or paged through every result. " +
     "For 'add', pass the chosen YouTube result's videoId and title/channel when available. Results include canonical ryOS links for iPod and Karaoke share URLs.",
   
   settings:

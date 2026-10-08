@@ -50,6 +50,7 @@ export type {
   GetPreciseLocationInput,
   GetPreciseLocationOutput,
 } from "../../../src/shared/tools/preciseLocation.js";
+import type { PageInfo } from "../../../src/shared/tools/pagination.js";
 
 // Central list of supported theme IDs for tool validation
 export const THEME_IDS = ["system7", "macosx", "xp", "win98"] as const;
@@ -185,6 +186,7 @@ export interface ListInput {
   path: VfsPath;
   query?: string;
   limit?: number;
+  offset?: number;
   librarySource?: "active" | "youtube" | "appleMusic";
 }
 
@@ -286,9 +288,10 @@ export interface SongLibraryControlInput {
   artist?: string;
   album?: string;
   limit?: number;
+  offset?: number;
 }
 
-export interface SongLibraryControlOutput {
+export interface SongLibraryControlOutput extends Partial<PageInfo> {
   success: boolean;
   message: string;
   scope?: SongLibraryScope;

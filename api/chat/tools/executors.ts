@@ -56,6 +56,13 @@ import {
 } from "../../_utils/_song-service.js";
 import { parseYouTubeTitleSimple } from "../../_utils/parse-youtube-title.js";
 import {
+  describePageRange,
+  paginate,
+  toPageInfo,
+  SONG_LIBRARY_PAGE,
+  type PageInfo,
+} from "../../../src/shared/tools/pagination.js";
+import {
   getMemoryIndex,
   getMemoryDetail,
   upsertMemory,
@@ -603,13 +610,22 @@ function scoreSongMatch(record: SongLibraryToolRecord, query: string): number {
   return score;
 }
 
-function filterAndLimitSongs(
+function describeSongPage(page: PageInfo): string {
+  if (page.returned === 0) {
+    return `; offset ${page.offset} is past the end, so this page is empty.`;
+  }
+  const more = page.hasMore
+    ? ` Call again with offset ${page.nextOffset} for the next page.`
+    : "";
+  return `${describePageRange(page)}.${more}`;
+}
+
+function filterSongs(
   songs: SongLibraryToolRecord[],
-  query: string | undefined,
-  limit: number
+  query: string | undefined
 ): SongLibraryToolRecord[] {
   if (!query) {
-    return songs.slice(0, limit);
+    return songs;
   }
 
   return songs
@@ -626,7 +642,6 @@ function filterAndLimitSongs(
       }
       return a.index - b.index;
     })
-    .slice(0, limit)
     .map((entry) => entry.song);
 }
 
@@ -988,28 +1003,40 @@ export async function executeSongLibraryControl(
 
   switch (input.action) {
     case "list": {
-      const songs = searchableSongs.slice(0, limit);
+      const page = paginate(
+        searchableSongs,
+        { offset: input.offset, limit: input.limit },
+        SONG_LIBRARY_PAGE
+      );
+      const songs = page.items;
       return {
         success: true,
         message:
-          songs.length === 0
+          page.total === 0
             ? `No songs found in the ${scope === "user" ? "user" : scope === "global" ? "global" : "available"} library.`
-            : `Found ${songs.length} ${songs.length === 1 ? "song" : "songs"} in ${scope} scope.`,
+            : `Found ${page.total} ${page.total === 1 ? "song" : "songs"} in ${scope} scope${describeSongPage(page)}`,
         scope,
         songs,
+        ...toPageInfo(page),
       };
     }
 
     case "search": {
-      const songs = filterAndLimitSongs(searchableSongs, input.query, limit);
+      const page = paginate(
+        filterSongs(searchableSongs, input.query),
+        { offset: input.offset, limit: input.limit },
+        SONG_LIBRARY_PAGE
+      );
+      const songs = page.items;
       return {
         success: true,
         message:
-          songs.length === 0
+          page.total === 0
             ? `No songs matched "${input.query}" in ${scope} scope.`
-            : `Found ${songs.length} ${songs.length === 1 ? "song" : "songs"} matching "${input.query}" in ${scope} scope.`,
+            : `Found ${page.total} ${page.total === 1 ? "song" : "songs"} matching "${input.query}" in ${scope} scope${describeSongPage(page)}`,
         scope,
         songs,
+        ...toPageInfo(page),
       };
     }
 

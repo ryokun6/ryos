@@ -435,6 +435,105 @@ describe("song library chat tools", () => {
     expect(cachedSong?.createdBy).toBe("alice");
   });
 
+  describe("songLibraryControl paging", () => {
+    async function seedUserTracks(redis: FakeRedis, count: number) {
+      await writeSongsState(redis as unknown as Redis, "alice", {
+        tracks: Array.from({ length: count }, (_, i) => ({
+          id: `paged_${i}`,
+          url: `https://www.youtube.com/watch?v=paged_${i}`,
+          title: `Paged Song ${i}`,
+          artist: "Pager",
+        })),
+        libraryState: "loaded",
+        lastKnownVersion: 1,
+      });
+      return createChatTools(createContext(redis), { profile: "telegram" });
+    }
+
+    test("empty library reports total 0 and no next page", async () => {
+      const tools = await seedUserTracks(new FakeRedis(), 0);
+      const result = await tools.songLibraryControl.execute?.({
+        action: "list",
+        scope: "user",
+      });
+      expect(result?.success).toBe(true);
+      expect(result?.songs).toEqual([]);
+      expect(result?.total).toBe(0);
+      expect(result?.hasMore).toBe(false);
+      expect(result?.nextOffset).toBeNull();
+    });
+
+    test("calls without paging params keep the 5-song default", async () => {
+      const tools = await seedUserTracks(new FakeRedis(), 12);
+      const result = await tools.songLibraryControl.execute?.({
+        action: "list",
+        scope: "user",
+      });
+      expect(result?.songs?.map((s) => s.id)).toEqual(
+        ["paged_0", "paged_1", "paged_2", "paged_3", "paged_4"]
+      );
+      expect(result?.total).toBe(12);
+      expect(result?.hasMore).toBe(true);
+      expect(result?.nextOffset).toBe(5);
+      expect(result?.message).toContain("offset 5");
+    });
+
+    test("exact page boundary ends without a next page", async () => {
+      const tools = await seedUserTracks(new FakeRedis(), 10);
+      const first = await tools.songLibraryControl.execute?.({
+        action: "list",
+        scope: "user",
+        limit: 5,
+      });
+      expect(first?.hasMore).toBe(true);
+      const second = await tools.songLibraryControl.execute?.({
+        action: "list",
+        scope: "user",
+        limit: 5,
+        offset: first?.nextOffset ?? undefined,
+      });
+      expect(second?.songs?.map((s) => s.id)).toEqual(
+        ["paged_5", "paged_6", "paged_7", "paged_8", "paged_9"]
+      );
+      expect(second?.hasMore).toBe(false);
+      expect(second?.nextOffset).toBeNull();
+    });
+
+    test("last partial page returns the remainder", async () => {
+      const tools = await seedUserTracks(new FakeRedis(), 12);
+      const result = await tools.songLibraryControl.execute?.({
+        action: "list",
+        scope: "user",
+        limit: 5,
+        offset: 10,
+      });
+      expect(result?.songs?.map((s) => s.id)).toEqual(["paged_10", "paged_11"]);
+      expect(result?.returned).toBe(2);
+      expect(result?.total).toBe(12);
+      expect(result?.hasMore).toBe(false);
+      expect(result?.message).toContain("showing 11-12 of 12");
+    });
+
+    test("search results page through every match", async () => {
+      const tools = await seedUserTracks(new FakeRedis(), 30);
+      const seen: string[] = [];
+      let offset: number | null = 0;
+      while (offset !== null) {
+        const result = await tools.songLibraryControl.execute?.({
+          action: "search",
+          scope: "user",
+          query: "paged song",
+          limit: 25,
+          offset,
+        });
+        expect(result?.total).toBe(30);
+        seen.push(...(result?.songs ?? []).map((s) => s.id));
+        offset = result?.nextOffset ?? null;
+      }
+      expect(new Set(seen).size).toBe(30);
+    });
+  });
+
   test("requires auth to add songs into the synced library", async () => {
     const redis = new FakeRedis();
     const tools = createChatTools(createContext(redis, null), { profile: "telegram" });

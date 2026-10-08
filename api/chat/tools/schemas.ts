@@ -240,10 +240,18 @@ export const listSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(50)
+    .max(100)
     .optional()
     .describe(
-      "Optional maximum number of results to return (default 25 for '/Music', 50 for '/Applets Store')."
+      "Optional page size for '/Music' and '/Applets Store' (default 50, max 100)."
+    ),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe(
+      "Optional zero-based offset for paging '/Music' and '/Applets Store' results (default 0). When a result reports hasMore: true, call list again with the same path/query/librarySource and offset set to the returned nextOffset."
     ),
 });
 
@@ -375,7 +383,15 @@ export const songLibraryControlSchema = z
       .max(25)
       .optional()
       .default(5)
-      .describe("Maximum number of songs to return for 'list', 'search', or 'searchYoutube' (1-25, default 5)."),
+      .describe("Page size for 'list' and 'search', or result count for 'searchYoutube' (1-25, default 5)."),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .describe(
+        "For 'list' and 'search': zero-based offset into the matching songs (default 0). Pass the previous result's nextOffset to fetch the next page while hasMore is true."
+      ),
   })
   .superRefine((data, ctx) => {
     if ((data.action === "search" || data.action === "searchYoutube") && !data.query) {
