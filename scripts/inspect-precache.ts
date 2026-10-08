@@ -33,11 +33,12 @@ const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 // Rolldown (Vite 8) splits shared modules into more, smaller chunks than
 // Rollup did, so file-count ceilings sit above Rollup-era numbers. Vite 8.2
 // split the offline closure further (~272 files / ~258 scripts measured);
-// adding Dictionary split ~22 more shared chunks out (~299 / ~285).
+// adding Dictionary split ~22 more shared chunks out (~299 / ~285);
+// Fitness added its app + store chunks (~305 / ~291).
 // The byte budget tracks the measured offline shell (Stuff + shelf apps
 // pushed it past 12 MiB); keep a small headroom for theme/CSS polish.
-const MAX_FILES = 305;
-const MAX_SCRIPTS = 290;
+const MAX_FILES = 315;
+const MAX_SCRIPTS = 300;
 const MAX_BYTES = 13 * 1024 * 1024;
 
 summarize("total", urls);
