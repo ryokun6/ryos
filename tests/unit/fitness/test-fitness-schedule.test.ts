@@ -3,6 +3,7 @@ import type { FitnessExercise } from "../../../src/shared/fitness";
 import type { Workout } from "../../../src/apps/fitness/types";
 import {
   addDays,
+  mondayMonthGrid,
   startOfWeek,
   weekDates,
   weekdayOf,
@@ -71,6 +72,22 @@ describe("dates", () => {
       "2026-10-11",
     ]);
     expect(addDays("2026-02-28", 1)).toBe("2026-03-01");
+  });
+
+  test("Monday-start month grid leaves neighboring days empty", () => {
+    // 2026-10-01 is a Thursday, so the first row starts with three empty cells.
+    const october = mondayMonthGrid(2026, 9);
+    expect(october).toHaveLength(5);
+    expect(october[0].slice(0, 4)).toEqual([
+      null,
+      null,
+      null,
+      { date: "2026-10-01", day: 1 },
+    ]);
+    expect(october[0][6]).toEqual({ date: "2026-10-04", day: 4 });
+    expect(october[4][5]).toEqual({ date: "2026-10-31", day: 31 });
+    expect(october[4][6]).toBeNull();
+    expect(october.flat().filter((cell) => cell !== null)).toHaveLength(31);
   });
 });
 

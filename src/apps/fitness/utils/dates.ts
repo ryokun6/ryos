@@ -44,3 +44,26 @@ export function weekDates(key: string): string[] {
 export function daysBetween(a: string, b: string): number {
   return Math.round((fromDateKey(b).getTime() - fromDateKey(a).getTime()) / 86_400_000);
 }
+
+export interface MonthGridDay {
+  date: string;
+  day: number;
+}
+
+/**
+ * Monday-start month grid. Days outside the month are null so stacked months
+ * do not repeat the neighboring month's dates.
+ */
+export function mondayMonthGrid(year: number, monthIndex: number): (MonthGridDay | null)[][] {
+  const first = new Date(year, monthIndex, 1);
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const pad = (first.getDay() + 6) % 7;
+  const cells: (MonthGridDay | null)[] = Array.from({ length: pad }, () => null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    cells.push({ date: toDateKey(new Date(year, monthIndex, day)), day });
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks: (MonthGridDay | null)[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+  return weeks;
+}

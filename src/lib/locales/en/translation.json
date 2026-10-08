@@ -5656,7 +5656,7 @@
       "schedule": {
         "thisWeek": "This Week",
         "upcomingWeeks": "Upcoming Weeks",
-        "moreWeeks": "More Weeks",
+        "moreMonths": "More Months",
         "template": "Template",
         "applyTemplate": "Apply Template",
         "dayFocus": "{{day}} focus",

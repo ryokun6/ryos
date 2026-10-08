@@ -3036,7 +3036,7 @@
         "template": "Plantilla",
         "thisWeek": "Esta semana",
         "upcomingWeeks": "Próximas semanas",
-        "moreWeeks": "Más semanas",
+        "moreMonths": "Más meses",
         "viewExercise": "Ver ejercicio",
         "weeklyGoal": "Objetivo semanal",
         "workoutsThisWeek": "{{current}} de {{target}} entrenos esta semana",

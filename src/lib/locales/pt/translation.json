@@ -3036,7 +3036,7 @@
         "template": "Modelo",
         "thisWeek": "Esta Semana",
         "upcomingWeeks": "Próximas semanas",
-        "moreWeeks": "Mais semanas",
+        "moreMonths": "Mais meses",
         "viewExercise": "Visualizar Exercício",
         "weeklyGoal": "Meta Semanal",
         "workoutsThisWeek": "{{current}} de {{target}} treinos nesta semana",

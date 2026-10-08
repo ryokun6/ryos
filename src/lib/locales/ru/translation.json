@@ -3046,7 +3046,7 @@
         "template": "Шаблон",
         "thisWeek": "На этой неделе",
         "upcomingWeeks": "Ближайшие недели",
-        "moreWeeks": "Ещё недели",
+        "moreMonths": "Ещё месяцы",
         "viewExercise": "Просмотреть упражнение",
         "weeklyGoal": "Цель на неделю",
         "workoutsThisWeek": "Тренировок на этой неделе: {{current}} из {{target}}",
