@@ -3045,6 +3045,8 @@
         "targets": "Цели: {{muscles}}",
         "template": "Шаблон",
         "thisWeek": "На этой неделе",
+        "upcomingWeeks": "Ближайшие недели",
+        "moreWeeks": "Ещё недели",
         "viewExercise": "Просмотреть упражнение",
         "weeklyGoal": "Цель на неделю",
         "workoutsThisWeek": "Тренировок на этой неделе: {{current}} из {{target}}",

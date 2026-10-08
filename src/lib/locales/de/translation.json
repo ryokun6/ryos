@@ -3028,6 +3028,8 @@
         "targets": "Ziele: {{muscles}}",
         "template": "Vorlage",
         "thisWeek": "Diese Woche",
+        "upcomingWeeks": "Kommende Wochen",
+        "moreWeeks": "Weitere Wochen",
         "viewExercise": "Übung ansehen",
         "weeklyGoal": "Wochenziel",
         "workoutsThisWeek": "{{current}} von {{target}} Trainings diese Woche"

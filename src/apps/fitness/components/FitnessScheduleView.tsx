@@ -20,7 +20,8 @@ import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea } from "../types";
-import { enumKey, formatCompactDate, formatShortDate, formatWeekdayShort } from "../utils/format";
+import { addDays, startOfWeek, weekdayOf } from "../utils/dates";
+import { enumKey, formatCompactDate, formatShortDate, formatWeekdayShort, formatWeekRange } from "../utils/format";
 import { weeklyWorkoutProgress } from "../utils/goals";
 import {
   FOCUS_MUSCLES,
@@ -34,11 +35,16 @@ import {
 import {
   EmptyNote,
   FITNESS_CARD_CLASS,
+  FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
 const SCROLL_FADE_PX = 24;
+const UPCOMING_WEEK_STEP = 8;
+const UPCOMING_WEEK_LIMIT = 52;
 
 /** Fade the edges of a horizontal scroller only while content is clipped there. */
 function horizontalScrollFade(el: HTMLElement): string {
@@ -203,10 +209,34 @@ function FocusMark({ focus, done, missed }: { focus: FocusArea; done: boolean; m
   );
 }
 
+function WeekTitle({
+  isCurrent,
+  title,
+  range,
+}: {
+  isCurrent: boolean;
+  title: string;
+  range: string;
+}) {
+  if (!isCurrent) return <span className="min-w-0 truncate">{range}</span>;
+  return (
+    <span className="flex min-w-0 items-baseline gap-2">
+      <span className="shrink-0">{title}</span>
+      <span className={cn("truncate text-[11px] font-normal", FITNESS_MUTED_CLASS)}>{range}</span>
+    </span>
+  );
+}
+
 export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, todayKey } = l;
   const store = useFitnessStore.getState();
-  const days = useMemo(() => weekPlan(l.schedule, l.workouts, todayKey), [l.schedule, l.workouts, todayKey]);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [visibleWeeks, setVisibleWeeks] = useState(UPCOMING_WEEK_STEP);
+  const weekStart = addDays(startOfWeek(todayKey), weekOffset * 7);
+  const days = useMemo(
+    () => weekPlan(l.schedule, l.workouts, todayKey, weekStart),
+    [l.schedule, l.workouts, todayKey, weekStart]
+  );
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const selectedIndex = Math.max(0, days.findIndex((d) => d.date === selectedDate));
   const selected = days[selectedIndex] ?? days[0];
@@ -237,6 +267,28 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
     return byExercise;
   }, [l.workouts, selected.date]);
   const [template, setTemplate] = useState<ScheduleTemplateId | "">("");
+  const isCurrentWeek = weekOffset === 0;
+  const weekRange = formatWeekRange(days[0].date, days[6].date, locale);
+  const thisWeekLabel = t("apps.fitness.schedule.thisWeek");
+  const upcomingWeeks = useMemo(
+    () =>
+      Array.from({ length: visibleWeeks }, (_, offset) => {
+        const start = addDays(startOfWeek(todayKey), offset * 7);
+        return {
+          offset,
+          start,
+          isCurrent: offset === 0,
+          range: formatWeekRange(start, addDays(start, 6), locale),
+        };
+      }),
+    [visibleWeeks, todayKey, locale]
+  );
+
+  const selectWeek = (offset: number) => {
+    const start = addDays(startOfWeek(todayKey), offset * 7);
+    setWeekOffset(offset);
+    setSelectedDate(offset === 0 ? todayKey : addDays(start, weekdayOf(selectedDate)));
+  };
 
   const addToDay = (exercise: { id: string; name: string }) => {
     if (l.addExerciseToDay(selected.date, exercise)) {
@@ -259,7 +311,9 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
       <div className="flex min-w-0 flex-col divide-y divide-black/10 dark:divide-white/10">
         <section className="flex min-w-0 flex-col gap-2 px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[14px] font-bold">{t("apps.fitness.schedule.thisWeek")}</h2>
+            <h2 className="min-w-0 text-[14px] font-bold">
+              <WeekTitle isCurrent={isCurrentWeek} title={thisWeekLabel} range={weekRange} />
+            </h2>
             <div className="flex-1" />
             <SmallSelect<ScheduleTemplateId | "">
               label={t("apps.fitness.schedule.template")}
@@ -328,7 +382,14 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                     label={t("apps.fitness.schedule.dayFocus", { day: formatWeekdayShort(day.date, locale) })}
                     value={day.focus}
                     className="h-5 w-full px-1 text-[10px]"
-                    onChange={(focus) => store.setScheduleDay(index, { focus })}
+                    onChange={(focus) => {
+                      if (isCurrentWeek) {
+                        store.setScheduleDay(index, { focus });
+                        return;
+                      }
+                      const id = store.ensureWorkout(day.date);
+                      store.updateWorkout(id, { focus });
+                    }}
                     options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
                   />
                 </div>
@@ -474,6 +535,33 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             </div>
       </section>
       </div>
+      <Sidebar>
+        <SidebarSection title={t("apps.fitness.schedule.upcomingWeeks")}>
+          <ul className="flex flex-col text-[12px]">
+            {upcomingWeeks.map((week) => (
+              <li key={week.start}>
+                <button
+                  type="button"
+                  data-selected={week.offset === weekOffset ? "true" : undefined}
+                  onClick={() => selectWeek(week.offset)}
+                  className="flex w-full rounded px-1 py-0.5 text-left"
+                >
+                  <WeekTitle isCurrent={week.isCurrent} title={thisWeekLabel} range={week.range} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          {visibleWeeks < UPCOMING_WEEK_LIMIT ? (
+            <button
+              type="button"
+              className={cn(FITNESS_CHIP_CLASS, "self-start")}
+              onClick={() => setVisibleWeeks((count) => Math.min(UPCOMING_WEEK_LIMIT, count + UPCOMING_WEEK_STEP))}
+            >
+              {t("apps.fitness.schedule.moreWeeks")}
+            </button>
+          ) : null}
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }

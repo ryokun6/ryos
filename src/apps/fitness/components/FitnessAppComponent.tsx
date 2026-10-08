@@ -18,7 +18,6 @@ import { FitnessSheetContext } from "./FitnessUi";
 import { FitnessWorkoutsView } from "./FitnessWorkoutsView";
 
 const MOBILE_BREAKPOINT = 600;
-const SHEET_VIEWS = new Set(["workouts", "body", "food"]);
 
 export function FitnessAppComponent({
   isWindowOpen,
@@ -36,8 +35,7 @@ export function FitnessAppComponent({
   const [sheetHost, setSheetHost] = useState<HTMLDivElement | null>(null);
   useResizeObserverWithRef(containerRef, (entry) => setContainerWidth(entry.contentRect.width));
   const isMobileLayout = containerWidth < MOBILE_BREAKPOINT;
-  const hasSheet = SHEET_VIEWS.has(view);
-  const sheetVisible = hasSheet && sheetOpen;
+  const sheetVisible = sheetOpen;
 
   const menuBar = <FitnessMenuBar l={l} onClose={onClose} />;
   const viewProps = { l, isMobileLayout };
@@ -78,7 +76,7 @@ export function FitnessAppComponent({
           l={l}
           isMobileLayout={isMobileLayout}
           sheetOpen={sheetVisible}
-          onToggleSheet={hasSheet ? () => setSheetOpen((open) => !open) : undefined}
+          onToggleSheet={() => setSheetOpen((open) => !open)}
         />
         <AppSidebarPanel
           bordered={isMacOSTheme}

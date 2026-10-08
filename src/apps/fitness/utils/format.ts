@@ -14,6 +14,20 @@ export function formatShortDate(key: string, locale: string): string {
   return fromDateKey(key).toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
+/** Monday–Sunday label. CJK ranges stay unspaced around the dash. */
+export function formatWeekRange(start: string, end: string, locale: string): string {
+  const startDate = fromDateKey(start);
+  const endDate = fromDateKey(end);
+  const day: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
+  const startText = startDate.toLocaleDateString(locale, day);
+  const endText = endDate.toLocaleDateString(
+    locale,
+    startDate.getFullYear() === endDate.getFullYear() ? day : { ...day, year: "numeric" }
+  );
+  const cjk = /^(zh|ja|ko)/i.test(locale);
+  return cjk ? `${startText}–${endText}` : `${startText} – ${endText}`;
+}
+
 /** Month/day only, numeric, so a narrow day cell stays on one line. */
 export function formatCompactDate(key: string, locale: string): string {
   return fromDateKey(key).toLocaleDateString(locale, { month: "numeric", day: "numeric" });

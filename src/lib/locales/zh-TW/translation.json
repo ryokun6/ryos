@@ -3028,6 +3028,8 @@
         "targets": "目標：{{muscles}}",
         "template": "樣板",
         "thisWeek": "本週",
+        "upcomingWeeks": "接下來的週",
+        "moreWeeks": "更多週",
         "viewExercise": "檢視運動",
         "weeklyGoal": "每週目標",
         "workoutsThisWeek": "本週已完成 {{target}} 次體能訓練中的 {{current}} 次"

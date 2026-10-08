@@ -3035,6 +3035,8 @@
         "targets": "Target: {{muscles}}",
         "template": "Modello",
         "thisWeek": "Questa settimana",
+        "upcomingWeeks": "Prossime settimane",
+        "moreWeeks": "Altre settimane",
         "viewExercise": "Visualizza esercizio",
         "weeklyGoal": "Obiettivo settimanale",
         "workoutsThisWeek": "{{current}} di {{target}} allenamenti questa settimana",

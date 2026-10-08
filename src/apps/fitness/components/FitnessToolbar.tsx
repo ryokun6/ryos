@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
-import { FITNESS_VIEWS, type FitnessView, type UnitSystem } from "../types";
+import { FITNESS_VIEWS, type FitnessView } from "../types";
 
 function ToolbarButton({
   l,
@@ -103,19 +103,6 @@ export function FitnessToolbar({
         ))}
       </div>
       <div className="flex-1" />
-      <div className={group} role="group" aria-label={t("apps.fitness.menu.units")}>
-        {(["metric", "imperial"] as UnitSystem[]).map((units) => (
-          <ToolbarButton
-            key={units}
-            l={l}
-            active={l.units === units}
-            onClick={() => l.setUnits(units)}
-            label={t(`apps.fitness.units.${units}`)}
-          >
-            <span className="text-[10px] font-bold">{units === "metric" ? "kg" : "lb"}</span>
-          </ToolbarButton>
-        ))}
-      </div>
       {onToggleSheet ? (
         <div className={group}>
           <ToolbarButton

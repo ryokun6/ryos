@@ -3028,6 +3028,8 @@
         "targets": "目标：{{muscles}}",
         "template": "模板",
         "thisWeek": "本周",
+        "upcomingWeeks": "接下来的周",
+        "moreWeeks": "更多周",
         "viewExercise": "查看练习",
         "weeklyGoal": "每周目标",
         "workoutsThisWeek": "本周已完成 {{current}}/{{target}} 次体能训练"

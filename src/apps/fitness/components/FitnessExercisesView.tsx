@@ -29,6 +29,8 @@ import {
   FITNESS_MUTED_CLASS,
   LineChart,
   Section,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -77,12 +79,14 @@ function useExerciseDetail(exercise: FitnessExercise | null) {
   return { detail: detail?.id === exercise?.id ? detail : null, status };
 }
 
-function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExercise }) {
-  const { t, locale, workouts, formatWeight, displayName, instructionsFor } = l;
-  const names = displayName(exercise.id, exercise.name);
-  const { detail, status } = useExerciseDetail(exercise);
-  const progress = useMemo(() => exerciseProgress(l.workouts, exercise.id), [l.workouts, exercise.id]);
+function ExerciseProgressSheet({ l, exercise }: { l: FitnessLogic; exercise: FitnessExercise | null }) {
+  const { t, locale, workouts, formatWeight } = l;
+  const progress = useMemo(
+    () => (exercise ? exerciseProgress(workouts, exercise.id) : []),
+    [workouts, exercise]
+  );
   const recent = useMemo(() => {
+    if (!exercise) return [];
     const rows: { date: string; sets: string }[] = [];
     for (const workout of [...workouts].sort((a, b) => b.date.localeCompare(a.date))) {
       const entry = workout.entries.find((e) => e.exerciseId === exercise.id && e.sets.length);
@@ -96,11 +100,77 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
       if (rows.length >= 5) break;
     }
     return rows;
-  }, [workouts, exercise.id, formatWeight]);
-  const best = useMemo(
-    () => bestSet(l.workouts.flatMap((w) => w.entries.filter((e) => e.exerciseId === exercise.id).flatMap((e) => e.sets))),
-    [l.workouts, exercise.id]
+  }, [workouts, exercise, formatWeight]);
+  const best = useMemo(() => {
+    if (!exercise) return null;
+    return bestSet(
+      workouts.flatMap((w) => w.entries.filter((e) => e.exerciseId === exercise.id).flatMap((e) => e.sets))
+    );
+  }, [workouts, exercise]);
+
+  return (
+    <Sidebar>
+      <SidebarSection
+        title={
+          exercise ? (
+            <span className="flex items-baseline justify-between gap-2">
+              <span>{t("apps.fitness.exercises.progress")}</span>
+              {best ? (
+                <span className={cn("text-[11px] font-normal", FITNESS_MUTED_CLASS)}>
+                  {t("apps.fitness.exercises.bestSet", {
+                    reps: best.reps,
+                    weight: formatWeight(best.weightKg),
+                  })}
+                </span>
+              ) : null}
+            </span>
+          ) : (
+            t("apps.fitness.exercises.progress")
+          )
+        }
+      >
+        {!exercise ? (
+          <EmptyNote>{t("apps.fitness.exercises.select")}</EmptyNote>
+        ) : progress.length ? (
+          <>
+            <LineChart
+              label={t("apps.fitness.exercises.e1rmChart")}
+              points={progress.map((p) => ({ date: p.date, value: p.e1rmKg || p.totalReps }))}
+              formatValue={(v) =>
+                progress.some((p) => p.e1rmKg > 0) ? formatWeight(v, 0) : String(Math.round(v))
+              }
+              formatDate={(d) => formatShortDate(d, locale)}
+            />
+            <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
+              {progress.some((p) => p.e1rmKg > 0)
+                ? t("apps.fitness.exercises.e1rmHint")
+                : t("apps.fitness.exercises.repsHint")}
+            </p>
+            <table className="w-full text-[11px]">
+              <tbody>
+                {recent.map((row) => (
+                  <tr key={row.date} className="border-t border-black/5 dark:border-white/10">
+                    <td className={cn("py-0.5 pr-2 whitespace-nowrap", FITNESS_MUTED_CLASS)}>
+                      {formatShortDate(row.date, locale)}
+                    </td>
+                    <td className="py-0.5">{row.sets}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        ) : (
+          <EmptyNote>{t("apps.fitness.exercises.noProgress")}</EmptyNote>
+        )}
+      </SidebarSection>
+    </Sidebar>
   );
+}
+
+function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExercise }) {
+  const { t, displayName, instructionsFor } = l;
+  const names = displayName(exercise.id, exercise.name);
+  const { detail, status } = useExerciseDetail(exercise);
 
   const chips = [
     t(`apps.fitness.categories.${enumKey(exercise.category)}`),
@@ -198,52 +268,6 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
         )}
       </Section>
 
-      <Section
-        title={t("apps.fitness.exercises.progress")}
-        actions={
-          best ? (
-            <span className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
-              {t("apps.fitness.exercises.bestSet", {
-                reps: best.reps,
-                weight: l.formatWeight(best.weightKg),
-              })}
-            </span>
-          ) : null
-        }
-      >
-        {progress.length ? (
-          <>
-            <LineChart
-              label={t("apps.fitness.exercises.e1rmChart")}
-              points={progress.map((p) => ({ date: p.date, value: p.e1rmKg || p.totalReps }))}
-              formatValue={(v) =>
-                progress.some((p) => p.e1rmKg > 0) ? l.formatWeight(v, 0) : String(Math.round(v))
-              }
-              formatDate={(d) => formatShortDate(d, locale)}
-            />
-            <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
-              {progress.some((p) => p.e1rmKg > 0)
-                ? t("apps.fitness.exercises.e1rmHint")
-                : t("apps.fitness.exercises.repsHint")}
-            </p>
-            <table className="w-full text-[11px]">
-              <tbody>
-                {recent.map((row) => (
-                  <tr key={row.date} className="border-t border-black/5 dark:border-white/10">
-                    <td className={cn("py-0.5 pr-2 whitespace-nowrap", FITNESS_MUTED_CLASS)}>
-                      {formatShortDate(row.date, locale)}
-                    </td>
-                    <td className="py-0.5">{row.sets}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        ) : (
-          <EmptyNote>{t("apps.fitness.exercises.noProgress")}</EmptyNote>
-        )}
-      </Section>
-
       <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
         {t("apps.fitness.attribution.prefix")}{" "}
         <a href={FREE_EXERCISE_DB_URL} target="_blank" rel="noreferrer" className="text-os-link underline">
@@ -292,6 +316,7 @@ export function FitnessExercisesView({ l, isMobileLayout }: { l: FitnessLogic; i
             <p className={FITNESS_MUTED_CLASS}>{t("apps.fitness.exercises.loading")}</p>
           </>
         )}
+        <ExerciseProgressSheet l={l} exercise={null} />
       </div>
     );
   }
@@ -417,6 +442,7 @@ export function FitnessExercisesView({ l, isMobileLayout }: { l: FitnessLogic; i
           )}
         </div>
       ) : null}
+      <ExerciseProgressSheet l={l} exercise={selected ?? null} />
     </div>
   );
 }

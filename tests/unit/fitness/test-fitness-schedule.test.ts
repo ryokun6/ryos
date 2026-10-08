@@ -7,6 +7,7 @@ import {
   weekDates,
   weekdayOf,
 } from "../../../src/apps/fitness/utils/dates";
+import { formatWeekRange } from "../../../src/apps/fitness/utils/format";
 import {
   CURATED_FOCUS_EXERCISES,
   DEFAULT_SCHEDULE,
@@ -152,6 +153,17 @@ describe("weekly progress", () => {
     expect(plan).toHaveLength(7);
     expect(plan[0]).toMatchObject({ date: "2026-10-05", focus: "upper", completed: true, isPast: true });
     expect(plan[3]).toMatchObject({ isToday: true, completed: false, isPast: false });
+  });
+
+  test("a future week keeps the template until that day is planned ahead", () => {
+    const schedule = scheduleFromTemplate("upperLower");
+    const nextMonday = addDays(startOfWeek("2026-10-08"), 7);
+    const planned = { ...workoutOn(nextMonday, 0), focus: "cardio" as const, updatedAt: 5 };
+    const future = weekPlan(schedule, [planned], "2026-10-08", nextMonday);
+    expect(future[0]).toMatchObject({ date: nextMonday, focus: "cardio", isToday: false, isPast: false });
+    expect(weekPlan(schedule, [planned], "2026-10-08")[0].focus).toBe("upper");
+    expect(formatWeekRange("2026-10-05", "2026-10-11", "zh-TW")).toBe("10月5日–10月11日");
+    expect(formatWeekRange("2026-10-05", "2026-10-11", "en-US")).toContain(" – ");
   });
 
   test("weekly streak counts consecutive weeks meeting the target", () => {

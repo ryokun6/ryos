@@ -5655,6 +5655,8 @@
       },
       "schedule": {
         "thisWeek": "This Week",
+        "upcomingWeeks": "Upcoming Weeks",
+        "moreWeeks": "More Weeks",
         "template": "Template",
         "applyTemplate": "Apply Template",
         "dayFocus": "{{day}} focus",

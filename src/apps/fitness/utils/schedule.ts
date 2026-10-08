@@ -235,15 +235,31 @@ export interface WeekPlanDay {
   completed: boolean;
 }
 
+/** Focus stored on a future week's workout, if that day was planned ahead. */
+function futureWeekFocus(
+  workouts: readonly Workout[],
+  date: string,
+  todayKey: string
+): FocusArea | null {
+  if (date < addDays(startOfWeek(todayKey), 7)) return null;
+  let latest: Workout | undefined;
+  for (const workout of workouts) {
+    if (workout.date !== date || !workout.focus) continue;
+    if (!latest || workout.updatedAt >= latest.updatedAt) latest = workout;
+  }
+  return latest?.focus ?? null;
+}
+
 export function weekPlan(
   schedule: WeeklySchedule,
   workouts: readonly Workout[],
-  todayKey: string
+  todayKey: string,
+  weekKey: string = todayKey
 ): WeekPlanDay[] {
-  const done = new Set(workoutDatesInWeek(workouts, todayKey));
-  return weekDates(todayKey).map((date, index) => ({
+  const done = new Set(workoutDatesInWeek(workouts, weekKey));
+  return weekDates(weekKey).map((date, index) => ({
     date,
-    focus: schedule[index]?.focus ?? "rest",
+    focus: futureWeekFocus(workouts, date, todayKey) ?? schedule[index]?.focus ?? "rest",
     isToday: date === todayKey,
     isPast: date < todayKey,
     completed: done.has(date),
