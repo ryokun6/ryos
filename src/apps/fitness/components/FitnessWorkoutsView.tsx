@@ -75,15 +75,21 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
         </button>
       }
       actions={
-        <button
-          type="button"
-          className={ICON_BUTTON_CLASS}
-          onClick={() => store.removeWorkoutEntry(workout.id, entry.id)}
-          aria-label={t("apps.fitness.workouts.removeExercise")}
-          title={t("apps.fitness.workouts.removeExercise")}
-        >
-          <X size={12} />
-        </button>
+        <>
+          <Button size="sm" variant="default" onClick={addSet} className="h-6 gap-1 text-[11px]">
+            <Plus size={11} weight="bold" />
+            {t("apps.fitness.workouts.addSet")}
+          </Button>
+          <button
+            type="button"
+            className={ICON_BUTTON_CLASS}
+            onClick={() => store.removeWorkoutEntry(workout.id, entry.id)}
+            aria-label={t("apps.fitness.workouts.removeExercise")}
+            title={t("apps.fitness.workouts.removeExercise")}
+          >
+            <X size={12} />
+          </button>
+        </>
       }
     >
       {previous ? (
@@ -150,12 +156,6 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           </tbody>
         </table>
       ) : null}
-      <div>
-        <Button size="sm" variant="default" onClick={addSet} className="h-6 gap-1 text-[11px]">
-          <Plus size={11} weight="bold" />
-          {t("apps.fitness.workouts.addSet")}
-        </Button>
-      </div>
     </Section>
   );
 }
