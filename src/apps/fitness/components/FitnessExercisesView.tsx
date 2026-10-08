@@ -159,7 +159,7 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
               key={path}
               path={path}
               alt={t("apps.fitness.exercises.imageAlt", { name: names.primary, step: i + 1 })}
-              className="aspect-[4/3] w-full rounded-md"
+              className="aspect-[4/3] w-full !rounded-[0.5rem]"
             />
           ))}
         </div>
