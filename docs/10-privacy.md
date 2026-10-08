@@ -4,7 +4,7 @@ ryOS is a web-based desktop environment that runs almost entirely in your browse
 
 For the Chrome extension, see the separate [ryOS Subtitles Privacy Policy](/docs/subtitles-privacy).
 
-*Last updated: October 1, 2026.*
+*Last updated: October 8, 2026.*
 
 ---
 
@@ -120,7 +120,7 @@ Depending on which features you use and how the instance is configured, ryOS may
 
 | Service | Used for |
 |---------|----------|
-| OpenAI / Anthropic / Google AI | AI chat, applet generation, transcription, translation |
+| OpenAI / Anthropic / Google AI | AI chat (including images you attach), applet generation, transcription, translation, image background removal (Stuff) |
 | ElevenLabs | Text-to-speech |
 | YouTube | Video metadata and playback (iPod, Videos, TV) |
 | Apple MapKit / MusicKit | Maps place search and Apple Music playback |
