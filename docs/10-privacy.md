@@ -92,7 +92,7 @@ If you never sign in, none of this data leaves your browser.
 When you use an AI feature, the relevant input is sent to an AI provider to produce a response. The AI features are:
 
 - Chats with Ryo and the desktop assistant, including images you attach.
-- Mentioning @ryo in a chat room, which sends the room's recent messages so Ryo can reply.
+- Mentioning @ryo in a chat room. To reply, Ryo reads the room's recent messages along with the usernames of the people who posted them. This means messages you post in a room may be sent to the AI provider when anyone in that room mentions @ryo, not only when you do.
 - AI inside applets and the Books reader.
 - Generating applets, and creating TV channels from a description.
 - Internet Explorer's time-travel generation, which sends the URL and year you choose.
