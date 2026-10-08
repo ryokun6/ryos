@@ -240,10 +240,10 @@ export const listSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(50)
+    .max(100)
     .optional()
     .describe(
-      "Optional page size for '/Music' and '/Applets Store' (default 25 for '/Music', 50 for '/Applets Store'; max 50)."
+      "Optional page size for '/Music' and '/Applets Store' (default 50, max 100)."
     ),
   offset: z
     .number()

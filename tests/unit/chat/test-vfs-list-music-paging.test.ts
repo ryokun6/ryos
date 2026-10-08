@@ -62,27 +62,36 @@ describe("list /Music paging", () => {
     expect(pagination).toBeNull();
   });
 
-  test("no params returns the first 25 with paging metadata", async () => {
-    seedTracks(60);
+  test("no params returns the first 50 with paging metadata", async () => {
+    seedTracks(120);
     const { ids, pagination, output } = await runList({});
-    expect(ids).toHaveLength(25);
+    expect(ids).toHaveLength(50);
     expect(ids[0]).toBe("vid_0");
-    expect(pagination).toMatchObject({ total: 60, hasMore: true, nextOffset: 25 });
-    expect(output).toContain("showing 1-25 of 60");
+    expect(pagination).toMatchObject({ total: 120, hasMore: true, nextOffset: 50 });
+    expect(output).toContain("showing 1-50 of 120");
+  });
+
+  test("limit is capped at 100", async () => {
+    seedTracks(150);
+    const { ids, pagination } = await runList({ limit: 500 });
+    expect(ids).toHaveLength(100);
+    expect(pagination).toMatchObject({ limit: 100, hasMore: true, nextOffset: 100 });
   });
 
   test("exact page boundary", async () => {
-    seedTracks(50);
-    const { ids, pagination } = await runList({ offset: 25, limit: 25 });
-    expect(ids).toEqual(Array.from({ length: 25 }, (_, i) => `vid_${i + 25}`));
-    expect(pagination).toMatchObject({ total: 50, hasMore: false, nextOffset: null });
+    seedTracks(100);
+    const first = await runList({});
+    expect(first.pagination).toMatchObject({ total: 100, hasMore: true, nextOffset: 50 });
+    const { ids, pagination } = await runList({ offset: 50 });
+    expect(ids).toEqual(Array.from({ length: 50 }, (_, i) => `vid_${i + 50}`));
+    expect(pagination).toMatchObject({ total: 100, hasMore: false, nextOffset: null });
   });
 
   test("last partial page", async () => {
-    seedTracks(60);
-    const { ids, pagination } = await runList({ offset: 50, limit: 50 });
-    expect(ids).toEqual(Array.from({ length: 10 }, (_, i) => `vid_${i + 50}`));
-    expect(pagination).toMatchObject({ total: 60, hasMore: false, nextOffset: null });
+    seedTracks(130);
+    const { ids, pagination } = await runList({ offset: 100, limit: 100 });
+    expect(ids).toEqual(Array.from({ length: 30 }, (_, i) => `vid_${i + 100}`));
+    expect(pagination).toMatchObject({ total: 130, hasMore: false, nextOffset: null });
   });
 
   test("offset past the end reports the total without items", async () => {

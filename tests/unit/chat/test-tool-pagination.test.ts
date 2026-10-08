@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  APPLETS_STORE_LIST_PAGE,
   MUSIC_LIST_PAGE,
   SONG_LIBRARY_PAGE,
   describePageRange,
@@ -102,7 +103,8 @@ describe("paginate", () => {
   });
 
   test("tool page presets keep the historical defaults", () => {
-    expect(MUSIC_LIST_PAGE).toEqual({ defaultLimit: 25, maxLimit: 50 });
+    expect(MUSIC_LIST_PAGE).toEqual({ defaultLimit: 50, maxLimit: 100 });
+    expect(APPLETS_STORE_LIST_PAGE).toEqual({ defaultLimit: 50, maxLimit: 100 });
     expect(SONG_LIBRARY_PAGE).toEqual({ defaultLimit: 5, maxLimit: 25 });
   });
 });
@@ -150,9 +152,10 @@ describe("pagination formatting", () => {
 describe("list tool schemas accept paging params", () => {
   test("list accepts offset and rejects negatives / oversized pages", () => {
     expect(listSchema.safeParse({ path: "/Music" }).success).toBe(true);
-    expect(listSchema.safeParse({ path: "/Music", offset: 50, limit: 50 }).success).toBe(true);
+    expect(listSchema.safeParse({ path: "/Music", offset: 100, limit: 100 }).success).toBe(true);
+    expect(listSchema.safeParse({ path: "/Applets Store", limit: 100 }).success).toBe(true);
     expect(listSchema.safeParse({ path: "/Music", offset: -1 }).success).toBe(false);
-    expect(listSchema.safeParse({ path: "/Music", limit: 51 }).success).toBe(false);
+    expect(listSchema.safeParse({ path: "/Music", limit: 101 }).success).toBe(false);
   });
 
   test("songLibraryControl accepts offset", () => {

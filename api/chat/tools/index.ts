@@ -143,7 +143,7 @@ export const TOOL_DESCRIPTIONS = {
   
   list:
     "List items from the ryOS virtual file system. Returns a JSON array with metadata for each item. For '/Music', pass librarySource 'youtube' when checking songs for Karaoke because Karaoke always uses the YouTube library even if iPod is viewing Apple Music. " +
-    "'/Music' and '/Applets Store' results are paginated: pass limit (page size, max 50) and offset, and read the trailing 'Pagination:' JSON (total, hasMore, nextOffset). Prefer query to find specific songs/applets; to enumerate a larger library, call list again with the same path/query/librarySource and offset = nextOffset while hasMore is true. Do not say an item is missing unless you searched for it or paged through every result. " +
+    "'/Music' and '/Applets Store' results are paginated: pass limit (page size, default 50, max 100) and offset, and read the trailing 'Pagination:' JSON (total, hasMore, nextOffset). Prefer query to find specific songs/applets; to enumerate a larger library, call list again with the same path/query/librarySource and offset = nextOffset while hasMore is true. Do not say an item is missing unless you searched for it or paged through every result. " +
     "CRITICAL: You MUST ONLY reference items that are explicitly returned in the tool result. DO NOT suggest, mention, or hallucinate items that are not in the returned list.",
   
   open:

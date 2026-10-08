@@ -14,10 +14,10 @@ export interface PageOptions {
   maxLimit: number;
 }
 
-export const MUSIC_LIST_PAGE: PageOptions = { defaultLimit: 25, maxLimit: 50 };
+export const MUSIC_LIST_PAGE: PageOptions = { defaultLimit: 50, maxLimit: 100 };
 export const APPLETS_STORE_LIST_PAGE: PageOptions = {
   defaultLimit: 50,
-  maxLimit: 50,
+  maxLimit: 100,
 };
 export const SONG_LIBRARY_PAGE: PageOptions = { defaultLimit: 5, maxLimit: 25 };
 
