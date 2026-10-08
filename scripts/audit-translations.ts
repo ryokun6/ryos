@@ -2,6 +2,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { auditFitnessExerciseCatalogs } from "../src/apps/fitness/utils/exerciseCatalogAudit";
 import {
   APPLE_UI_TERMINOLOGY,
   getExpectedAppleUiTerm,
@@ -555,6 +556,8 @@ export async function auditTranslations(): Promise<TranslationAuditIssue[]> {
       ...auditLocale(locale, english, flattenTranslations(targetObject))
     );
   }
+
+  issues.push(...auditFitnessExerciseCatalogs());
 
   return issues;
 }

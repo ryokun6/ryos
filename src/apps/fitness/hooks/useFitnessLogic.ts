@@ -16,6 +16,15 @@ import {
   indexExercises,
   loadExerciseLibrary,
 } from "../utils/exerciseLibrary";
+import {
+  exerciseNameDisplay,
+  exerciseSearchLabels,
+  loadExerciseCatalog,
+  localizedInstructions,
+  peekExerciseCatalog,
+  type ExerciseCatalog,
+  type ExerciseNameDisplay,
+} from "../utils/exerciseI18n";
 import { latestBodyValue } from "../utils/goals";
 import { computeNutritionTargets } from "../utils/nutrition";
 import { focusForDate } from "../utils/schedule";
@@ -24,6 +33,30 @@ import { kgToDisplay, tidy, weightUnitLabel } from "../utils/units";
 export type LibraryStatus = "idle" | "loading" | "ready" | "error";
 
 const NO_EXERCISES: readonly FitnessExercise[] = [];
+
+function useExerciseCatalog(locale: string): ExerciseCatalog | null {
+  const [catalog, setCatalog] = useState<ExerciseCatalog | null>(() => peekExerciseCatalog(locale));
+  useEffect(() => {
+    const cached = peekExerciseCatalog(locale);
+    if (cached) {
+      setCatalog(cached);
+      return;
+    }
+    if (locale === "en") {
+      setCatalog(null);
+      return;
+    }
+    let cancelled = false;
+    setCatalog(null);
+    void loadExerciseCatalog(locale).then((next) => {
+      if (!cancelled) setCatalog(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
+  return catalog;
+}
 
 function useTodayKey(): string {
   const [today, setToday] = useState(() => toDateKey());
@@ -43,6 +76,7 @@ export function useFitnessLogic({ initialData }: { initialData?: FitnessInitialD
   const dialogs = useAppHelpAboutDialogs();
   const themeFlags = useThemeFlags();
   const locale = useLanguageStore((s) => s.current);
+  const exerciseCatalog = useExerciseCatalog(locale);
   const todayKey = useTodayKey();
 
   const state = useFitnessStore(
@@ -114,6 +148,22 @@ export function useFitnessLogic({ initialData }: { initialData?: FitnessInitialD
     [state.units, weightUnit]
   );
 
+  const displayName = useCallback(
+    (id: string, englishName: string): ExerciseNameDisplay =>
+      exerciseNameDisplay(englishName, exerciseCatalog?.[id]?.name, locale),
+    [exerciseCatalog, locale]
+  );
+  const instructionsFor = useCallback(
+    (id: string, english: readonly string[]) =>
+      localizedInstructions(english, exerciseCatalog?.[id]?.instructions, locale),
+    [exerciseCatalog, locale]
+  );
+  const searchLabels = useCallback(
+    (id: string, englishName: string) =>
+      exerciseSearchLabels(englishName, exerciseCatalog?.[id]?.name),
+    [exerciseCatalog]
+  );
+
   const openExercise = useCallback(
     (id: string) => {
       setSelectedExerciseId(id);
@@ -145,6 +195,9 @@ export function useFitnessLogic({ initialData }: { initialData?: FitnessInitialD
     library,
     exercises,
     exerciseById,
+    displayName,
+    instructionsFor,
+    searchLabels,
     libraryStatus,
     reloadLibrary: fetchLibrary,
     selectedExerciseId,

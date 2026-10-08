@@ -172,7 +172,8 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
 
   const addToDay = (exercise: { id: string; name: string }) => {
     if (l.addExerciseToDay(selected.date, exercise)) {
-      toast.success(t("apps.fitness.toasts.addedToDay", { name: exercise.name, date: formatShortDate(selected.date, locale) }));
+      const names = l.displayName(exercise.id, exercise.name);
+      toast.success(t("apps.fitness.toasts.addedToDay", { name: names.primary, date: formatShortDate(selected.date, locale) }));
     }
   };
 
@@ -303,6 +304,10 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                   const toggleLabel = added
                     ? t("apps.fitness.schedule.removeFromDay")
                     : t("apps.fitness.schedule.addToDay");
+                  const names = l.displayName(rec.id, rec.name);
+                  const equipment = exercise
+                    ? t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)
+                    : "";
                   return (
                     <li
                       key={rec.id}
@@ -321,13 +326,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                           className="min-w-0 flex-1 text-left"
                           onClick={() => l.openExercise(rec.id)}
                         >
-                          <span className="line-clamp-2 break-words text-[12px] leading-snug" title={rec.name}>
-                            {rec.name}
+                          <span className="line-clamp-2 break-words text-[12px] leading-snug" title={names.primary}>
+                            {names.primary}
                           </span>
-                          {exercise ? (
-                            <span className="block truncate text-[10px] opacity-60">
-                              {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
-                            </span>
+                          {equipment ? (
+                            <span className="block truncate text-[10px] opacity-60">{equipment}</span>
                           ) : null}
                         </button>
                         <button

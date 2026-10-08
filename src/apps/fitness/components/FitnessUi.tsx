@@ -108,6 +108,42 @@ export function EmptyNote({ children }: { children: ReactNode }) {
   return <p className={cn("py-2 text-center text-[12px]", FITNESS_MUTED_CLASS)}>{children}</p>;
 }
 
+/** Exercise-view name: localized title, with the English name on a second line when they differ. */
+export function ExerciseNameLines({
+  primary,
+  secondary,
+  className,
+  primaryClassName,
+  secondaryClassName,
+  truncate = true,
+}: {
+  primary: string;
+  secondary: string | null;
+  className?: string;
+  primaryClassName?: string;
+  secondaryClassName?: string;
+  truncate?: boolean;
+}) {
+  const line = truncate ? "block truncate" : "block";
+  return (
+    <span className={cn("block min-w-0", className)}>
+      <span className={cn(line, primaryClassName)}>{primary}</span>
+      {secondary ? (
+        <span
+          className={cn(
+            line,
+            "text-[10px] font-normal leading-tight",
+            FITNESS_MUTED_CLASS,
+            secondaryClassName
+          )}
+        >
+          {secondary}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 /** Text input that edits a number; commits on blur/Enter, empty → null. */
 export function NumberField({
   value,
