@@ -406,7 +406,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 <div key={m.key} className="flex flex-col gap-1">
                   <div className="flex items-baseline justify-between gap-1 text-[11px]">
                     <span className={FITNESS_MUTED_CLASS}>{macroLabel(t, m.key)}</span>
-                    <span>
+                    <span className="whitespace-nowrap">
                       <span className="text-[13px] font-bold">{formatNumber(consumed, locale)}</span>
                       <span className="opacity-60">
                         {" "}

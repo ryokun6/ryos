@@ -142,12 +142,15 @@ export function SmallSelect<T extends string>({
   onChange,
   options,
   label,
+  placeholder,
   className,
 }: {
   value: T;
   onChange: (value: T) => void;
   options: readonly { value: T; label: string }[];
   label: string;
+  /** Shown when `value` matches no option. */
+  placeholder?: string;
   className?: string;
 }) {
   const current = options.find((o) => o.value === value);
@@ -158,7 +161,7 @@ export function SmallSelect<T extends string>({
         aria-label={label}
         title={label}
       >
-        <SelectValue>{current?.label ?? value}</SelectValue>
+        <SelectValue placeholder={placeholder}>{current?.label ?? placeholder ?? value}</SelectValue>
       </SelectTrigger>
       <SelectContent>
         {options.map((option) => (

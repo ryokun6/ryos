@@ -67,6 +67,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
         <div className="flex-1" />
         <SmallSelect<ScheduleTemplateId | "">
           label={t("apps.fitness.schedule.template")}
+          placeholder={t("apps.fitness.schedule.applyTemplate")}
           value={template}
           className="w-[170px]"
           onChange={(value) => {
@@ -75,10 +76,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             store.applyScheduleTemplate(value);
             toast.success(t("apps.fitness.toasts.templateApplied", { name: t(`apps.fitness.templates.${value}`) }));
           }}
-          options={[
-            { value: "", label: t("apps.fitness.schedule.applyTemplate") },
-            ...SCHEDULE_TEMPLATE_IDS.map((id) => ({ value: id, label: t(`apps.fitness.templates.${id}`) })),
-          ]}
+          options={SCHEDULE_TEMPLATE_IDS.map((id) => ({ value: id, label: t(`apps.fitness.templates.${id}`) }))}
         />
       </div>
 
