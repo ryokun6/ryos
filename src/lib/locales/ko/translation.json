@@ -3011,6 +3011,7 @@
       },
       "schedule": {
         "addToDay": "운동에 추가",
+        "removeFromDay": "운동에서 제거",
         "applyTemplate": "템플릿 적용",
         "cardioHint": "20~40분 동안 꾸준한 유산소 운동 또는 인터벌 운동을 목표로 하십시오.",
         "dayFocus": "{{day}} 집중",

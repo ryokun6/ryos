@@ -3018,6 +3018,7 @@
       },
       "schedule": {
         "addToDay": "Adicionar ao Treino",
+        "removeFromDay": "Remover do Treino",
         "applyTemplate": "Aplicar Modelo",
         "cardioHint": "Tente fazer de 20 a 40 minutos de cardio constante ou intervalos.",
         "dayFocus": "Foco de {{day}}",

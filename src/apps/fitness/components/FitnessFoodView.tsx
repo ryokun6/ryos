@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, CaretLeft, CaretRight, PencilSimple, Plus, Sparkle, Trash, X } from "@phosphor-icons/react";
+import { Camera, CaretLeft, CaretRight, PencilSimple, Sparkle, Trash, X } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ import {
   NumberField,
   ProgressBar,
   Section,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -199,11 +201,10 @@ function DraftEditor({
         <Button
           size="sm"
           variant="secondary"
-          className="h-6 gap-1 text-[11px]"
+          className="h-6 text-[11px]"
           disabled={draft.items.length >= FOOD_MAX_ITEMS * 2}
           onClick={() => setDraft((prev) => ({ ...prev, items: [...prev.items, blankItem()] }))}
         >
-          <Plus size={11} weight="bold" />
           {t("apps.fitness.food.addItem")}
         </Button>
         <div className="flex-1" />
@@ -367,8 +368,9 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
   const busy = status !== "idle";
 
   return (
-    <div className={cn("grid size-full min-h-0 gap-3 overflow-y-auto p-3", isMobileLayout ? "grid-cols-1" : "grid-cols-[1fr_220px]")}>
-      <div className="flex min-w-0 flex-col gap-3">
+    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -493,21 +495,19 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-6 gap-1 text-[11px]"
+                  className="h-6 text-[11px]"
                   onClick={startManual}
                   disabled={busy}
                 >
-                  <PencilSimple size={11} />
                   {t("apps.fitness.food.manual")}
                 </Button>
                 <Button
                   size="sm"
                   variant="default"
-                  className="h-6 gap-1 text-[11px]"
+                  className="h-6 text-[11px]"
                   disabled={busy || (!photo && !description.trim())}
                   onClick={() => void analyze()}
                 >
-                  <Sparkle size={11} weight="fill" />
                   {t("apps.fitness.food.analyze")}
                 </Button>
               </div>
@@ -580,9 +580,10 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
         )}
         {MEALS.every((meal) => byMeal[meal].length === 0) ? <EmptyNote>{t("apps.fitness.food.empty")}</EmptyNote> : null}
       </div>
+      </div>
 
-      <div className="flex min-w-0 flex-col gap-3">
-        <Section title={t("apps.fitness.food.history")}>
+      <Sidebar mobile={isMobileLayout} widthClass="w-[220px]">
+        <SidebarSection title={t("apps.fitness.food.history")}>
           {history.length ? (
             <ul className="flex flex-col gap-1.5 text-[12px]">
               {history.map((day) => (
@@ -611,14 +612,14 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
           ) : (
             <EmptyNote>{t("apps.fitness.food.noHistory")}</EmptyNote>
           )}
-        </Section>
-        <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
-          {targets.isPersonalized ? t("apps.fitness.food.targetsFromProfile") : t("apps.fitness.food.targetsDefault")}{" "}
-          <button type="button" className="text-os-link underline" onClick={() => l.setView("body")}>
-            {t("apps.fitness.food.editTargets")}
-          </button>
-        </p>
-      </div>
+          <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
+            {targets.isPersonalized ? t("apps.fitness.food.targetsFromProfile") : t("apps.fitness.food.targetsDefault")}{" "}
+            <button type="button" className="text-os-link underline" onClick={() => l.setView("body")}>
+              {t("apps.fitness.food.editTargets")}
+            </button>
+          </p>
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }

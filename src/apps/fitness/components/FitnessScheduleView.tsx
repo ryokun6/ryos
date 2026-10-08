@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea } from "../types";
@@ -35,9 +36,27 @@ import {
   FITNESS_CARD_CLASS,
   FITNESS_MUTED_CLASS,
   ProgressBar,
-  Section,
   SmallSelect,
 } from "./FitnessUi";
+
+function ExercisePhoto({ path }: { path: string | undefined }) {
+  const [failed, setFailed] = useState(false);
+  const className = "h-20 w-full bg-black/5 object-cover dark:bg-white/10";
+  if (!path || failed) {
+    return <div className={className} aria-hidden />;
+  }
+  return (
+    <img
+      src={exerciseImageUrl(path)}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => setFailed(true)}
+      className={className}
+    />
+  );
+}
 
 const FOCUS_ICON: Record<FocusArea, typeof Barbell> = {
   upper: Barbell,
@@ -91,6 +110,17 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
     () => recommendExercises(selected.focus, { library: l.exercises, limit: 8 }),
     [selected.focus, l.exercises]
   );
+  const addedOnSelectedDay = useMemo(() => {
+    const workout = l.workouts
+      .filter((w) => w.date === selected.date)
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    const byExercise = new Map<string, { workoutId: string; entryId: string }>();
+    if (!workout) return byExercise;
+    for (const entry of workout.entries) {
+      byExercise.set(entry.exerciseId, { workoutId: workout.id, entryId: entry.id });
+    }
+    return byExercise;
+  }, [l.workouts, selected.date]);
   const [template, setTemplate] = useState<ScheduleTemplateId | "">("");
 
   const addToDay = (exercise: { id: string; name: string }) => {
@@ -99,98 +129,110 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
     }
   };
 
+  const toggleOnDay = (exercise: { id: string; name: string }) => {
+    const existing = addedOnSelectedDay.get(exercise.id);
+    if (existing) {
+      store.removeWorkoutEntry(existing.workoutId, existing.entryId);
+      return;
+    }
+    addToDay(exercise);
+  };
+
   return (
-    <div className="flex size-full min-h-0 flex-col gap-3 overflow-y-auto p-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-[14px] font-bold">{t("apps.fitness.schedule.thisWeek")}</h2>
-        <div className="flex-1" />
-        <SmallSelect<ScheduleTemplateId | "">
-          label={t("apps.fitness.schedule.template")}
-          placeholder={t("apps.fitness.schedule.applyTemplate")}
-          value={template}
-          className="w-[170px]"
-          onChange={(value) => {
-            if (!value) return;
-            setTemplate("");
-            store.applyScheduleTemplate(value);
-            toast.success(t("apps.fitness.toasts.templateApplied", { name: t(`apps.fitness.templates.${value}`) }));
-          }}
-          options={SCHEDULE_TEMPLATE_IDS.map((id) => ({ value: id, label: t(`apps.fitness.templates.${id}`) }))}
-        />
-      </div>
-
-      <div className={cn("grid gap-1.5", isMobileLayout ? "grid-cols-4" : "grid-cols-7")}>
-        {days.map((day, index) => (
-          <div
-            key={day.date}
-            role="button"
-            tabIndex={0}
-            onClick={() => setSelectedDate(day.date)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") setSelectedDate(day.date);
-            }}
-            aria-pressed={day.date === selected.date}
-            className={cn(
-              FITNESS_CARD_CLASS,
-              "flex cursor-default flex-col items-center gap-1 p-1.5 text-center",
-              day.date === selected.date && "ring-2 ring-sky-500/70",
-              day.isToday && "bg-sky-500/10 dark:bg-sky-400/15"
-            )}
-          >
-            <div className="flex w-full flex-col items-center leading-tight">
-              <span className={cn("whitespace-nowrap text-[10px] font-bold uppercase", day.isToday && "text-os-link")}>
-                {formatWeekdayShort(day.date, locale)}
-              </span>
-              <span className={cn("whitespace-nowrap text-[10px]", FITNESS_MUTED_CLASS)}>
-                {formatCompactDate(day.date, locale)}
-              </span>
-            </div>
-            <FocusMark focus={day.focus} missed={day.isPast && !day.completed && day.focus !== "rest"} />
-            <div onClick={(e) => e.stopPropagation()} className="w-full">
-              <SmallSelect
-                label={t("apps.fitness.schedule.dayFocus", { day: formatWeekdayShort(day.date, locale) })}
-                value={day.focus}
-                className="h-5 w-full px-1 text-[10px]"
-                onChange={(focus) => store.setScheduleDay(index, { focus })}
-                options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
-              />
-            </div>
-            <div className="h-3.5 text-[10px]">
-              {day.completed ? (
-                <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
-                  <Check size={10} weight="bold" />
-                  {t("apps.fitness.schedule.done")}
-                </span>
-              ) : day.isPast && day.focus !== "rest" ? (
-                <span className={FITNESS_MUTED_CLASS}>{t("apps.fitness.schedule.missed")}</span>
-              ) : null}
-            </div>
+    <div className="flex size-full min-h-0 flex-col overflow-y-auto">
+      <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
+        <section className="flex flex-col gap-2 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[14px] font-bold">{t("apps.fitness.schedule.thisWeek")}</h2>
+            <div className="flex-1" />
+            <SmallSelect<ScheduleTemplateId | "">
+              label={t("apps.fitness.schedule.template")}
+              placeholder={t("apps.fitness.schedule.applyTemplate")}
+              value={template}
+              className="w-[170px]"
+              onChange={(value) => {
+                if (!value) return;
+                setTemplate("");
+                store.applyScheduleTemplate(value);
+                toast.success(t("apps.fitness.toasts.templateApplied", { name: t(`apps.fitness.templates.${value}`) }));
+              }}
+              options={SCHEDULE_TEMPLATE_IDS.map((id) => ({ value: id, label: t(`apps.fitness.templates.${id}`) }))}
+            />
           </div>
-        ))}
-      </div>
 
-      <div className={cn("grid gap-3", isMobileLayout ? "grid-cols-1" : "grid-cols-[1fr_220px]")}>
-        <Section
-          title={t("apps.fitness.schedule.recommendedFor", {
-            focus: t(`apps.fitness.focus.${selected.focus}`),
-            day: formatWeekdayShort(selected.date, locale),
-          })}
-          actions={
-            selected.focus !== "rest" ? (
-              <Button
-                size="sm"
-                variant="default"
-                className="h-6 text-[11px]"
-                onClick={() => {
-                  l.setWorkoutDate(selected.date);
-                  l.setView("workouts");
+          <div className={cn("grid gap-1.5", isMobileLayout ? "grid-cols-4" : "grid-cols-7")}>
+            {days.map((day, index) => (
+              <div
+                key={day.date}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedDate(day.date)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") setSelectedDate(day.date);
                 }}
+                aria-pressed={day.date === selected.date}
+                className={cn(
+                  FITNESS_CARD_CLASS,
+                  "flex cursor-default flex-col items-center gap-1 p-1.5 text-center",
+                  day.date === selected.date && "ring-2 ring-sky-500/70",
+                  day.isToday && "bg-sky-500/10 dark:bg-sky-400/15"
+                )}
               >
-                {t("apps.fitness.schedule.startWorkout")}
-              </Button>
-            ) : null
-          }
-        >
+                <div className="flex w-full flex-col items-center leading-tight">
+                  <span className={cn("whitespace-nowrap text-[10px] font-bold uppercase", day.isToday && "text-os-link")}>
+                    {formatWeekdayShort(day.date, locale)}
+                  </span>
+                  <span className={cn("whitespace-nowrap text-[10px]", FITNESS_MUTED_CLASS)}>
+                    {formatCompactDate(day.date, locale)}
+                  </span>
+                </div>
+                <FocusMark focus={day.focus} missed={day.isPast && !day.completed && day.focus !== "rest"} />
+                <div onClick={(e) => e.stopPropagation()} className="w-full">
+                  <SmallSelect
+                    label={t("apps.fitness.schedule.dayFocus", { day: formatWeekdayShort(day.date, locale) })}
+                    value={day.focus}
+                    className="h-5 w-full px-1 text-[10px]"
+                    onChange={(focus) => store.setScheduleDay(index, { focus })}
+                    options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
+                  />
+                </div>
+                <div className="h-3.5 text-[10px]">
+                  {day.completed ? (
+                    <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400">
+                      <Check size={10} weight="bold" />
+                      {t("apps.fitness.schedule.done")}
+                    </span>
+                  ) : day.isPast && day.focus !== "rest" ? (
+                    <span className={FITNESS_MUTED_CLASS}>{t("apps.fitness.schedule.missed")}</span>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="flex min-w-0 flex-col gap-2 px-3 py-3">
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <h3 className="min-w-0 text-[12px] font-bold">
+            {t("apps.fitness.schedule.recommendedFor", {
+              focus: t(`apps.fitness.focus.${selected.focus}`),
+              day: formatWeekdayShort(selected.date, locale),
+            })}
+          </h3>
+          {selected.focus !== "rest" ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="h-6 shrink-0 text-[11px]"
+              onClick={() => {
+                l.setWorkoutDate(selected.date);
+                l.setView("workouts");
+              }}
+            >
+              {t("apps.fitness.schedule.startWorkout")}
+            </Button>
+          ) : null}
+        </div>
           {selected.focus === "rest" ? (
             <EmptyNote>{t("apps.fitness.schedule.restDay")}</EmptyNote>
           ) : (
@@ -204,50 +246,75 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                         .join(", "),
                     })}
               </p>
-              <ul className="grid grid-cols-2 gap-1">
+              <ul className="flex w-full min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto pb-1">
                 {recommendations.map((rec) => {
                   const exercise = l.exerciseById.get(rec.id);
+                  const added = addedOnSelectedDay.has(rec.id);
+                  const toggleLabel = added
+                    ? t("apps.fitness.schedule.removeFromDay")
+                    : t("apps.fitness.schedule.addToDay");
                   return (
                     <li
                       key={rec.id}
-                      className="flex items-center gap-1 rounded-md border border-black/10 bg-white/60 p-1 dark:border-white/10 dark:bg-white/5"
+                      className="flex w-28 shrink-0 snap-start flex-col overflow-hidden !rounded-[0.5rem] border border-black/10 bg-white/60 dark:border-white/10 dark:bg-white/5"
                     >
                       <button
                         type="button"
-                        className="min-w-0 flex-1 rounded px-0.5 py-0.5 text-left hover:bg-black/10 dark:hover:bg-white/15"
+                        className="block w-full"
                         onClick={() => l.openExercise(rec.id)}
                       >
-                        <div
-                          className={cn("text-[12px] leading-snug", isMobileLayout ? "line-clamp-2 break-words" : "truncate")}
-                          title={rec.name}
+                        <ExercisePhoto path={exercise?.images[0]} />
+                      </button>
+                      <div className="flex items-start gap-1 p-1.5">
+                        <button
+                          type="button"
+                          className="min-w-0 flex-1 text-left"
+                          onClick={() => l.openExercise(rec.id)}
                         >
-                          {rec.name}
-                        </div>
-                        {exercise ? (
-                          <div className="truncate text-[10px] opacity-60">
-                            {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
-                          </div>
-                        ) : null}
-                      </button>
-                      <button
-                        type="button"
-                        className="inline-flex size-6 shrink-0 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15"
-                        onClick={() => addToDay(rec)}
-                        aria-label={t("apps.fitness.schedule.addToDay")}
-                        title={t("apps.fitness.schedule.addToDay")}
-                      >
-                        <Plus size={14} />
-                      </button>
+                          <span className="line-clamp-2 break-words text-[12px] leading-snug" title={rec.name}>
+                            {rec.name}
+                          </span>
+                          {exercise ? (
+                            <span className="block truncate text-[10px] opacity-60">
+                              {t(`apps.fitness.equipment.${enumKey(exercise.equipment)}`)}
+                            </span>
+                          ) : null}
+                        </button>
+                        <button
+                          type="button"
+                          className={cn(
+                            "inline-flex size-6 shrink-0 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15",
+                            added && "text-emerald-600 dark:text-emerald-400"
+                          )}
+                          onClick={() => toggleOnDay(rec)}
+                          aria-label={toggleLabel}
+                          title={toggleLabel}
+                        >
+                          {added ? <Check size={14} weight="bold" /> : <Plus size={14} />}
+                        </button>
+                      </div>
                     </li>
                   );
                 })}
               </ul>
             </>
           )}
-        </Section>
+      </section>
 
-        <div className="flex flex-col gap-3">
-          <Section title={t("apps.fitness.schedule.weeklyGoal")}>
+      <section className="flex flex-col gap-2 px-3 py-3">
+        <div className="flex min-h-6 items-center justify-between gap-2">
+          <h3 className="min-w-0 text-[12px] font-bold">{t("apps.fitness.schedule.weeklyGoal")}</h3>
+          <SmallSelect
+            label={t("apps.fitness.goals.weeklyTarget")}
+            value={String(l.goals.weeklyWorkoutTarget)}
+            className="w-auto min-w-max shrink-0"
+            onChange={(value) => store.setGoals({ weeklyWorkoutTarget: Number(value) })}
+            options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({
+              value: String(n),
+              label: t("apps.fitness.goals.perWeek", { count: n }),
+            }))}
+          />
+        </div>
             <div className="flex items-baseline justify-between text-[12px]">
               <span>
                 {t("apps.fitness.schedule.workoutsThisWeek", {
@@ -266,17 +333,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             <div className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
               {t("apps.fitness.schedule.plannedDays", { count: planned })}
             </div>
-            <SmallSelect
-              label={t("apps.fitness.goals.weeklyTarget")}
-              value={String(l.goals.weeklyWorkoutTarget)}
-              onChange={(value) => store.setGoals({ weeklyWorkoutTarget: Number(value) })}
-              options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({
-                value: String(n),
-                label: t("apps.fitness.goals.perWeek", { count: n }),
-              }))}
-            />
-          </Section>
-        </div>
+      </section>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,8 @@ import {
   FITNESS_MUTED_CLASS,
   NumberField,
   Section,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -76,8 +78,7 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
       }
       actions={
         <>
-          <Button size="sm" variant="secondary" onClick={addSet} className="h-6 gap-1 text-[11px]">
-            <Plus size={11} weight="bold" />
+          <Button size="sm" variant="secondary" onClick={addSet} className="h-6 text-[11px]">
             {t("apps.fitness.workouts.addSet")}
           </Button>
           <button
@@ -245,8 +246,9 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
   const add = (exercise: { id: string; name: string }) => l.addExerciseToDay(workoutDate, exercise);
 
   return (
-    <div className={cn("flex size-full min-h-0 overflow-y-auto", isMobileLayout ? "flex-col" : "flex-row")}>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-3">
+    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -318,15 +320,11 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
         ) : (
           <EmptyNote>{t("apps.fitness.workouts.empty")}</EmptyNote>
         )}
+        </div>
       </div>
 
-      <div
-        className={cn(
-          "flex shrink-0 flex-col gap-3 p-3",
-          isMobileLayout ? "w-full" : "w-[230px] border-l border-black/10 dark:border-white/10"
-        )}
-      >
-        <Section title={t("apps.fitness.workouts.history")}>
+      <Sidebar mobile={isMobileLayout} widthClass="w-[230px]">
+        <SidebarSection title={t("apps.fitness.workouts.history")}>
           {history.length ? (
             <ul className="flex flex-col text-[12px]">
               {history.map((w) => (
@@ -353,8 +351,8 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
           ) : (
             <EmptyNote>{t("apps.fitness.workouts.noHistory")}</EmptyNote>
           )}
-        </Section>
-        <Section title={t("apps.fitness.workouts.records")}>
+        </SidebarSection>
+        <SidebarSection title={t("apps.fitness.workouts.records")}>
           {records.length ? (
             <ul className="flex flex-col gap-0.5 text-[12px]">
               {records.map((r) => (
@@ -371,8 +369,8 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
           ) : (
             <EmptyNote>{t("apps.fitness.workouts.noRecords")}</EmptyNote>
           )}
-        </Section>
-      </div>
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }

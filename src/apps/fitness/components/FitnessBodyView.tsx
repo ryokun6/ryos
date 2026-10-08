@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CaretRight, Plus, Trash } from "@phosphor-icons/react";
+import { CaretRight, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,8 @@ import {
   NumberField,
   ProgressBar,
   Section,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -135,8 +137,7 @@ function MeasurementForm({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayou
         ) : null}
       </div>
       <div className="flex justify-end">
-        <Button size="sm" variant="default" onClick={submit} className="h-6 gap-1 text-[11px]">
-          <Plus size={11} weight="bold" />
+        <Button size="sm" variant="default" onClick={submit} className="h-6 text-[11px]">
           {t("apps.fitness.body.save")}
         </Button>
       </div>
@@ -169,8 +170,9 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
       .join(" · ");
 
   return (
-    <div className={cn("grid size-full min-h-0 gap-3 overflow-y-auto p-3", isMobileLayout ? "grid-cols-1" : "grid-cols-[1fr_260px]")}>
-      <div className="flex min-w-0 flex-col gap-3">
+    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="flex flex-col gap-3 p-3">
         <Section
           title={t("apps.fitness.body.weightTrend")}
           actions={
@@ -229,9 +231,10 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
           )}
         </Section>
       </div>
+      </div>
 
-      <div className="flex min-w-0 flex-col gap-3">
-        <Section title={t("apps.fitness.goals.title")}>
+      <Sidebar mobile={isMobileLayout} widthClass="w-[260px]">
+        <SidebarSection title={t("apps.fitness.goals.title")}>
           <LabeledField label={t("apps.fitness.goals.targetWeight")}>
             <NumberField
               label={t("apps.fitness.goals.targetWeight")}
@@ -265,9 +268,9 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
               }))}
             />
           </LabeledField>
-        </Section>
+        </SidebarSection>
 
-        <Section title={t("apps.fitness.profile.title")}>
+        <SidebarSection title={t("apps.fitness.profile.title")}>
           <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
             <LabeledField label={t("apps.fitness.profile.sex")}>
               <SmallSelect
@@ -306,9 +309,9 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
               />
             </LabeledField>
           </div>
-        </Section>
+        </SidebarSection>
 
-        <Section title={t("apps.fitness.nutrition.targets")}>
+        <SidebarSection title={t("apps.fitness.nutrition.targets")}>
           <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
             {targets.isPersonalized
               ? t("apps.fitness.nutrition.personalized", {
@@ -338,8 +341,8 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
             ))}
           </div>
           <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>{t("apps.fitness.nutrition.overrideHint")}</p>
-        </Section>
-      </div>
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }

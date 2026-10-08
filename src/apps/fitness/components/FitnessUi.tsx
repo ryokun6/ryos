@@ -41,6 +41,37 @@ export function Section({
   );
 }
 
+/** Right-hand column that scrolls on its own, separate from the main pane. */
+export function Sidebar({
+  children,
+  mobile,
+  widthClass,
+}: {
+  children: ReactNode;
+  mobile: boolean;
+  widthClass: string;
+}) {
+  return (
+    <aside
+      className={cn(
+        "flex min-h-0 shrink-0 flex-col overflow-y-auto border-black/10 dark:border-white/10",
+        mobile ? "max-h-[46%] w-full border-t" : cn("border-l", widthClass)
+      )}
+    >
+      <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">{children}</div>
+    </aside>
+  );
+}
+
+export function SidebarSection({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2 px-3 py-3">
+      {title ? <h3 className="text-[12px] font-bold">{title}</h3> : null}
+      {children}
+    </section>
+  );
+}
+
 export function ProgressBar({
   fraction,
   over = false,
