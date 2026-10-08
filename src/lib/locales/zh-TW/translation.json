@@ -2808,7 +2808,7 @@
         "other": "其他"
       },
       "exercises": {
-        "addToToday": "加入「今天」",
+        "addToToday": "加入今天",
         "back": "運動",
         "bestSet": "最佳：{{reps}} × {{weight}}",
         "count_one": "{{count}} 個運動",
