@@ -87,7 +87,7 @@ interface AppInfo {
   windowConfig: {
     defaultSize: { width: number; height: number };
     minSize?: { width: number; height: number };
-    maxSize?: { width: number; height: number };
+    maxSize?: { width?: number; height?: number };
     mobileDefaultSize?: { width: number; height: number };
     mobileSquare?: boolean;
   };
@@ -341,8 +341,9 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
       minSize: { width: 420, height: 380 },
     },
     fitness: {
-      defaultSize: { width: 880, height: 600 },
+      defaultSize: { width: 840, height: 600 },
       minSize: { width: 400, height: 420 },
+      maxSize: { width: 840 },
     },
   };
 
@@ -451,11 +452,25 @@ async function readComponentFile(appId: string): Promise<string> {
   return content.slice(0, 3000);
 }
 
+function formatMaxSize(
+  maxSize: { width?: number; height?: number } | undefined,
+  separator: "x" | "×",
+): string {
+  if (!maxSize) return "";
+  const { width, height } = maxSize;
+  if (width != null && height != null) return `${width}${separator}${height}`;
+  if (width != null) return `${width}px wide`;
+  if (height != null) return `${height}px tall`;
+  return "";
+}
+
 /**
  * Generate doc content for an app using AI
  */
 async function generateAppDoc(appInfo: AppInfo, componentContent: string): Promise<string> {
   const { metadata, helpItems, windowConfig, componentFiles, hookFiles, utilityFiles } = appInfo;
+  const maxSizeSummary = formatMaxSize(windowConfig.maxSize, "x");
+  const maxSizeDetail = formatMaxSize(windowConfig.maxSize, "×");
 
   const prompt = `You are a technical documentation writer for ryOS, a web-based desktop environment. Generate a comprehensive markdown documentation page for the "${metadata.name}" app.
 
@@ -464,7 +479,7 @@ App Information:
 - Version: ${metadata.version}
 - Description: ${appInfo.description}
 - Window Size: ${windowConfig.defaultSize.width}x${windowConfig.defaultSize.height} (default), ${windowConfig.minSize ? `${windowConfig.minSize.width}x${windowConfig.minSize.height} minimum` : "no minimum"}
-${windowConfig.maxSize ? `- Max Size: ${windowConfig.maxSize.width}x${windowConfig.maxSize.height}` : ""}
+${maxSizeSummary ? `- Max Size: ${maxSizeSummary}` : ""}
 ${windowConfig.mobileSquare ? "- Mobile: Square aspect ratio" : ""}
 
 Key Features (from help items):
@@ -513,7 +528,7 @@ Include any notable UI patterns, keyboard shortcuts, or workflow tips that would
 ### Window Configuration
 - Default size: ${windowConfig.defaultSize.width}×${windowConfig.defaultSize.height}px
 ${windowConfig.minSize ? `- Minimum size: ${windowConfig.minSize.width}×${windowConfig.minSize.height}px` : ""}
-${windowConfig.maxSize ? `- Maximum size: ${windowConfig.maxSize.width}×${windowConfig.maxSize.height}px` : ""}
+${maxSizeDetail ? `- Maximum size: ${maxSizeDetail}${windowConfig.maxSize?.width != null && windowConfig.maxSize?.height != null ? "px" : ""}` : ""}
 ${windowConfig.mobileSquare ? "- Mobile: Square aspect ratio (height = width)" : windowConfig.mobileDefaultSize ? `- Mobile default: ${windowConfig.mobileDefaultSize.width}×${windowConfig.mobileDefaultSize.height}px` : ""}
 
 ### Component Architecture

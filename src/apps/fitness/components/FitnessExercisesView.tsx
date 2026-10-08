@@ -24,6 +24,7 @@ import { enumKey, formatShortDate } from "../utils/format";
 import { exerciseProgress, bestSet } from "../utils/progression";
 import {
   EmptyNote,
+  ExerciseNameLines,
   FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
   LineChart,
@@ -77,7 +78,8 @@ function useExerciseDetail(exercise: FitnessExercise | null) {
 }
 
 function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExercise }) {
-  const { t, locale, workouts, formatWeight } = l;
+  const { t, locale, workouts, formatWeight, displayName, instructionsFor } = l;
+  const names = displayName(exercise.id, exercise.name);
   const { detail, status } = useExerciseDetail(exercise);
   const progress = useMemo(() => exerciseProgress(l.workouts, exercise.id), [l.workouts, exercise.id]);
   const recent = useMemo(() => {
@@ -111,7 +113,7 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
   const handleAdd = () => {
     const entryId = l.addExerciseToDay(l.todayKey, exercise);
     if (entryId) {
-      toast.success(t("apps.fitness.toasts.addedToWorkout", { name: exercise.name }), {
+      toast.success(t("apps.fitness.toasts.addedToWorkout", { name: names.primary }), {
         action: {
           label: t("apps.fitness.views.workouts"),
           onClick: () => {
@@ -125,21 +127,29 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
 
   return (
     <div className="flex flex-col gap-3 p-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-[16px] font-bold leading-tight">{exercise.name}</h2>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {chips.map((chip) => (
-              <span key={chip} className={FITNESS_CHIP_CLASS}>
-                {chip}
-              </span>
-            ))}
-          </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="min-w-0">
+            <ExerciseNameLines
+              primary={names.primary}
+              secondary={names.secondary}
+              truncate={false}
+              primaryClassName="text-[16px] font-bold leading-tight"
+              secondaryClassName="text-[12px]"
+            />
+          </h2>
+          <Button size="sm" variant="default" onClick={handleAdd} className="h-7 shrink-0 gap-1 text-[12px]">
+            <Plus size={12} weight="bold" />
+            {t("apps.fitness.exercises.addToToday")}
+          </Button>
         </div>
-        <Button size="sm" variant="default" onClick={handleAdd} className="h-7 shrink-0 gap-1 text-[12px]">
-          <Plus size={12} weight="bold" />
-          {t("apps.fitness.exercises.addToToday")}
-        </Button>
+        <div className="flex flex-wrap gap-1">
+          {chips.map((chip) => (
+            <span key={chip} className={FITNESS_CHIP_CLASS}>
+              {chip}
+            </span>
+          ))}
+        </div>
       </div>
 
       {exercise.images.length ? (
@@ -148,8 +158,8 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
             <ExerciseImage
               key={path}
               path={path}
-              alt={t("apps.fitness.exercises.imageAlt", { name: exercise.name, step: i + 1 })}
-              className="aspect-[4/3] w-full rounded-md"
+              alt={t("apps.fitness.exercises.imageAlt", { name: names.primary, step: i + 1 })}
+              className="aspect-[4/3] w-full !rounded-[0.5rem]"
             />
           ))}
         </div>
@@ -175,7 +185,7 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
       <Section title={t("apps.fitness.exercises.instructions")}>
         {detail ? (
           <ol className="list-decimal space-y-1.5 pl-5 text-[12px] leading-snug">
-            {detail.instructions.map((step, i) => (
+            {instructionsFor(exercise.id, detail.instructions).map((step, i) => (
               <li key={i}>{step}</li>
             ))}
           </ol>
@@ -248,7 +258,13 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
 export function FitnessExercisesView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t } = l;
   const [filters, setFilters] = useState<ExerciseFilters>(DEFAULT_EXERCISE_FILTERS);
-  const results = useMemo(() => filterExercises(l.exercises, filters), [l.exercises, filters]);
+  const results = useMemo(
+    () =>
+      filterExercises(l.exercises, filters, {
+        names: (exercise) => l.searchLabels(exercise.id, exercise.name),
+      }),
+    [l.exercises, filters, l.searchLabels]
+  );
   const selected =
     (l.selectedExerciseId ? l.exerciseById.get(l.selectedExerciseId) : null) ??
     (isMobileLayout ? null : results[0] ?? null);
@@ -340,7 +356,13 @@ export function FitnessExercisesView({ l, isMobileLayout }: { l: FitnessLogic; i
             </div>
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto" role="listbox" aria-label={t("apps.fitness.views.exercises")}>
-            {results.slice(0, LIST_LIMIT).map((exercise) => (
+            {results.slice(0, LIST_LIMIT).map((exercise) => {
+              const names = l.displayName(exercise.id, exercise.name);
+              const muscles = exercise.primaryMuscles
+                .map((m) => t(`apps.fitness.muscles.${enumKey(m)}`))
+                .join(", ");
+              const meta = [names.secondary, muscles].filter(Boolean).join(" · ");
+              return (
               <li key={exercise.id}>
                 <button
                   type="button"
@@ -356,14 +378,13 @@ export function FitnessExercisesView({ l, isMobileLayout }: { l: FitnessLogic; i
                     <div className="size-8 shrink-0 rounded bg-black/5 dark:bg-white/10" />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate">{exercise.name}</span>
-                    <span className="block truncate text-[10px] opacity-60">
-                      {exercise.primaryMuscles.map((m) => t(`apps.fitness.muscles.${enumKey(m)}`)).join(", ")}
-                    </span>
+                    <span className="block truncate">{names.primary}</span>
+                    <span className="block truncate text-[10px] opacity-60">{meta}</span>
                   </span>
                 </button>
               </li>
-            ))}
+              );
+            })}
             {results.length > LIST_LIMIT ? (
               <li className={cn("px-2 py-2 text-center text-[10px]", FITNESS_MUTED_CLASS)}>
                 {t("apps.fitness.exercises.refine", { count: results.length - LIST_LIMIT })}

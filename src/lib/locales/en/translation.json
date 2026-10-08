@@ -5666,6 +5666,7 @@
         "restDay": "Rest day. Recover, stretch, or take a walk.",
         "viewExercise": "View Exercise",
         "addToDay": "Add to Workout",
+        "removeFromDay": "Remove from Workout",
         "startWorkout": "Start Workout",
         "weeklyGoal": "Weekly Goal",
         "workoutsThisWeek": "{{current}} of {{target}} workouts this week",

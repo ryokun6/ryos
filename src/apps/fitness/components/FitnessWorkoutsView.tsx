@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretLeft, CaretRight, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea, type Workout, type WorkoutEntry } from "../types";
 import { addDays } from "../utils/dates";
-import { DEFAULT_EXERCISE_FILTERS, filterExercises } from "../utils/exerciseLibrary";
+import { DEFAULT_EXERCISE_FILTERS, exerciseQueryMatches, filterExercises } from "../utils/exerciseLibrary";
 import { formatLongDate, formatShortDate } from "../utils/format";
 import {
   estimateOneRepMax,
@@ -25,6 +25,8 @@ import {
   FITNESS_MUTED_CLASS,
   NumberField,
   Section,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
@@ -50,7 +52,8 @@ function ExerciseThumb({ path }: { path: string | undefined }) {
 }
 
 function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; entry: WorkoutEntry }) {
-  const { t, units } = l;
+  const { t, units, displayName } = l;
+  const names = displayName(entry.exerciseId, entry.name);
   const store = useFitnessStore.getState();
   const previous = useMemo(
     () => lastSetsFor(l.workouts, entry.exerciseId, workout.date),
@@ -71,13 +74,12 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           onClick={() => l.openExercise(entry.exerciseId)}
         >
           <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
-          <span className="truncate hover:underline">{entry.name}</span>
+          <span className="block truncate hover:underline">{names.primary}</span>
         </button>
       }
       actions={
         <>
-          <Button size="sm" variant="secondary" onClick={addSet} className="h-6 gap-1 text-[11px]">
-            <Plus size={11} weight="bold" />
+          <Button size="sm" variant="secondary" onClick={addSet} className="h-6 text-[11px]">
             {t("apps.fitness.workouts.addSet")}
           </Button>
           <button
@@ -165,11 +167,14 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
   const [query, setQuery] = useState("");
   const matches = useMemo(() => {
     if (!query.trim()) return [];
-    const fromLibrary = filterExercises(l.exercises, { ...DEFAULT_EXERCISE_FILTERS, query }).slice(0, 8);
+    const fromLibrary = filterExercises(l.exercises, { ...DEFAULT_EXERCISE_FILTERS, query }, {
+      names: (exercise) => l.searchLabels(exercise.id, exercise.name),
+    }).slice(0, 8);
     if (fromLibrary.length) return fromLibrary.map((e) => ({ id: e.id, name: e.name }));
-    const q = query.toLowerCase();
-    return loggedExerciseIds(l.workouts).filter((e) => e.name.toLowerCase().includes(q)).slice(0, 8);
-  }, [query, l.exercises, l.workouts]);
+    return loggedExerciseIds(l.workouts)
+      .filter((e) => exerciseQueryMatches(query, l.searchLabels(e.id, e.name)))
+      .slice(0, 8);
+  }, [query, l.exercises, l.workouts, l.searchLabels]);
 
   return (
     <div className="relative">
@@ -191,7 +196,9 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
       />
       {matches.length ? (
         <ul className="absolute inset-x-0 top-full z-10 mt-1 max-h-56 overflow-y-auto rounded-md border border-black/15 bg-white py-1 shadow-lg dark:border-white/15 dark:bg-neutral-800">
-          {matches.map((match) => (
+          {matches.map((match) => {
+            const names = l.displayName(match.id, match.name);
+            return (
             <li key={match.id}>
               <button
                 type="button"
@@ -201,10 +208,11 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
                   setQuery("");
                 }}
               >
-                {match.name}
+                <span className="block truncate">{names.primary}</span>
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : null}
     </div>
@@ -245,8 +253,9 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
   const add = (exercise: { id: string; name: string }) => l.addExerciseToDay(workoutDate, exercise);
 
   return (
-    <div className={cn("flex size-full min-h-0 overflow-y-auto", isMobileLayout ? "flex-col" : "flex-row")}>
-      <div className="flex min-w-0 flex-1 flex-col gap-3 p-3">
+    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -283,17 +292,6 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
             }}
             options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
           />
-          {workout ? (
-            <button
-              type="button"
-              className={ICON_BUTTON_CLASS}
-              onClick={() => store.deleteWorkout(workout.id)}
-              aria-label={t("apps.fitness.workouts.deleteWorkout")}
-              title={t("apps.fitness.workouts.deleteWorkout")}
-            >
-              <Trash size={14} />
-            </button>
-          ) : null}
         </div>
 
         <AddExercise l={l} onAdd={add} />
@@ -304,11 +302,14 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
               {t("apps.fitness.workouts.suggested", { focus: t(`apps.fitness.focus.${focus}`) })}
             </span>
             <div className="flex flex-wrap items-center gap-1">
-              {recommendations.map((rec) => (
-                <button key={rec.id} type="button" className={FITNESS_CHIP_CLASS} onClick={() => add(rec)}>
-                  + {rec.name}
+              {recommendations.map((rec) => {
+                const names = l.displayName(rec.id, rec.name);
+                return (
+                <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "max-w-full truncate")} onClick={() => add(rec)}>
+                  + {names.primary}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -318,15 +319,11 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
         ) : (
           <EmptyNote>{t("apps.fitness.workouts.empty")}</EmptyNote>
         )}
+        </div>
       </div>
 
-      <div
-        className={cn(
-          "flex shrink-0 flex-col gap-3 p-3",
-          isMobileLayout ? "w-full" : "w-[230px] border-l border-black/10 dark:border-white/10"
-        )}
-      >
-        <Section title={t("apps.fitness.workouts.history")}>
+      <Sidebar mobile={isMobileLayout} widthClass="w-[230px]">
+        <SidebarSection title={t("apps.fitness.workouts.history")}>
           {history.length ? (
             <ul className="flex flex-col text-[12px]">
               {history.map((w) => (
@@ -353,26 +350,29 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
           ) : (
             <EmptyNote>{t("apps.fitness.workouts.noHistory")}</EmptyNote>
           )}
-        </Section>
-        <Section title={t("apps.fitness.workouts.records")}>
+        </SidebarSection>
+        <SidebarSection title={t("apps.fitness.workouts.records")}>
           {records.length ? (
             <ul className="flex flex-col gap-0.5 text-[12px]">
-              {records.map((r) => (
+              {records.map((r) => {
+                const names = l.displayName(r.exerciseId, r.name);
+                return (
                 <li key={r.exerciseId} className="flex justify-between gap-2">
-                  <button type="button" className="truncate text-left hover:underline" onClick={() => l.openExercise(r.exerciseId)}>
-                    {r.name}
+                  <button type="button" className="min-w-0 text-left" onClick={() => l.openExercise(r.exerciseId)}>
+                    <span className="block truncate hover:underline">{names.primary}</span>
                   </button>
                   <span className="shrink-0 text-[11px]" title={t("apps.fitness.workouts.e1rm")}>
                     {r.reps}×{l.formatWeight(r.weightKg)}
                   </span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           ) : (
             <EmptyNote>{t("apps.fitness.workouts.noRecords")}</EmptyNote>
           )}
-        </Section>
-      </div>
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }

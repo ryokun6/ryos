@@ -26,24 +26,40 @@ export const DEFAULT_EXERCISE_FILTERS: ExerciseFilters = {
   level: "all",
 };
 
-function normalizeSearch(text: string): string {
+/** Fold case, strip diacritics, and keep letters from every script. */
+export function normalizeExerciseQuery(text: string): string {
   return text
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
+function queryTokens(query: string): string[] {
+  return normalizeExerciseQuery(query).split(" ").filter(Boolean);
+}
+
+/** True when every query token appears in at least one label. */
+export function exerciseQueryMatches(query: string, labels: readonly string[]): boolean {
+  const tokens = queryTokens(query);
+  if (!tokens.length) return true;
+  const haystack = labels.map((label) => normalizeExerciseQuery(label)).join(" ");
+  return tokens.every((token) => haystack.includes(token));
+}
+
 /**
- * Filter + rank exercises. Every query token must appear in the name, muscles,
+ * Filter + rank exercises. Every query token must appear in a name, muscles,
  * or equipment; name-prefix matches rank first.
+ *
+ * `names` adds localized labels. English `exercise.name` is always searched.
  */
 export function filterExercises(
   exercises: readonly FitnessExercise[],
-  filters: ExerciseFilters
+  filters: ExerciseFilters,
+  options?: { names?: (exercise: FitnessExercise) => readonly string[] }
 ): FitnessExercise[] {
-  const tokens = normalizeSearch(filters.query).split(" ").filter(Boolean);
+  const tokens = queryTokens(filters.query);
   const results: { exercise: FitnessExercise; score: number }[] = [];
   for (const exercise of exercises) {
     if (filters.category !== "all" && exercise.category !== filters.category) continue;
@@ -58,11 +74,18 @@ export function filterExercises(
     }
     let score = 0;
     if (tokens.length) {
-      const name = normalizeSearch(exercise.name);
-      const haystack = `${name} ${exercise.primaryMuscles.join(" ")} ${exercise.secondaryMuscles.join(" ")} ${exercise.equipment}`;
+      const labels = [
+        exercise.name,
+        ...(options?.names?.(exercise) ?? []),
+      ];
+      const normalizedNames = labels
+        .map((label) => normalizeExerciseQuery(label))
+        .filter(Boolean);
+      const nameBlob = normalizedNames.join(" ");
+      const haystack = `${nameBlob} ${exercise.primaryMuscles.join(" ")} ${exercise.secondaryMuscles.join(" ")} ${exercise.equipment}`;
       if (!tokens.every((token) => haystack.includes(token))) continue;
-      if (name.startsWith(tokens[0])) score += 3;
-      if (tokens.every((token) => name.includes(token))) score += 2;
+      if (normalizedNames.some((name) => name.startsWith(tokens[0]))) score += 3;
+      if (tokens.every((token) => nameBlob.includes(token))) score += 2;
     }
     if (filters.muscle !== "all" && exercise.primaryMuscles.includes(filters.muscle)) score += 1;
     results.push({ exercise, score });

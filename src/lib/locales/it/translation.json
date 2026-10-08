@@ -3018,6 +3018,7 @@
       },
       "schedule": {
         "addToDay": "Aggiungi all'allenamento",
+        "removeFromDay": "Rimuovi dall'allenamento",
         "applyTemplate": "Applica modello",
         "cardioHint": "Punta a 20–40 minuti di cardio costante o a intervalli.",
         "dayFocus": "Focus {{day}}",

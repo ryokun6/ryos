@@ -30,7 +30,8 @@ export interface WindowSize {
 
 export interface WindowConstraints {
   minSize?: WindowSize;
-  maxSize?: WindowSize;
+  /** Either axis may be omitted so only that dimension is capped. */
+  maxSize?: Partial<WindowSize>;
   defaultSize: WindowSize;
   mobileDefaultSize?: WindowSize;
   /** If true, mobile height will be set to window.innerWidth (square) */
@@ -673,8 +674,9 @@ export const appRegistry = {
     helpItems: fitnessHelpItems,
     metadata: fitnessMetadata,
     windowConfig: {
-      defaultSize: { width: 880, height: 600 },
+      defaultSize: { width: 840, height: 600 },
       minSize: { width: 400, height: 420 },
+      maxSize: { width: 840 },
     } as WindowConstraints,
   } as BaseApp<FitnessInitialData> & { windowConfig: WindowConstraints },
 } as const;

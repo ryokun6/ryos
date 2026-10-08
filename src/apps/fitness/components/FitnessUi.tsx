@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { parseNumberInput } from "../utils/units";
 
 export const FITNESS_CARD_CLASS =
-  "rounded-md border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5";
+  "!rounded-[0.5rem] border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5";
 export const FITNESS_CHIP_CLASS =
   "rounded-full border border-black/15 bg-black/[0.03] px-2 py-0.5 text-[11px] hover:bg-black/10 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/15";
 export const FITNESS_MUTED_CLASS = "text-black/55 dark:text-white/55";
@@ -36,6 +36,37 @@ export function Section({
           {actions ? <div className="flex items-center gap-1.5">{actions}</div> : null}
         </div>
       ) : null}
+      {children}
+    </section>
+  );
+}
+
+/** Right-hand column that scrolls on its own, separate from the main pane. */
+export function Sidebar({
+  children,
+  mobile,
+  widthClass,
+}: {
+  children: ReactNode;
+  mobile: boolean;
+  widthClass: string;
+}) {
+  return (
+    <aside
+      className={cn(
+        "flex min-h-0 shrink-0 flex-col overflow-y-auto border-black/10 dark:border-white/10",
+        mobile ? "max-h-[46%] w-full border-t" : cn("border-l", widthClass)
+      )}
+    >
+      <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">{children}</div>
+    </aside>
+  );
+}
+
+export function SidebarSection({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2 px-3 py-3">
+      {title ? <h3 className="text-[12px] font-bold">{title}</h3> : null}
       {children}
     </section>
   );
@@ -75,6 +106,42 @@ export function ProgressBar({
 
 export function EmptyNote({ children }: { children: ReactNode }) {
   return <p className={cn("py-2 text-center text-[12px]", FITNESS_MUTED_CLASS)}>{children}</p>;
+}
+
+/** Exercise-view name: localized title, with the English name on a second line when they differ. */
+export function ExerciseNameLines({
+  primary,
+  secondary,
+  className,
+  primaryClassName,
+  secondaryClassName,
+  truncate = true,
+}: {
+  primary: string;
+  secondary: string | null;
+  className?: string;
+  primaryClassName?: string;
+  secondaryClassName?: string;
+  truncate?: boolean;
+}) {
+  const line = truncate ? "block truncate" : "block";
+  return (
+    <span className={cn("block min-w-0", className)}>
+      <span className={cn(line, primaryClassName)}>{primary}</span>
+      {secondary ? (
+        <span
+          className={cn(
+            line,
+            "text-[10px] font-normal leading-tight",
+            FITNESS_MUTED_CLASS,
+            secondaryClassName
+          )}
+        >
+          {secondary}
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 /** Text input that edits a number; commits on blur/Enter, empty → null. */

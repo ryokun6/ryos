@@ -3018,6 +3018,7 @@
       },
       "schedule": {
         "addToDay": "Ajouter à la séance",
+        "removeFromDay": "Retirer de la séance",
         "applyTemplate": "Appliquer le modèle",
         "cardioHint": "Visez 20 à 40 minutes de cardio continu ou d’intervalles.",
         "dayFocus": "Objectif du {{day}}",

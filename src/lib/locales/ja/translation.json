@@ -3011,6 +3011,7 @@
       },
       "schedule": {
         "addToDay": "ワークアウトに追加",
+        "removeFromDay": "ワークアウトから削除",
         "applyTemplate": "テンプレートを適用",
         "cardioHint": "20〜40分の一定ペースの有酸素運動またはインターバルトレーニングを目指しましょう。",
         "dayFocus": "{{day}}のフォーカス",

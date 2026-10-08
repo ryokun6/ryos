@@ -3011,6 +3011,7 @@
       },
       "schedule": {
         "addToDay": "添加到体能训练",
+        "removeFromDay": "从体能训练移除",
         "applyTemplate": "应用模板",
         "cardioHint": "目标为 20–40 分钟的稳态有氧运动或间歇训练。",
         "dayFocus": "{{day}}重点",

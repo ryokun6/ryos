@@ -3011,6 +3011,7 @@
       },
       "schedule": {
         "addToDay": "Zum Training hinzufügen",
+        "removeFromDay": "Aus dem Training entfernen",
         "applyTemplate": "Vorlage anwenden",
         "cardioHint": "Strebe 20–40 Minuten gleichmäßiges Cardio oder Intervalle an.",
         "dayFocus": "Fokus: {{day}}",
