@@ -149,7 +149,6 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
   const { t, locale, units, goals, profile, nutritionTargets: targets } = l;
   const store = useFitnessStore.getState();
   const weightSeries = useMemo(() => bodySeries(l.bodyStats, "weightKg"), [l.bodyStats]);
-  const fatSeries = useMemo(() => bodySeries(l.bodyStats, "bodyFatPct"), [l.bodyStats]);
   const history = useMemo(() => sortedBodyStats(l.bodyStats).reverse(), [l.bodyStats]);
   const weightChange = bodyChange(l.bodyStats, "weightKg");
   const weightProgress = weightGoalProgress(goals, l.currentWeightKg);
@@ -196,15 +195,6 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
           ) : (
             <EmptyNote>{t("apps.fitness.body.noWeight")}</EmptyNote>
           )}
-          {fatSeries.length > 1 ? (
-            <LineChart
-              label={t("apps.fitness.body.bodyFatTrend")}
-              points={fatSeries}
-              height={80}
-              formatValue={(v) => `${tidy(v, 1)}%`}
-              formatDate={(d) => formatShortDate(d, locale)}
-            />
-          ) : null}
         </Section>
         <MeasurementForm l={l} isMobileLayout={isMobileLayout} />
         <Section title={t("apps.fitness.body.history")}>
