@@ -3032,6 +3032,7 @@
         "weeklyGoal": "週間の目標",
         "workoutsThisWeek": "今週のワークアウト: {{target}}回中{{current}}回"
       },
+      "sidebar": "サイドバー",
       "templates": {
         "balanced": "バランス",
         "fullBody": "全身 ×3",

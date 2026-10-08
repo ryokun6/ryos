@@ -3032,6 +3032,7 @@
         "weeklyGoal": "Wochenziel",
         "workoutsThisWeek": "{{current}} von {{target}} Trainings diese Woche"
       },
+      "sidebar": "Seitenleiste",
       "templates": {
         "balanced": "Ausgewogen",
         "fullBody": "Ganzkörper ×3",

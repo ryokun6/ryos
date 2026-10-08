@@ -3032,6 +3032,7 @@
         "weeklyGoal": "每周目标",
         "workoutsThisWeek": "本周已完成 {{current}}/{{target}} 次体能训练"
       },
+      "sidebar": "边栏",
       "templates": {
         "balanced": "均衡",
         "fullBody": "全身训练 ×3",

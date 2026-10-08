@@ -1,4 +1,5 @@
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useId, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   Select,
   SelectContent,
@@ -41,25 +42,16 @@ export function Section({
   );
 }
 
-/** Right-hand column that scrolls on its own, separate from the main pane. */
-export function Sidebar({
-  children,
-  mobile,
-  widthClass,
-}: {
-  children: ReactNode;
-  mobile: boolean;
-  widthClass: string;
-}) {
-  return (
-    <aside
-      className={cn(
-        "flex min-h-0 shrink-0 flex-col overflow-y-auto border-black/10 dark:border-white/10",
-        mobile ? "max-h-[46%] w-full border-t" : cn("border-l", widthClass)
-      )}
-    >
-      <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">{children}</div>
-    </aside>
+/** Host element inside the Fitness AppDrawer. Sidebar content portals here. */
+export const FitnessSheetContext = createContext<HTMLElement | null>(null);
+
+/** Details that used to sit in the right column, now rendered in the window sheet. */
+export function Sidebar({ children }: { children: ReactNode }) {
+  const host = useContext(FitnessSheetContext);
+  if (!host) return null;
+  return createPortal(
+    <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">{children}</div>,
+    host
   );
 }
 

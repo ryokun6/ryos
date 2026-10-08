@@ -5676,6 +5676,7 @@
         "plannedDays_one": "{{count}} training day planned",
         "plannedDays_other": "{{count}} training days planned"
       },
+      "sidebar": "Sidebar",
       "templates": {
         "upperLower": "Upper / Lower",
         "ppl": "Push / Pull / Legs",

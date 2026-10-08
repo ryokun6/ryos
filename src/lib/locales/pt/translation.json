@@ -3041,6 +3041,7 @@
         "streak_many": "Sequência de {{count}} semanas",
         "plannedDays_many": "{{count}} dias de treino planejados"
       },
+      "sidebar": "Barra Lateral",
       "templates": {
         "balanced": "Equilibrado",
         "fullBody": "Corpo Inteiro ×3",

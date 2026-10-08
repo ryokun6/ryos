@@ -3053,6 +3053,7 @@
         "plannedDays_few": "Запланировано {{count}} тренировочных дня",
         "plannedDays_many": "Запланировано {{count}} тренировочных дней"
       },
+      "sidebar": "Боковое меню",
       "templates": {
         "balanced": "Сбалансированный",
         "fullBody": "Все тело ×3",

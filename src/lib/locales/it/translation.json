@@ -3041,6 +3041,7 @@
         "streak_many": "Serie di {{count}} settimane",
         "plannedDays_many": "{{count}} giorni di allenamento pianificati"
       },
+      "sidebar": "Barra laterale",
       "templates": {
         "balanced": "Bilanciato",
         "fullBody": "Full Body ×3",

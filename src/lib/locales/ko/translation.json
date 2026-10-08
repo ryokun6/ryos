@@ -3032,6 +3032,7 @@
         "weeklyGoal": "주간 목표",
         "workoutsThisWeek": "이번 주 운동 {{target}}회 중 {{current}}회"
       },
+      "sidebar": "사이드바",
       "templates": {
         "balanced": "밸런스",
         "fullBody": "전신 ×3",

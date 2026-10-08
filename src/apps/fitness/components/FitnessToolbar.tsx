@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Barbell, CalendarCheck, ForkKnife, Notebook, Scales } from "@phosphor-icons/react";
+import { Barbell, CalendarCheck, ForkKnife, Notebook, Scales, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,17 @@ const VIEW_ICONS: Record<FitnessView, ReactNode> = {
   food: <ForkKnife size={14} />,
 };
 
-export function FitnessToolbar({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
+export function FitnessToolbar({
+  l,
+  isMobileLayout,
+  sheetOpen = false,
+  onToggleSheet,
+}: {
+  l: FitnessLogic;
+  isMobileLayout: boolean;
+  sheetOpen?: boolean;
+  onToggleSheet?: () => void;
+}) {
   const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme } = l;
   const group = isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0.5";
   return (
@@ -106,6 +116,18 @@ export function FitnessToolbar({ l, isMobileLayout }: { l: FitnessLogic; isMobil
           </ToolbarButton>
         ))}
       </div>
+      {onToggleSheet ? (
+        <div className={group}>
+          <ToolbarButton
+            l={l}
+            active={sheetOpen}
+            onClick={onToggleSheet}
+            label={t("apps.fitness.sidebar")}
+          >
+            <SidebarSimple size={14} mirrored />
+          </ToolbarButton>
+        </div>
+      ) : null}
     </div>
   );
 }
