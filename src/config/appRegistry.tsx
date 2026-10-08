@@ -676,7 +676,7 @@ export const appRegistry = {
     windowConfig: {
       defaultSize: { width: 840, height: 600 },
       minSize: { width: 400, height: 420 },
-      maxSize: { width: 840 },
+      maxSize: { width: 660 },
     } as WindowConstraints,
   } as BaseApp<FitnessInitialData> & { windowConfig: WindowConstraints },
 } as const;
