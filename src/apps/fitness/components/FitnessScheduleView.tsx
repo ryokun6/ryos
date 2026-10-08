@@ -58,8 +58,12 @@ function horizontalScrollFade(el: HTMLElement): string {
   return "";
 }
 
-function useHorizontalScrollFade(listKey: string) {
-  const ref = useRef<HTMLUListElement>(null);
+function useHorizontalScrollFade<T extends HTMLElement = HTMLElement>(
+  listKey: string,
+  centerSelector?: string
+) {
+  const ref = useRef<T>(null);
+  const centeredKey = useRef("");
   useEffect(() => {
     const el = ref.current;
     if (!el || !listKey) return;
@@ -68,17 +72,37 @@ function useHorizontalScrollFade(listKey: string) {
       el.style.maskImage = mask;
       el.style.setProperty("-webkit-mask-image", mask);
     };
+    const centerOnce = () => {
+      if (!centerSelector) return;
+      const token = `${listKey}|${centerSelector}`;
+      if (centeredKey.current === token) return;
+      const child = el.querySelector<HTMLElement>(centerSelector);
+      if (!child || el.clientWidth <= 0) return;
+      const max = el.scrollWidth - el.clientWidth;
+      if (max <= 2) {
+        centeredKey.current = token;
+        return;
+      }
+      const target = child.offsetLeft - (el.clientWidth - child.offsetWidth) / 2;
+      el.scrollLeft = Math.max(0, Math.min(target, max));
+      centeredKey.current = token;
+    };
+    centerOnce();
     apply();
     el.addEventListener("scroll", apply, { passive: true });
-    const observer = new ResizeObserver(apply);
+    const observer = new ResizeObserver(() => {
+      centerOnce();
+      apply();
+    });
     observer.observe(el);
     return () => {
+      centeredKey.current = "";
       el.removeEventListener("scroll", apply);
       observer.disconnect();
       el.style.maskImage = "";
       el.style.setProperty("-webkit-mask-image", "");
     };
-  }, [listKey]);
+  }, [listKey, centerSelector]);
   return ref;
 }
 
@@ -193,8 +217,13 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
     () => recommendExercises(selected.focus, { library: l.exercises, limit: 8 }),
     [selected.focus, l.exercises]
   );
-  const recommendationRowRef = useHorizontalScrollFade(
+  const recommendationRowRef = useHorizontalScrollFade<HTMLUListElement>(
     selected.focus === "rest" ? "" : recommendations.map((rec) => rec.id).join("\0")
+  );
+  const weekKey = days.map((day) => day.date).join("\0");
+  const weekStripRef = useHorizontalScrollFade<HTMLDivElement>(
+    isMobileLayout ? weekKey : "",
+    "[data-strip-center]"
   );
   const addedOnSelectedDay = useMemo(() => {
     const workout = l.workouts
@@ -226,9 +255,9 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
   };
 
   return (
-    <div className="flex size-full min-h-0 flex-col overflow-y-auto">
-      <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
-        <section className="flex flex-col gap-2 px-3 py-3">
+    <div className="flex size-full min-h-0 min-w-0 flex-col overflow-y-auto">
+      <div className="flex min-w-0 flex-col divide-y divide-black/10 dark:divide-white/10">
+        <section className="flex min-w-0 flex-col gap-2 px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-[14px] font-bold">{t("apps.fitness.schedule.thisWeek")}</h2>
             <div className="flex-1" />
@@ -247,12 +276,22 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             />
           </div>
 
-          <div className={cn("grid gap-1.5", isMobileLayout ? "grid-cols-4" : "grid-cols-7")}>
+          <div
+            ref={isMobileLayout ? weekStripRef : undefined}
+            data-week-strip={isMobileLayout ? "" : undefined}
+            className={cn(
+              "gap-1.5",
+              isMobileLayout
+                ? "flex w-full min-w-0 snap-x snap-mandatory overflow-x-auto pb-1"
+                : "grid grid-cols-7"
+            )}
+          >
             {days.map((day, index) => (
               <div
                 key={day.date}
                 role="button"
                 tabIndex={0}
+                data-strip-center={day.isToday ? "" : undefined}
                 onClick={() => setSelectedDate(day.date)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") setSelectedDate(day.date);
@@ -261,6 +300,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                 className={cn(
                   FITNESS_CARD_CLASS,
                   "flex cursor-default flex-col items-center gap-1 p-1.5 text-center",
+                  isMobileLayout && "w-[5.5rem] shrink-0 snap-center",
                   day.date === selected.date && "ring-2 ring-sky-500/70",
                   day.isToday && "bg-sky-500/10 dark:bg-sky-400/15"
                 )}
