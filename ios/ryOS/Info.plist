@@ -28,6 +28,14 @@
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>ryOS uses your location to show maps and weather widgets.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ryOS uses the camera to take photos and videos you upload or use in apps like Photo Booth.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ryOS uses the microphone to record audio and video in apps like Photo Booth and Soundboard.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ryOS uses your photo library to let you choose images and videos to upload.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>ryOS saves photos and images you export to your photo library.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
