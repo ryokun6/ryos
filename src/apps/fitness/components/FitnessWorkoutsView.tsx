@@ -275,15 +275,17 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
         <AddExercise l={l} onAdd={add} />
 
         {recommendations.length ? (
-          <div className="flex flex-wrap items-center gap-1">
-            <span className={cn("mr-1 text-[11px]", FITNESS_MUTED_CLASS)}>
+          <div className="flex flex-col gap-1">
+            <span className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
               {t("apps.fitness.workouts.suggested", { focus: t(`apps.fitness.focus.${focus}`) })}
             </span>
-            {recommendations.map((rec) => (
-              <button key={rec.id} type="button" className={FITNESS_CHIP_CLASS} onClick={() => add(rec)}>
-                + {rec.name}
-              </button>
-            ))}
+            <div className="flex flex-wrap items-center gap-1">
+              {recommendations.map((rec) => (
+                <button key={rec.id} type="button" className={FITNESS_CHIP_CLASS} onClick={() => add(rec)}>
+                  + {rec.name}
+                </button>
+              ))}
+            </div>
           </div>
         ) : null}
 
