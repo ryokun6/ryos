@@ -292,17 +292,6 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
             }}
             options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
           />
-          {workout ? (
-            <button
-              type="button"
-              className={ICON_BUTTON_CLASS}
-              onClick={() => store.deleteWorkout(workout.id)}
-              aria-label={t("apps.fitness.workouts.deleteWorkout")}
-              title={t("apps.fitness.workouts.deleteWorkout")}
-            >
-              <Trash size={14} />
-            </button>
-          ) : null}
         </div>
 
         <AddExercise l={l} onAdd={add} />
