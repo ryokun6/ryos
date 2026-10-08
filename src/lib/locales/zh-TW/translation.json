@@ -1790,7 +1790,7 @@
         "settings": "設定",
         "songs": "歌曲",
         "stickies": "便條紙",
-        "stuff": "Stuff",
+        "stuff": "東西",
         "title": "雲端同步",
         "tvChannels": "電視頻道",
         "uploading": "正在上傳",
@@ -4728,12 +4728,12 @@
         }
       },
       "menu": {
-        "about": "關於 Stuff",
+        "about": "關於東西",
         "backToShelf": "回到我的架子",
         "clearShelf": "清除貨架⋯",
         "exportShelf": "匯出貨架…",
         "gridView": "格狀檢視",
-        "help": "Stuff 輔助說明",
+        "help": "東西輔助說明",
         "importShelf": "匯入貨架…",
         "listView": "列表檢視",
         "newItem": "新增項目",
@@ -4744,7 +4744,7 @@
         "share": "分享架子…",
         "showSidebar": "顯示側邊欄"
       },
-      "name": "Stuff",
+      "name": "東西",
       "newItemTitle": "新增項目",
       "price": {
         "free": "免費"
@@ -4848,7 +4848,7 @@
         "sold": "已售出",
         "stowed": "已收納"
       },
-      "title": "物品",
+      "title": "東西",
       "toasts": {
         "exportFailed": "無法匯出貨架",
         "exportSuccess": "貨架已匯出",

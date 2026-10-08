@@ -1790,7 +1790,7 @@
         "settings": "Einstellungen",
         "songs": "Titel",
         "stickies": "Notizzettel",
-        "stuff": "Stuff",
+        "stuff": "Sachen",
         "title": "Cloud-Synchronisierung",
         "tvChannels": "TV-Sender",
         "uploading": "Wird hochgeladen",
@@ -4728,12 +4728,12 @@
         }
       },
       "menu": {
-        "about": "Über Stuff",
+        "about": "Über Sachen",
         "backToShelf": "Zurück zu meinem Regal",
         "clearShelf": "Regal leeren…",
         "exportShelf": "Regal exportieren…",
         "gridView": "Rasteransicht",
-        "help": "Stuff-Hilfe",
+        "help": "Sachen-Hilfe",
         "importShelf": "Regal importieren…",
         "listView": "Listenansicht",
         "newItem": "Neuer Eintrag",
@@ -4744,7 +4744,7 @@
         "share": "Regal teilen…",
         "showSidebar": "Seitenleiste einblenden"
       },
-      "name": "Stuff",
+      "name": "Sachen",
       "newItemTitle": "Neuer Eintrag",
       "price": {
         "free": "Gratis"
@@ -4848,7 +4848,7 @@
         "sold": "Verkauft",
         "stowed": "Verstaut"
       },
-      "title": "Stuff",
+      "title": "Sachen",
       "toasts": {
         "exportFailed": "Regal konnte nicht exportiert werden",
         "exportSuccess": "Regal exportiert",

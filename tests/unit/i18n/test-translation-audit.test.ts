@@ -14,6 +14,7 @@ import en from "../../../src/lib/locales/en/translation.json";
 import es from "../../../src/lib/locales/es/translation.json";
 import fr from "../../../src/lib/locales/fr/translation.json";
 import it from "../../../src/lib/locales/it/translation.json";
+import ja from "../../../src/lib/locales/ja/translation.json";
 import pt from "../../../src/lib/locales/pt/translation.json";
 import ru from "../../../src/lib/locales/ru/translation.json";
 import zhCN from "../../../src/lib/locales/zh-CN/translation.json";
@@ -198,6 +199,21 @@ describe("translation audit", () => {
     expect(stickiesHelpAndMenu).not.toContain("佈告欄");
     expect(zhTW.apps.stickies.menu.syncStickies).toBe("同步便條紙");
     expect(zhCN.apps.stickies.help.colors.description).toContain("「颜色」");
+  });
+
+  test("localizes the Stuff app name", () => {
+    expect(en.apps.stuff.name).toBe("Stuff");
+    expect(en.apps.stuff.title).toBe("Stuff");
+    expect(zhTW.apps.stuff.name).toBe("東西");
+    expect(zhTW.apps.stuff.title).toBe(zhTW.apps.stuff.name);
+    expect(zhTW.apps["control-panels"].autoSync.stuff).toBe("東西");
+    expect(zhTW.apps.stuff.menu.about).toBe("關於東西");
+    expect(zhTW.apps.stuff.menu.help).toBe("東西輔助說明");
+    expect(ja.apps.stuff.name).toBe("持ち物");
+    expect(ja.apps.stuff.title).toBe(ja.apps.stuff.name);
+    expect(ja.apps["control-panels"].autoSync.stuff).toBe("持ち物");
+    expect(ja.apps.stuff.menu.about).toBe("持ち物について");
+    expect(ja.apps.stuff.menu.help).toBe("持ち物ヘルプ");
   });
 
   test("all locales match the source and Apple UI terminology", async () => {
