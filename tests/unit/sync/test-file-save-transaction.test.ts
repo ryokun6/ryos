@@ -1,9 +1,9 @@
 import "../../helpers/local-storage-stub";
-import { beforeEach, afterEach, describe, expect, test, spyOn } from "bun:test";
+import { beforeAll, beforeEach, afterEach, describe, expect, test, spyOn } from "bun:test";
 import { resetFakeIndexedDB } from "../../helpers/reset-fake-indexeddb";
 import { resetPersistWritesForTests, settleAllPersistWrites } from "../../../src/utils/persistWriteQueue";
 import { dbOperations, ensureIndexedDBInitialized, STORES } from "../../../src/utils/indexedDB";
-import { useFilesStore, type FileSystemItem } from "../../../src/stores/useFilesStore";
+import { settleFilesRehydrationTasks, useFilesStore, type FileSystemItem } from "../../../src/stores/useFilesStore";
 import { useChatsStore } from "../../../src/stores/useChatsStore";
 import { readFileMutations, readFileMutationContent, withRemoteFileChanges } from "../../../src/sync/fileMutationJournal";
 import { saveVfsFile } from "../../../src/services/vfs/FileSaveTransaction";
@@ -23,6 +23,13 @@ const response = (body: unknown, status = 200) => new Response(JSON.stringify(bo
 async function replay(engine: CloudSyncEngine) {
   await (engine as unknown as { replayFileMutations(): Promise<void> }).replayFileMutations();
 }
+beforeAll(async () => {
+  // A late hydration would overwrite test items locally and journal them as deletions.
+  resetFakeIndexedDB();
+  await useFilesStore.persist.rehydrate();
+  await settleFilesRehydrationTasks();
+  await settleAllPersistWrites();
+});
 beforeEach(async () => {
   resetPersistWritesForTests();
   resetFakeIndexedDB();
