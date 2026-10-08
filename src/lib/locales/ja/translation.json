@@ -1790,7 +1790,7 @@
         "settings": "設定",
         "songs": "曲",
         "stickies": "スティッキーズ",
-        "stuff": "Stuff",
+        "stuff": "持ち物",
         "title": "クラウド同期",
         "tvChannels": "テレビチャンネル",
         "uploading": "アップロード中",
@@ -4728,12 +4728,12 @@
         }
       },
       "menu": {
-        "about": "Stuffについて",
+        "about": "持ち物について",
         "backToShelf": "自分の棚に戻る",
         "clearShelf": "棚を消去…",
         "exportShelf": "棚を書き出す…",
         "gridView": "グリッド表示",
-        "help": "Stuffヘルプ",
+        "help": "持ち物ヘルプ",
         "importShelf": "棚を読み込む…",
         "listView": "リスト表示",
         "newItem": "新規アイテム",
@@ -4744,7 +4744,7 @@
         "share": "棚を共有…",
         "showSidebar": "サイドバーを表示"
       },
-      "name": "Stuff",
+      "name": "持ち物",
       "newItemTitle": "新規アイテム",
       "price": {
         "free": "無料"
@@ -4848,7 +4848,7 @@
         "sold": "売却済み",
         "stowed": "保管中"
       },
-      "title": "Stuff",
+      "title": "持ち物",
       "toasts": {
         "exportFailed": "棚を書き出せませんでした",
         "exportSuccess": "棚を書き出しました",

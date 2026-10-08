@@ -1797,7 +1797,7 @@
         "settings": "Настройки",
         "songs": "Песни",
         "stickies": "Записки",
-        "stuff": "Stuff",
+        "stuff": "Вещи",
         "title": "Облачная синхронизация",
         "tvChannels": "ТВ-каналы",
         "uploading": "Выгрузка",
@@ -4753,12 +4753,12 @@
         }
       },
       "menu": {
-        "about": "О программе Stuff",
+        "about": "О программе «Вещи»",
         "backToShelf": "К моей полке",
         "clearShelf": "Очистить полку…",
         "exportShelf": "Экспортировать полку…",
         "gridView": "Вид сеткой",
-        "help": "Справка Stuff",
+        "help": "Справка «Вещи»",
         "importShelf": "Импортировать полку…",
         "listView": "Вид списком",
         "newItem": "Новый предмет",
@@ -4769,7 +4769,7 @@
         "share": "Поделиться полкой…",
         "showSidebar": "Показать боковое меню"
       },
-      "name": "Stuff",
+      "name": "Вещи",
       "newItemTitle": "Новый предмет",
       "price": {
         "free": "Бесплатно"
@@ -4873,7 +4873,7 @@
         "sold": "Продано",
         "stowed": "Убрано"
       },
-      "title": "Stuff",
+      "title": "Вещи",
       "toasts": {
         "exportFailed": "Не удалось экспортировать полку",
         "exportSuccess": "Полка экспортирована",

@@ -1792,7 +1792,7 @@
         "settings": "Ajustes",
         "songs": "Músicas",
         "stickies": "Anotações",
-        "stuff": "Stuff",
+        "stuff": "Coisas",
         "title": "Sincronização na nuvem",
         "tvChannels": "Canais de TV",
         "uploading": "Enviando",
@@ -4739,12 +4739,12 @@
         }
       },
       "menu": {
-        "about": "Acerca do Stuff",
+        "about": "Acerca das Coisas",
         "backToShelf": "Voltar à minha prateleira",
         "clearShelf": "Limpar prateleira…",
         "exportShelf": "Exportar prateleira…",
         "gridView": "Visualização em Grade",
-        "help": "Ajuda do Stuff",
+        "help": "Ajuda das Coisas",
         "importShelf": "Importar prateleira…",
         "listView": "Visualização em Lista",
         "newItem": "Novo item",
@@ -4755,7 +4755,7 @@
         "share": "Partilhar prateleira…",
         "showSidebar": "Mostrar Barra Lateral"
       },
-      "name": "Stuff",
+      "name": "Coisas",
       "newItemTitle": "Novo item",
       "price": {
         "free": "Grátis"
@@ -4859,7 +4859,7 @@
         "sold": "Vendido",
         "stowed": "Guardado"
       },
-      "title": "Stuff",
+      "title": "Coisas",
       "toasts": {
         "exportFailed": "Não foi possível exportar a prateleira",
         "exportSuccess": "Prateleira exportada",

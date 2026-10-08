@@ -1792,7 +1792,7 @@
         "settings": "Impostazioni",
         "songs": "Brani",
         "stickies": "Memo",
-        "stuff": "Stuff",
+        "stuff": "Cose",
         "title": "Sincronizzazione cloud",
         "tvChannels": "Canali TV",
         "uploading": "Carico",
@@ -4739,12 +4739,12 @@
         }
       },
       "menu": {
-        "about": "Informazioni su Stuff",
+        "about": "Informazioni su Cose",
         "backToShelf": "Torna al mio scaffale",
         "clearShelf": "Svuota scaffale…",
         "exportShelf": "Esporta scaffale…",
         "gridView": "Vista a griglia",
-        "help": "Aiuto di Stuff",
+        "help": "Aiuto di Cose",
         "importShelf": "Importa scaffale…",
         "listView": "Vista a elenco",
         "newItem": "Nuovo articolo",
@@ -4755,7 +4755,7 @@
         "share": "Condividi scaffale…",
         "showSidebar": "Mostra barra laterale"
       },
-      "name": "Stuff",
+      "name": "Cose",
       "newItemTitle": "Nuovo articolo",
       "price": {
         "free": "Gratis"
@@ -4859,7 +4859,7 @@
         "sold": "Venduto",
         "stowed": "Riposto"
       },
-      "title": "Stuff",
+      "title": "Cose",
       "toasts": {
         "exportFailed": "Impossibile esportare lo scaffale",
         "exportSuccess": "Scaffale esportato",

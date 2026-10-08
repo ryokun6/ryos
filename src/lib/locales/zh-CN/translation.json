@@ -1790,7 +1790,7 @@
         "settings": "设置",
         "songs": "歌曲",
         "stickies": "便笺",
-        "stuff": "Stuff",
+        "stuff": "东西",
         "title": "云端同步",
         "tvChannels": "电视频道",
         "uploading": "正在上传",
@@ -4728,12 +4728,12 @@
         }
       },
       "menu": {
-        "about": "关于 Stuff",
+        "about": "关于东西",
         "backToShelf": "返回我的架子",
         "clearShelf": "清除货架…",
         "exportShelf": "导出货架…",
         "gridView": "网格视图",
-        "help": "Stuff 帮助",
+        "help": "东西帮助",
         "importShelf": "导入货架…",
         "listView": "列表视图",
         "newItem": "新建物品",
@@ -4744,7 +4744,7 @@
         "share": "共享架子…",
         "showSidebar": "显示边栏"
       },
-      "name": "Stuff",
+      "name": "东西",
       "newItemTitle": "新项目",
       "price": {
         "free": "免费"
@@ -4848,7 +4848,7 @@
         "sold": "已售",
         "stowed": "已收纳"
       },
-      "title": "物品",
+      "title": "东西",
       "toasts": {
         "exportFailed": "无法导出货架",
         "exportSuccess": "货架已导出",

@@ -1792,7 +1792,7 @@
         "settings": "Ajustes",
         "songs": "Canciones",
         "stickies": "Notas Adhesivas",
-        "stuff": "Stuff",
+        "stuff": "Cosas",
         "title": "Sincronización en la nube",
         "tvChannels": "Canales de TV",
         "uploading": "Cargando",
@@ -4739,12 +4739,12 @@
         }
       },
       "menu": {
-        "about": "Acerca de Stuff",
+        "about": "Acerca de Cosas",
         "backToShelf": "Volver a mi estantería",
         "clearShelf": "Vaciar estantería…",
         "exportShelf": "Exportar estantería…",
         "gridView": "Vista de cuadrícula",
-        "help": "Ayuda de Stuff",
+        "help": "Ayuda de Cosas",
         "importShelf": "Importar estantería…",
         "listView": "Vista de lista",
         "newItem": "Nuevo artículo",
@@ -4755,7 +4755,7 @@
         "share": "Compartir estantería…",
         "showSidebar": "Mostrar barra lateral"
       },
-      "name": "Stuff",
+      "name": "Cosas",
       "newItemTitle": "Nuevo artículo",
       "price": {
         "free": "Gratis"
@@ -4859,7 +4859,7 @@
         "sold": "Vendido",
         "stowed": "Guardado"
       },
-      "title": "Stuff",
+      "title": "Cosas",
       "toasts": {
         "exportFailed": "No se pudo exportar la estantería",
         "exportSuccess": "Estantería exportada",

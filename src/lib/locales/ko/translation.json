@@ -1790,7 +1790,7 @@
         "settings": "설정",
         "songs": "노래",
         "stickies": "스티커",
-        "stuff": "Stuff",
+        "stuff": "물건",
         "title": "클라우드 동기화",
         "tvChannels": "TV 채널",
         "uploading": "업로드 중",
@@ -4728,12 +4728,12 @@
         }
       },
       "menu": {
-        "about": "Stuff 정보",
+        "about": "물건 정보",
         "backToShelf": "내 선반으로 돌아가기",
         "clearShelf": "선반 지우기…",
         "exportShelf": "선반 내보내기…",
         "gridView": "격자 보기",
-        "help": "Stuff 도움말",
+        "help": "물건 도움말",
         "importShelf": "선반 가져오기…",
         "listView": "목록 보기",
         "newItem": "새 항목",
@@ -4744,7 +4744,7 @@
         "share": "선반 공유…",
         "showSidebar": "사이드바 보기"
       },
-      "name": "Stuff",
+      "name": "물건",
       "newItemTitle": "새 항목",
       "price": {
         "free": "무료"
@@ -4848,7 +4848,7 @@
         "sold": "판매됨",
         "stowed": "보관됨"
       },
-      "title": "Stuff",
+      "title": "물건",
       "toasts": {
         "exportFailed": "선반을 내보낼 수 없습니다",
         "exportSuccess": "선반을 내보냈습니다",
