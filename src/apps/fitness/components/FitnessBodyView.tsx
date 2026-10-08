@@ -386,16 +386,26 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
         </Section>
 
         <Section title={t("apps.fitness.profile.title")}>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 [&>*]:min-w-0">
             <LabeledField label={t("apps.fitness.profile.sex")}>
               <SmallSelect
                 label={t("apps.fitness.profile.sex")}
                 value={profile.sex}
                 onChange={(sex) => store.setProfile({ sex })}
+                className="w-full"
                 options={[
                   { value: "male", label: t("apps.fitness.profile.male") },
                   { value: "female", label: t("apps.fitness.profile.female") },
                 ]}
+              />
+            </LabeledField>
+            <LabeledField label={t("apps.fitness.profile.activity")}>
+              <SmallSelect
+                label={t("apps.fitness.profile.activity")}
+                value={profile.activityLevel}
+                onChange={(activityLevel) => store.setProfile({ activityLevel })}
+                className="w-full"
+                options={ACTIVITY_LEVELS.map((a) => ({ value: a, label: t(`apps.fitness.profile.activityLevels.${a}`) }))}
               />
             </LabeledField>
             <LabeledField label={t("apps.fitness.profile.birthYear")}>
@@ -411,14 +421,6 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 value={profile.heightCm == null ? null : tidy(cmToDisplay(profile.heightCm, units), 1)}
                 suffix={lengthUnit}
                 onCommit={(v) => store.setProfile({ heightCm: v == null ? null : displayToCm(v, units) })}
-              />
-            </LabeledField>
-            <LabeledField label={t("apps.fitness.profile.activity")}>
-              <SmallSelect
-                label={t("apps.fitness.profile.activity")}
-                value={profile.activityLevel}
-                onChange={(activityLevel) => store.setProfile({ activityLevel })}
-                options={ACTIVITY_LEVELS.map((a) => ({ value: a, label: t(`apps.fitness.profile.activityLevels.${a}`) }))}
               />
             </LabeledField>
           </div>
