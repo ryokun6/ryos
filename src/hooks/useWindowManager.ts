@@ -31,6 +31,16 @@ interface UseWindowManagerProps {
   instanceId?: string;
 }
 
+/** Desktop windows honor appRegistry maxSize.width. Mobile stays full-bleed. */
+function limitWidthToAppMax(
+  width: number,
+  appMaxWidth: number | undefined,
+  viewportWidth: number,
+): number {
+  if (viewportWidth < 768 || appMaxWidth == null) return width;
+  return Math.min(width, appMaxWidth);
+}
+
 export const useWindowManager = ({
   appId,
   instanceId,
@@ -78,9 +88,15 @@ export const useWindowManager = ({
   const adjustedPosition = { ...initialState.position };
   const viewportWidth = window.innerWidth;
   const contentBounds = getDesktopContentBounds();
+  const appMaxWidth = config.maxSize?.width;
+  const widthWithinAppMax = limitWidthToAppMax(
+    initialState.size.width,
+    appMaxWidth,
+    viewportWidth,
+  );
   const fitted = clampWindowToContentBounds({
     x: adjustedPosition.x,
-    width: initialState.size.width,
+    width: widthWithinAppMax,
     viewportWidth,
     bounds: contentBounds,
     mobile: viewportWidth < 768,
@@ -216,7 +232,11 @@ export const useWindowManager = ({
     const bounds = getDesktopContentBounds();
     const fitted = clampWindowToContentBounds({
       x: latestWindowPositionRef.current.x,
-      width: storeSize.width,
+      width: limitWidthToAppMax(
+        storeSize.width,
+        config.maxSize?.width,
+        viewportWidth,
+      ),
       viewportWidth,
       bounds,
       mobile: viewportWidth < 768,
@@ -245,6 +265,7 @@ export const useWindowManager = ({
       windowLeftMotionValue.set(nextPosition.x);
     }
   }, [
+    config,
     instanceStateFromStore?.size,
     isDragging,
     resizeType,
@@ -449,14 +470,23 @@ export const useWindowManager = ({
         let newTop = resizeStart.top;
 
         if (!isMobile) {
+          const appMaxWidth = config.maxSize?.width;
           if (resizeType.includes("e")) {
-            const maxPossibleWidth = maxWidth - resizeStart.left;
+            const maxPossibleWidth = limitWidthToAppMax(
+              maxWidth - resizeStart.left,
+              appMaxWidth,
+              window.innerWidth,
+            );
             newWidth = Math.min(
               Math.max(resizeStart.width + deltaX, minWidth),
               maxPossibleWidth
             );
           } else if (resizeType.includes("w")) {
-            const maxPossibleWidth = resizeStart.width + resizeStart.left;
+            const maxPossibleWidth = limitWidthToAppMax(
+              resizeStart.width + resizeStart.left,
+              appMaxWidth,
+              window.innerWidth,
+            );
             const potentialWidth = Math.min(
               Math.max(resizeStart.width - deltaX, minWidth),
               maxPossibleWidth
@@ -561,9 +591,17 @@ export const useWindowManager = ({
           size: { ...currentSize },
         };
 
-        const newSize = { width: snap.width, height: snapHeight };
+        const snapWidth = limitWidthToAppMax(
+          snap.width,
+          config.maxSize?.width,
+          window.innerWidth,
+        );
+        const newSize = { width: snapWidth, height: snapHeight };
         const newPosition = {
-          x: snap.x,
+          x:
+            snapZoneRef.current === "right"
+              ? snap.x + (snap.width - snapWidth)
+              : snap.x,
           y: topInset,
         };
 
@@ -606,6 +644,7 @@ export const useWindowManager = ({
       }
     }
   }, [
+    config,
     isDragging,
     isMobile,
     computeInsets,
