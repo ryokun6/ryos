@@ -2897,16 +2897,10 @@
         "static": "靜態"
       },
       "goals": {
-        "add": "加入目標",
-        "findExercise": "尋找運動…",
         "logWeightFirst": "記錄你的體重以追蹤達成目標的進度。",
-        "noStrengthGoals": "尚無肌力目標。",
         "perWeek_one": "每週 {{count}} 次",
         "perWeek_other": "每週 {{count}} 次",
         "reached": "已達成目標！",
-        "removeGoal": "移除目標",
-        "strength": "肌力目標",
-        "targetOneRepMax": "目標 1RM ({{unit}})",
         "targetWeight": "目標體重",
         "title": "目標",
         "toGo": "還差 {{value}}",
@@ -2914,7 +2908,7 @@
       },
       "help": {
         "body": {
-          "description": "記錄體重、體脂和身體量度。設定目標體重、力量目標和每週體能訓練目標，並查看你的進度。",
+          "description": "記錄體重、體脂和身體量度。設定目標體重和每週體能訓練目標，並查看你的進度。",
           "title": "身體與目標"
         },
         "exercises": {

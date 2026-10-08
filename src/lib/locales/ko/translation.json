@@ -2897,16 +2897,10 @@
         "static": "정적"
       },
       "goals": {
-        "add": "목표 추가",
-        "findExercise": "운동 찾기…",
         "logWeightFirst": "목표를 향한 진행 상황을 추적하려면 체중을 기록하십시오.",
-        "noStrengthGoals": "아직 근력 목표가 없습니다.",
         "perWeek_one": "주당 {{count}}회",
         "perWeek_other": "주당 {{count}}회",
         "reached": "목표 달성!",
-        "removeGoal": "목표 제거",
-        "strength": "근력 목표",
-        "targetOneRepMax": "목표 1RM({{unit}})",
         "targetWeight": "목표 체중",
         "title": "목표",
         "toGo": "{{value}} 남음",
@@ -2914,7 +2908,7 @@
       },
       "help": {
         "body": {
-          "description": "체중, 체지방 및 신체 치수를 기록하십시오. 목표 체중, 근력 목표 및 주간 운동 목표를 설정하고 진행 상황을 확인하십시오.",
+          "description": "체중, 체지방 및 신체 치수를 기록하십시오. 목표 체중 및 주간 운동 목표를 설정하고 진행 상황을 확인하십시오.",
           "title": "신체 및 목표"
         },
         "exercises": {

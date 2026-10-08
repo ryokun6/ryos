@@ -159,9 +159,6 @@ describe("fitness store", () => {
     store.setGoals({ targetWeightKg: 76 });
     expect(useFitnessStore.getState().goals).toMatchObject({ targetWeightKg: 76, startWeightKg: 82 });
     expect(useFitnessStore.getState().planUpdatedAt).toBeGreaterThan(0);
-    store.addStrengthGoal({ exerciseId: "Pullups", name: "Pullups", targetKg: 20 });
-    store.addStrengthGoal({ exerciseId: "Pullups", name: "Pullups", targetKg: 25 });
-    expect(useFitnessStore.getState().goals.strengthGoals.map((g) => g.targetKg)).toEqual([25]);
   });
 
   test("schedule edits and templates bump the plan timestamp", () => {

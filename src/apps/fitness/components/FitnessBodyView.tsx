@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CaretRight, Plus, Trash, X } from "@phosphor-icons/react";
+import { CaretRight, Plus, Trash } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,16 +12,13 @@ import {
   type BodyMeasurement,
   type BodyStatEntry,
 } from "../types";
-import { DEFAULT_EXERCISE_FILTERS, filterExercises } from "../utils/exerciseLibrary";
 import { formatShortDate } from "../utils/format";
 import {
   bodyChange,
   bodySeries,
   sortedBodyStats,
-  strengthGoalProgress,
   weightGoalProgress,
 } from "../utils/goals";
-import { loggedExerciseIds } from "../utils/progression";
 import {
   cmToDisplay,
   displayToCm,
@@ -147,119 +144,6 @@ function MeasurementForm({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayou
   );
 }
 
-function StrengthGoals({ l }: { l: FitnessLogic }) {
-  const { t, units } = l;
-  const store = useFitnessStore.getState();
-  const [query, setQuery] = useState("");
-  const [target, setTarget] = useState("");
-  const options = useMemo(() => {
-    const logged = loggedExerciseIds(l.workouts);
-    if (!query.trim()) return logged.slice(0, 6);
-    const fromLibrary = filterExercises(l.exercises, { ...DEFAULT_EXERCISE_FILTERS, query })
-      .slice(0, 6)
-      .map((e) => ({ id: e.id, name: e.name }));
-    return fromLibrary.length
-      ? fromLibrary
-      : logged.filter((e) => e.name.toLowerCase().includes(query.toLowerCase())).slice(0, 6);
-  }, [query, l.exercises, l.workouts]);
-  const [picked, setPicked] = useState<{ id: string; name: string } | null>(null);
-
-  const add = () => {
-    const value = parseNumberInput(target);
-    if (!picked || value == null || value <= 0) return;
-    store.addStrengthGoal({ exerciseId: picked.id, name: picked.name, targetKg: displayToKg(value, units) });
-    setPicked(null);
-    setQuery("");
-    setTarget("");
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      {l.goals.strengthGoals.length ? (
-        <ul className="flex flex-col gap-2">
-          {l.goals.strengthGoals.map((goal) => {
-            const progress = strengthGoalProgress(goal, l.workouts);
-            return (
-              <li key={goal.id} className="flex flex-col gap-1 text-[12px]">
-                <div className="flex items-center justify-between gap-2">
-                  <button type="button" className="truncate text-left hover:underline" onClick={() => l.openExercise(goal.exerciseId)}>
-                    {goal.name}
-                  </button>
-                  <span className="flex shrink-0 items-center gap-1 text-[11px]">
-                    {progress.current > 0 ? l.formatWeight(progress.current, 0) : "—"} /{" "}
-                    {l.formatWeight(goal.targetKg, 0)}
-                    {progress.achieved ? " 🏆" : ""}
-                    <button
-                      type="button"
-                      className="inline-flex size-5 items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/15"
-                      onClick={() => store.removeStrengthGoal(goal.id)}
-                      aria-label={t("apps.fitness.goals.removeGoal")}
-                      title={t("apps.fitness.goals.removeGoal")}
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
-                </div>
-                <ProgressBar fraction={progress.fraction} label={goal.name} />
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>{t("apps.fitness.goals.noStrengthGoals")}</p>
-      )}
-      <div className="flex flex-col gap-1">
-        {picked ? (
-          <div className="flex items-center gap-1 text-[12px]">
-            <span className="min-w-0 flex-1 truncate font-bold">{picked.name}</span>
-            <Input
-              inputMode="decimal"
-              value={target}
-              placeholder={t("apps.fitness.goals.targetOneRepMax", { unit: l.weightUnit })}
-              aria-label={t("apps.fitness.goals.targetOneRepMax", { unit: l.weightUnit })}
-              onChange={(e) => setTarget(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") add();
-              }}
-              className={cn(FITNESS_INPUT_CLASS, "w-24")}
-            />
-            <Button size="sm" variant="default" className="h-6 text-[11px]" onClick={add}>
-              {t("apps.fitness.goals.add")}
-            </Button>
-            <button type="button" className="text-[11px] opacity-60" onClick={() => setPicked(null)}>
-              <X size={10} />
-            </button>
-          </div>
-        ) : (
-          <>
-            <Input
-              value={query}
-              placeholder={t("apps.fitness.goals.findExercise")}
-              aria-label={t("apps.fitness.goals.findExercise")}
-              onChange={(e) => setQuery(e.target.value)}
-              className={cn(FITNESS_INPUT_CLASS, "w-full")}
-            />
-            {options.length ? (
-              <div className="flex flex-wrap gap-1">
-                {options.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    className="rounded-full border border-black/15 px-2 py-0.5 text-[11px] hover:bg-black/10 dark:border-white/20 dark:hover:bg-white/15"
-                    onClick={() => setPicked(option)}
-                  >
-                    + {option.name}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, units, goals, profile, nutritionTargets: targets } = l;
   const store = useFitnessStore.getState();
@@ -381,8 +265,6 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
               }))}
             />
           </LabeledField>
-          <div className="text-[11px] font-bold">{t("apps.fitness.goals.strength")}</div>
-          <StrengthGoals l={l} />
         </Section>
 
         <Section title={t("apps.fitness.profile.title")}>

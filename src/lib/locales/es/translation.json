@@ -2903,16 +2903,10 @@
         "static": "Estático"
       },
       "goals": {
-        "add": "Añadir objetivo",
-        "findExercise": "Buscar un ejercicio…",
         "logWeightFirst": "Registra tu peso para realizar un seguimiento del progreso hacia tu objetivo.",
-        "noStrengthGoals": "Aún no hay objetivos de fuerza.",
         "perWeek_one": "{{count}} a la semana",
         "perWeek_other": "{{count}} a la semana",
         "reached": "¡Objetivo alcanzado!",
-        "removeGoal": "Eliminar objetivo",
-        "strength": "Objetivos de fuerza",
-        "targetOneRepMax": "1RM objetivo ({{unit}})",
         "targetWeight": "Peso objetivo",
         "title": "Objetivos",
         "toGo": "{{value}} restantes",
@@ -2921,7 +2915,7 @@
       },
       "help": {
         "body": {
-          "description": "Registra el peso, la grasa corporal y las medidas. Define un peso objetivo, metas de fuerza y un objetivo de entrenamiento semanal, y observa tu progreso.",
+          "description": "Registra el peso, la grasa corporal y las medidas. Define un peso objetivo y un objetivo de entrenamiento semanal, y observa tu progreso.",
           "title": "Cuerpo y objetivos"
         },
         "exercises": {

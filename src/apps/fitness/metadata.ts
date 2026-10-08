@@ -34,7 +34,7 @@ export const helpItems = [
     icon: "📏",
     title: "Body & Goals",
     description:
-      "Record weight, body fat, and measurements. Set a target weight, strength goals, and a weekly workout target, and watch your progress.",
+      "Record weight, body fat, and measurements. Set a target weight and a weekly workout target, and watch your progress.",
   },
   {
     icon: "🍱",

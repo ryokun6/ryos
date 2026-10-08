@@ -2897,16 +2897,10 @@
         "static": "静态"
       },
       "goals": {
-        "add": "添加目标",
-        "findExercise": "查找训练项目…",
         "logWeightFirst": "记录体重以跟踪目标进度。",
-        "noStrengthGoals": "尚无力量训练目标。",
         "perWeek_one": "每周 {{count}} 次",
         "perWeek_other": "每周 {{count}} 次",
         "reached": "已达成目标！",
-        "removeGoal": "移除目标",
-        "strength": "力量训练目标",
-        "targetOneRepMax": "目标 1RM ({{unit}})",
         "targetWeight": "目标体重",
         "title": "目标",
         "toGo": "还剩 {{value}}",
@@ -2914,7 +2908,7 @@
       },
       "help": {
         "body": {
-          "description": "记录体重、体脂和各项围度。设定目标体重、力量训练目标和每周锻炼目标，并查看你的进度。",
+          "description": "记录体重、体脂和各项围度。设定目标体重和每周锻炼目标，并查看你的进度。",
           "title": "身体与目标"
         },
         "exercises": {

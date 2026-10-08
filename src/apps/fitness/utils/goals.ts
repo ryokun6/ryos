@@ -1,5 +1,4 @@
-import type { BodyMeasurement, BodyStatEntry, FitnessGoals, StrengthGoal, Workout } from "../types";
-import { bestEstimatedOneRepMax } from "./progression";
+import type { BodyMeasurement, BodyStatEntry, FitnessGoals, Workout } from "../types";
 import { workoutDatesInWeek } from "./schedule";
 
 export interface ProgressValue {
@@ -73,15 +72,6 @@ export function weightGoalProgress(
   }
   const fraction = clamp01((currentKg - start) / total);
   return { current: currentKg, target, fraction, achieved: fraction >= 1 };
-}
-
-export function strengthGoalProgress(
-  goal: StrengthGoal,
-  workouts: readonly Workout[]
-): ProgressValue {
-  const current = bestEstimatedOneRepMax(workouts, goal.exerciseId);
-  const fraction = goal.targetKg > 0 ? clamp01(current / goal.targetKg) : 0;
-  return { current, target: goal.targetKg, fraction, achieved: fraction >= 1 };
 }
 
 export function weeklyWorkoutProgress(

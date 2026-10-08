@@ -17,7 +17,6 @@ import {
   type FoodEntry,
   type Meal,
   type ScheduleDay,
-  type StrengthGoal,
   type UnitSystem,
   type WeeklySchedule,
   type Workout,
@@ -49,7 +48,6 @@ export const DEFAULT_FITNESS_GOALS: FitnessGoals = {
   targetWeightKg: null,
   startWeightKg: null,
   weeklyWorkoutTarget: 3,
-  strengthGoals: [],
   nutrition: { calories: null, proteinG: null, carbsG: null, fatG: null },
 };
 
@@ -198,22 +196,6 @@ export function sanitizeGoals(value: unknown): FitnessGoals {
     targetWeightKg: num(raw.targetWeightKg, 20, 400),
     startWeightKg: num(raw.startWeightKg, 20, 400),
     weeklyWorkoutTarget: weekly == null ? DEFAULT_FITNESS_GOALS.weeklyWorkoutTarget : Math.round(weekly),
-    strengthGoals: Array.isArray(raw.strengthGoals)
-      ? raw.strengthGoals.slice(0, 20).flatMap((g): StrengthGoal[] => {
-          const goal = (g ?? {}) as Partial<StrengthGoal>;
-          const exerciseId = str(goal.exerciseId, 120);
-          const targetKg = num(goal.targetKg, 1, 1000);
-          if (!exerciseId || targetKg == null) return [];
-          return [
-            {
-              id: str(goal.id, 64) || crypto.randomUUID(),
-              exerciseId,
-              name: str(goal.name, 120) || exerciseId,
-              targetKg,
-            },
-          ];
-        })
-      : [],
     nutrition: {
       calories: num(nutrition.calories, 500, 10000),
       proteinG: num(nutrition.proteinG, 0, 1000),
@@ -283,9 +265,7 @@ interface FitnessStoreState {
   deleteBodyStat: (id: string) => void;
 
   setProfile: (patch: Partial<FitnessProfile>) => void;
-  setGoals: (patch: Partial<Omit<FitnessGoals, "strengthGoals">>) => void;
-  addStrengthGoal: (goal: Omit<StrengthGoal, "id">) => void;
-  removeStrengthGoal: (id: string) => void;
+  setGoals: (patch: Partial<FitnessGoals>) => void;
 
   addFoodEntry: (entry: NewFoodEntry) => string | null;
   updateFoodEntry: (id: string, patch: Partial<Pick<FoodEntry, "meal" | "name" | "items" | "date">>) => void;
@@ -478,22 +458,6 @@ export const useFitnessStore = create<FitnessStoreState>()(
           }
           return { goals: next, planUpdatedAt: Date.now() };
         }),
-      addStrengthGoal: (goal) =>
-        set((s) => ({
-          goals: sanitizeGoals({
-            ...s.goals,
-            strengthGoals: [
-              ...s.goals.strengthGoals.filter((g) => g.exerciseId !== goal.exerciseId),
-              { ...goal, id: crypto.randomUUID() },
-            ],
-          }),
-          planUpdatedAt: Date.now(),
-        })),
-      removeStrengthGoal: (id) =>
-        set((s) => ({
-          goals: { ...s.goals, strengthGoals: s.goals.strengthGoals.filter((g) => g.id !== id) },
-          planUpdatedAt: Date.now(),
-        })),
 
       addFoodEntry: (entry) => {
         const now = Date.now();

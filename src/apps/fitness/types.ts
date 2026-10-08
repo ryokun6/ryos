@@ -88,13 +88,6 @@ export interface FitnessProfile {
   activityLevel: ActivityLevel;
 }
 
-export interface StrengthGoal {
-  id: string;
-  exerciseId: string;
-  name: string;
-  targetKg: number;
-}
-
 export interface NutritionOverrides {
   calories: number | null;
   proteinG: number | null;
@@ -107,7 +100,6 @@ export interface FitnessGoals {
   /** Weight when the target was set; progress is measured from here. */
   startWeightKg: number | null;
   weeklyWorkoutTarget: number;
-  strengthGoals: StrengthGoal[];
   nutrition: NutritionOverrides;
 }
 

@@ -2897,16 +2897,10 @@
         "static": "スタティック"
       },
       "goals": {
-        "add": "ゴールを追加",
-        "findExercise": "エクササイズを検索…",
         "logWeightFirst": "目標への進捗を確認するために、体重を記録してください。",
-        "noStrengthGoals": "筋力トレーニングのゴールはまだありません。",
         "perWeek_one": "週に{{count}}回",
         "perWeek_other": "週に{{count}}回",
         "reached": "ゴール達成！",
-        "removeGoal": "ゴールを削除",
-        "strength": "筋力トレーニングのゴール",
-        "targetOneRepMax": "目標1RM（{{unit}}）",
         "targetWeight": "目標体重",
         "title": "ゴール",
         "toGo": "あと{{value}}",
@@ -2914,7 +2908,7 @@
       },
       "help": {
         "body": {
-          "description": "体重、体脂肪、サイズを記録します。目標体重、筋力トレーニングのゴール、週間のワークアウト目標を設定して、進捗を確認しましょう。",
+          "description": "体重、体脂肪、サイズを記録します。目標体重と週間のワークアウト目標を設定して、進捗を確認しましょう。",
           "title": "体とゴール"
         },
         "exercises": {

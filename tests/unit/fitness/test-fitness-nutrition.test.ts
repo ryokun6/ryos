@@ -23,7 +23,6 @@ import {
   bodyChange,
   bodySeries,
   latestBodyValue,
-  strengthGoalProgress,
   weeklyWorkoutProgress,
   weightGoalProgress,
 } from "../../../src/apps/fitness/utils/goals";
@@ -39,7 +38,6 @@ const goals = (patch: Partial<FitnessGoals> = {}): FitnessGoals => ({
   targetWeightKg: null,
   startWeightKg: null,
   weeklyWorkoutTarget: 3,
-  strengthGoals: [],
   nutrition: { calories: null, proteinG: null, carbsG: null, fatG: null },
   ...patch,
 });
@@ -221,7 +219,7 @@ describe("goals and body stats", () => {
     expect(weightGoalProgress(goals({ targetWeightKg: 80, startWeightKg: 80 }), 80.2)?.achieved).toBe(true);
   });
 
-  test("strength and weekly goals", () => {
+  test("weekly workout goal", () => {
     const workouts: Workout[] = [
       {
         id: "w",
@@ -233,9 +231,6 @@ describe("goals and body stats", () => {
         entries: [{ id: "e", exerciseId: "Bench", name: "Bench", sets: [{ reps: 1, weightKg: 90 }] }],
       },
     ];
-    expect(
-      strengthGoalProgress({ id: "g", exerciseId: "Bench", name: "Bench", targetKg: 100 }, workouts)
-    ).toMatchObject({ current: 90, fraction: 0.9, achieved: false });
     expect(weeklyWorkoutProgress(goals({ weeklyWorkoutTarget: 2 }), workouts, "2026-10-08")).toMatchObject({
       current: 1,
       target: 2,

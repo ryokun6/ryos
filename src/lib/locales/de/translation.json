@@ -2897,16 +2897,10 @@
         "static": "Statisch"
       },
       "goals": {
-        "add": "Ziel hinzufügen",
-        "findExercise": "Übung finden …",
         "logWeightFirst": "Protokolliere dein Gewicht, um den Fortschritt in Richtung deines Ziels zu verfolgen.",
-        "noStrengthGoals": "Noch keine Kraftziele.",
         "perWeek_one": "{{count}} pro Woche",
         "perWeek_other": "{{count}} pro Woche",
         "reached": "Ziel erreicht!",
-        "removeGoal": "Ziel entfernen",
-        "strength": "Kraftziele",
-        "targetOneRepMax": "Ziel-1RM ({{unit}})",
         "targetWeight": "Zielgewicht",
         "title": "Ziele",
         "toGo": "Noch {{value}}",
@@ -2914,7 +2908,7 @@
       },
       "help": {
         "body": {
-          "description": "Erfasse Gewicht, Körperfett und Maße. Lege ein Zielgewicht, Kraftziele und ein wöchentliches Workout-Ziel fest und verfolge deinen Fortschritt.",
+          "description": "Erfasse Gewicht, Körperfett und Maße. Lege ein Zielgewicht und ein wöchentliches Workout-Ziel fest und verfolge deinen Fortschritt.",
           "title": "Körper & Ziele"
         },
         "exercises": {
