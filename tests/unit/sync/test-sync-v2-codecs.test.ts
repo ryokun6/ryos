@@ -1288,6 +1288,7 @@ describe("cloud sync engine resilience", () => {
       syncBooks: false,
       syncStuff: false,
       syncDictionary: false,
+      syncFitness: false,
     });
 
     const originalFetch = globalThis.fetch;
@@ -1352,6 +1353,7 @@ describe("cloud sync engine resilience", () => {
       syncFiles: false, syncSettings: false, syncSongs: false, syncVideos: false,
       syncTv: false, syncStickies: true, syncCalendar: false, syncContacts: false,
       syncMaps: false, syncBooks: false, syncStuff: false, syncDictionary: false,
+      syncFitness: false,
     });
     const originalFetch = globalThis.fetch;
     const requests: string[] = [];

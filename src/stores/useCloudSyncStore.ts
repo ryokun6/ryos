@@ -50,6 +50,9 @@ export const CLOUD_SYNC_DELETION_BUCKETS = [
   "stuffCoverKeys",
   "stuffLocationIds",
   "dictionaryFavoriteIds",
+  "fitnessWorkoutIds",
+  "fitnessBodyStatIds",
+  "fitnessFoodIds",
 ] as const;
 
 export type CloudSyncDeletionBucket =
@@ -81,6 +84,9 @@ export function createEmptyDeletionMarkers(): CloudSyncDeletionMarkerState {
     stuffCoverKeys: {},
     stuffLocationIds: {},
     dictionaryFavoriteIds: {},
+    fitnessWorkoutIds: {},
+    fitnessBodyStatIds: {},
+    fitnessFoodIds: {},
   };
 }
 
@@ -108,6 +114,7 @@ function createInitialCategoryStatus(): CloudSyncCategoryStatusMap {
     books: empty(),
     stuff: empty(),
     dictionary: empty(),
+    fitness: empty(),
   };
 }
 
@@ -159,6 +166,7 @@ interface CloudSyncStoreState {
   syncBooks: boolean;
   syncStuff: boolean;
   syncDictionary: boolean;
+  syncFitness: boolean;
   isCheckingRemote: boolean;
   lastCheckedAt: string | null;
   lastError: string | null;
@@ -221,6 +229,7 @@ const CATEGORY_TOGGLE_FIELDS: Record<SyncCategory, keyof CloudSyncStoreState> = 
   books: "syncBooks",
   stuff: "syncStuff",
   dictionary: "syncDictionary",
+  fitness: "syncFitness",
 };
 
 export const useCloudSyncStore = create<CloudSyncStoreState>()(
@@ -239,6 +248,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
       syncBooks: true,
       syncStuff: true,
       syncDictionary: true,
+      syncFitness: true,
       isCheckingRemote: false,
       lastCheckedAt: null,
       lastError: null,
@@ -513,6 +523,7 @@ export const useCloudSyncStore = create<CloudSyncStoreState>()(
         syncBooks: state.syncBooks,
         syncStuff: state.syncStuff,
         syncDictionary: state.syncDictionary,
+        syncFitness: state.syncFitness,
         lastCheckedAt: state.lastCheckedAt,
         deletionMarkers: state.deletionMarkers,
         categoryStatus: Object.fromEntries(

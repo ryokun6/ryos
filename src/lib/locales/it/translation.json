@@ -1776,6 +1776,7 @@
         "error": "Problema di sincronizzazione: {{error}}",
         "fetching": "Ottengo",
         "files": "File",
+        "fitness": "Fitness",
         "hoursAgo": "{{count}}h fa",
         "justNow": "proprio ora",
         "lastChecked": "Ultimo controllo {{date}}",
@@ -2744,6 +2745,349 @@
         "macintoshHd": "Macintosh HD"
       }
     },
+    "fitness": {
+      "attribution": {
+        "license": "(dominio pubblico, Unlicense).",
+        "prefix": "Dati degli esercizi e immagini da"
+      },
+      "body": {
+        "bodyFatPct": "Massa grassa (%)",
+        "bodyFatTrend": "Massa grassa",
+        "change": "{{value}} dalla prima voce",
+        "history": "Cronologia",
+        "invalid": "Inserisci almeno un valore.",
+        "logStats": "Registra dati corporei",
+        "measurements": {
+          "armCm": "Braccio ({{unit}})",
+          "chestCm": "Petto ({{unit}})",
+          "hipsCm": "Fianchi ({{unit}})",
+          "thighCm": "Coscia ({{unit}})",
+          "waistCm": "Vita ({{unit}})"
+        },
+        "moreDetails": "Altri dettagli",
+        "noHistory": "Ancora nessun dato corporeo.",
+        "noWeight": "Registra il tuo peso per vedere l'andamento.",
+        "save": "Salva",
+        "short": {
+          "armCm": "Braccio",
+          "chestCm": "Petto",
+          "hipsCm": "Fianchi",
+          "thighCm": "Coscia",
+          "waistCm": "Vita"
+        },
+        "weightTrend": "Peso",
+        "weightWithUnit": "Peso ({{unit}})"
+      },
+      "categories": {
+        "cardio": "Cardio",
+        "olympicWeightlifting": "Sollevamento pesi olimpico",
+        "plyometrics": "Pliometria",
+        "powerlifting": "Powerlifting",
+        "strength": "Forza",
+        "stretching": "Stretching",
+        "strongman": "Strongman"
+      },
+      "common": {
+        "cancel": "Annulla",
+        "date": "Data",
+        "delete": "Elimina",
+        "edit": "Modifica",
+        "nextDay": "Giorno successivo",
+        "previousDay": "Giorno precedente",
+        "today": "Oggi"
+      },
+      "description": "Guida agli esercizi, programma di allenamento e diario alimentare",
+      "equipment": {
+        "bands": "Elastici",
+        "barbell": "Bilanciere",
+        "bodyOnly": "Corpo libero",
+        "cable": "Cavo",
+        "dumbbell": "Manubrio",
+        "exerciseBall": "Palla fitness",
+        "ezCurlBar": "Bilanciere EZ",
+        "foamRoll": "Foam roller",
+        "kettlebells": "Kettlebell",
+        "machine": "Macchina",
+        "medicineBall": "Palla medica",
+        "other": "Altro"
+      },
+      "exercises": {
+        "addToToday": "Aggiungi a Oggi",
+        "back": "Esercizi",
+        "bestSet": "Migliore: {{reps}} × {{weight}}",
+        "count_one": "{{count}} esercizio",
+        "count_other": "{{count}} esercizi",
+        "e1rmChart": "Massimale stimato (1RM)",
+        "e1rmHint": "Massimale stimato per sessione (formula di Epley).",
+        "imageAlt": "{{name}}, passaggio {{step}}",
+        "instructions": "Istruzioni",
+        "instructionsError": "Impossibile caricare le istruzioni.",
+        "loadError": "Impossibile caricare la libreria degli esercizi.",
+        "loading": "Caricamento esercizi…",
+        "noProgress": "Registra questo esercizio in un allenamento per monitorare i progressi.",
+        "noResults": "Nessun esercizio corrisponde a questi filtri.",
+        "primaryMuscles": "Muscoli primari",
+        "progress": "I tuoi progressi",
+        "refine_one": "Ancora {{count}} — affina la ricerca",
+        "refine_other": "Altri {{count}} — affina la ricerca",
+        "repsHint": "Maggior numero di ripetizioni per sessione.",
+        "retry": "Riprova",
+        "search": "Cerca esercizi",
+        "secondaryMuscles": "Muscoli secondari",
+        "select": "Seleziona un esercizio per vedere come si esegue.",
+        "count_many": "{{count}} esercizi",
+        "refine_many": "Altri {{count}} — affina la ricerca"
+      },
+      "filters": {
+        "all": "Tutti",
+        "allEquipment": "Tutta l'attrezzatura",
+        "allMuscles": "Tutti i muscoli",
+        "allTypes": "Tutti i tipi",
+        "category": "Tipo",
+        "equipment": "Attrezzatura",
+        "muscle": "Muscoli"
+      },
+      "focus": {
+        "cardio": "Cardio",
+        "core": "Core",
+        "full": "Tutto il corpo",
+        "legs": "Gambe",
+        "lower": "Parte inferiore",
+        "pull": "Trazione",
+        "push": "Spinta",
+        "rest": "Riposo",
+        "upper": "Parte superiore"
+      },
+      "food": {
+        "addFood": "Aggiungi alimento",
+        "addItem": "Aggiungi elemento",
+        "addPhoto": "Aggiungi foto",
+        "aiDisclaimer": "Le stime dell'IA possono essere errate. Controlla porzioni e valori prima di salvare.",
+        "analyze": "Stima con IA",
+        "analyzing": "Stima in corso…",
+        "confidence": "Affidabilità: {{value}}%",
+        "describePlaceholder": "Descrivi cosa hai mangiato, ad es. \"2 uova, toast con burro, caffè\"",
+        "editTargets": "Modifica obiettivi",
+        "empty": "Nessun dato registrato per questo giorno.",
+        "entryName": "Nome pasto",
+        "errors": {
+          "generic": "Impossibile stimare questo pasto. Riprova o inseriscilo manualmente.",
+          "invalid": "Aggiungi prima una foto o una descrizione.",
+          "notFood": "Nessun alimento riconosciuto. Prova con un'altra foto o descrivi il pasto.",
+          "photo": "Impossibile leggere la foto.",
+          "rateLimited": "Hai raggiunto il limite dell'IA per ora. Riprova più tardi o inserisci l'alimento manualmente.",
+          "tooLarge": "La foto è troppo grande. Prova con un'immagine più piccola."
+        },
+        "history": "Ultimi 14 giorni",
+        "item": "Elemento",
+        "macroSummary": "{{calories}} kcal · P {{protein}} g · C {{carbs}} g · G {{fat}} g",
+        "manual": "Manuale",
+        "meal": "Pasto",
+        "noHistory": "Nessun alimento ancora registrato.",
+        "over": "{{value}} kcal in eccesso",
+        "photo": "Foto",
+        "portion": "Porzione",
+        "remaining": "{{value}} kcal rimanenti",
+        "removeItem": "Rimuovi elemento",
+        "removePhoto": "Rimuovi foto",
+        "review": "Rivedi e salva",
+        "saveToLog": "Salva nel registro",
+        "targetsDefault": "Utilizzo degli obiettivi predefiniti.",
+        "targetsFromProfile": "Gli obiettivi si basano sul tuo profilo e sui tuoi obiettivi.",
+        "total": "Totale",
+        "update": "Aggiorna"
+      },
+      "force": {
+        "pull": "Trazione",
+        "push": "Spinta",
+        "static": "Statico"
+      },
+      "goals": {
+        "logWeightFirst": "Registra il tuo peso per monitorare i progressi verso l'obiettivo.",
+        "perWeek_one": "{{count}} a settimana",
+        "perWeek_other": "{{count}} a settimana",
+        "reached": "Obiettivo raggiunto!",
+        "targetWeight": "Peso obiettivo",
+        "title": "Obiettivi",
+        "toGo": "Ancora {{value}}",
+        "weeklyTarget": "Allenamenti settimanali",
+        "perWeek_many": "{{count}} a settimana"
+      },
+      "help": {
+        "body": {
+          "description": "Registra il peso, la massa grassa e le misure. Imposta un peso obiettivo e un obiettivo di allenamento settimanale, quindi osserva i tuoi progressi.",
+          "title": "Corpo e obiettivi"
+        },
+        "exercises": {
+          "description": "Sfoglia oltre 800 esercizi con immagini, istruzioni dettagliate, muscoli coinvolti e attrezzatura. Filtra per muscolo, attrezzatura o tipo.",
+          "title": "Guida agli esercizi"
+        },
+        "food": {
+          "description": "Scatta o carica la foto di un pasto e l'IA stimerà elementi, calorie e macro. Controlla e modifica prima di salvare, oppure aggiungi gli alimenti manualmente. Le stime potrebbero non essere accurate.",
+          "title": "Registro alimenti"
+        },
+        "logging": {
+          "description": "Aggiungi esercizi a una giornata e registra serie, ripetizioni e peso. L'ultima sessione viene mostrata come suggerimento e i grafici monitorano la stima del tuo massimale nel tempo.",
+          "title": "Registra allenamenti"
+        },
+        "schedule": {
+          "description": "Pianifica il focus di ogni giorno della settimana (parte superiore, parte inferiore, spinta, trazione, gambe, core, cardio, total body o riposo) e ricevi consigli sugli esercizi. Inizia da un modello.",
+          "title": "Programma settimanale"
+        },
+        "sync": {
+          "description": "Allenamenti, statistiche corporee, alimenti, programma e obiettivi si sincronizzano tra i dispositivi quando la sincronizzazione Cloud è attiva. Le unità e la vista attuale rimangono su questo dispositivo.",
+          "title": "Sincronizzazione"
+        }
+      },
+      "levels": {
+        "beginner": "Principiante",
+        "expert": "Esperto",
+        "intermediate": "Intermedio"
+      },
+      "meals": {
+        "breakfast": "Colazione",
+        "dinner": "Cena",
+        "lunch": "Pranzo",
+        "snack": "Spuntino"
+      },
+      "mechanic": {
+        "compound": "Composto",
+        "isolation": "Isolamento"
+      },
+      "menu": {
+        "about": "Informazioni su Fitness",
+        "goals": "Obiettivi…",
+        "help": "Aiuto Fitness",
+        "logFood": "Registra cibo",
+        "logStats": "Registra dati corporei",
+        "logWorkout": "Registra allenamento",
+        "plan": "Piano",
+        "sync": "Sincronizza ora",
+        "units": "Unità"
+      },
+      "muscles": {
+        "abdominals": "Addominali",
+        "abductors": "Abduttori",
+        "adductors": "Adduttori",
+        "biceps": "Bicipiti",
+        "calves": "Polpacci",
+        "chest": "Petto",
+        "forearms": "Avambracci",
+        "glutes": "Glutei",
+        "hamstrings": "Femorali",
+        "lats": "Dorsali",
+        "lowerBack": "Lombari",
+        "middleBack": "Parte centrale della schiena",
+        "neck": "Collo",
+        "quadriceps": "Quadricipiti",
+        "shoulders": "Spalle",
+        "traps": "Trapezi",
+        "triceps": "Tricipiti"
+      },
+      "name": "Fitness",
+      "nutrition": {
+        "calories": "Calorie",
+        "carbs": "Carboidrati",
+        "defaults": "Aggiungi peso, altezza, anno di nascita e sesso per obiettivi personalizzati.",
+        "direction": {
+          "gain": "aumentare di peso",
+          "lose": "perdere peso",
+          "maintain": "mantenere il peso"
+        },
+        "fat": "Grassi",
+        "overrideHint": "Inserisci un numero per modificare un obiettivo. Lascia vuoto per usare la stima.",
+        "personalized": "In base a circa {{tdee}} kcal/giorno per il mantenimento, regolato per {{direction}}.",
+        "protein": "Proteine",
+        "targets": "Obiettivi nutrizionali quotidiani"
+      },
+      "profile": {
+        "activity": "Attività",
+        "activityLevels": {
+          "active": "Molto attivo",
+          "light": "Poco attivo",
+          "moderate": "Moderatamente attivo",
+          "sedentary": "Sedentario",
+          "veryActive": "Estremamente attivo"
+        },
+        "birthYear": "Anno di nascita",
+        "female": "Donna",
+        "height": "Altezza",
+        "male": "Uomo",
+        "sex": "Sesso",
+        "title": "Profilo"
+      },
+      "schedule": {
+        "addToDay": "Aggiungi all'allenamento",
+        "applyTemplate": "Applica modello",
+        "cardioHint": "Punta a 20–40 minuti di cardio costante o a intervalli.",
+        "dayFocus": "Focus {{day}}",
+        "done": "Fine",
+        "missed": "Saltato",
+        "noStreak": "Ancora nessuna serie",
+        "plannedDays_one": "{{count}} giorno di allenamento pianificato",
+        "plannedDays_other": "{{count}} giorni di allenamento pianificati",
+        "recommendedFor": "Consigliato per {{focus}}",
+        "restDay": "Giorno di riposo. Recupera, fai stretching o fai una camminata.",
+        "startWorkout": "Inizia allenamento",
+        "streak_one": "Serie di {{count}} settimana",
+        "streak_other": "Serie di {{count}} settimane",
+        "targets": "Target: {{muscles}}",
+        "template": "Modello",
+        "thisWeek": "Questa settimana",
+        "viewExercise": "Visualizza esercizio",
+        "weeklyGoal": "Obiettivo settimanale",
+        "workoutsThisWeek": "{{current}} di {{target}} allenamenti questa settimana",
+        "streak_many": "Serie di {{count}} settimane",
+        "plannedDays_many": "{{count}} giorni di allenamento pianificati"
+      },
+      "templates": {
+        "balanced": "Bilanciato",
+        "fullBody": "Full Body ×3",
+        "ppl": "Push / Pull / Legs",
+        "upperLower": "Upper / Lower"
+      },
+      "title": "Fitness",
+      "toasts": {
+        "addedToDay": "Aggiunto {{name}} al {{date}}",
+        "addedToWorkout": "Aggiunto {{name}} all'allenamento di oggi",
+        "foodSaved": "{{name}} salvato nel registro alimentare",
+        "statsSaved": "Statistiche corporee salvate",
+        "templateApplied": "Piano {{name}} applicato"
+      },
+      "units": {
+        "imperial": "Imperiale (lb, in)",
+        "metric": "Metrico (kg, cm)"
+      },
+      "views": {
+        "body": "Corpo",
+        "exercises": "Esercizi",
+        "food": "Alimentazione",
+        "schedule": "Programma",
+        "workouts": "Allenamenti"
+      },
+      "workouts": {
+        "addExercisePlaceholder": "Aggiungi un esercizio…",
+        "addSet": "Aggiungi serie",
+        "deleteWorkout": "Elimina allenamento",
+        "e1rm": "1RM stimato",
+        "empty": "Nessun esercizio ancora registrato per questa giornata.",
+        "exerciseCount_one": "{{count}} esercizio",
+        "exerciseCount_other": "{{count}} esercizi",
+        "focus": "Focus",
+        "history": "Cronologia",
+        "lastTime": "Ultima volta: {{sets}}",
+        "noHistory": "Ancora nessun allenamento.",
+        "noRecords": "Registra serie con pesi per visualizzare i record.",
+        "records": "Record personali",
+        "removeExercise": "Rimuovi esercizio",
+        "removeSet": "Rimuovi serie",
+        "reps": "Ripetizioni",
+        "set": "Serie",
+        "suggested": "Suggerito per {{focus}}",
+        "weight": "Peso ({{unit}})",
+        "exerciseCount_many": "{{count}} esercizi"
+      }
+    },
     "infinite-mac": {
       "description": "Emulatori Mac OS Classico",
       "help": {
@@ -3098,14 +3442,14 @@
         "songSearchHttpError": "Ricerca non riuscita (stato {{status}})",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "Risposta non valida dal server",
-        "songSearchQuotaExhausted": "La ricerca su YouTube ha raggiunto il limite giornaliero. Riprova più tardi.",
-        "songSearchUnavailable": "La ricerca su YouTube non è al momento disponibile. Riprova più tardi.",
         "songSearchNoResults": "Nessun risultato trovato",
         "songSearchPlaceholder": "Cerca o incolla URL…",
+        "songSearchQuotaExhausted": "La ricerca su YouTube ha raggiunto il limite giornaliero. Riprova più tardi.",
         "songSearchSearch": "Cerca",
         "songSearchSearching": "Cerco…",
         "songSearchSelectResult": "Seleziona un brano da aggiungere:",
         "songSearchTitle": "Cerca brani",
+        "songSearchUnavailable": "La ricerca su YouTube non è al momento disponibile. Riprova più tardi.",
         "syncFailed": "Sincronizzazione non riuscita",
         "unknownError": "Errore sconosciuto",
         "updateCheckFailed": "Verifica aggiornamenti non riuscita",

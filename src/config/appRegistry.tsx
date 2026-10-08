@@ -16,6 +16,7 @@ import type {
   BooksInitialData,
   StuffInitialData,
   DictionaryInitialData,
+  FitnessInitialData,
 } from "@/apps/base/types";
 import type { AppletViewerInitialData } from "@/apps/applet-viewer";
 import { createLazyComponent } from "./lazyAppComponent";
@@ -204,6 +205,14 @@ const LazyDictionaryApp = createLazyComponent<DictionaryInitialData>(
   "dictionary"
 );
 
+const LazyFitnessApp = createLazyComponent<FitnessInitialData>(
+  () =>
+    import("@/apps/fitness/components/FitnessAppComponent").then((m) => ({
+      default: m.FitnessAppComponent,
+    })),
+  "fitness"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -245,6 +254,7 @@ import { appMetadata as booksMetadata, helpItems as booksHelpItems } from "@/app
 import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } from "@/apps/calculator/metadata";
 import { appMetadata as stuffMetadata, helpItems as stuffHelpItems } from "@/apps/stuff/metadata";
 import { appMetadata as dictionaryMetadata, helpItems as dictionaryHelpItems } from "@/apps/dictionary/metadata";
+import { appMetadata as fitnessMetadata, helpItems as fitnessHelpItems } from "@/apps/fitness/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -654,6 +664,19 @@ export const appRegistry = {
       minSize: { width: 420, height: 380 },
     } as WindowConstraints,
   } as BaseApp<DictionaryInitialData> & { windowConfig: WindowConstraints },
+  ["fitness"]: {
+    id: "fitness",
+    name: "Fitness",
+    icon: { type: "image", src: fitnessMetadata.icon },
+    description: "Exercise guide, workout log, training schedule, body stats, and AI food log",
+    component: LazyFitnessApp,
+    helpItems: fitnessHelpItems,
+    metadata: fitnessMetadata,
+    windowConfig: {
+      defaultSize: { width: 880, height: 600 },
+      minSize: { width: 400, height: 420 },
+    } as WindowConstraints,
+  } as BaseApp<FitnessInitialData> & { windowConfig: WindowConstraints },
 } as const;
 
 // ============================================================================

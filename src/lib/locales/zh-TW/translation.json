@@ -1774,6 +1774,7 @@
         "error": "同步問題：{{error}}",
         "fetching": "正在擷取",
         "files": "檔案",
+        "fitness": "健身",
         "hoursAgo": "{{count}}小時前",
         "justNow": "剛剛",
         "lastChecked": "上次檢查{{date}}",
@@ -2740,6 +2741,343 @@
         "macintoshHd": "Macintosh HD"
       }
     },
+    "fitness": {
+      "attribution": {
+        "license": "(公有領域，Unlicense)。",
+        "prefix": "運動資料與影像來自"
+      },
+      "body": {
+        "bodyFatPct": "體脂 (%)",
+        "bodyFatTrend": "體脂",
+        "change": "自首次記錄以來 {{value}}",
+        "history": "歷程記錄",
+        "invalid": "請至少輸入一個數值。",
+        "logStats": "記錄身體數據",
+        "measurements": {
+          "armCm": "手臂 ({{unit}})",
+          "chestCm": "胸圍 ({{unit}})",
+          "hipsCm": "臀圍 ({{unit}})",
+          "thighCm": "大腿 ({{unit}})",
+          "waistCm": "腰圍 ({{unit}})"
+        },
+        "moreDetails": "更多詳細資料",
+        "noHistory": "尚無身體數據。",
+        "noWeight": "記錄體重以查看趨勢。",
+        "save": "儲存",
+        "short": {
+          "armCm": "手臂",
+          "chestCm": "胸圍",
+          "hipsCm": "臀圍",
+          "thighCm": "大腿",
+          "waistCm": "腰圍"
+        },
+        "weightTrend": "體重",
+        "weightWithUnit": "體重 ({{unit}})"
+      },
+      "categories": {
+        "cardio": "有氧運動",
+        "olympicWeightlifting": "奧林匹克舉重",
+        "plyometrics": "增強式訓練",
+        "powerlifting": "健力",
+        "strength": "肌力訓練",
+        "stretching": "伸展",
+        "strongman": "大力士訓練"
+      },
+      "common": {
+        "cancel": "取消",
+        "date": "日期",
+        "delete": "刪除",
+        "edit": "編輯",
+        "nextDay": "下一天",
+        "previousDay": "前一天",
+        "today": "今天"
+      },
+      "description": "運動指南、訓練計畫與飲食記錄",
+      "equipment": {
+        "bands": "彈力帶",
+        "barbell": "槓鈴",
+        "bodyOnly": "徒手",
+        "cable": "纜繩",
+        "dumbbell": "啞鈴",
+        "exerciseBall": "抗力球",
+        "ezCurlBar": "EZ 槓",
+        "foamRoll": "滾筒",
+        "kettlebells": "壺鈴",
+        "machine": "器械",
+        "medicineBall": "藥球",
+        "other": "其他"
+      },
+      "exercises": {
+        "addToToday": "加入「今天」",
+        "back": "運動",
+        "bestSet": "最佳：{{reps}} × {{weight}}",
+        "count_one": "{{count}} 個運動",
+        "count_other": "{{count}} 個運動",
+        "e1rmChart": "預估最大重量",
+        "e1rmHint": "每次訓練的預估最大重量（Epley 公式）。",
+        "imageAlt": "{{name}}，第 {{step}} 步",
+        "instructions": "說明",
+        "instructionsError": "無法載入說明。",
+        "loadError": "無法載入運動資料庫。",
+        "loading": "正在載入運動項目⋯",
+        "noProgress": "在體能訓練中記錄此運動以追蹤進度。",
+        "noResults": "沒有符合這些篩選條件的運動。",
+        "primaryMuscles": "主要肌群",
+        "progress": "你的進度",
+        "refine_one": "還有 {{count}} 個 — 請縮小搜尋範圍",
+        "refine_other": "還有 {{count}} 個 — 請縮小搜尋範圍",
+        "repsHint": "每次訓練的最高次數。",
+        "retry": "再試一次",
+        "search": "搜尋運動",
+        "secondaryMuscles": "次要肌群",
+        "select": "選擇一項運動來查看操作方式。"
+      },
+      "filters": {
+        "all": "全部",
+        "allEquipment": "所有器材",
+        "allMuscles": "所有肌群",
+        "allTypes": "所有類型",
+        "category": "類型",
+        "equipment": "器材",
+        "muscle": "肌肉"
+      },
+      "focus": {
+        "cardio": "有氧",
+        "core": "核心",
+        "full": "全身",
+        "legs": "腿部",
+        "lower": "下半身",
+        "pull": "拉",
+        "push": "推",
+        "rest": "休息",
+        "upper": "上半身"
+      },
+      "food": {
+        "addFood": "加入食物",
+        "addItem": "加入項目",
+        "addPhoto": "加入照片",
+        "aiDisclaimer": "AI 估計值可能不準確。儲存前請檢查份量和數值。",
+        "analyze": "使用 AI 估計",
+        "analyzing": "正在估計⋯",
+        "confidence": "信心度 {{value}}%",
+        "describePlaceholder": "描述你吃了什麼，例如「2 顆蛋、奶油吐司、咖啡」",
+        "editTargets": "編輯目標",
+        "empty": "這天沒有記錄。",
+        "entryName": "餐點名稱",
+        "errors": {
+          "generic": "無法估算此餐點。請再試一次或手動輸入。",
+          "invalid": "請先加入照片或描述。",
+          "notFood": "未辨識到食物。請嘗試其他照片或描述餐點。",
+          "photo": "無法讀取該照片。",
+          "rateLimited": "你目前已達到 AI 限制。請稍後再試或手動輸入食物。",
+          "tooLarge": "該照片太大。請嘗試較小的影像。"
+        },
+        "history": "過去 14 天",
+        "item": "項目",
+        "macroSummary": "{{calories}} kcal · P {{protein}} g · C {{carbs}} g · F {{fat}} g",
+        "manual": "手動",
+        "meal": "餐點",
+        "noHistory": "尚未記錄任何食物。",
+        "over": "超過 {{value}} kcal",
+        "photo": "照片",
+        "portion": "份量",
+        "remaining": "剩餘 {{value}} kcal",
+        "removeItem": "移除項目",
+        "removePhoto": "移除照片",
+        "review": "檢查並儲存",
+        "saveToLog": "儲存至記錄",
+        "targetsDefault": "正在使用預設目標。",
+        "targetsFromProfile": "目標是根據你的個人檔案和目標而定。",
+        "total": "總計",
+        "update": "更新"
+      },
+      "force": {
+        "pull": "拉",
+        "push": "推",
+        "static": "靜態"
+      },
+      "goals": {
+        "logWeightFirst": "記錄你的體重以追蹤達成目標的進度。",
+        "perWeek_one": "每週 {{count}} 次",
+        "perWeek_other": "每週 {{count}} 次",
+        "reached": "已達成目標！",
+        "targetWeight": "目標體重",
+        "title": "目標",
+        "toGo": "還差 {{value}}",
+        "weeklyTarget": "每週體能訓練"
+      },
+      "help": {
+        "body": {
+          "description": "記錄體重、體脂和身體量度。設定目標體重和每週體能訓練目標，並查看你的進度。",
+          "title": "身體與目標"
+        },
+        "exercises": {
+          "description": "瀏覽 800 多項運動，包含圖片、逐步說明、目標肌肉和器材。可依肌肉、器材或類型進行篩選。",
+          "title": "運動指南"
+        },
+        "food": {
+          "description": "拍攝或上傳餐點照片，AI 會估算項目、卡路里和巨量營養素。儲存前可進行檢查與編輯，或手動加入食物。估算結果可能不準確。",
+          "title": "飲食記錄"
+        },
+        "logging": {
+          "description": "將運動加入某天並記錄組數、次數和重量。系統會顯示上次訓練作為提示，並透過圖表追蹤你隨時間變化的估算單次最大重量。",
+          "title": "記錄體能訓練"
+        },
+        "schedule": {
+          "description": "規劃每週各天的訓練重點（上半身、下半身、推、拉、腿部、核心、有氧、全身或休息），並取得相關的運動建議。可從樣板開始。",
+          "title": "每週排程"
+        },
+        "sync": {
+          "description": "開啟「雲端同步」時，體能訓練、身體數據、食物、排程和目標會在裝置間同步。單位和目前檢視則保留在此裝置上。",
+          "title": "同步"
+        }
+      },
+      "levels": {
+        "beginner": "初學者",
+        "expert": "專家",
+        "intermediate": "中級"
+      },
+      "meals": {
+        "breakfast": "早餐",
+        "dinner": "晚餐",
+        "lunch": "午餐",
+        "snack": "點心"
+      },
+      "mechanic": {
+        "compound": "複合動作",
+        "isolation": "孤立動作"
+      },
+      "menu": {
+        "about": "關於健身",
+        "goals": "目標…",
+        "help": "健身輔助說明",
+        "logFood": "記錄食物",
+        "logStats": "記錄身體數據",
+        "logWorkout": "記錄體能訓練",
+        "plan": "計畫",
+        "sync": "立即同步",
+        "units": "單位"
+      },
+      "muscles": {
+        "abdominals": "腹肌",
+        "abductors": "外展肌",
+        "adductors": "內收肌",
+        "biceps": "二頭肌",
+        "calves": "小腿肌",
+        "chest": "胸肌",
+        "forearms": "前臂",
+        "glutes": "臀肌",
+        "hamstrings": "腿後腱",
+        "lats": "闊背肌",
+        "lowerBack": "下背部",
+        "middleBack": "中背部",
+        "neck": "頸部",
+        "quadriceps": "股四頭肌",
+        "shoulders": "肩膀",
+        "traps": "斜方肌",
+        "triceps": "三頭肌"
+      },
+      "name": "健身",
+      "nutrition": {
+        "calories": "卡路里",
+        "carbs": "碳水化合物",
+        "defaults": "加入你的體重、身高、出生年份和性別，以取得個人化目標。",
+        "direction": {
+          "gain": "增加體重",
+          "lose": "減輕體重",
+          "maintain": "維持體重"
+        },
+        "fat": "脂肪",
+        "overrideHint": "輸入數字以覆蓋目標。留空則使用預估值。",
+        "personalized": "根據維持體重所需的每日約 {{tdee}} 千卡，並調整為{{direction}}。",
+        "protein": "蛋白質",
+        "targets": "每日營養目標"
+      },
+      "profile": {
+        "activity": "活動",
+        "activityLevels": {
+          "active": "非常活躍",
+          "light": "輕度活躍",
+          "moderate": "中度活躍",
+          "sedentary": "久坐",
+          "veryActive": "極度活躍"
+        },
+        "birthYear": "出生年份",
+        "female": "女性",
+        "height": "身高",
+        "male": "男性",
+        "sex": "性別",
+        "title": "個人檔案"
+      },
+      "schedule": {
+        "addToDay": "加入體能訓練",
+        "applyTemplate": "套用樣板",
+        "cardioHint": "目標為 20–40 分鐘的穩定心肺訓練或間歇訓練。",
+        "dayFocus": "{{day}} 重點",
+        "done": "完成",
+        "missed": "已錯過",
+        "noStreak": "尚無連續紀錄",
+        "plannedDays_one": "已規劃 {{count}} 天訓練",
+        "plannedDays_other": "已規劃 {{count}} 天訓練",
+        "recommendedFor": "建議用於 {{focus}}",
+        "restDay": "休息日。修復、伸展或散散步。",
+        "startWorkout": "開始體能訓練",
+        "streak_one": "連續 {{count}} 週",
+        "streak_other": "連續 {{count}} 週",
+        "targets": "目標：{{muscles}}",
+        "template": "樣板",
+        "thisWeek": "本週",
+        "viewExercise": "檢視運動",
+        "weeklyGoal": "每週目標",
+        "workoutsThisWeek": "本週已完成 {{target}} 次體能訓練中的 {{current}} 次"
+      },
+      "templates": {
+        "balanced": "均衡",
+        "fullBody": "全身 ×3",
+        "ppl": "推 / 拉 / 腿",
+        "upperLower": "上肢 / 下肢"
+      },
+      "title": "健身",
+      "toasts": {
+        "addedToDay": "已將 {{name}} 加入 {{date}}",
+        "addedToWorkout": "已將 {{name}} 加入今天的體能訓練",
+        "foodSaved": "已將 {{name}} 儲存至飲食記錄",
+        "statsSaved": "已儲存身體數據",
+        "templateApplied": "已套用 {{name}} 計畫"
+      },
+      "units": {
+        "imperial": "英制 (磅, 英寸)",
+        "metric": "公制 (公斤, 公分)"
+      },
+      "views": {
+        "body": "身體",
+        "exercises": "運動",
+        "food": "食物",
+        "schedule": "排程",
+        "workouts": "體能訓練"
+      },
+      "workouts": {
+        "addExercisePlaceholder": "加入運動…",
+        "addSet": "加入組數",
+        "deleteWorkout": "刪除體能訓練",
+        "e1rm": "估計 1RM",
+        "empty": "今天尚未記錄任何運動。",
+        "exerciseCount_one": "{{count}} 項運動",
+        "exerciseCount_other": "{{count}} 項運動",
+        "focus": "焦點",
+        "history": "記錄",
+        "lastTime": "上次：{{sets}}",
+        "noHistory": "尚無體能訓練。",
+        "noRecords": "記錄負重組數以查看紀錄。",
+        "records": "個人紀錄",
+        "removeExercise": "移除運動",
+        "removeSet": "移除組數",
+        "reps": "次數",
+        "set": "組",
+        "suggested": "針對「{{focus}}」的建議",
+        "weight": "重量 ({{unit}})"
+      }
+    },
     "infinite-mac": {
       "description": "經典 Mac OS 模擬器",
       "help": {
@@ -3094,14 +3432,14 @@
         "songSearchHttpError": "搜尋失敗（狀態 {{status}}）",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "伺服器回應無效",
-        "songSearchQuotaExhausted": "YouTube 搜尋已達每日上限，請稍後再試。",
-        "songSearchUnavailable": "YouTube 搜尋暫時無法使用，請稍後再試。",
         "songSearchNoResults": "找不到結果",
         "songSearchPlaceholder": "搜尋或貼上網址⋯",
+        "songSearchQuotaExhausted": "YouTube 搜尋已達每日上限，請稍後再試。",
         "songSearchSearch": "搜尋",
         "songSearchSearching": "搜尋中⋯",
         "songSearchSelectResult": "請選擇要新增的歌曲：",
         "songSearchTitle": "搜尋歌曲",
+        "songSearchUnavailable": "YouTube 搜尋暫時無法使用，請稍後再試。",
         "syncFailed": "同步失敗",
         "unknownError": "未知的錯誤",
         "updateCheckFailed": "檢查更新失敗",

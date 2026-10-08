@@ -50,7 +50,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "books"
     | "calculator"
     | "stuff"
-    | "dictionary";
+    | "dictionary"
+    | "fitness";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;
@@ -135,6 +136,11 @@ export interface DictionaryInitialData {
   lang?: "auto" | "en" | "zh" | "ja" | "ko";
 }
 
+export interface FitnessInitialData {
+  view?: "exercises" | "workouts" | "schedule" | "body" | "food";
+  exerciseId?: string;
+}
+
 export interface FinderInitialData {
   path?: string;
 }
@@ -161,6 +167,7 @@ export type AnyApp =
   | BaseApp<BooksInitialData>
   | BaseApp<StuffInitialData>
   | BaseApp<DictionaryInitialData>
+  | BaseApp<FitnessInitialData>
   | BaseApp<AppletViewerInitialData>
   | BaseApp<TerminalInitialData>
   | BaseApp<ChatsInitialData>
@@ -178,6 +185,7 @@ export type AnyInitialData =
   | BooksInitialData
   | StuffInitialData
   | DictionaryInitialData
+  | FitnessInitialData
   | FinderInitialData
   | AppletViewerInitialData
   | TerminalInitialData

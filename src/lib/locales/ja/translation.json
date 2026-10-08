@@ -1774,6 +1774,7 @@
         "error": "同期の問題: {{error}}",
         "fetching": "取得中",
         "files": "ファイル",
+        "fitness": "フィットネス",
         "hoursAgo": "{{count}}時間前",
         "justNow": "たった今",
         "lastChecked": "最終確認{{date}}",
@@ -2740,6 +2741,343 @@
         "macintoshHd": "Macintosh HD"
       }
     },
+    "fitness": {
+      "attribution": {
+        "license": "(パブリックドメイン、Unlicense)。",
+        "prefix": "エクササイズデータおよび画像の提供元："
+      },
+      "body": {
+        "bodyFatPct": "体脂肪率 (%)",
+        "bodyFatTrend": "体脂肪",
+        "change": "初回入力時から{{value}}",
+        "history": "履歴",
+        "invalid": "値を少なくとも1つ入力してください。",
+        "logStats": "身体統計を記録",
+        "measurements": {
+          "armCm": "腕（{{unit}}）",
+          "chestCm": "胸囲（{{unit}}）",
+          "hipsCm": "ヒップ（{{unit}}）",
+          "thighCm": "太もも（{{unit}}）",
+          "waistCm": "ウエスト（{{unit}}）"
+        },
+        "moreDetails": "詳細",
+        "noHistory": "身体統計がまだありません。",
+        "noWeight": "体重を記録して傾向を表示します。",
+        "save": "保存",
+        "short": {
+          "armCm": "腕",
+          "chestCm": "胸囲",
+          "hipsCm": "ヒップ",
+          "thighCm": "太もも",
+          "waistCm": "ウエスト"
+        },
+        "weightTrend": "体重",
+        "weightWithUnit": "体重（{{unit}}）"
+      },
+      "categories": {
+        "cardio": "有酸素運動",
+        "olympicWeightlifting": "オリンピック・ウェイトリフティング",
+        "plyometrics": "プライオメトリクス",
+        "powerlifting": "パワーリフティング",
+        "strength": "筋力トレーニング",
+        "stretching": "ストレッチ",
+        "strongman": "ストロングマン"
+      },
+      "common": {
+        "cancel": "キャンセル",
+        "date": "日付",
+        "delete": "削除",
+        "edit": "編集",
+        "nextDay": "翌日",
+        "previousDay": "前日",
+        "today": "今日"
+      },
+      "description": "エクササイズガイド、トレーニングスケジュール、食事記録",
+      "equipment": {
+        "bands": "バンド",
+        "barbell": "バーベル",
+        "bodyOnly": "自重のみ",
+        "cable": "ケーブル",
+        "dumbbell": "ダンベル",
+        "exerciseBall": "エクササイズボール",
+        "ezCurlBar": "EZカールバー",
+        "foamRoll": "フォームローラー",
+        "kettlebells": "ケトルベル",
+        "machine": "マシン",
+        "medicineBall": "メディシンボール",
+        "other": "その他"
+      },
+      "exercises": {
+        "addToToday": "今日に追加",
+        "back": "エクササイズ",
+        "bestSet": "自己ベスト: {{reps}} × {{weight}}",
+        "count_one": "{{count}}個のエクササイズ",
+        "count_other": "{{count}}個のエクササイズ",
+        "e1rmChart": "推定1RM",
+        "e1rmHint": "セッションごとの推定1RM（エプリー法）。",
+        "imageAlt": "{{name}}、ステップ{{step}}",
+        "instructions": "説明",
+        "instructionsError": "説明を読み込めませんでした。",
+        "loadError": "エクササイズライブラリを読み込めませんでした。",
+        "loading": "エクササイズを読み込み中…",
+        "noProgress": "進捗を記録するには、このエクササイズをワークアウトに記録してください。",
+        "noResults": "これらのフィルタに一致するエクササイズはありません。",
+        "primaryMuscles": "主な筋肉",
+        "progress": "自分の進捗",
+        "refine_one": "残り{{count}}件 — 検索条件を絞り込んでください",
+        "refine_other": "残り{{count}}件 — 検索条件を絞り込んでください",
+        "repsHint": "1セッションあたりの最大回数。",
+        "retry": "再試行",
+        "search": "エクササイズを検索",
+        "secondaryMuscles": "補助的な筋肉",
+        "select": "エクササイズを選択してやり方を確認します。"
+      },
+      "filters": {
+        "all": "すべて",
+        "allEquipment": "すべての器具",
+        "allMuscles": "すべての筋肉",
+        "allTypes": "すべてのタイプ",
+        "category": "タイプ",
+        "equipment": "器具",
+        "muscle": "筋肉"
+      },
+      "focus": {
+        "cardio": "有酸素運動",
+        "core": "体幹",
+        "full": "全身",
+        "legs": "脚",
+        "lower": "下半身",
+        "pull": "プル",
+        "push": "プッシュ",
+        "rest": "休息",
+        "upper": "上半身"
+      },
+      "food": {
+        "addFood": "食事を追加",
+        "addItem": "項目を追加",
+        "addPhoto": "写真を追加",
+        "aiDisclaimer": "AIによる推定は誤っている場合があります。保存する前に分量と数値を確認してください。",
+        "analyze": "AIで推定",
+        "analyzing": "推定中…",
+        "confidence": "信頼度{{value}}%",
+        "describePlaceholder": "食べたものを入力してください（例：「卵2個、バタートースト、コーヒー」）",
+        "editTargets": "目標を編集",
+        "empty": "この日の記録はありません。",
+        "entryName": "食事名",
+        "errors": {
+          "generic": "この食事を推定できませんでした。もう一度試すか、手動で入力してください。",
+          "invalid": "最初に写真または説明を追加してください。",
+          "notFood": "食べ物が認識されませんでした。別の写真を試すか、食事の内容を入力してください。",
+          "photo": "写真を読み込めませんでした。",
+          "rateLimited": "現在、AIの制限に達しています。後でもう一度試すか、手動で食事を入力してください。",
+          "tooLarge": "写真のサイズが大きすぎます。より小さい画像を試してください。"
+        },
+        "history": "過去14日間",
+        "item": "項目",
+        "macroSummary": "{{calories}} kcal · P {{protein}} g · C {{carbs}} g · F {{fat}} g",
+        "manual": "手動",
+        "meal": "食事",
+        "noHistory": "まだ食事の記録がありません。",
+        "over": "{{value}} kcal超過",
+        "photo": "写真",
+        "portion": "分量",
+        "remaining": "残り{{value}} kcal",
+        "removeItem": "項目を削除",
+        "removePhoto": "写真を削除",
+        "review": "確認して保存",
+        "saveToLog": "ログに保存",
+        "targetsDefault": "デフォルトの目標を使用しています。",
+        "targetsFromProfile": "目標はプロフィールとゴールに基づいています。",
+        "total": "合計",
+        "update": "更新"
+      },
+      "force": {
+        "pull": "プル",
+        "push": "プッシュ",
+        "static": "スタティック"
+      },
+      "goals": {
+        "logWeightFirst": "目標への進捗を確認するために、体重を記録してください。",
+        "perWeek_one": "週に{{count}}回",
+        "perWeek_other": "週に{{count}}回",
+        "reached": "ゴール達成！",
+        "targetWeight": "目標体重",
+        "title": "ゴール",
+        "toGo": "あと{{value}}",
+        "weeklyTarget": "週間のワークアウト"
+      },
+      "help": {
+        "body": {
+          "description": "体重、体脂肪、サイズを記録します。目標体重と週間のワークアウト目標を設定して、進捗を確認しましょう。",
+          "title": "体とゴール"
+        },
+        "exercises": {
+          "description": "800以上のエクササイズを、写真、ステップバイステップの指示、対象の筋肉、器具とともに閲覧できます。筋肉、器具、またはタイプでフィルタリングできます。",
+          "title": "エクササイズガイド"
+        },
+        "food": {
+          "description": "食事の写真を撮るかアップロードすると、AIが項目、カロリー、マクロ栄養素を推定します。保存前に確認と編集を行うか、手動で食事を追加できます。推定値は不正確な場合があります。",
+          "title": "食事のログ"
+        },
+        "logging": {
+          "description": "1日のエクササイズを追加し、セット数、レップ数、重量を記録します。前回のセッションがヒントとして表示され、推定1RMの推移がチャートで確認できます。",
+          "title": "ワークアウトを記録"
+        },
+        "schedule": {
+          "description": "各曜日の重点項目（上半身、下半身、プッシュ、プル、脚、体幹、有酸素、全身、または休息）を計画し、それに応じたエクササイズの推奨事項を確認できます。テンプレートから開始できます。",
+          "title": "週間スケジュール"
+        },
+        "sync": {
+          "description": "クラウド同期がオンの場合、ワークアウト、身体データ、食事、スケジュール、ゴールがデバイス間で同期されます。単位と現在の表示設定はこのデバイスに保持されます。",
+          "title": "同期"
+        }
+      },
+      "levels": {
+        "beginner": "初心者",
+        "expert": "上級者",
+        "intermediate": "中級者"
+      },
+      "meals": {
+        "breakfast": "朝食",
+        "dinner": "夕食",
+        "lunch": "昼食",
+        "snack": "間食"
+      },
+      "mechanic": {
+        "compound": "コンパウンド",
+        "isolation": "アイソレーション"
+      },
+      "menu": {
+        "about": "Fitnessについて",
+        "goals": "ゴール…",
+        "help": "Fitnessヘルプ",
+        "logFood": "食事を記録",
+        "logStats": "身体データを記録",
+        "logWorkout": "ワークアウトを記録",
+        "plan": "プラン",
+        "sync": "今すぐ同期",
+        "units": "単位"
+      },
+      "muscles": {
+        "abdominals": "腹筋",
+        "abductors": "外転筋",
+        "adductors": "内転筋",
+        "biceps": "上腕二頭筋",
+        "calves": "ふくらはぎ",
+        "chest": "胸",
+        "forearms": "前腕",
+        "glutes": "臀筋",
+        "hamstrings": "ハムストリング",
+        "lats": "広背筋",
+        "lowerBack": "下背部",
+        "middleBack": "中背部",
+        "neck": "首",
+        "quadriceps": "大腿四頭筋",
+        "shoulders": "肩",
+        "traps": "僧帽筋",
+        "triceps": "上腕三頭筋"
+      },
+      "name": "フィットネス",
+      "nutrition": {
+        "calories": "カロリー",
+        "carbs": "炭水化物",
+        "defaults": "パーソナライズされた目標を設定するには、体重、身長、誕生年、性別を追加してください。",
+        "direction": {
+          "gain": "増量",
+          "lose": "減量",
+          "maintain": "現状維持"
+        },
+        "fat": "脂質",
+        "overrideHint": "目標値を上書きするには数値を入力してください。推定値を使用する場合は空欄のままにします。",
+        "personalized": "維持に必要な約{{tdee}} kcal/日に基づき、{{direction}}に合わせて調整されています。",
+        "protein": "タンパク質",
+        "targets": "1日の栄養目標"
+      },
+      "profile": {
+        "activity": "アクティビティ",
+        "activityLevels": {
+          "active": "運動量が多い",
+          "light": "運動量が少ない",
+          "moderate": "運動量が適度",
+          "sedentary": "座りっぱなし",
+          "veryActive": "運動量が非常に多い"
+        },
+        "birthYear": "誕生年",
+        "female": "女性",
+        "height": "身長",
+        "male": "男性",
+        "sex": "性別",
+        "title": "プロフィール"
+      },
+      "schedule": {
+        "addToDay": "ワークアウトに追加",
+        "applyTemplate": "テンプレートを適用",
+        "cardioHint": "20〜40分の一定ペースの有酸素運動またはインターバルトレーニングを目指しましょう。",
+        "dayFocus": "{{day}}のフォーカス",
+        "done": "完了",
+        "missed": "未達成",
+        "noStreak": "継続記録なし",
+        "plannedDays_one": "{{count}}日のトレーニングを計画済み",
+        "plannedDays_other": "{{count}}日のトレーニングを計画済み",
+        "recommendedFor": "{{focus}}におすすめ",
+        "restDay": "休養日。リカバリー、ストレッチ、または散歩をしましょう。",
+        "startWorkout": "ワークアウトを開始",
+        "streak_one": "{{count}}週間連続",
+        "streak_other": "{{count}}週間連続",
+        "targets": "ターゲット: {{muscles}}",
+        "template": "テンプレート",
+        "thisWeek": "今週",
+        "viewExercise": "エクササイズを表示",
+        "weeklyGoal": "週間の目標",
+        "workoutsThisWeek": "今週のワークアウト: {{target}}回中{{current}}回"
+      },
+      "templates": {
+        "balanced": "バランス",
+        "fullBody": "全身 ×3",
+        "ppl": "プッシュ / プル / レッグ",
+        "upperLower": "上半身 / 下半身"
+      },
+      "title": "フィットネス",
+      "toasts": {
+        "addedToDay": "{{date}}に{{name}}を追加しました",
+        "addedToWorkout": "今日のワークアウトに{{name}}を追加しました",
+        "foodSaved": "{{name}}を食事ログに保存しました",
+        "statsSaved": "身体データを保存しました",
+        "templateApplied": "{{name}}プランを適用しました"
+      },
+      "units": {
+        "imperial": "ヤード・ポンド法 (lb, in)",
+        "metric": "メートル法 (kg, cm)"
+      },
+      "views": {
+        "body": "身体",
+        "exercises": "エクササイズ",
+        "food": "食事",
+        "schedule": "スケジュール",
+        "workouts": "ワークアウト"
+      },
+      "workouts": {
+        "addExercisePlaceholder": "エクササイズを追加…",
+        "addSet": "セットを追加",
+        "deleteWorkout": "ワークアウトを削除",
+        "e1rm": "推定1RM",
+        "empty": "この日のエクササイズはまだ記録されていません。",
+        "exerciseCount_one": "{{count}}個のエクササイズ",
+        "exerciseCount_other": "{{count}}個のエクササイズ",
+        "focus": "フォーカス",
+        "history": "履歴",
+        "lastTime": "前回: {{sets}}",
+        "noHistory": "ワークアウトはまだありません。",
+        "noRecords": "記録を表示するには、重量セットを記録してください。",
+        "records": "自己ベスト",
+        "removeExercise": "エクササイズを削除",
+        "removeSet": "セットを削除",
+        "reps": "レップ数",
+        "set": "セット",
+        "suggested": "{{focus}}におすすめ",
+        "weight": "重量 ({{unit}})"
+      }
+    },
     "infinite-mac": {
       "description": "クラシックMac OSエミュレータ",
       "help": {
@@ -3094,14 +3432,14 @@
         "songSearchHttpError": "検索に失敗しました（ステータス {{status}}）",
         "songSearchHttpErrorWithHint": "{{error}} - {{hint}}",
         "songSearchInvalidResponse": "サーバーからの応答が無効です",
-        "songSearchQuotaExhausted": "YouTube 検索が 1 日の上限に達しました。しばらくしてからもう一度お試しください。",
-        "songSearchUnavailable": "現在 YouTube 検索を利用できません。しばらくしてからもう一度お試しください。",
         "songSearchNoResults": "結果が見つかりませんでした",
         "songSearchPlaceholder": "検索またはURLを貼り付け…",
+        "songSearchQuotaExhausted": "YouTube 検索が 1 日の上限に達しました。しばらくしてからもう一度お試しください。",
         "songSearchSearch": "検索",
         "songSearchSearching": "検索中…",
         "songSearchSelectResult": "追加する曲を選択してください:",
         "songSearchTitle": "曲を検索",
+        "songSearchUnavailable": "現在 YouTube 検索を利用できません。しばらくしてからもう一度お試しください。",
         "syncFailed": "同期失敗",
         "unknownError": "不明なエラー",
         "updateCheckFailed": "更新確認失敗",

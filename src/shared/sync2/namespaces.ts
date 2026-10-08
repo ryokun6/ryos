@@ -35,6 +35,8 @@ export const SYNC_NAMESPACES = [
   "stuff-images",
   // Dictionary favorites + flashcard progress (category: "dictionary").
   "dictionary",
+  // Fitness workouts, body stats, food log, and training plan (category: "fitness").
+  "fitness",
 ] as const;
 
 export type SyncNamespace = (typeof SYNC_NAMESPACES)[number];
@@ -65,6 +67,7 @@ export const SYNC_CATEGORIES = [
   "books",
   "stuff",
   "dictionary",
+  "fitness",
 ] as const;
 
 export type SyncCategory = (typeof SYNC_CATEGORIES)[number];
@@ -92,6 +95,7 @@ const NAMESPACE_TO_CATEGORY: Record<SyncNamespace, SyncCategory> = {
   stuff: "stuff",
   "stuff-images": "stuff",
   dictionary: "dictionary",
+  fitness: "fitness",
 };
 
 export function isSyncNamespace(value: unknown): value is SyncNamespace {
