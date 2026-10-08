@@ -270,41 +270,44 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
         </section>
 
         <section className="flex min-w-0 flex-col gap-2 px-3 py-3">
-        <div className="flex min-h-6 items-center justify-between gap-2">
-          <h3 className="min-w-0 text-[12px] font-bold">
-            {t("apps.fitness.schedule.recommendedFor", {
-              focus: t(`apps.fitness.focus.${selected.focus}`),
-              day: formatWeekdayShort(selected.date, locale),
-            })}
-          </h3>
-          {selected.focus !== "rest" ? (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-6 shrink-0 text-[11px]"
-              onClick={() => {
-                l.setWorkoutDate(selected.date);
-                l.setView("workouts");
-              }}
-            >
-              {t("apps.fitness.schedule.startWorkout")}
-            </Button>
-          ) : null}
-        </div>
+          <div className="flex min-w-0 items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 flex-col">
+              <h3 className="text-[12px] font-bold">
+                {t("apps.fitness.schedule.recommendedFor", {
+                  focus: t(`apps.fitness.focus.${selected.focus}`),
+                  day: formatWeekdayShort(selected.date, locale),
+                })}
+              </h3>
+              {selected.focus !== "rest" ? (
+                <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
+                  {selected.focus === "cardio"
+                    ? t("apps.fitness.schedule.cardioHint")
+                    : t("apps.fitness.schedule.targets", {
+                        muscles: FOCUS_MUSCLES[selected.focus]
+                          .map((m) => t(`apps.fitness.muscles.${enumKey(m)}`))
+                          .join(", "),
+                      })}
+                </p>
+              ) : null}
+            </div>
+            {selected.focus !== "rest" ? (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-6 shrink-0 text-[11px]"
+                onClick={() => {
+                  l.setWorkoutDate(selected.date);
+                  l.setView("workouts");
+                }}
+              >
+                {t("apps.fitness.schedule.startWorkout")}
+              </Button>
+            ) : null}
+          </div>
           {selected.focus === "rest" ? (
             <EmptyNote>{t("apps.fitness.schedule.restDay")}</EmptyNote>
           ) : (
-            <>
-              <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
-                {selected.focus === "cardio"
-                  ? t("apps.fitness.schedule.cardioHint")
-                  : t("apps.fitness.schedule.targets", {
-                      muscles: FOCUS_MUSCLES[selected.focus]
-                        .map((m) => t(`apps.fitness.muscles.${enumKey(m)}`))
-                        .join(", "),
-                    })}
-              </p>
-              <ul
+            <ul
                 ref={recommendationRowRef}
                 className="flex w-full min-w-0 snap-x snap-mandatory gap-2 overflow-x-auto pb-1"
               >
@@ -360,9 +363,8 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                   );
                 })}
               </ul>
-            </>
           )}
-      </section>
+        </section>
 
       <section className="flex flex-col gap-2 px-3 py-3">
         <div className="flex min-h-6 items-center justify-between gap-2">
