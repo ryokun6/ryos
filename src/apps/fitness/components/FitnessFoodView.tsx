@@ -397,14 +397,24 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
         </div>
 
         <Section>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+          <div
+            className={cn(
+              "grid gap-x-4 gap-y-2",
+              isMobileLayout ? "grid-cols-2" : "grid-cols-4"
+            )}
+          >
             {MACROS.map((m) => {
               const consumed = totals[m.key];
               const target = targets[m.key];
               const progress = targetProgress(consumed, target);
               return (
-                <div key={m.key} className="flex flex-col gap-1">
-                  <div className="flex items-baseline justify-between gap-1 text-[11px]">
+                <div key={m.key} className="flex min-w-0 flex-col gap-1">
+                  <div
+                    className={cn(
+                      "flex gap-0.5 text-[11px]",
+                      isMobileLayout ? "flex-col items-start" : "items-baseline justify-between gap-1"
+                    )}
+                  >
                     <span className={FITNESS_MUTED_CLASS}>{macroLabel(t, m.key)}</span>
                     <span className="whitespace-nowrap">
                       <span className="text-[13px] font-bold">{formatNumber(consumed, locale)}</span>
