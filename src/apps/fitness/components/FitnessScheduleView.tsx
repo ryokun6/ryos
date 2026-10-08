@@ -51,9 +51,30 @@ const FOCUS_ICON: Record<FocusArea, typeof Barbell> = {
   rest: Moon,
 };
 
-function FocusMark({ focus }: { focus: FocusArea }) {
+/** Same shallow fill as Maps POI badges (`poiVisualGradient`). */
+function badgeGradient(from: string, to: string): string {
+  return `linear-gradient(180deg, ${from} 0%, color-mix(in srgb, ${from} 82%, ${to}) 100%)`;
+}
+
+const DAY_BADGE = {
+  workout: { from: "#ef4444", to: "#dc2626" },
+  rest: { from: "#94a3b8", to: "#64748b" },
+  missed: { from: "#f59e0b", to: "#b45309" },
+} as const;
+
+function FocusMark({ focus, missed }: { focus: FocusArea; missed: boolean }) {
   const Icon = FOCUS_ICON[focus];
-  return <Icon size={22} />;
+  const tone = focus === "rest" ? "rest" : missed ? "missed" : "workout";
+  const { from, to } = DAY_BADGE[tone];
+  return (
+    <div
+      className="aqua-icon-badge flex size-6 shrink-0 items-center justify-center text-white"
+      style={{ backgroundImage: badgeGradient(from, to) }}
+      aria-hidden
+    >
+      <Icon size={14} weight="fill" />
+    </div>
+  );
 }
 
 export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
@@ -113,8 +134,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               FITNESS_CARD_CLASS,
               "flex cursor-default flex-col items-center gap-1 p-1.5 text-center",
               day.date === selected.date && "ring-2 ring-sky-500/70",
-              day.isToday && "bg-sky-500/10 dark:bg-sky-400/15",
-              day.focus === "rest" && "opacity-75"
+              day.isToday && "bg-sky-500/10 dark:bg-sky-400/15"
             )}
           >
             <div className="flex w-full flex-col items-center leading-tight">
@@ -125,9 +145,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                 {formatCompactDate(day.date, locale)}
               </span>
             </div>
-            <div className="text-black/80 dark:text-white/80" aria-hidden>
-              <FocusMark focus={day.focus} />
-            </div>
+            <FocusMark focus={day.focus} missed={day.isPast && !day.completed && day.focus !== "rest"} />
             <div onClick={(e) => e.stopPropagation()} className="w-full">
               <SmallSelect
                 label={t("apps.fitness.schedule.dayFocus", { day: formatWeekdayShort(day.date, locale) })}
