@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { parseNumberInput } from "../utils/units";
 
 export const FITNESS_CARD_CLASS =
-  "rounded-md border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5";
+  "!rounded-[0.5rem] border border-black/10 bg-black/[0.025] p-3 dark:border-white/10 dark:bg-white/5";
 export const FITNESS_CHIP_CLASS =
   "rounded-full border border-black/15 bg-black/[0.03] px-2 py-0.5 text-[11px] hover:bg-black/10 dark:border-white/20 dark:bg-white/5 dark:hover:bg-white/15";
 export const FITNESS_MUTED_CLASS = "text-black/55 dark:text-white/55";
