@@ -431,17 +431,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
           </p>
         </Section>
 
-        <Section
-          title={draft ? t("apps.fitness.food.review") : t("apps.fitness.food.addFood")}
-          actions={
-            draft ? null : (
-              <Button size="sm" variant="secondary" className="h-6 gap-1 text-[11px]" onClick={startManual}>
-                <PencilSimple size={11} />
-                {t("apps.fitness.food.manual")}
-              </Button>
-            )
-          }
-        >
+        <Section title={draft ? t("apps.fitness.food.review") : t("apps.fitness.food.addFood")}>
           {draft ? (
             <DraftEditor l={l} draft={draft} setDraft={setDraft} photo={photo} onSave={save} onCancel={reset} />
           ) : (
@@ -458,16 +448,17 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 }}
               />
               <div className="flex items-start gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={busy}
-                  className="flex size-20 shrink-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-md border border-dashed border-black/25 text-[10px] hover:bg-black/5 dark:border-white/25 dark:hover:bg-white/10"
+                  className="!size-20 shrink-0 flex-col gap-1 !p-0 text-[10px]"
                   aria-label={t("apps.fitness.food.addPhoto")}
                   title={t("apps.fitness.food.addPhoto")}
                 >
                   {photo ? (
-                    <img src={photo.previewUrl} alt="" className="size-full object-cover" />
+                    <img src={photo.previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
                   ) : status === "preparing" ? (
                     <ActivityIndicator size="sm" />
                   ) : (
@@ -476,7 +467,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                       {t("apps.fitness.food.photo")}
                     </>
                   )}
-                </button>
+                </Button>
                 <OsTextarea
                   value={description}
                   maxLength={FOOD_TEXT_MAX_LENGTH}
@@ -499,6 +490,16 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                     {t("apps.fitness.food.analyzing")}
                   </span>
                 ) : null}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-6 gap-1 text-[11px]"
+                  onClick={startManual}
+                  disabled={busy}
+                >
+                  <PencilSimple size={11} />
+                  {t("apps.fitness.food.manual")}
+                </Button>
                 <Button
                   size="sm"
                   variant="default"
