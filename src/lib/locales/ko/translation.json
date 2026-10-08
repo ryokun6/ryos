@@ -3028,10 +3028,13 @@
         "targets": "목표: {{muscles}}",
         "template": "템플릿",
         "thisWeek": "이번 주",
+        "upcomingWeeks": "다가오는 주",
+        "moreMonths": "이후 달",
         "viewExercise": "운동 보기",
         "weeklyGoal": "주간 목표",
         "workoutsThisWeek": "이번 주 운동 {{target}}회 중 {{current}}회"
       },
+      "sidebar": "사이드바",
       "templates": {
         "balanced": "밸런스",
         "fullBody": "전신 ×3",

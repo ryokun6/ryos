@@ -368,7 +368,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
   const busy = status !== "idle";
 
   return (
-    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+    <div className="flex size-full min-h-0 flex-col">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
       <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -582,7 +582,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
       </div>
       </div>
 
-      <Sidebar mobile={isMobileLayout} widthClass="w-[220px]">
+      <Sidebar>
         <SidebarSection title={t("apps.fitness.food.history")}>
           {history.length ? (
             <ul className="flex flex-col gap-1.5 text-[12px]">

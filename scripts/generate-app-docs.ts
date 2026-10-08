@@ -343,7 +343,7 @@ function getWindowConfig(appId: string): AppInfo["windowConfig"] {
     fitness: {
       defaultSize: { width: 840, height: 600 },
       minSize: { width: 400, height: 420 },
-      maxSize: { width: 840 },
+      maxSize: { width: 660 },
     },
   };
 

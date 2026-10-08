@@ -3035,12 +3035,15 @@
         "targets": "Objetivos: {{muscles}}",
         "template": "Plantilla",
         "thisWeek": "Esta semana",
+        "upcomingWeeks": "Próximas semanas",
+        "moreMonths": "Más meses",
         "viewExercise": "Ver ejercicio",
         "weeklyGoal": "Objetivo semanal",
         "workoutsThisWeek": "{{current}} de {{target}} entrenos esta semana",
         "streak_many": "Racha de {{count}} semanas",
         "plannedDays_many": "{{count}} días de entrenamiento planificados"
       },
+      "sidebar": "Barra lateral",
       "templates": {
         "balanced": "Equilibrado",
         "fullBody": "Cuerpo completo ×3",

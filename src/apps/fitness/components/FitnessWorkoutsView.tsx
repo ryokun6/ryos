@@ -219,7 +219,7 @@ function AddExercise({ l, onAdd }: { l: FitnessLogic; onAdd: (exercise: { id: st
   );
 }
 
-export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
+export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, workoutDate, setWorkoutDate } = l;
   const store = useFitnessStore.getState();
   const workout = useMemo(
@@ -253,7 +253,7 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
   const add = (exercise: { id: string; name: string }) => l.addExerciseToDay(workoutDate, exercise);
 
   return (
-    <div className={cn("flex size-full min-h-0", isMobileLayout ? "flex-col" : "flex-row")}>
+    <div className="flex size-full min-h-0 flex-col">
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
         <div className="flex flex-col gap-3 p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -322,7 +322,7 @@ export function FitnessWorkoutsView({ l, isMobileLayout }: { l: FitnessLogic; is
         </div>
       </div>
 
-      <Sidebar mobile={isMobileLayout} widthClass="w-[230px]">
+      <Sidebar>
         <SidebarSection title={t("apps.fitness.workouts.history")}>
           {history.length ? (
             <ul className="flex flex-col text-[12px]">

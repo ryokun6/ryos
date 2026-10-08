@@ -3,10 +3,12 @@ import type { FitnessExercise } from "../../../src/shared/fitness";
 import type { Workout } from "../../../src/apps/fitness/types";
 import {
   addDays,
+  mondayMonthGrid,
   startOfWeek,
   weekDates,
   weekdayOf,
 } from "../../../src/apps/fitness/utils/dates";
+import { formatWeekRange } from "../../../src/apps/fitness/utils/format";
 import {
   CURATED_FOCUS_EXERCISES,
   DEFAULT_SCHEDULE,
@@ -70,6 +72,22 @@ describe("dates", () => {
       "2026-10-11",
     ]);
     expect(addDays("2026-02-28", 1)).toBe("2026-03-01");
+  });
+
+  test("Monday-start month grid leaves neighboring days empty", () => {
+    // 2026-10-01 is a Thursday, so the first row starts with three empty cells.
+    const october = mondayMonthGrid(2026, 9);
+    expect(october).toHaveLength(5);
+    expect(october[0].slice(0, 4)).toEqual([
+      null,
+      null,
+      null,
+      { date: "2026-10-01", day: 1 },
+    ]);
+    expect(october[0][6]).toEqual({ date: "2026-10-04", day: 4 });
+    expect(october[4][5]).toEqual({ date: "2026-10-31", day: 31 });
+    expect(october[4][6]).toBeNull();
+    expect(october.flat().filter((cell) => cell !== null)).toHaveLength(31);
   });
 });
 
@@ -152,6 +170,17 @@ describe("weekly progress", () => {
     expect(plan).toHaveLength(7);
     expect(plan[0]).toMatchObject({ date: "2026-10-05", focus: "upper", completed: true, isPast: true });
     expect(plan[3]).toMatchObject({ isToday: true, completed: false, isPast: false });
+  });
+
+  test("a future week keeps the template until that day is planned ahead", () => {
+    const schedule = scheduleFromTemplate("upperLower");
+    const nextMonday = addDays(startOfWeek("2026-10-08"), 7);
+    const planned = { ...workoutOn(nextMonday, 0), focus: "cardio" as const, updatedAt: 5 };
+    const future = weekPlan(schedule, [planned], "2026-10-08", nextMonday);
+    expect(future[0]).toMatchObject({ date: nextMonday, focus: "cardio", isToday: false, isPast: false });
+    expect(weekPlan(schedule, [planned], "2026-10-08")[0].focus).toBe("upper");
+    expect(formatWeekRange("2026-10-05", "2026-10-11", "zh-TW")).toBe("10月5日–10月11日");
+    expect(formatWeekRange("2026-10-05", "2026-10-11", "en-US")).toContain(" – ");
   });
 
   test("weekly streak counts consecutive weeks meeting the target", () => {

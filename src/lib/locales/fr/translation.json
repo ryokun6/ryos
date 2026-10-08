@@ -3035,12 +3035,15 @@
         "targets": "Cibles : {{muscles}}",
         "template": "Modèle",
         "thisWeek": "Cette semaine",
+        "upcomingWeeks": "Semaines à venir",
+        "moreMonths": "Mois suivants",
         "viewExercise": "Afficher l’exercice",
         "weeklyGoal": "Objectif hebdomadaire",
         "workoutsThisWeek": "{{current}} sur {{target}} entraînements cette semaine",
         "streak_many": "Série de {{count}} semaines",
         "plannedDays_many": "{{count}} jours d’entraînement prévus"
       },
+      "sidebar": "Barre latérale",
       "templates": {
         "balanced": "Équilibré",
         "fullBody": "Corps complet ×3",

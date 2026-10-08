@@ -3028,10 +3028,13 @@
         "targets": "Ziele: {{muscles}}",
         "template": "Vorlage",
         "thisWeek": "Diese Woche",
+        "upcomingWeeks": "Kommende Wochen",
+        "moreMonths": "Weitere Monate",
         "viewExercise": "Übung ansehen",
         "weeklyGoal": "Wochenziel",
         "workoutsThisWeek": "{{current}} von {{target}} Trainings diese Woche"
       },
+      "sidebar": "Seitenleiste",
       "templates": {
         "balanced": "Ausgewogen",
         "fullBody": "Ganzkörper ×3",

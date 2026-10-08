@@ -3028,10 +3028,13 @@
         "targets": "ターゲット: {{muscles}}",
         "template": "テンプレート",
         "thisWeek": "今週",
+        "upcomingWeeks": "今後の週",
+        "moreMonths": "さらに先の月",
         "viewExercise": "エクササイズを表示",
         "weeklyGoal": "週間の目標",
         "workoutsThisWeek": "今週のワークアウト: {{target}}回中{{current}}回"
       },
+      "sidebar": "サイドバー",
       "templates": {
         "balanced": "バランス",
         "fullBody": "全身 ×3",

@@ -2808,7 +2808,7 @@
         "other": "其他"
       },
       "exercises": {
-        "addToToday": "加入「今天」",
+        "addToToday": "加入今天",
         "back": "運動",
         "bestSet": "最佳：{{reps}} × {{weight}}",
         "count_one": "{{count}} 個運動",
@@ -3028,10 +3028,13 @@
         "targets": "目標：{{muscles}}",
         "template": "樣板",
         "thisWeek": "本週",
+        "upcomingWeeks": "接下來的週",
+        "moreMonths": "更多月份",
         "viewExercise": "檢視運動",
         "weeklyGoal": "每週目標",
         "workoutsThisWeek": "本週已完成 {{target}} 次體能訓練中的 {{current}} 次"
       },
+      "sidebar": "側邊欄",
       "templates": {
         "balanced": "均衡",
         "fullBody": "全身 ×3",

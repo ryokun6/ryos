@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
-import { Barbell, CalendarCheck, ForkKnife, Notebook, Scales } from "@phosphor-icons/react";
+import { Barbell, CalendarCheck, ForkKnife, MagnifyingGlass, Person, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
-import { FITNESS_VIEWS, type FitnessView, type UnitSystem } from "../types";
+import { FITNESS_VIEWS, type FitnessView } from "../types";
 
 function ToolbarButton({
   l,
@@ -61,13 +61,23 @@ function ToolbarButton({
 
 const VIEW_ICONS: Record<FitnessView, ReactNode> = {
   schedule: <CalendarCheck size={14} />,
-  exercises: <Barbell size={14} />,
-  workouts: <Notebook size={14} />,
-  body: <Scales size={14} />,
+  exercises: <MagnifyingGlass size={14} />,
+  workouts: <Barbell size={14} />,
+  body: <Person size={14} />,
   food: <ForkKnife size={14} />,
 };
 
-export function FitnessToolbar({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
+export function FitnessToolbar({
+  l,
+  isMobileLayout,
+  sheetOpen = false,
+  onToggleSheet,
+}: {
+  l: FitnessLogic;
+  isMobileLayout: boolean;
+  sheetOpen?: boolean;
+  onToggleSheet?: () => void;
+}) {
   const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme } = l;
   const group = isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0.5";
   return (
@@ -93,19 +103,18 @@ export function FitnessToolbar({ l, isMobileLayout }: { l: FitnessLogic; isMobil
         ))}
       </div>
       <div className="flex-1" />
-      <div className={group} role="group" aria-label={t("apps.fitness.menu.units")}>
-        {(["metric", "imperial"] as UnitSystem[]).map((units) => (
+      {onToggleSheet ? (
+        <div className={group}>
           <ToolbarButton
-            key={units}
             l={l}
-            active={l.units === units}
-            onClick={() => l.setUnits(units)}
-            label={t(`apps.fitness.units.${units}`)}
+            active={sheetOpen}
+            onClick={onToggleSheet}
+            label={t("apps.fitness.sidebar")}
           >
-            <span className="text-[10px] font-bold">{units === "metric" ? "kg" : "lb"}</span>
+            <SidebarSimple size={14} mirrored />
           </ToolbarButton>
-        ))}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

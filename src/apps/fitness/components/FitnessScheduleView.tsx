@@ -20,7 +20,15 @@ import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { FOCUS_AREAS, type FocusArea } from "../types";
-import { enumKey, formatCompactDate, formatShortDate, formatWeekdayShort } from "../utils/format";
+import { addDays, daysBetween, fromDateKey, mondayMonthGrid, startOfWeek, weekDates } from "../utils/dates";
+import {
+  enumKey,
+  formatCompactDate,
+  formatLongDate,
+  formatShortDate,
+  formatWeekdayShort,
+  formatWeekRange,
+} from "../utils/format";
 import { weeklyWorkoutProgress } from "../utils/goals";
 import {
   FOCUS_MUSCLES,
@@ -34,11 +42,18 @@ import {
 import {
   EmptyNote,
   FITNESS_CARD_CLASS,
+  FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
+  Sidebar,
+  SidebarSection,
   SmallSelect,
 } from "./FitnessUi";
 
 const SCROLL_FADE_PX = 24;
+const MONTH_STEP = 3;
+const MONTH_LIMIT = 12;
+const TODAY_RED = "#E25B4F";
+const TODAY_RED_XP = "#B53325";
 
 /** Fade the edges of a horizontal scroller only while content is clipped there. */
 function horizontalScrollFade(el: HTMLElement): string {
@@ -203,10 +218,123 @@ function FocusMark({ focus, done, missed }: { focus: FocusArea; done: boolean; m
   );
 }
 
+function ScheduleMonth({
+  year,
+  month,
+  locale,
+  narrowDayNames,
+  todayKey,
+  selectedDate,
+  selectedWeek,
+  isWindowsTheme,
+  useGeneva,
+  onSelect,
+}: {
+  year: number;
+  month: number;
+  locale: string;
+  narrowDayNames: string[];
+  todayKey: string;
+  selectedDate: string;
+  selectedWeek: Set<string>;
+  isWindowsTheme: boolean;
+  useGeneva: boolean;
+  onSelect: (date: string) => void;
+}) {
+  const label = new Date(year, month, 1).toLocaleDateString(locale, {
+    month: "long",
+    year: "numeric",
+  });
+  const weeks = mondayMonthGrid(year, month);
+  return (
+    <div data-schedule-month={`${year}-${String(month + 1).padStart(2, "0")}`}>
+      <div className={cn("px-0.5 py-1 text-center text-[10px] font-semibold", useGeneva && "font-geneva-12")}>
+        {label}
+      </div>
+      <div className="mb-0.5 grid grid-cols-7">
+        {narrowDayNames.map((name, index) => (
+          <div
+            key={`${name}-${index}`}
+            className={cn("text-center font-medium", useGeneva && "font-geneva-12")}
+            style={{ opacity: 0.5, fontSize: 9 }}
+          >
+            {name}
+          </div>
+        ))}
+      </div>
+      {weeks.map((week, weekIndex) => (
+        <div key={weekIndex} className="grid grid-cols-7">
+          {week.map((cell, dayIndex) => {
+            if (!cell) return <span key={dayIndex} className="h-[18px]" />;
+            const isToday = cell.date === todayKey;
+            const isSelected = cell.date === selectedDate;
+            return (
+              <button
+                key={cell.date}
+                type="button"
+                data-date={cell.date}
+                aria-label={formatLongDate(cell.date, locale)}
+                aria-pressed={isSelected}
+                aria-current={isToday ? "date" : undefined}
+                onClick={() => onSelect(cell.date)}
+                className={cn(
+                  "flex h-[18px] items-center justify-center",
+                  selectedWeek.has(cell.date) && "bg-sky-500/15 dark:bg-sky-400/20"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex items-center justify-center text-[10px] leading-none",
+                    useGeneva && "font-geneva-12",
+                    isToday && "font-bold text-white",
+                    isSelected && !isToday && "bg-black/15 dark:bg-white/20"
+                  )}
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    backgroundColor: isToday ? (isWindowsTheme ? TODAY_RED_XP : TODAY_RED) : undefined,
+                  }}
+                >
+                  {cell.day}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function WeekTitle({
+  isCurrent,
+  title,
+  range,
+}: {
+  isCurrent: boolean;
+  title: string;
+  range: string;
+}) {
+  if (!isCurrent) return <span className="min-w-0 truncate">{range}</span>;
+  return (
+    <span className="flex min-w-0 items-baseline gap-2">
+      <span className="shrink-0">{title}</span>
+      <span className={cn("truncate text-[11px] font-normal", FITNESS_MUTED_CLASS)}>{range}</span>
+    </span>
+  );
+}
+
 export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, todayKey } = l;
   const store = useFitnessStore.getState();
-  const days = useMemo(() => weekPlan(l.schedule, l.workouts, todayKey), [l.schedule, l.workouts, todayKey]);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [visibleMonths, setVisibleMonths] = useState(MONTH_STEP);
+  const weekStart = addDays(startOfWeek(todayKey), weekOffset * 7);
+  const days = useMemo(
+    () => weekPlan(l.schedule, l.workouts, todayKey, weekStart),
+    [l.schedule, l.workouts, todayKey, weekStart]
+  );
   const [selectedDate, setSelectedDate] = useState(todayKey);
   const selectedIndex = Math.max(0, days.findIndex((d) => d.date === selectedDate));
   const selected = days[selectedIndex] ?? days[0];
@@ -237,6 +365,27 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
     return byExercise;
   }, [l.workouts, selected.date]);
   const [template, setTemplate] = useState<ScheduleTemplateId | "">("");
+  const isCurrentWeek = weekOffset === 0;
+  const weekRange = formatWeekRange(days[0].date, days[6].date, locale);
+  const thisWeekLabel = t("apps.fitness.schedule.thisWeek");
+  const selectedWeek = useMemo(() => new Set(weekDates(weekStart)), [weekStart]);
+  const narrowDayNames = useMemo(() => {
+    const fmt = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
+    return Array.from({ length: 7 }, (_, index) => fmt.format(new Date(2024, 0, 8 + index)));
+  }, [locale]);
+  const months = useMemo(() => {
+    const start = fromDateKey(todayKey);
+    return Array.from({ length: visibleMonths }, (_, index) => {
+      const date = new Date(start.getFullYear(), start.getMonth() + index, 1);
+      return { year: date.getFullYear(), month: date.getMonth() };
+    });
+  }, [todayKey, visibleMonths]);
+  const useGeneva = l.isMacOSTheme || l.isSystem7Theme;
+
+  const selectDate = (date: string) => {
+    setWeekOffset(Math.round(daysBetween(startOfWeek(todayKey), startOfWeek(date)) / 7));
+    setSelectedDate(date);
+  };
 
   const addToDay = (exercise: { id: string; name: string }) => {
     if (l.addExerciseToDay(selected.date, exercise)) {
@@ -259,7 +408,9 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
       <div className="flex min-w-0 flex-col divide-y divide-black/10 dark:divide-white/10">
         <section className="flex min-w-0 flex-col gap-2 px-3 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-[14px] font-bold">{t("apps.fitness.schedule.thisWeek")}</h2>
+            <h2 className="min-w-0 text-[14px] font-bold">
+              <WeekTitle isCurrent={isCurrentWeek} title={thisWeekLabel} range={weekRange} />
+            </h2>
             <div className="flex-1" />
             <SmallSelect<ScheduleTemplateId | "">
               label={t("apps.fitness.schedule.template")}
@@ -328,7 +479,14 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                     label={t("apps.fitness.schedule.dayFocus", { day: formatWeekdayShort(day.date, locale) })}
                     value={day.focus}
                     className="h-5 w-full px-1 text-[10px]"
-                    onChange={(focus) => store.setScheduleDay(index, { focus })}
+                    onChange={(focus) => {
+                      if (isCurrentWeek) {
+                        store.setScheduleDay(index, { focus });
+                        return;
+                      }
+                      const id = store.ensureWorkout(day.date);
+                      store.updateWorkout(id, { focus });
+                    }}
                     options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
                   />
                 </div>
@@ -474,6 +632,36 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             </div>
       </section>
       </div>
+      <Sidebar>
+        <SidebarSection title={t("apps.fitness.schedule.upcomingWeeks")}>
+          <div className="flex select-none flex-col gap-3">
+            {months.map((month) => (
+              <ScheduleMonth
+                key={`${month.year}-${month.month}`}
+                year={month.year}
+                month={month.month}
+                locale={locale}
+                narrowDayNames={narrowDayNames}
+                todayKey={todayKey}
+                selectedDate={selected.date}
+                selectedWeek={selectedWeek}
+                isWindowsTheme={l.isWindowsTheme}
+                useGeneva={useGeneva}
+                onSelect={selectDate}
+              />
+            ))}
+          </div>
+          {visibleMonths < MONTH_LIMIT ? (
+            <button
+              type="button"
+              className={cn(FITNESS_CHIP_CLASS, "self-start")}
+              onClick={() => setVisibleMonths((count) => Math.min(MONTH_LIMIT, count + MONTH_STEP))}
+            >
+              {t("apps.fitness.schedule.moreMonths")}
+            </button>
+          ) : null}
+        </SidebarSection>
+      </Sidebar>
     </div>
   );
 }
