@@ -1,4 +1,4 @@
-import { BookOpenText, Sparkle } from "@phosphor-icons/react";
+import { Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DictionaryFavorite } from "@/stores/useDictionaryStore";
@@ -130,7 +130,6 @@ export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
 
   return (
     <CenteredMessage>
-      <BookOpenText size={44} className="opacity-25" />
       <p className="text-[14px] font-semibold">{t("apps.dictionary.welcome.title")}</p>
       <p className="max-w-[340px] text-[12px] opacity-60">{t("apps.dictionary.welcome.description")}</p>
       <div className="mt-1 flex flex-wrap justify-center gap-1.5">
