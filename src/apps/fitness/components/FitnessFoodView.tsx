@@ -442,7 +442,6 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="hidden"
                 onChange={(e) => {
                   void handleFile(e.target.files?.[0]);
