@@ -15,6 +15,15 @@ import { analyzeFood, FitnessApiError } from "../utils/foodApi";
 import { formatLongDate, formatNumber, formatShortDate } from "../utils/format";
 import { prepareFoodPhoto, type PreparedFoodPhoto } from "../utils/image";
 import {
+  addFoodSplitItem,
+  changeFoodSplit,
+  foodSplitForPersist,
+  foodSplitFromEntry,
+  foodSplitFromItems,
+  patchFoodSplitItem,
+  removeFoodSplitItem,
+} from "../utils/foodSplit";
+import {
   dailyTotals,
   entriesByMeal,
   entryTotals,
@@ -22,6 +31,7 @@ import {
   nutritionHistory,
   targetProgress,
 } from "../utils/nutrition";
+import { FoodSplitControl } from "./FoodSplitControl";
 import {
   EmptyNote,
   FITNESS_CHIP_CLASS,
@@ -49,7 +59,11 @@ interface FoodDraft {
   editingId: string | null;
   name: string;
   meal: Meal;
+  /** Your share, shown in the editor and saved as the logged amount. */
   items: FoodItem[];
+  /** Full meal. Split changes divide this instead of the current share. */
+  baseItems: FoodItem[];
+  splitPeople: number;
   source: "ai" | "manual";
   confidence: number | null;
   notes: string | null;
@@ -86,11 +100,9 @@ function DraftEditor({
 }) {
   const { t, locale } = l;
   const totals = sumFoodNutrients(draft.items);
+  const shared = draft.splitPeople > 1;
   const updateItem = (index: number, patch: Partial<FoodItem>) =>
-    setDraft((prev) => ({
-      ...prev,
-      items: prev.items.map((item, i) => (i === index ? { ...item, ...patch } : item)),
-    }));
+    setDraft((prev) => ({ ...prev, ...patchFoodSplitItem(prev, index, patch) }));
 
   return (
     <div className="flex flex-col gap-2">
@@ -113,6 +125,11 @@ function DraftEditor({
               className="w-[110px]"
               onChange={(meal) => setDraft((prev) => ({ ...prev, meal }))}
               options={MEALS.map((m) => ({ value: m, label: t(`apps.fitness.meals.${m}`) }))}
+            />
+            <FoodSplitControl
+              people={draft.splitPeople}
+              t={t}
+              onChange={(people) => setDraft((prev) => ({ ...prev, ...changeFoodSplit(prev, people) }))}
             />
             {draft.source === "ai" && draft.confidence != null ? (
               <span className={cn(FITNESS_CHIP_CLASS, "inline-flex items-center gap-1")}>
@@ -171,9 +188,7 @@ function DraftEditor({
                   <button
                     type="button"
                     className={ICON_BUTTON_CLASS}
-                    onClick={() =>
-                      setDraft((prev) => ({ ...prev, items: prev.items.filter((_, i) => i !== index) }))
-                    }
+                    onClick={() => setDraft((prev) => ({ ...prev, ...removeFoodSplitItem(prev, index) }))}
                     aria-label={t("apps.fitness.food.removeItem")}
                     title={t("apps.fitness.food.removeItem")}
                   >
@@ -184,7 +199,7 @@ function DraftEditor({
             ))}
             <tr className="border-t border-black/10 font-bold dark:border-white/10">
               <td className="py-1" colSpan={2}>
-                {t("apps.fitness.food.total")}
+                {shared ? t("apps.fitness.food.splitShare") : t("apps.fitness.food.total")}
               </td>
               {MACROS.map((m) => (
                 <td key={m.key} className="py-1">
@@ -203,7 +218,7 @@ function DraftEditor({
           variant="secondary"
           className="h-6 text-[11px]"
           disabled={draft.items.length >= FOOD_MAX_ITEMS * 2}
-          onClick={() => setDraft((prev) => ({ ...prev, items: [...prev.items, blankItem()] }))}
+          onClick={() => setDraft((prev) => ({ ...prev, ...addFoodSplitItem(prev, blankItem()) }))}
         >
           {t("apps.fitness.food.addItem")}
         </Button>
@@ -302,7 +317,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
         editingId: null,
         name: result.title,
         meal: mealForHour(new Date().getHours()),
-        items: result.items,
+        ...foodSplitFromItems(result.items),
         source: "ai",
         confidence: result.confidence,
         notes: result.notes,
@@ -320,7 +335,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
       editingId: null,
       name: description.trim().slice(0, 120),
       meal: mealForHour(new Date().getHours()),
-      items: [{ ...blankItem(), name: description.trim().slice(0, 80) }],
+      ...foodSplitFromItems([{ ...blankItem(), name: description.trim().slice(0, 80) }]),
       source: "manual",
       confidence: null,
       notes: null,
@@ -334,7 +349,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
       editingId: entry.id,
       name: entry.name,
       meal: entry.meal,
-      items: entry.items,
+      ...foodSplitFromEntry(entry),
       source: entry.source,
       confidence: null,
       notes: null,
@@ -343,16 +358,25 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
 
   const save = () => {
     if (!draft) return;
-    const items = draft.items.filter((item) => item.name.trim());
-    const name = draft.name.trim() || items[0]?.name || "";
+    const persisted = foodSplitForPersist(draft);
+    const name = draft.name.trim() || persisted.items[0]?.name || "";
+    if (!persisted.items.length) return;
     if (draft.editingId) {
-      store.updateFoodEntry(draft.editingId, { name, meal: draft.meal, items });
+      store.updateFoodEntry(draft.editingId, {
+        name,
+        meal: draft.meal,
+        items: persisted.items,
+        baseItems: persisted.baseItems,
+        splitPeople: persisted.splitPeople,
+      });
     } else {
       const id = store.addFoodEntry({
         date: foodDate,
         meal: draft.meal,
         name,
-        items,
+        items: persisted.items,
+        baseItems: persisted.baseItems,
+        splitPeople: persisted.splitPeople,
         source: draft.source,
         thumbnail: photo?.thumbnailUrl ?? null,
       });
@@ -539,8 +563,23 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1 truncate">
-                          {entry.name}
+                        <div className="flex min-w-0 items-center gap-1">
+                          <span className="truncate">{entry.name}</span>
+                          {entry.splitPeople && entry.splitPeople > 1 ? (
+                            <span
+                              className={cn(
+                                FITNESS_CHIP_CLASS,
+                                "shrink-0 px-1.5 py-0 text-[10px] hover:bg-transparent dark:hover:bg-transparent"
+                              )}
+                              title={t("apps.fitness.food.splitWays", { count: entry.splitPeople })}
+                              aria-label={t("apps.fitness.food.splitWays", { count: entry.splitPeople })}
+                              data-food-split={entry.splitPeople}
+                            >
+                              {entry.splitPeople === 2
+                                ? t("apps.fitness.food.splitBadge", { count: entry.splitPeople })
+                                : t("apps.fitness.food.splitWays", { count: entry.splitPeople })}
+                            </span>
+                          ) : null}
                           {entry.source === "ai" ? <Sparkle size={10} weight="fill" className="shrink-0 opacity-50" /> : null}
                         </div>
                         <div className="truncate text-[10px] opacity-60">

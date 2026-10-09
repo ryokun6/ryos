@@ -111,7 +111,18 @@ export interface FoodEntry {
   date: string;
   meal: Meal;
   name: string;
+  /**
+   * Your share of the meal. Daily totals use these numbers.
+   * When `splitPeople` is greater than 1 they are `baseItems` divided by that count.
+   */
   items: FoodItem[];
+  /**
+   * People sharing this meal. Omitted or 1 means `items` is the whole meal.
+   * Changing the split recomputes `items` from `baseItems` so it does not compound.
+   */
+  splitPeople?: number;
+  /** Full meal before splitting. Present only when `splitPeople` is greater than 1. */
+  baseItems?: FoodItem[];
   source: "ai" | "manual";
   /** Small JPEG data URL (≤ ~12 KB) kept for history thumbnails. */
   thumbnail: string | null;
