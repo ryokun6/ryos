@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { createClientLogger } from "@/utils/logger";
+import { keepMusicKitPlaybackLocal } from "@/utils/musicKitAirPlay";
 import { authorizeMusicKit } from "@/utils/musicKitShellAuth";
 
 /**
@@ -272,6 +273,7 @@ async function configureMusicKit(
       appBuild: app.build,
       bitrate: APPLE_MUSIC_STREAMING_BITRATE_KBPS,
     });
+    keepMusicKitPlaybackLocal();
     // `configure()` returns a Promise in MusicKit JS v3. Awaiting also
     // forces script-side init to complete before we hand the instance back.
     const result = await Promise.resolve(
