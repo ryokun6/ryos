@@ -21,6 +21,7 @@ import { focusForDate, recommendExercises } from "../utils/schedule";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
 import {
   EmptyNote,
+  ExerciseNameLines,
   FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
   NumberField,
@@ -74,7 +75,11 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           onClick={() => l.openExercise(entry.exerciseId)}
         >
           <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
-          <span className="block truncate hover:underline">{names.primary}</span>
+          <ExerciseNameLines
+            primary={names.primary}
+            secondary={names.secondary}
+            primaryClassName="hover:underline"
+          />
         </button>
       }
       actions={

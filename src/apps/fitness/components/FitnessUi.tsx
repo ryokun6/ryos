@@ -106,7 +106,7 @@ export function EmptyNote({ children }: { children: ReactNode }) {
   return <p className={cn("py-2 text-center text-[12px]", FITNESS_MUTED_CLASS)}>{children}</p>;
 }
 
-/** Exercise-view name: localized title, with the English name on a second line when they differ. */
+/** Localized title, with the English name on a second line when they differ. */
 export function ExerciseNameLines({
   primary,
   secondary,
