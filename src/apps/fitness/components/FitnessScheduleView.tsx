@@ -11,10 +11,10 @@ import {
   PersonSimpleTaiChi,
   PersonSimpleWalk,
   Plus,
-  Trophy,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
@@ -54,6 +54,10 @@ const MONTH_STEP = 3;
 const MONTH_LIMIT = 12;
 const TODAY_RED = "#E25B4F";
 const TODAY_RED_XP = "#B53325";
+
+function accentMix(percent: number): string {
+  return `color-mix(in srgb, var(--os-accent-color, #3a73d6) ${percent}%, transparent)`;
+}
 
 /** Fade the edges of a horizontal scroller only while content is clipped there. */
 function horizontalScrollFade(el: HTMLElement): string {
@@ -241,6 +245,8 @@ function ScheduleMonth({
   useGeneva: boolean;
   onSelect: (date: string) => void;
 }) {
+  const { isDarkMode } = useThemeFlags();
+  const weekBand = accentMix(isDarkMode ? 22 : 15);
   const label = new Date(year, month, 1).toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
@@ -268,6 +274,7 @@ function ScheduleMonth({
             if (!cell) return <span key={dayIndex} className="h-[18px]" />;
             const isToday = cell.date === todayKey;
             const isSelected = cell.date === selectedDate;
+            const inWeek = selectedWeek.has(cell.date);
             return (
               <button
                 key={cell.date}
@@ -279,8 +286,10 @@ function ScheduleMonth({
                 onClick={() => onSelect(cell.date)}
                 className={cn(
                   "flex h-[18px] items-center justify-center",
-                  selectedWeek.has(cell.date) && "bg-sky-500/15 dark:bg-sky-400/20"
+                  inWeek && dayIndex === 0 && "!rounded-l-full",
+                  inWeek && dayIndex === 6 && "!rounded-r-full"
                 )}
+                style={inWeek ? { backgroundColor: weekBand } : undefined}
               >
                 <span
                   className={cn(
@@ -327,6 +336,7 @@ function WeekTitle({
 
 export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; isMobileLayout: boolean }) {
   const { t, locale, todayKey } = l;
+  const { isDarkMode } = useThemeFlags();
   const store = useFitnessStore.getState();
   const [weekOffset, setWeekOffset] = useState(0);
   const [visibleMonths, setVisibleMonths] = useState(MONTH_STEP);
@@ -416,7 +426,7 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               label={t("apps.fitness.schedule.template")}
               placeholder={t("apps.fitness.schedule.applyTemplate")}
               value={template}
-              className="w-[170px]"
+              className="w-auto min-w-max shrink-0"
               onChange={(value) => {
                 if (!value) return;
                 setTemplate("");
@@ -451,10 +461,16 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                 className={cn(
                   FITNESS_CARD_CLASS,
                   "flex cursor-default flex-col items-center gap-1 p-1.5 text-center",
-                  isMobileLayout && "w-[5.5rem] shrink-0 snap-center",
-                  day.date === selected.date && "ring-2 ring-sky-500/70",
-                  day.isToday && "bg-sky-500/10 dark:bg-sky-400/15"
+                  isMobileLayout && "w-[5.5rem] shrink-0 snap-center"
                 )}
+                style={{
+                  ...(day.isToday
+                    ? { backgroundColor: accentMix(isDarkMode ? 16 : 10) }
+                    : null),
+                  ...(day.date === selected.date
+                    ? { boxShadow: `0 0 0 2px ${accentMix(70)}` }
+                    : null),
+                }}
               >
                 <div className="flex w-full flex-col items-center leading-tight">
                   <span className={cn("whitespace-nowrap text-[10px] font-bold uppercase", day.isToday && "text-os-link")}>
@@ -606,14 +622,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             }))}
           />
         </div>
-            <div className="flex items-baseline justify-between text-[12px]">
-              <span>
-                {t("apps.fitness.schedule.workoutsThisWeek", {
-                  current: weekly.current,
-                  target: weekly.target,
-                })}
-              </span>
-              {weekly.achieved ? <Trophy size={14} weight="fill" aria-hidden /> : null}
+            <div className="text-[12px]">
+              {t("apps.fitness.schedule.workoutsThisWeek", {
+                current: weekly.current,
+                target: weekly.target,
+              })}
             </div>
             <WeeklyGoalMarks
               current={weekly.current}

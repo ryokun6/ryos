@@ -21,6 +21,7 @@ import { focusForDate, recommendExercises } from "../utils/schedule";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
 import {
   EmptyNote,
+  ExerciseNameLines,
   FITNESS_CHIP_CLASS,
   FITNESS_MUTED_CLASS,
   NumberField,
@@ -74,7 +75,11 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
           onClick={() => l.openExercise(entry.exerciseId)}
         >
           <ExerciseThumb path={l.exerciseById.get(entry.exerciseId)?.images[0]} />
-          <span className="block truncate hover:underline">{names.primary}</span>
+          <ExerciseNameLines
+            primary={names.primary}
+            secondary={names.secondary}
+            primaryClassName="hover:underline"
+          />
         </button>
       }
       actions={
@@ -297,20 +302,15 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
         <AddExercise l={l} onAdd={add} />
 
         {recommendations.length ? (
-          <div className="flex flex-col gap-1">
-            <span className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
-              {t("apps.fitness.workouts.suggested", { focus: t(`apps.fitness.focus.${focus}`) })}
-            </span>
-            <div className="flex flex-wrap items-center gap-1">
-              {recommendations.map((rec) => {
-                const names = l.displayName(rec.id, rec.name);
-                return (
+          <div className="flex flex-wrap items-center gap-1">
+            {recommendations.map((rec) => {
+              const names = l.displayName(rec.id, rec.name);
+              return (
                 <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "max-w-full truncate")} onClick={() => add(rec)}>
                   + {names.primary}
                 </button>
-                );
-              })}
-            </div>
+              );
+            })}
           </div>
         ) : null}
 

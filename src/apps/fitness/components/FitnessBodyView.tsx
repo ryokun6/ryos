@@ -191,6 +191,7 @@ export function FitnessBodyView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
               target={goals.targetWeightKg}
               formatValue={(v) => l.formatWeight(v)}
               formatDate={(d) => formatShortDate(d, locale)}
+              height={80}
             />
           ) : (
             <EmptyNote>{t("apps.fitness.body.noWeight")}</EmptyNote>
