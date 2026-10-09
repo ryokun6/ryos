@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { parseNumberInput } from "../utils/units";
 
@@ -75,6 +76,7 @@ export function ProgressBar({
   label?: string;
   className?: string;
 }) {
+  const { isMacOSTheme } = useThemeFlags();
   const pct = Math.round(Math.min(1, Math.max(0, fraction)) * 100);
   return (
     <div
@@ -83,12 +85,16 @@ export function ProgressBar({
       aria-valuemax={100}
       aria-valuenow={pct}
       aria-label={label}
-      className={cn("h-2 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/15", className)}
+      className={cn(
+        "h-2 w-full overflow-hidden",
+        isMacOSTheme ? "aqua-progress" : "rounded-full bg-black/10 dark:bg-white/15",
+        className
+      )}
     >
       <div
         className={cn(
-          "h-full rounded-full transition-[width] duration-300",
-          over ? "bg-orange-500" : "bg-emerald-500"
+          "h-full transition-[width] duration-300",
+          isMacOSTheme ? "aqua-progress-fill" : cn("rounded-full", over ? "bg-orange-500" : "bg-emerald-500")
         )}
         style={{ width: `${pct}%` }}
       />

@@ -131,12 +131,6 @@ function DraftEditor({
               t={t}
               onChange={(people) => setDraft((prev) => ({ ...prev, ...changeFoodSplit(prev, people) }))}
             />
-            {draft.source === "ai" && draft.confidence != null ? (
-              <span className={cn(FITNESS_CHIP_CLASS, "inline-flex items-center gap-1")}>
-                <Sparkle size={10} weight="fill" />
-                {t("apps.fitness.food.confidence", { value: Math.round(draft.confidence * 100) })}
-              </span>
-            ) : null}
           </div>
         </div>
       </div>
@@ -473,26 +467,71 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 }}
               />
               <div className="flex items-start gap-2">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={busy}
-                  className="!size-20 shrink-0 flex-col gap-1 !p-0 text-[10px]"
-                  aria-label={t("apps.fitness.food.addPhoto")}
-                  title={t("apps.fitness.food.addPhoto")}
-                >
+                <div className="relative size-20 shrink-0">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={busy}
+                    className="relative !size-20 overflow-hidden flex-col gap-1 !p-0 text-[10px]"
+                    aria-label={t("apps.fitness.food.addPhoto")}
+                    title={t("apps.fitness.food.addPhoto")}
+                  >
+                    {photo ? (
+                      <img src={photo.previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
+                    ) : status === "preparing" ? (
+                      <ActivityIndicator size="sm" />
+                    ) : (
+                      <>
+                        <Camera size={20} />
+                        {t("apps.fitness.food.photo")}
+                      </>
+                    )}
+                  </Button>
                   {photo ? (
-                    <img src={photo.previewUrl} alt="" className="absolute inset-0 size-full object-cover" />
-                  ) : status === "preparing" ? (
-                    <ActivityIndicator size="sm" />
-                  ) : (
-                    <>
-                      <Camera size={20} />
-                      {t("apps.fitness.food.photo")}
-                    </>
-                  )}
-                </Button>
+                    <button
+                      type="button"
+                      onClick={() => setPhoto(null)}
+                      disabled={busy}
+                      className={cn(
+                        "absolute -top-1.5 -right-1.5 z-20 flex size-5 items-center justify-center transition-colors disabled:pointer-events-none disabled:opacity-50",
+                        l.isMacTheme
+                          ? "overflow-hidden rounded-full"
+                          : "rounded-sm bg-black/40 backdrop-blur-sm hover:bg-black/60"
+                      )}
+                      style={
+                        l.isMacTheme
+                          ? {
+                              background:
+                                "linear-gradient(rgba(160, 160, 160, 0.9), rgba(255, 255, 255, 0.9))",
+                              boxShadow:
+                                "0 1px 2px rgba(0, 0, 0, 0.2), 0 0.5px 0.5px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(0, 0, 0, 0.2), inset 0 1px 2px 0.5px rgba(187, 187, 187, 0.8)",
+                            }
+                          : undefined
+                      }
+                      aria-label={t("apps.fitness.food.removePhoto")}
+                    >
+                      {l.isMacTheme ? (
+                        <div
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2"
+                          style={{
+                            top: "1px",
+                            height: "35%",
+                            width: "50%",
+                            borderRadius: "9999px",
+                            background: "linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.2))",
+                            filter: "blur(0.3px)",
+                            zIndex: 2,
+                          }}
+                        />
+                      ) : null}
+                      <X
+                        className={cn("relative z-[3] size-2.5", l.isMacTheme ? "text-neutral-500" : "text-white")}
+                        weight="bold"
+                      />
+                    </button>
+                  ) : null}
+                </div>
                 <OsTextarea
                   value={description}
                   maxLength={FOOD_TEXT_MAX_LENGTH}
@@ -503,18 +542,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 />
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
-                {photo ? (
-                  <Button size="sm" variant="secondary" className="h-6 text-[11px]" onClick={() => setPhoto(null)} disabled={busy}>
-                    {t("apps.fitness.food.removePhoto")}
-                  </Button>
-                ) : null}
                 <div className="flex-1" />
-                {status === "analyzing" ? (
-                  <span className={cn("flex items-center gap-1 text-[11px]", FITNESS_MUTED_CLASS)}>
-                    <ActivityIndicator size="xs" />
-                    {t("apps.fitness.food.analyzing")}
-                  </span>
-                ) : null}
                 <Button
                   size="sm"
                   variant="secondary"
@@ -527,11 +555,18 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                 <Button
                   size="sm"
                   variant="default"
-                  className="h-6 text-[11px]"
+                  className="h-6 gap-1 text-[11px]"
                   disabled={busy || (!photo && !description.trim())}
                   onClick={() => void analyze()}
                 >
-                  {t("apps.fitness.food.analyze")}
+                  {status === "analyzing" ? (
+                    <>
+                      <ActivityIndicator size="xs" />
+                      {t("apps.fitness.food.analyzing")}
+                    </>
+                  ) : (
+                    t("apps.fitness.food.analyze")
+                  )}
                 </Button>
               </div>
               {error ? <p className="text-[11px] text-red-600 dark:text-red-400">{error}</p> : null}
@@ -624,16 +659,26 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
         <SidebarSection title={t("apps.fitness.food.history")}>
           {history.length ? (
             <ul className="flex flex-col gap-1.5 text-[12px]">
-              {history.map((day) => (
+              {history.map((day) => {
+                const selected = day.date === foodDate;
+                return (
                 <li key={day.date}>
                   <button
                     type="button"
-                    data-selected={day.date === foodDate ? "true" : undefined}
+                    data-selected={selected ? "true" : undefined}
+                    aria-current={selected ? "date" : undefined}
                     onClick={() => setFoodDate(day.date)}
                     className="flex w-full flex-col gap-0.5 rounded px-1 py-0.5 text-left"
+                    style={
+                      selected
+                        ? { background: "transparent", color: "inherit", textShadow: "none" }
+                        : undefined
+                    }
                   >
                     <span className="flex justify-between gap-2">
-                      <span>{formatShortDate(day.date, locale)}</span>
+                      <span style={selected ? { color: "var(--os-accent-color, #3a73d6)" } : undefined}>
+                        {formatShortDate(day.date, locale)}
+                      </span>
                       <span className="text-[11px] opacity-70">
                         {formatNumber(day.totals.calories, locale)} / {formatNumber(targets.calories, locale)}
                       </span>
@@ -645,7 +690,8 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                     />
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           ) : (
             <EmptyNote>{t("apps.fitness.food.noHistory")}</EmptyNote>

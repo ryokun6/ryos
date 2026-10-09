@@ -297,20 +297,15 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
         <AddExercise l={l} onAdd={add} />
 
         {recommendations.length ? (
-          <div className="flex flex-col gap-1">
-            <span className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
-              {t("apps.fitness.workouts.suggested", { focus: t(`apps.fitness.focus.${focus}`) })}
-            </span>
-            <div className="flex flex-wrap items-center gap-1">
-              {recommendations.map((rec) => {
-                const names = l.displayName(rec.id, rec.name);
-                return (
+          <div className="flex flex-wrap items-center gap-1">
+            {recommendations.map((rec) => {
+              const names = l.displayName(rec.id, rec.name);
+              return (
                 <button key={rec.id} type="button" className={cn(FITNESS_CHIP_CLASS, "max-w-full truncate")} onClick={() => add(rec)}>
                   + {names.primary}
                 </button>
-                );
-              })}
-            </div>
+              );
+            })}
           </div>
         ) : null}
 
