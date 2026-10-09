@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { sanitizeFoodItem } from "@/shared/fitness";
+import { FOOD_BASE_ITEM_LIMITS, sanitizeFoodItem, type FoodItem } from "@/shared/fitness";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { createDebouncedPersistStorage } from "@/utils/debouncedPersistStorage";
 import { STORAGE_KEYS } from "@/utils/storageKeys";
@@ -24,6 +24,7 @@ import {
   type WorkoutSet,
 } from "@/apps/fitness/types";
 import { isDateKey } from "@/apps/fitness/utils/dates";
+import { divideFoodItems, normalizeSplitPeople, shareToBaseItem } from "@/apps/fitness/utils/foodSplit";
 import {
   DEFAULT_SCHEDULE,
   isFocusArea,
@@ -145,16 +146,35 @@ export function sanitizeBodyStat(value: unknown, id: string, now = Date.now()): 
   return hasValue ? entry : null;
 }
 
+function sanitizeFoodList(
+  value: unknown,
+  limits?: { calories: number; grams: number }
+): FoodItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 30).flatMap((item) => {
+    const clean = sanitizeFoodItem(item, limits);
+    return clean ? [clean] : [];
+  });
+}
+
 export function sanitizeFoodEntry(value: unknown, id: string, now = Date.now()): FoodEntry | null {
   if (!value || typeof value !== "object" || !id) return null;
   const raw = value as Partial<FoodEntry>;
   if (!isDateKey(raw.date)) return null;
-  const items = Array.isArray(raw.items)
-    ? raw.items.slice(0, 30).flatMap((item) => {
-        const clean = sanitizeFoodItem(item);
-        return clean ? [clean] : [];
-      })
-    : [];
+  const loggedItems = sanitizeFoodList(raw.items);
+  const splitPeople = normalizeSplitPeople(raw.splitPeople);
+  let items = loggedItems;
+  let baseItems: FoodItem[] | undefined;
+  // Entries saved before splitting have no split fields: keep their items as-is.
+  // A split stores the full meal on `baseItems` and the share on `items`.
+  if (splitPeople > 1) {
+    const storedBase = sanitizeFoodList(raw.baseItems, FOOD_BASE_ITEM_LIMITS);
+    const base =
+      storedBase.length > 0 ? storedBase : loggedItems.map((item) => shareToBaseItem(item, splitPeople));
+    if (base.length === 0) return null;
+    baseItems = base;
+    items = divideFoodItems(base, splitPeople);
+  }
   if (items.length === 0) return null;
   const thumbnail =
     typeof raw.thumbnail === "string" &&
@@ -168,6 +188,7 @@ export function sanitizeFoodEntry(value: unknown, id: string, now = Date.now()):
     meal: (MEALS as readonly string[]).includes(raw.meal as string) ? (raw.meal as Meal) : "snack",
     name: str(raw.name, 120) || items[0].name,
     items,
+    ...(splitPeople > 1 ? { splitPeople, baseItems } : {}),
     source: raw.source === "ai" ? "ai" : "manual",
     thumbnail,
     createdAt: timestamp(raw.createdAt, now),
@@ -268,7 +289,10 @@ interface FitnessStoreState {
   setGoals: (patch: Partial<FitnessGoals>) => void;
 
   addFoodEntry: (entry: NewFoodEntry) => string | null;
-  updateFoodEntry: (id: string, patch: Partial<Pick<FoodEntry, "meal" | "name" | "items" | "date">>) => void;
+  updateFoodEntry: (
+    id: string,
+    patch: Partial<Pick<FoodEntry, "meal" | "name" | "items" | "date" | "splitPeople" | "baseItems">>
+  ) => void;
   deleteFoodEntry: (id: string) => void;
 
   replaceWorkoutsFromSync: (workouts: Workout[]) => void;

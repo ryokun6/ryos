@@ -185,6 +185,14 @@ export interface FoodAnalyzeResponse {
 
 const MAX_CALORIES_PER_ITEM = 5000;
 const MAX_GRAMS_PER_ITEM = 500;
+/** Full-meal totals before a split can be larger than one person's share. */
+const MAX_CALORIES_PER_SHARED_MEAL = MAX_CALORIES_PER_ITEM * 20;
+const MAX_GRAMS_PER_SHARED_MEAL = MAX_GRAMS_PER_ITEM * 20;
+
+export const FOOD_BASE_ITEM_LIMITS = {
+  calories: MAX_CALORIES_PER_SHARED_MEAL,
+  grams: MAX_GRAMS_PER_SHARED_MEAL,
+} as const;
 
 function clampNumber(value: unknown, max: number): number {
   const n = typeof value === "number" ? value : Number(value);
@@ -197,7 +205,13 @@ function cleanText(value: unknown, maxLength: number): string {
 }
 
 /** Normalize an untrusted food item (AI output, sync payload, or user input). */
-export function sanitizeFoodItem(value: unknown): FoodItem | null {
+export function sanitizeFoodItem(
+  value: unknown,
+  limits: { calories: number; grams: number } = {
+    calories: MAX_CALORIES_PER_ITEM,
+    grams: MAX_GRAMS_PER_ITEM,
+  }
+): FoodItem | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const name = cleanText(raw.name, 80);
@@ -205,10 +219,10 @@ export function sanitizeFoodItem(value: unknown): FoodItem | null {
   return {
     name,
     portion: cleanText(raw.portion, 60),
-    calories: Math.round(clampNumber(raw.calories, MAX_CALORIES_PER_ITEM)),
-    proteinG: Math.round(clampNumber(raw.proteinG, MAX_GRAMS_PER_ITEM) * 10) / 10,
-    carbsG: Math.round(clampNumber(raw.carbsG, MAX_GRAMS_PER_ITEM) * 10) / 10,
-    fatG: Math.round(clampNumber(raw.fatG, MAX_GRAMS_PER_ITEM) * 10) / 10,
+    calories: Math.round(clampNumber(raw.calories, limits.calories)),
+    proteinG: Math.round(clampNumber(raw.proteinG, limits.grams) * 10) / 10,
+    carbsG: Math.round(clampNumber(raw.carbsG, limits.grams) * 10) / 10,
+    fatG: Math.round(clampNumber(raw.fatG, limits.grams) * 10) / 10,
   };
 }
 

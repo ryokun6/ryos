@@ -83,6 +83,52 @@ describe("fitness sanitizers", () => {
       "f"
     );
     expect(entry).toMatchObject({ meal: "snack", name: "Toast", source: "ai", thumbnail: null });
+    expect(entry?.splitPeople).toBeUndefined();
+    expect(entry?.baseItems).toBeUndefined();
+  });
+
+  test("food split keeps the original meal and does not compound", () => {
+    const legacy = sanitizeFoodEntry(
+      {
+        date: "2026-10-08",
+        items: [{ name: "Toast", portion: "1 slice", calories: 120, proteinG: 4, carbsG: 20, fatG: 2 }],
+      },
+      "legacy"
+    );
+    expect(legacy?.items[0].calories).toBe(120);
+    expect(legacy?.splitPeople).toBeUndefined();
+    expect(legacy?.baseItems).toBeUndefined();
+    expect("splitPeople" in (legacy ?? {})).toBe(false);
+
+    const shared = sanitizeFoodEntry(
+      {
+        date: "2026-10-08",
+        splitPeople: 2,
+        baseItems: [{ name: "Pizza", portion: "1 pizza (800 g)", calories: 800, proteinG: 40, carbsG: 80, fatG: 30 }],
+        items: [{ name: "Pizza", portion: "stale", calories: 1, proteinG: 1, carbsG: 1, fatG: 1 }],
+      },
+      "shared"
+    );
+    expect(shared).toMatchObject({
+      splitPeople: 2,
+      items: [{ calories: 400, proteinG: 20, portion: "1/2 pizza (400 g)" }],
+      baseItems: [{ calories: 800, portion: "1 pizza (800 g)" }],
+    });
+    const again = sanitizeFoodEntry(shared, "shared");
+    expect(again?.items[0].calories).toBe(400);
+    expect(again?.baseItems?.[0].calories).toBe(800);
+
+    const withoutBase = sanitizeFoodEntry(
+      {
+        date: "2026-10-08",
+        splitPeople: 3,
+        items: [{ name: "Cake", portion: "1 slice", calories: 200, proteinG: 3, carbsG: 30, fatG: 8 }],
+      },
+      "nobase"
+    );
+    expect(withoutBase?.items[0].calories).toBe(200);
+    expect(withoutBase?.baseItems?.[0].calories).toBe(600);
+    expect(sanitizeFoodEntry(withoutBase, "nobase")?.items[0].calories).toBe(200);
   });
 
   test("plans and goals fall back to safe defaults", () => {
@@ -142,6 +188,61 @@ describe("fitness store", () => {
     expect(Object.keys(markers.fitnessFoodIds)).toEqual([foodId]);
     const state = useFitnessStore.getState();
     expect([state.workouts, state.bodyStats, state.foodEntries]).toEqual([[], [], []]);
+  });
+
+  test("food split survives save, rename, resplit, and undo", () => {
+    const store = useFitnessStore.getState();
+    const full = { name: "Pizza", portion: "1 pizza (800 g)", calories: 800, proteinG: 40, carbsG: 80, fatG: 30 };
+    const id = store.addFoodEntry({
+      date: "2026-10-08",
+      meal: "dinner",
+      name: "Pizza",
+      items: [{ ...full, calories: 400, proteinG: 20, carbsG: 40, fatG: 15, portion: "1/2 pizza (400 g)" }],
+      baseItems: [full],
+      splitPeople: 2,
+      source: "ai",
+      thumbnail: null,
+    })!;
+    let entry = useFitnessStore.getState().foodEntries.find((item) => item.id === id)!;
+    expect(entry).toMatchObject({ splitPeople: 2, items: [{ calories: 400 }], baseItems: [{ calories: 800 }] });
+
+    store.updateFoodEntry(id, { name: "Pizza night" });
+    entry = useFitnessStore.getState().foodEntries.find((item) => item.id === id)!;
+    expect(entry.name).toBe("Pizza night");
+    expect(entry.items[0].calories).toBe(400);
+    expect(entry.baseItems?.[0].calories).toBe(800);
+
+    store.updateFoodEntry(id, { splitPeople: 4, baseItems: entry.baseItems, items: entry.items });
+    entry = useFitnessStore.getState().foodEntries.find((item) => item.id === id)!;
+    expect(entry.splitPeople).toBe(4);
+    expect(entry.items[0].calories).toBe(200);
+
+    store.updateFoodEntry(id, {
+      splitPeople: undefined,
+      baseItems: undefined,
+      items: entry.baseItems ?? entry.items,
+    });
+    entry = useFitnessStore.getState().foodEntries.find((item) => item.id === id)!;
+    expect(entry.splitPeople).toBeUndefined();
+    expect(entry.baseItems).toBeUndefined();
+    expect(entry.items[0].calories).toBe(800);
+
+    const sharedId = store.addFoodEntry({
+      date: "2026-10-08",
+      meal: "lunch",
+      name: "Salad",
+      items: [{ name: "Salad", portion: "1/2 bowl", calories: 150, proteinG: 5, carbsG: 10, fatG: 8 }],
+      baseItems: [{ name: "Salad", portion: "1 bowl", calories: 300, proteinG: 10, carbsG: 20, fatG: 16 }],
+      splitPeople: 2,
+      source: "manual",
+      thumbnail: null,
+    })!;
+    const docs = SYNC_CODECS.fitness.collect({}) as Map<string, { splitPeople?: number; baseItems?: unknown[] }>;
+    expect(docs.get(`fitness/food:${sharedId}`)).toMatchObject({
+      splitPeople: 2,
+      baseItems: [{ calories: 300 }],
+      items: [{ calories: 150 }],
+    });
   });
 
   test("weight goals record a starting weight", () => {
@@ -208,6 +309,17 @@ describe("fitness sync codec", () => {
           t,
         },
         {
+          k: "fitness/food:f2",
+          v: {
+            date: "2026-10-07",
+            name: "Pizza",
+            splitPeople: 2,
+            baseItems: [{ name: "Pizza", portion: "800 g", calories: 800, proteinG: 40, carbsG: 80, fatG: 30 }],
+            items: [{ name: "Pizza", portion: "400 g", calories: 400, proteinG: 20, carbsG: 40, fatG: 15 }],
+          },
+          t,
+        },
+        {
           k: "fitness/plan",
           v: { schedule: Array.from({ length: 7 }, () => ({ focus: "full", exerciseIds: [] })), updatedAt: 42 },
           t,
@@ -218,7 +330,13 @@ describe("fitness sync codec", () => {
     const state = useFitnessStore.getState();
     expect(state.workouts.map((w) => w.id)).toEqual(["remote"]);
     expect(state.bodyStats).toEqual([]);
-    expect(state.foodEntries.map((e) => e.name)).toEqual(["Egg"]);
+    expect(state.foodEntries.map((e) => e.name)).toEqual(["Egg", "Pizza"]);
+    expect(state.foodEntries[0].splitPeople).toBeUndefined();
+    expect(state.foodEntries[1]).toMatchObject({
+      splitPeople: 2,
+      items: [{ calories: 400 }],
+      baseItems: [{ calories: 800 }],
+    });
     expect(state.schedule.every((d) => d.focus === "full")).toBe(true);
     expect(state.planUpdatedAt).toBe(42);
   });
