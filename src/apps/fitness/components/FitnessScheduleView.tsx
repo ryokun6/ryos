@@ -11,7 +11,6 @@ import {
   PersonSimpleTaiChi,
   PersonSimpleWalk,
   Plus,
-  Trophy,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -606,14 +605,11 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
             }))}
           />
         </div>
-            <div className="flex items-baseline justify-between text-[12px]">
-              <span>
-                {t("apps.fitness.schedule.workoutsThisWeek", {
-                  current: weekly.current,
-                  target: weekly.target,
-                })}
-              </span>
-              {weekly.achieved ? <Trophy size={14} weight="fill" aria-hidden /> : null}
+            <div className="text-[12px]">
+              {t("apps.fitness.schedule.workoutsThisWeek", {
+                current: weekly.current,
+                target: weekly.target,
+              })}
             </div>
             <WeeklyGoalMarks
               current={weekly.current}
