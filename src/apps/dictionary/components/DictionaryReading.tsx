@@ -72,11 +72,14 @@ export function DictionaryHeadword({
   chineseScript,
   phonetics,
   size = "large",
+  actions,
 }: {
   entry: DictionaryEntry;
   chineseScript: DictionaryChineseScript;
   phonetics: DictionaryPhoneticSettings;
   size?: "large" | "card";
+  /** Speak / favorite controls, centered on the headword line. */
+  actions?: ReactNode;
 }) {
   const headwordClass =
     size === "card" ? "text-[44px] leading-[1.5]" : "text-[30px] leading-[1.5]";
@@ -120,18 +123,21 @@ export function DictionaryHeadword({
 
   return (
     <div className="min-w-0">
-      <div className="flex flex-wrap items-baseline gap-x-3">
-        <h2
-          lang={entry.lang === "zh" ? (chineseScript === "traditional" ? "zh-TW" : "zh-CN") : entry.lang}
-          className={cn("font-semibold break-words", headwordClass)}
-        >
-          {headword}
-        </h2>
-        {secondary ? (
-          <span className="text-[18px] text-black/45 dark:text-white/45">
-            {secondary}
-          </span>
-        ) : null}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3">
+          <h2
+            lang={entry.lang === "zh" ? (chineseScript === "traditional" ? "zh-TW" : "zh-CN") : entry.lang}
+            className={cn("font-semibold break-words", headwordClass)}
+          >
+            {headword}
+          </h2>
+          {secondary ? (
+            <span className="text-[18px] text-black/45 dark:text-white/45">
+              {secondary}
+            </span>
+          ) : null}
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
       </div>
       <ReadingLine parts={readingParts} className={size === "card" ? "text-[15px]" : undefined} />
     </div>
