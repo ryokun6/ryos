@@ -51,6 +51,17 @@ needs an App Transport Security exception in `Info.plist`.
 On first launch a splash stays up until the web client posts `boot-finished`.
 Later launches go straight to the web view and use the WebKit cache.
 
+## Inspecting the web view
+
+Debug builds set `isInspectable`, so Safari on a Mac can attach to the shell
+from Develop → (device or simulator) → os.ryo.lu. On a device, turn on
+Settings → Apps → Safari → Advanced → Web Inspector first. Release builds are
+not inspectable.
+
+WebKit's media logs (playback admission, audio session, route changes) go to
+the device log, not the page console. To read them, select the device in
+Console.app and filter on subsystem `com.apple.WebKit`, category `Media`.
+
 ## Bridge overview
 
 `DesktopBridge.injectedJavaScript` runs at document start and installs
