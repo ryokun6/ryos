@@ -199,7 +199,10 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
           {t("apps.dictionary.ai.extrasTitle", { defaultValue: "AI Notes" })}
         </span>
         <div className="flex-1" />
-        {!aiExtras ? (
+        {!aiExtras?.usageNotes &&
+        !aiExtras?.nuance &&
+        !(aiExtras?.synonyms?.length) &&
+        !(aiExtras?.examples?.length) ? (
           <Button
             variant={l.isSystem7Theme ? "retro" : l.isMacOSTheme ? "aqua" : "default"}
             size="sm"
@@ -224,7 +227,16 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
       ) : null}
       {aiExtras ? (
         <div className="mt-2 space-y-2 text-[12px]">
-          <p>{aiExtras.usageNotes}</p>
+          {aiExtras.usageNotes || aiStatus === "streaming" ? (
+            <p>
+              {aiExtras.usageNotes}
+              {aiStatus === "streaming" ? (
+                <span className="ml-0.5 inline-block animate-pulse" aria-hidden>
+                  ▍
+                </span>
+              ) : null}
+            </p>
+          ) : null}
           {aiExtras.nuance ? <p className="text-black/70 dark:text-white/70">{aiExtras.nuance}</p> : null}
           {aiExtras.synonyms.length > 0 ? (
             <div className="flex flex-wrap gap-1">

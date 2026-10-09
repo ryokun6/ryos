@@ -142,3 +142,42 @@ export function extrasFromAi(
   if (output.nuance) extras.nuance = output.nuance.trim();
   return extras;
 }
+
+function textField(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** Coerce a partial model object into extras that can render mid-stream. */
+export function extrasFromPartial(value: unknown, lang: DictionaryLanguage): DictionaryAiExtras {
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+  const synonyms = Array.isArray(raw.synonyms)
+    ? raw.synonyms.flatMap((item) => {
+        const text = textField(item);
+        return text ? [text] : [];
+      })
+    : [];
+  const examples = Array.isArray(raw.examples)
+    ? raw.examples.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const record = item as { text?: unknown; translation?: unknown };
+        const text = textField(record.text);
+        if (!text) return [];
+        const translation = textField(record.translation);
+        return [toExample({ text, translation: translation || null }, lang)];
+      })
+    : [];
+  const nuance = textField(raw.nuance);
+  const extras: DictionaryAiExtras = {
+    usageNotes: textField(raw.usageNotes),
+    synonyms,
+    examples,
+  };
+  if (nuance) extras.nuance = nuance;
+  return extras;
+}
+
+export function extrasHaveContent(extras: DictionaryAiExtras): boolean {
+  return Boolean(
+    extras.usageNotes || extras.nuance || extras.synonyms.length || extras.examples.length
+  );
+}
