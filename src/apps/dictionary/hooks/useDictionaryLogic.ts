@@ -23,6 +23,7 @@ import {
   askDictionaryAi,
   DictionaryApiError,
   lookupDictionaryWord,
+  streamDictionaryAiExtras,
 } from "../utils/dictionaryApi";
 import { buildStudyQueue, type SrsGrade } from "../utils/srs";
 import { useDictionarySpeech } from "./useDictionarySpeech";
@@ -30,7 +31,7 @@ import { useDictionarySpeech } from "./useDictionarySpeech";
 const SEARCH_DEBOUNCE_MS = 350;
 
 export type DictionaryLookupStatus = "idle" | "loading" | "ready" | "error";
-export type DictionaryAiStatus = "idle" | "loading" | "error";
+export type DictionaryAiStatus = "idle" | "loading" | "streaming" | "error";
 
 function describeError(error: unknown): string {
   if (error instanceof DictionaryApiError) {
@@ -248,21 +249,36 @@ export function useDictionaryLogic({
       setAiStatus("loading");
       setAiError(null);
       try {
-        const response = await askDictionaryAi(
-          word,
-          lang,
-          mode,
-          locale,
-          controller.signal
-        );
-        if (controller.signal.aborted) return;
-        if (mode === "fallback") {
-          setAiEntry(response.entry ?? null);
-          if (response.entry) setSelectedEntryId(response.entry.id);
-          else setAiError("not_found");
-        } else {
-          setAiExtras(response.extras ?? null);
+        if (mode === "extras") {
+          let sawText = false;
+          await streamDictionaryAiExtras(
+            word,
+            lang,
+            locale,
+            (extras) => {
+              if (controller.signal.aborted) return;
+              const visible =
+                extras.usageNotes.length > 0 ||
+                Boolean(extras.nuance) ||
+                extras.synonyms.length > 0 ||
+                extras.examples.length > 0;
+              if (!visible) return;
+              sawText = true;
+              setAiExtras(extras);
+              setAiStatus("streaming");
+            },
+            controller.signal
+          );
+          if (controller.signal.aborted) return;
+          if (!sawText) setAiError("ai_unavailable");
+          setAiStatus(sawText ? "idle" : "error");
+          return;
         }
+        const response = await askDictionaryAi(word, lang, mode, locale, controller.signal);
+        if (controller.signal.aborted) return;
+        setAiEntry(response.entry ?? null);
+        if (response.entry) setSelectedEntryId(response.entry.id);
+        else setAiError("not_found");
         setAiStatus("idle");
       } catch (err) {
         if (controller.signal.aborted) return;
@@ -274,7 +290,10 @@ export function useDictionaryLogic({
   );
 
   useEffect(() => {
+    aiAbortRef.current?.abort();
     setAiExtras(null);
+    setAiStatus("idle");
+    setAiError(null);
   }, [selectedEntry?.id]);
 
   useEffect(() => {

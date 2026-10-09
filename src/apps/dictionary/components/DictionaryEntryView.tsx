@@ -30,6 +30,11 @@ import {
   koreanRomanization,
 } from "../utils/phonetics";
 
+/** Shared box for the headword speak and favorite buttons. */
+const HEADWORD_ACTION_CLASS =
+  "inline-flex size-7 shrink-0 items-center justify-center rounded p-0 leading-none hover:bg-black/5 dark:hover:bg-white/10";
+const HEADWORD_ACTION_ICON = 18;
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h3 className="mt-4 mb-1.5 text-[10px] font-bold uppercase tracking-wide text-black/45 dark:text-white/45">
@@ -199,7 +204,10 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
           {t("apps.dictionary.ai.extrasTitle", { defaultValue: "AI Notes" })}
         </span>
         <div className="flex-1" />
-        {!aiExtras ? (
+        {!aiExtras?.usageNotes &&
+        !aiExtras?.nuance &&
+        !(aiExtras?.synonyms?.length) &&
+        !(aiExtras?.examples?.length) ? (
           <Button
             variant={l.isSystem7Theme ? "retro" : l.isMacOSTheme ? "aqua" : "default"}
             size="sm"
@@ -224,7 +232,16 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
       ) : null}
       {aiExtras ? (
         <div className="mt-2 space-y-2 text-[12px]">
-          <p>{aiExtras.usageNotes}</p>
+          {aiExtras.usageNotes || aiStatus === "streaming" ? (
+            <p>
+              {aiExtras.usageNotes}
+              {aiStatus === "streaming" ? (
+                <span className="ml-0.5 inline-block animate-pulse" aria-hidden>
+                  ▍
+                </span>
+              ) : null}
+            </p>
+          ) : null}
           {aiExtras.nuance ? <p className="text-black/70 dark:text-white/70">{aiExtras.nuance}</p> : null}
           {aiExtras.synonyms.length > 0 ? (
             <div className="flex flex-wrap gap-1">
@@ -285,43 +302,44 @@ export function DictionaryEntryView({
 
   return (
     <div className="px-5 py-4">
-      <div className="flex items-start gap-3">
-        <DictionaryHeadword
-          entry={entry}
-          chineseScript={l.chineseScript}
-          phonetics={l.phonetics}
-        />
-        <div className="flex-1" />
-        <DictionarySpeakButton
-          speech={l.speech}
-          request={{
-            key: `${entry.id}:headword`,
-            text: headwordSpeechText(entry, l.chineseScript),
-            lang: entry.lang,
-            audioUrl: entry.audioUrl,
-          }}
-          label={t("apps.dictionary.actions.listen")}
-          stopLabel={t("apps.dictionary.actions.stopSpeaking")}
-          size={18}
-          className="mt-2"
-        />
-        <button
-          type="button"
-          className={cn(
-            "mt-2 rounded p-1 hover:bg-black/5 dark:hover:bg-white/10",
-            isFav ? "text-amber-500" : "text-black/40 dark:text-white/40"
-          )}
-          title={
-            isFav
-              ? t("apps.dictionary.actions.removeFavorite", { defaultValue: "Remove from Favorites" })
-              : t("apps.dictionary.actions.addFavorite", { defaultValue: "Add to Favorites" })
-          }
-          aria-pressed={isFav}
-          onClick={() => l.toggleFavorite(entry)}
-        >
-          <Star size={20} weight={isFav ? "fill" : "regular"} />
-        </button>
-      </div>
+      <DictionaryHeadword
+        entry={entry}
+        chineseScript={l.chineseScript}
+        phonetics={l.phonetics}
+        actions={
+          <>
+            <DictionarySpeakButton
+              speech={l.speech}
+              request={{
+                key: `${entry.id}:headword`,
+                text: headwordSpeechText(entry, l.chineseScript),
+                lang: entry.lang,
+                audioUrl: entry.audioUrl,
+              }}
+              label={t("apps.dictionary.actions.listen")}
+              stopLabel={t("apps.dictionary.actions.stopSpeaking")}
+              size={HEADWORD_ACTION_ICON}
+              className={HEADWORD_ACTION_CLASS}
+            />
+            <button
+              type="button"
+              className={cn(
+                HEADWORD_ACTION_CLASS,
+                isFav ? "text-amber-500" : "text-black/40 dark:text-white/40"
+              )}
+              title={
+                isFav
+                  ? t("apps.dictionary.actions.removeFavorite", { defaultValue: "Remove from Favorites" })
+                  : t("apps.dictionary.actions.addFavorite", { defaultValue: "Add to Favorites" })
+              }
+              aria-pressed={isFav}
+              onClick={() => l.toggleFavorite(entry)}
+            >
+              <Star size={HEADWORD_ACTION_ICON} weight={isFav ? "fill" : "regular"} />
+            </button>
+          </>
+        }
+      />
 
       {entry.tags?.length ? (
         <div className="mt-1 flex flex-wrap gap-1">

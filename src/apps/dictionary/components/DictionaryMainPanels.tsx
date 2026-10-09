@@ -1,13 +1,10 @@
-import { BookOpenText, Sparkle } from "@phosphor-icons/react";
+import { Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { DictionaryFavorite } from "@/stores/useDictionaryStore";
-import {
-  isHanOnlyQuery,
-  normalizeDictionaryQuery,
-  type DictionaryQueryLanguage,
-} from "@/shared/dictionary";
+import { isHanOnlyQuery, normalizeDictionaryQuery } from "@/shared/dictionary";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
+import { DICTIONARY_SAMPLE_WORDS, dictionarySampleLabel } from "../utils/sampleWords";
 import { isNewCard } from "../utils/srs";
 import {
   DICTIONARY_CHIP_CLASS,
@@ -15,13 +12,6 @@ import {
   DICTIONARY_NOTE_BOX_CLASS,
 } from "../utils/styles";
 import { DictionaryEntryView } from "./DictionaryEntryView";
-
-const SAMPLE_WORDS: { word: string; lang: DictionaryQueryLanguage }[] = [
-  { word: "serendipity", lang: "en" },
-  { word: "学习", lang: "zh" },
-  { word: "勉強", lang: "ja" },
-  { word: "사랑", lang: "ko" },
-];
 
 function buttonVariant(l: DictionaryLogic) {
   return l.isSystem7Theme ? "retro" : l.isMacOSTheme ? "aqua" : "default";
@@ -140,21 +130,23 @@ export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
 
   return (
     <CenteredMessage>
-      <BookOpenText size={44} className="opacity-25" />
       <p className="text-[14px] font-semibold">{t("apps.dictionary.welcome.title")}</p>
       <p className="max-w-[340px] text-[12px] opacity-60">{t("apps.dictionary.welcome.description")}</p>
       <div className="mt-1 flex flex-wrap justify-center gap-1.5">
-        {SAMPLE_WORDS.map(({ word, lang }) => (
-          <button
-            key={word}
-            type="button"
-            lang={lang}
-            onClick={() => l.searchFor(word, lang)}
-            className={cn(DICTIONARY_CHIP_CLASS, "px-2.5 py-0.5 text-[13px]")}
-          >
-            {word}
-          </button>
-        ))}
+        {DICTIONARY_SAMPLE_WORDS.map((sample) => {
+          const word = dictionarySampleLabel(sample, l.chineseScript);
+          return (
+            <button
+              key={sample.lang}
+              type="button"
+              lang={sample.lang}
+              onClick={() => l.searchFor(word, sample.lang)}
+              className={cn(DICTIONARY_CHIP_CLASS, "px-2.5 py-0.5 text-[13px]")}
+            >
+              {word}
+            </button>
+          );
+        })}
       </div>
     </CenteredMessage>
   );
