@@ -126,6 +126,11 @@ function DraftEditor({
               onChange={(meal) => setDraft((prev) => ({ ...prev, meal }))}
               options={MEALS.map((m) => ({ value: m, label: t(`apps.fitness.meals.${m}`) }))}
             />
+            <FoodSplitControl
+              people={draft.splitPeople}
+              t={t}
+              onChange={(people) => setDraft((prev) => ({ ...prev, ...changeFoodSplit(prev, people) }))}
+            />
             {draft.source === "ai" && draft.confidence != null ? (
               <span className={cn(FITNESS_CHIP_CLASS, "inline-flex items-center gap-1")}>
                 <Sparkle size={10} weight="fill" />
@@ -135,11 +140,6 @@ function DraftEditor({
           </div>
         </div>
       </div>
-      <FoodSplitControl
-        people={draft.splitPeople}
-        t={t}
-        onChange={(people) => setDraft((prev) => ({ ...prev, ...changeFoodSplit(prev, people) }))}
-      />
       {draft.notes ? <p className={cn("text-[11px] italic", FITNESS_MUTED_CLASS)}>{draft.notes}</p> : null}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[460px] text-[12px]">
