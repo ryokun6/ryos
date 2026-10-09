@@ -4,7 +4,7 @@ ryOS is a web-based desktop environment that runs almost entirely in your browse
 
 For the Chrome extension, see the separate [ryOS Subtitles Privacy Policy](/docs/subtitles-privacy).
 
-*Last updated: October 1, 2026.*
+*Last updated: October 8, 2026.*
 
 ---
 
@@ -89,9 +89,20 @@ If you never sign in, none of this data leaves your browser.
 
 ## AI features
 
-When you use AI features (such as Chats with Ryo, AI-generated applets, Internet Explorer's time-travel generation, audio transcription, or translation), the relevant input is sent to an AI provider to produce a response.
+When you use an AI feature, the relevant input is sent to an AI provider to produce a response. The AI features are:
 
-- For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (via `/api/ai/extract-memories` and `/api/ai/process-daily-notes`) so the assistant can remember context across sessions. This data is tied to your account and can be removed by deleting your account.
+- Chats with Ryo and the desktop assistant, including images you attach.
+- Mentioning @ryo in a chat room. To reply, Ryo reads the room's recent messages along with the usernames of the people who posted them. This means messages you post in a room may be sent to the AI provider when anyone in that room mentions @ryo, not only when you do.
+- AI inside applets and the Books reader.
+- Generating applets, and creating TV channels from a description.
+- Internet Explorer's time-travel generation, which sends the URL and year you choose.
+- Audio transcription and translation.
+- "Remove Background" in Stuff, which sends the image you choose.
+
+Some AI processing happens without a message from you:
+
+- For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (via `/api/ai/extract-memories` and `/api/ai/process-daily-notes`) so the assistant can remember context across sessions. An AI provider produces them: past conversations and daily notes are sent to a model to extract them. This data is tied to your account and can be removed by deleting your account.
+- When a signed-in user who has memories opens Chats, ryOS sends those memories and recent daily notes to an AI provider (currently Google) to write a greeting. Signed-in messages to Ryo in Chats or the desktop assistant also include your memories, so Ryo can use them in the reply.
 - AI requests are processed by third-party model providers (see below). Do not share information through AI features that you would not want processed by those providers.
 
 ---
@@ -120,7 +131,7 @@ Depending on which features you use and how the instance is configured, ryOS may
 
 | Service | Used for |
 |---------|----------|
-| OpenAI / Anthropic / Google AI | AI chat, applet generation, transcription, translation |
+| OpenAI / Anthropic / Google AI | The AI features listed above: AI chat and the desktop assistant (including attached images and, for signed-in users, memories), @ryo replies in chat rooms, AI in applets and Books, applet and TV channel generation, Internet Explorer generation, memory extraction and greetings, transcription, translation, image background removal (Stuff) |
 | ElevenLabs | Text-to-speech |
 | YouTube | Video metadata and playback (iPod, Videos, TV) |
 | Apple MapKit / MusicKit | Maps place search and Apple Music playback |
