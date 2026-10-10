@@ -3,6 +3,8 @@ import { useDashboardStore, type DictionaryWidgetConfig } from "@/stores/useDash
 import { MagnifyingGlass } from "@phosphor-icons/react";
 import { useTranslation } from "react-i18next";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { lookupDictionaryWord } from "@/apps/dictionary/utils/dictionaryApi";
+import type { DictionaryEntry as DictionaryLookupEntry } from "@/shared/dictionary";
 
 interface DictionaryMeaning {
   partOfSpeech: string;
@@ -17,6 +19,20 @@ interface DictionaryEntry {
 }
 
 type Tab = "dictionary" | "thesaurus";
+
+function toWidgetEntry(entry: DictionaryLookupEntry): DictionaryEntry {
+  return {
+    word: entry.headword,
+    phonetic: entry.ipa,
+    phonetics: entry.ipa ? [{ text: entry.ipa }] : undefined,
+    meanings: entry.senses
+      .filter((sense) => sense.glosses.length > 0)
+      .map((sense) => ({
+        partOfSpeech: sense.partOfSpeech ?? "",
+        definitions: sense.glosses.slice(0, 6).map((definition) => ({ definition })),
+      })),
+  };
+}
 
 interface DictionaryWidgetProps {
   widgetId?: string;
@@ -61,30 +77,22 @@ export function DictionaryWidget({ widgetId }: DictionaryWidgetProps) {
       setHasSearched(true);
 
       try {
-        const res = await fetch(
-          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(trimmed)}`,
-          { signal: controller.signal }
-        );
-        if (!res.ok) {
-          if (res.status === 404) {
-            setEntry(null);
-            setError(t("apps.dashboard.dictionary.noDefinition", "No definition found."));
-          } else {
-            setError(t("apps.dashboard.dictionary.error", "Lookup failed."));
-          }
-          setLoading(false);
+        const response = await lookupDictionaryWord(trimmed, "en", controller.signal);
+        if (controller.signal.aborted) return;
+        const match = response.entries[0];
+        if (response.notFound || !match) {
+          setEntry(null);
+          setError(t("apps.dashboard.dictionary.noDefinition", "No definition found."));
           return;
         }
-        const data: DictionaryEntry[] = await res.json();
-        if (data.length > 0) {
-          setEntry(data[0]);
-          setError(null);
-          if (widgetId) {
-            updateWidgetConfig(widgetId, { lastWord: trimmed } as DictionaryWidgetConfig);
-          }
+        setEntry(toWidgetEntry(match));
+        setError(null);
+        if (widgetId) {
+          updateWidgetConfig(widgetId, { lastWord: trimmed } as DictionaryWidgetConfig);
         }
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
+          setEntry(null);
           setError(t("apps.dashboard.dictionary.error", "Lookup failed."));
         }
       } finally {
