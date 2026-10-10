@@ -300,6 +300,56 @@ describe("remote dictionary parsers", () => {
     expect(stripHtml("a&nbsp;<i>b</i> &amp; c")).toBe("a b & c");
     expect(stripHtml("<<script>script>alert(1)<</script>/script>")).toBe("alert(1)");
     expect(stripHtml("&lt;script&gt;x")).toBe("scriptx");
+    expect(stripHtml("<style>.mw-x{display:inline-block}</style>H<sub>2</sub>O")).toBe("H2O");
+  });
+
+  test("English Wiktionary drops template CSS, translingual rows, and embedded subsense lists", () => {
+    const entry = parseWiktionaryResponse(
+      {
+        en: [
+          {
+            partOfSpeech: "Symbol",
+            language: "Translingual",
+            definitions: [{ definition: "ISO 639 code" }],
+          },
+          {
+            partOfSpeech: "Noun",
+            language: "English",
+            definitions: [
+              { definition: "" },
+              {
+                definition:
+                  'An inorganic compound (of molecular formula <style>.mw-parser-output .x{display:inline-block}</style><span class="chemf">H<sub>2</sub>O</span>).',
+              },
+              {
+                definition: "To move swiftly. <ol><li>To move forward quickly on foot.</li></ol>",
+                examples: ["<b>Run</b>!"],
+              },
+            ],
+          },
+          {
+            partOfSpeech: "Noun",
+            language: "English",
+            definitions: [
+              {
+                definition:
+                  '<span class="form-of-definition"><a title="Appendix:Glossary">plural</a> of <span class="form-of-definition-link"><a title="run">run</a></span></span>',
+              },
+            ],
+          },
+        ],
+      },
+      "en",
+      "water"
+    );
+    expect(entry?.senses.map((sense) => sense.partOfSpeech)).toEqual(["noun", "noun"]);
+    expect(entry?.senses[0].glosses[0]).toBe(
+      "An inorganic compound (of molecular formula H2O)."
+    );
+    expect(entry?.senses[0].glosses[0]).not.toContain("mw-parser");
+    expect(entry?.senses[0].glosses[1]).toBe("To move swiftly.");
+    expect(entry?.senses[0].examples?.[0].text).toBe("Run!");
+    expect(entry?.senses[1].glosses).toEqual(["plural of run"]);
   });
 
   test("Wiktionary: dedupes glosses and treats transliteration-only translations as readings", () => {

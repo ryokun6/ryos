@@ -14,11 +14,11 @@ const REMOTE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7;
 const REMOTE_MISS_TTL_SECONDS = 60 * 60 * 6;
 const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
 /** Bump when parser output changes so cached entries are re-parsed. */
-const PARSER_CACHE_VERSION = "v3";
+const PARSER_CACHE_VERSION = "v4";
 
 /** HTML → plain text. Results are plain strings, so no `<`/`>` survive. */
 export function stripHtml(html: string): string {
-  let text = html;
+  let text = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
   let previous: string;
   do {
     previous = text;
@@ -28,6 +28,24 @@ export function stripHtml(html: string): string {
     .replace(/[<>]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Wiktionary parent senses embed the whole `<ol>` of subsenses. Keep the lead
+ * sentence when it stands alone; otherwise leave the HTML for the subsense rows.
+ */
+function englishDefinitionLead(html: string): string {
+  const splitAt = html.search(/<ol\b/i);
+  if (splitAt < 0) return html;
+  const head = html.slice(0, splitAt);
+  if (stripHtml(head).length >= 12) return head;
+  return html;
+}
+
+function shortenEnglishGloss(gloss: string): string {
+  if (gloss.length <= 320) return gloss;
+  const sentence = gloss.match(/^.{12,320}?[.!?]/);
+  return (sentence ? sentence[0] : gloss.slice(0, 320)).trim();
 }
 
 function uniq(values: Iterable<string>): string[] {
@@ -133,6 +151,7 @@ interface WiktionaryDefinition {
 
 interface WiktionaryUsage {
   partOfSpeech?: string;
+  /** "English", "Translingual", … — the `en` bucket is not English-only. */
   language?: string;
   definitions?: WiktionaryDefinition[];
 }
@@ -194,13 +213,21 @@ export function parseWiktionaryResponse(
   if (!Array.isArray(usages)) return null;
   const senses: DictionarySense[] = [];
   for (const usage of usages as WiktionaryUsage[]) {
+    if (lang === "en" && usage.language && usage.language !== "English") continue;
+    if (lang === "en" && senses.length >= 6) break;
     const definitions = usage.definitions ?? [];
     const glosses: string[] = [];
     const examples: DictionaryExample[] = [];
     for (const definition of definitions) {
-      const gloss = stripHtml(definition.definition ?? "");
-      if (gloss && !glosses.some((g) => g.toLowerCase() === gloss.toLowerCase())) {
-        glosses.push(gloss);
+      const definitionHtml = definition.definition ?? "";
+      const gloss = stripHtml(lang === "en" ? englishDefinitionLead(definitionHtml) : definitionHtml);
+      const cleaned = lang === "en" ? shortenEnglishGloss(gloss) : gloss;
+      if (
+        cleaned &&
+        (lang !== "en" || cleaned.length > 1) &&
+        !glosses.some((g) => g.toLowerCase() === cleaned.toLowerCase())
+      ) {
+        glosses.push(cleaned);
       }
       const rawExamples =
         definition.parsedExamples ??
@@ -209,10 +236,11 @@ export function parseWiktionaryResponse(
         const example = toExample(raw, lang);
         if (example) examples.push(example);
       }
+      if (lang === "en" && glosses.length >= 5) break;
     }
     if (glosses.length === 0) continue;
     const sense: DictionarySense = { partOfSpeech: usage.partOfSpeech?.toLowerCase(), glosses };
-    if (examples.length) sense.examples = examples.slice(0, 4);
+    if (examples.length) sense.examples = examples.slice(0, lang === "en" ? 2 : 4);
     senses.push(sense);
   }
   if (senses.length === 0) return null;
