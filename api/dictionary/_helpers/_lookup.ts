@@ -10,6 +10,7 @@ import {
   type DictionaryQueryLanguage,
   type DictionarySource,
 } from "../../../src/shared/dictionary.js";
+import { dedupeDictionaryEntries, dedupeDictionaryLookup } from "../../../src/shared/dictionaryMerge.js";
 import { normalizePinyinSearchKey } from "../../../src/utils/zhuyin.js";
 import { hiraganaKey } from "./_datasets.js";
 import {
@@ -460,10 +461,11 @@ function settled(
   timings: DictionaryLookupTimings,
   started: number
 ): DictionaryLookupPending {
+  const deduped = dedupeDictionaryLookup(response);
   timings.totalMs = performance.now() - started;
   return {
-    local: response,
-    final: Promise.resolve(response),
+    local: deduped,
+    final: Promise.resolve(deduped),
     enrichmentPending: false,
     timings,
   };
@@ -526,11 +528,14 @@ function applyWiktionary(
   const top = entries[0];
   let changed = false;
   if (lang === "ko") {
-    wiktionary.headword = top?.headword ?? wiktionary.headword;
-    if (top?.hanja) wiktionary.hanja = top.hanja;
-    entries.unshift(wiktionary);
-    insertSource(sources, "wiktionary");
-    changed = true;
+    // Fold Wiktionary into the kengdic row already in the list. Prepending a
+    // second card made the same headword show up twice after enrichment.
+    const next = dedupeDictionaryEntries([...entries, wiktionary]);
+    if (next.length !== entries.length || next.some((entry, index) => entry !== entries[index])) {
+      entries.splice(0, entries.length, ...next);
+      insertSource(sources, "wiktionary");
+      changed = true;
+    }
   } else if (top) {
     const sense = top.senses[0];
     const copy: DictionaryEntry = {
@@ -550,12 +555,13 @@ function applyWiktionary(
     changed = true;
   }
   if (!changed) return response;
+  const deduped = dedupeDictionaryEntries(entries);
   return {
     ...response,
-    entries,
+    entries: deduped,
     sources,
-    notFound: entries.length === 0,
-    suggestions: entries.length ? [] : response.suggestions,
+    notFound: deduped.length === 0,
+    suggestions: deduped.length ? [] : response.suggestions,
   };
 }
 
@@ -645,6 +651,7 @@ async function buildCjk(
   if (lang === "zh" && index && response.entries.length) {
     attachChineseHanzi(response.entries, index);
   }
+  response.entries = dedupeDictionaryEntries(response.entries);
   response.notFound = response.entries.length === 0;
   if (index && response.notFound && hasCjkScript(query)) {
     response.suggestions = index.suggest(Array.from(query)[0] ?? query, 8);

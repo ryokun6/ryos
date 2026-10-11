@@ -7,6 +7,7 @@ import type {
   DictionaryLookupResponse,
   DictionaryQueryLanguage,
 } from "@/shared/dictionary";
+import { dedupeDictionaryLookup } from "@/shared/dictionaryMerge";
 import {
   extrasToDictionaryNotes,
   reduceDictionaryAiUiChunk,
@@ -62,7 +63,7 @@ export async function lookupDictionaryWord(
     }
   );
   if (!response.ok) throw await readError(response);
-  const body = (await response.json()) as DictionaryLookupResponse;
+  const body = dedupeDictionaryLookup((await response.json()) as DictionaryLookupResponse);
   if (!body.enrichmentPending || !options?.onEnrichment) {
     writeDictionaryClientCache(query, lang, body, locale);
     return body;
@@ -77,7 +78,9 @@ export async function lookupDictionaryWord(
   })
     .then(async (enrichResponse) => {
       if (!enrichResponse.ok || signal?.aborted) return;
-      const enriched = (await enrichResponse.json()) as DictionaryLookupResponse;
+      const enriched = dedupeDictionaryLookup(
+        (await enrichResponse.json()) as DictionaryLookupResponse
+      );
       if (signal?.aborted) return;
       writeDictionaryClientCache(query, lang, enriched, locale);
       options.onEnrichment?.(enriched);

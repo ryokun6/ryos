@@ -264,22 +264,82 @@ describe("Korean lookup", () => {
     expect(hanja.entries[0]).toMatchObject({ headword: "학교", hanja: "學校" });
   });
 
-  test("puts the richer Wiktionary entry first and keeps hanja", async () => {
-    const result = await lookupDictionary(
+  test("merges kengdic and Wiktionary for the same word into one entry", async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const pending = await beginDictionaryLookup(
       "학교",
-      "auto",
+      "ko",
       makeDeps({
+        fetchWiktionary: async (headword, lang) => {
+          await gate;
+          return {
+            id: `wiktionary:${lang}:${headword}`,
+            lang,
+            headword,
+            senses: [
+              {
+                partOfSpeech: "noun",
+                glosses: ["school"],
+                examples: [{ text: "학교에 가요", translation: "I go to school" }],
+              },
+            ],
+            source: "wiktionary",
+          };
+        },
+      })
+    );
+    expect(pending.enrichmentPending).toBe(true);
+    expect(pending.local.entries.map((entry) => entry.headword)).toEqual(["학교"]);
+    const localId = pending.local.entries[0].id;
+    release?.();
+    const result = await pending.final;
+    expect(result.entries).toHaveLength(1);
+    expect(result.entries[0]).toMatchObject({
+      id: localId,
+      headword: "학교",
+      hanja: "學校",
+      source: "kengdic",
+      senses: [
+        {
+          partOfSpeech: "noun",
+          glosses: ["school"],
+          examples: [{ text: "학교에 가요", translation: "I go to school" }],
+        },
+      ],
+    });
+    expect(result.sources).toEqual(["kengdic", "wiktionary"]);
+  });
+
+  test("keeps Korean homographs with different hanja separate", async () => {
+    const index = buildKoreanIndex(
+      parseKengdic(["1\t배\t梨\tpear\tA\t\t", "2\t배\t船\tship\tA\t\t"].join("\n"))
+    );
+    const result = await lookupDictionary(
+      "배",
+      "ko",
+      makeDeps({
+        getIndex: async (lang) => {
+          if (lang !== "ko") throw new Error(lang);
+          return index;
+        },
         fetchWiktionary: async (headword, lang) => ({
           id: `wiktionary:${lang}:${headword}`,
           lang,
           headword,
-          senses: [{ partOfSpeech: "noun", glosses: ["school"] }],
+          senses: [
+            { partOfSpeech: "noun", glosses: ["pear"] },
+            { partOfSpeech: "noun", glosses: ["ship"] },
+          ],
           source: "wiktionary",
         }),
       })
     );
-    expect(result.entries.map((e) => e.source)).toEqual(["wiktionary", "kengdic"]);
-    expect(result.entries[0].hanja).toBe("學校");
+    expect(result.entries.map((entry) => entry.hanja)).toEqual(["梨", "船"]);
+    expect(result.entries.map((entry) => entry.id)).toEqual(["kengdic:1", "kengdic:2"]);
+    expect(result.sources).toEqual(["kengdic"]);
   });
 });
 

@@ -3,6 +3,7 @@ import {
   type DictionaryLookupResponse,
   type DictionaryQueryLanguage,
 } from "@/shared/dictionary";
+import { dedupeDictionaryLookup } from "@/shared/dictionaryMerge";
 
 const LOOKUP_CACHE_LIMIT = 80;
 
@@ -25,9 +26,10 @@ export function readDictionaryClientCache(
   const key = dictionaryClientCacheKey(query, lang, locale);
   const hit = lookups.get(key);
   if (!hit) return null;
+  const deduped = dedupeDictionaryLookup(hit);
   lookups.delete(key);
-  lookups.set(key, hit);
-  return hit;
+  lookups.set(key, deduped);
+  return deduped;
 }
 
 export function writeDictionaryClientCache(
@@ -37,8 +39,9 @@ export function writeDictionaryClientCache(
   locale?: string
 ): void {
   const key = dictionaryClientCacheKey(query, lang, locale);
+  const deduped = dedupeDictionaryLookup(response);
   if (lookups.has(key)) lookups.delete(key);
-  lookups.set(key, response);
+  lookups.set(key, deduped);
   while (lookups.size > LOOKUP_CACHE_LIMIT) {
     const oldest = lookups.keys().next().value;
     if (oldest === undefined) break;
