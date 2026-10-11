@@ -6,6 +6,8 @@ const CHANGELOG_MD = "docs/9-changelog.md";
 const CHANGELOG_HTML = "public/docs/changelog.html";
 /** Curated major entries that must appear in both markdown source and static HTML. */
 const ANCHOR_PHRASES = [
+  "Dictionary",
+  "Fitness",
   "Ryo PVC speech",
   "YouBike navigation",
   "YouBike overlay",
@@ -60,7 +62,7 @@ describe("changelog docs sync", () => {
     ]);
     const months = markdown.split(/^## /m).slice(1);
 
-    expect(months).toHaveLength(21);
+    expect(months).toHaveLength(22);
     for (const month of months) {
       const featured = month.split("<details>")[0] ?? "";
       const screenshots = [
@@ -86,6 +88,8 @@ describe("changelog docs sync", () => {
 
   test("deduplicates the June and July featured changes", async () => {
     const markdown = await readFile(CHANGELOG_MD, "utf-8");
+    const october =
+      markdown.split("## October 2026")[1]?.split("## September 2026")[0] ?? "";
     const september =
       markdown.split("## September 2026")[1]?.split("## August 2026")[0] ?? "";
     const august =
@@ -94,6 +98,7 @@ describe("changelog docs sync", () => {
       markdown.split("## July 2026")[1]?.split("## June 2026")[0] ?? "";
     const june =
       markdown.split("## June 2026")[1]?.split("## May 2026")[0] ?? "";
+    const octoberFeatured = october.split("<details>")[0] ?? "";
     const septemberFeatured = september.split("<details>")[0] ?? "";
     const augustFeatured = august.split("<details>")[0] ?? "";
     const julyFeatured = july.split("<details>")[0] ?? "";
@@ -101,6 +106,14 @@ describe("changelog docs sync", () => {
     const screenshotPattern =
       /src="(\/docs-assets\/changelog\/[^"]+\.webp)"/g;
 
+    expect(
+      [...octoberFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
+    ).toEqual([
+      "/docs-assets/changelog/2026-10-02-dictionary-16x9.webp",
+      "/docs-assets/changelog/2026-10-01-fitness-16x9.webp",
+    ]);
+    expect(octoberFeatured).toContain("<h3>Dictionary</h3>");
+    expect(octoberFeatured).toContain("<h3>Fitness</h3>");
     expect(
       [...septemberFeatured.matchAll(screenshotPattern)].map((match) => match[1]),
     ).toEqual([

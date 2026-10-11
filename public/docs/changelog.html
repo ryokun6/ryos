@@ -377,6 +377,8 @@
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
     <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
+    <a href="/docs/dictionary" class="nav-child ">2.30 Dictionary</a>
+    <a href="/docs/fitness" class="nav-child ">2.31 Fitness</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -495,6 +497,15 @@
 @media screen and (max-width: 768px) { .changelog-feature-grid { gap: 14px; } .changelog-feature-copy { padding: 12px 14px 14px; } }
 </style>
 <hr>
+<h2>October 2026</h2>
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-02-dictionary-16x9.webp" alt="Dictionary in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dictionary</h3><p>Look up English, Chinese, Japanese, and Korean with readings, handwriting, and stroke-order cards.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-01-fitness-16x9.webp" alt="Fitness in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Fitness</h3><p>Log workouts, plan the week, and estimate a shared meal from a photo.</p></div></article>
+</div>
+<details>
+<summary>More from this month (19)</summary>
+<ul><li><strong>Dictionary</strong>: look up English, Chinese, Japanese, and Korean with readings, handwriting, speech, favorites, and spaced-repetition flashcards.</li></ul><ul><li>Read English from local WordNet 3.1, including irregular forms, and keep a finished lookup in Redis for 30 days.</li><li>Return Chinese, Japanese, and Korean from local CC-CEDICT, JMdict, and kengdic immediately. Wiktionary examples merge in on a follow-up request.</li><li>Show a card for each Chinese character with a Hanzi Writer stroke-order animation, the active reading, and a short CC-CEDICT meaning.</li><li>Keep the iOS handwriting pad from opening the text-selection callout and magnifier while drawing.</li><li>Stream AI usage notes as tokens arrive, and stream a definition the same way when the dictionaries have no entry.</li><li>Merge duplicate headwords into one entry, including Korean rows that Wiktionary used to repeat.</li><li>Keep Dictionary open when a character card unmounts before its stroke data has loaded.</li><li>Download WordNet from the NLTK zip, retry each dataset, and fall back to Princeton's archive.</li><li>Load prebuilt dictionary index snapshots from the Docker image at boot.</li><li><strong>Fitness</strong>: browse 876 exercises, log sets, plan a weekly schedule, record body stats, and estimate a meal from a photo.</li><li>Localize exercise names and instructions. A non-English exercise view shows the translated name with the English name underneath.</li><li>Split a shared meal with ÷2, ÷3, ÷4, or a custom count next to the meal type, and log only your share.</li><li>Open workout, body, food, schedule, and exercise details in a side sheet.</li><li>On iOS, the food photo button opens the system sheet (Photo Library, Take Photo, Choose File). Desktop keeps the file picker.</li><li>Polish Fitness charts and the food estimate: drop the weekly-goal trophy and the confidence pill, and show loading inside the estimate button.</li><li><strong>Karaoke / iPod</strong>: use the Redis song library title, artist, and cover for share pages and chat link previews, and fall back to YouTube when that song is missing.</li><li>Decode HTML entities in lyrics, translations, furigana, and KuGou titles on read, leaving the stored LRC/KRC payload unchanged.</li><li>Localize the Stuff app name in the dock, menus, Finder, window title, Spotlight, and About.</li></ul>
+</details>
 <h2>September 2026</h2>
 <div class="changelog-feature-grid">
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-09-05-ryo-pvc-speech-16x9.webp" alt="Ryo PVC speech in the September 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Ryo PVC speech</h3><p>Chats defaults to ElevenLabs Ryo PVC with Instant v4, and Ryo voices stay in Ryo chat.</p></div></article>

@@ -17,6 +17,37 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ---
 
+## October 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-02-dictionary-16x9.webp" alt="Dictionary in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dictionary</h3><p>Look up English, Chinese, Japanese, and Korean with readings, handwriting, and stroke-order cards.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-01-fitness-16x9.webp" alt="Fitness in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Fitness</h3><p>Log workouts, plan the week, and estimate a shared meal from a photo.</p></div></article>
+</div>
+<details>
+<summary>More from this month (19)</summary>
+
+- **Dictionary**: look up English, Chinese, Japanese, and Korean with readings, handwriting, speech, favorites, and spaced-repetition flashcards.
+- Read English from local WordNet 3.1, including irregular forms, and keep a finished lookup in Redis for 30 days.
+- Return Chinese, Japanese, and Korean from local CC-CEDICT, JMdict, and kengdic immediately. Wiktionary examples merge in on a follow-up request.
+- Show a card for each Chinese character with a Hanzi Writer stroke-order animation, the active reading, and a short CC-CEDICT meaning.
+- Keep the iOS handwriting pad from opening the text-selection callout and magnifier while drawing.
+- Stream AI usage notes as tokens arrive, and stream a definition the same way when the dictionaries have no entry.
+- Merge duplicate headwords into one entry, including Korean rows that Wiktionary used to repeat.
+- Keep Dictionary open when a character card unmounts before its stroke data has loaded.
+- Download WordNet from the NLTK zip, retry each dataset, and fall back to Princeton's archive.
+- Load prebuilt dictionary index snapshots from the Docker image at boot.
+- **Fitness**: browse 876 exercises, log sets, plan a weekly schedule, record body stats, and estimate a meal from a photo.
+- Localize exercise names and instructions. A non-English exercise view shows the translated name with the English name underneath.
+- Split a shared meal with ÷2, ÷3, ÷4, or a custom count next to the meal type, and log only your share.
+- Open workout, body, food, schedule, and exercise details in a side sheet.
+- On iOS, the food photo button opens the system sheet (Photo Library, Take Photo, Choose File). Desktop keeps the file picker.
+- Polish Fitness charts and the food estimate: drop the weekly-goal trophy and the confidence pill, and show loading inside the estimate button.
+- **Karaoke / iPod**: use the Redis song library title, artist, and cover for share pages and chat link previews, and fall back to YouTube when that song is missing.
+- Decode HTML entities in lyrics, translations, furigana, and KuGou titles on read, leaving the stored LRC/KRC payload unchanged.
+- Localize the Stuff app name in the dock, menus, Finder, window title, Spotlight, and About.
+
+</details>
+
 ## September 2026
 
 <div class="changelog-feature-grid">

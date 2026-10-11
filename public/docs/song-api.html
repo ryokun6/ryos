@@ -377,6 +377,8 @@
     <a href="/docs/calculator" class="nav-child ">2.27 Calculator</a>
     <a href="/docs/preview" class="nav-child ">2.28 Preview</a>
     <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
+    <a href="/docs/dictionary" class="nav-child ">2.30 Dictionary</a>
+    <a href="/docs/fitness" class="nav-child ">2.31 Fitness</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -832,6 +834,8 @@ X-Username: &lt;username&gt;</code></pre>
 <p>Lines are automatically filtered to remove: <ul><li>Credit/metadata lines (作词, 作曲, Produced by, etc.)</li><li>Title/artist header lines</li><li>Empty parenthetical content</li></ul></p>
 <h3>Chinese Conversion</h3>
 <ul><li>Raw LRC/KRC from KuGou remains stored in Simplified Chinese</li></ul><ul><li>Both processed <code>zh-CN</code> and OpenCC-converted <code>zh-TW</code> lines (including KRC word timings) are stored with the song</li><li><code>lyricsLanguage</code> selects which processed script is returned as <code>parsedLines</code></li><li>iPod and Karaoke expose Automatic, Traditional, and Simplified choices in the Pronunciation menu; Automatic follows the current Chinese ryOS locale and otherwise preserves the Traditional default</li><li>Japanese lyrics are detected and preserved without conversion</li></ul>
+<h3>HTML entities</h3>
+<p>Named and numeric character entities in lyric lines, translations, furigana, and KuGou titles are decoded once when lyrics are parsed or served. The stored LRC/KRC payload is not rewritten.</p>
 <h3>Embedded Translations</h3>
 <p>KRC files may contain embedded Chinese translations in a base64-encoded <code>[language:]</code> tag. The API extracts the Simplified source, stores both <code>translations["zh-CN"]</code> and its Traditional <code>translations["zh-TW"]</code> conversion, and bypasses AI generation for either Chinese target. AI-generated Chinese translations are also saved under both script keys.</p>
 <hr>
