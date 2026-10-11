@@ -1,4 +1,6 @@
 #!/usr/bin/env bun
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import {
   extractFirstTarFile,
@@ -300,7 +302,23 @@ describe("remote dictionary parsers", () => {
     expect(stripHtml("a&nbsp;<i>b</i> &amp; c")).toBe("a b & c");
     expect(stripHtml("<<script>script>alert(1)<</script>/script>")).toBe("alert(1)");
     expect(stripHtml("&lt;script&gt;x")).toBe("scriptx");
+    expect(stripHtml("&amp;lt;script&amp;gt;")).toBe("&lt;script&gt;");
     expect(stripHtml("<style>.mw-x{display:inline-block}</style>H<sub>2</sub>O")).toBe("H2O");
+    expect(stripHtml("<<style>style>.evil{}</style>Hi")).toBe("Hi");
+    expect(stripHtml("<<style>style>")).toBe("");
+    expect(stripHtml("<scr<script>ipt>")).toBe("");
+    expect(stripHtml("<scr<script>ipt>alert(1)</scr</script>ipt>")).toBe("alert(1)");
+    for (const dirty of [
+      "<<style>style>.evil{}</style>",
+      "<scr<script>ipt>alert(1)</scr</script>ipt>",
+      "<style<style>>.x{}</style>",
+    ]) {
+      const plain = stripHtml(dirty);
+      expect(plain).not.toContain("<");
+      expect(plain).not.toContain(">");
+      expect(plain.toLowerCase()).not.toContain("<style");
+      expect(plain.toLowerCase()).not.toContain("<script");
+    }
   });
 
   test("English Wiktionary drops template CSS, translingual rows, and embedded subsense lists", () => {
@@ -381,5 +399,22 @@ describe("remote dictionary parsers", () => {
     const example = entry?.senses[0].examples?.[0];
     expect(example?.translation).toBeUndefined();
     expect(example?.reading).toBe("seiseki no tame");
+  });
+});
+
+describe("dictionary plain-text rendering", () => {
+  test("glosses and examples are React text, not HTML", () => {
+    const files = [
+      "src/apps/dictionary/components/DictionaryEntryView.tsx",
+      "src/apps/dictionary/components/DictionaryReading.tsx",
+      "src/apps/dictionary/components/DictionaryFlashcardsView.tsx",
+      "src/apps/dictionary/components/DictionarySidebar.tsx",
+      "src/components/layout/dashboard/DictionaryWidget.tsx",
+    ];
+    for (const file of files) {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      expect(source).not.toContain("dangerouslySetInnerHTML");
+      expect(source).not.toContain("innerHTML");
+    }
   });
 });

@@ -24,7 +24,7 @@ export const LOOKUP_NOT_FOUND_TTL_SECONDS = 60 * 60 * 6;
 export const DICTIONARY_AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
 /** Bump when parser output changes so cached entries are re-parsed. */
-const PARSER_CACHE_VERSION = "v4";
+const PARSER_CACHE_VERSION = "v5";
 
 export type RemoteCacheOutcome = "hit" | "miss" | "timeout";
 
@@ -67,10 +67,20 @@ export function remoteCacheTtlFor(value: unknown, error: unknown | null): number
   return selectRemoteCacheTtl(value ? "hit" : "miss");
 }
 
-/** HTML → plain text. Results are plain strings, so no `<`/`>` survive. */
+/**
+ * HTML → plain text. Style elements are removed with their CSS, then every
+ * tag. Each pass repeats until the string stops changing, so a nested tag
+ * such as `<<style>style>` cannot reassemble `<style` after one replacement.
+ * Entities are decoded once (so `&amp;lt;` stays `&lt;`), then any brackets
+ * that decoding revealed are deleted. Callers render the result as text.
+ */
 export function stripHtml(html: string): string {
-  let text = html.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+  let text = html;
   let previous: string;
+  do {
+    previous = text;
+    text = text.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
+  } while (text !== previous);
   do {
     previous = text;
     text = text.replace(/<[^<>]*>/g, "");
