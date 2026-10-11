@@ -296,7 +296,8 @@ export function DictionaryEntryView({
     ...(entry.kanji?.length ? (["kanjidic2"] as const) : []),
     ...((showRelated ? result?.sources ?? [] : []).filter(
       (source) =>
-        source !== entry.source && (source === "wiktionary" || source === "datamuse")
+        source !== entry.source &&
+        (source === "wiktionary" || source === "datamuse" || source === "free-dictionary")
     ) as DictionarySource[]),
   ];
 

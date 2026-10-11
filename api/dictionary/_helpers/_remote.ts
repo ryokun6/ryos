@@ -2,6 +2,7 @@ import type {
   DictionaryEntry,
   DictionaryExample,
   DictionaryLanguage,
+  DictionaryLookupResponse,
   DictionarySense,
 } from "../../../src/shared/dictionary.js";
 import { redisKey } from "../../../src/shared/redisKeys.js";
@@ -10,11 +11,61 @@ import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
 import type { RedisLike } from "../../_utils/redis.js";
 
 const REMOTE_TIMEOUT_MS = 6000;
-const REMOTE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 7;
-const REMOTE_MISS_TTL_SECONDS = 60 * 60 * 6;
+/** Successful remote parses. Long, because dictionary text barely changes. */
+export const REMOTE_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+/** Confirmed misses (404 / empty body). Shorter than hits so new articles can appear. */
+export const REMOTE_MISS_TTL_SECONDS = 60 * 60 * 24;
+/** Timeouts and 5xx. Minutes, so a blip is not stored as "no such word". */
+export const REMOTE_TIMEOUT_TTL_SECONDS = 60 * 5;
+/** Final `/api/dictionary` payload, keyed by normalized query + lang. */
+export const LOOKUP_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
+export const LOOKUP_NOT_FOUND_TTL_SECONDS = 60 * 60 * 6;
+/** AI notes and fallback entries. Already long; kept next to the other TTLs. */
+export const DICTIONARY_AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
 /** Bump when parser output changes so cached entries are re-parsed. */
 const PARSER_CACHE_VERSION = "v4";
+
+export type RemoteCacheOutcome = "hit" | "miss" | "timeout";
+
+export function selectRemoteCacheTtl(outcome: RemoteCacheOutcome): number {
+  if (outcome === "hit") return REMOTE_CACHE_TTL_SECONDS;
+  if (outcome === "miss") return REMOTE_MISS_TTL_SECONDS;
+  return REMOTE_TIMEOUT_TTL_SECONDS;
+}
+
+export function selectLookupCacheTtl(notFound: boolean): number {
+  return notFound ? LOOKUP_NOT_FOUND_TTL_SECONDS : LOOKUP_CACHE_TTL_SECONDS;
+}
+
+export function dictionaryHttpCacheControl(notFound: boolean): string {
+  if (notFound) return "public, max-age=300, stale-while-revalidate=3600";
+  return "public, max-age=86400, stale-while-revalidate=604800";
+}
+
+/** True for timeouts, network drops, and transient HTTP statuses. */
+export function isTemporaryRemoteFailure(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const name = "name" in error ? String((error as { name?: unknown }).name) : "";
+  if (name === "TimeoutError" || name === "AbortError") return true;
+  const message = error instanceof Error ? error.message : String(error);
+  if (/timeout|aborted|ECONNRESET|EAI_AGAIN|fetch failed|network/i.test(message)) return true;
+  const status = /Remote dictionary (\d+)/.exec(message);
+  if (!status) return false;
+  const code = Number(status[1]);
+  return code === 408 || code === 429 || code >= 500;
+}
+
+/**
+ * TTL for a remote fetch, or null when the error should not be cached
+ * (unexpected failures stay retryable).
+ */
+export function remoteCacheTtlFor(value: unknown, error: unknown | null): number | null {
+  if (error) {
+    return isTemporaryRemoteFailure(error) ? selectRemoteCacheTtl("timeout") : null;
+  }
+  return selectRemoteCacheTtl(value ? "hit" : "miss");
+}
 
 /** HTML → plain text. Results are plain strings, so no `<`/`>` survive. */
 export function stripHtml(html: string): string {
@@ -285,17 +336,59 @@ async function cached<T>(
       // cache read failures fall through to the network
     }
   }
-  const value = await load();
-  if (redis) {
+  let value: T | null = null;
+  let ttl: number | null;
+  try {
+    value = await load();
+    ttl = remoteCacheTtlFor(value, null);
+  } catch (error) {
+    ttl = remoteCacheTtlFor(null, error);
+    if (ttl === null) throw error;
+  }
+  if (redis && ttl !== null) {
     try {
-      await redis.set(key, JSON.stringify({ v: value }), {
-        ex: value ? REMOTE_CACHE_TTL_SECONDS : REMOTE_MISS_TTL_SECONDS,
-      });
+      await redis.set(key, JSON.stringify({ v: value }), { ex: ttl });
     } catch {
       // best effort
     }
   }
   return value;
+}
+
+function isLookupResponse(value: unknown): value is DictionaryLookupResponse {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Partial<DictionaryLookupResponse>;
+  return typeof row.query === "string" && Array.isArray(row.entries) && typeof row.notFound === "boolean";
+}
+
+export async function readLookupCache(
+  redis: RedisLike | null,
+  key: string
+): Promise<DictionaryLookupResponse | null> {
+  if (!redis) return null;
+  try {
+    const hit = await redis.get<DictionaryLookupResponse | string>(key);
+    if (!hit) return null;
+    const value = typeof hit === "string" ? (JSON.parse(hit) as unknown) : hit;
+    return isLookupResponse(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function writeLookupCache(
+  redis: RedisLike | null,
+  key: string,
+  response: DictionaryLookupResponse
+): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.set(key, JSON.stringify(response), {
+      ex: selectLookupCacheTtl(response.notFound),
+    });
+  } catch {
+    // best effort
+  }
 }
 
 export function dictionaryCacheKey(source: string, lang: string, term: string): string {

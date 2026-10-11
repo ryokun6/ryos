@@ -21,6 +21,7 @@ import {
   mergeSurfaceSenses,
 } from "./_english.js";
 import type { DictionaryIndex } from "./_index.js";
+import { lookupWordNet } from "./_wordnet.js";
 
 export interface DictionaryLookupDeps {
   getIndex: (lang: DictionaryLanguage) => Promise<DictionaryIndex>;
@@ -40,6 +41,12 @@ const HAN_CHAR_RE = /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/u;
  * real Free Dictionary hit, then use Wiktionary instead of blocking on it.
  */
 const FREE_DICTIONARY_GRACE_MS = 1000;
+/**
+ * WordNet already has the definition. Phonetics, audio, and extra examples
+ * may arrive from the network, but only within this window — a slow or failed
+ * remote source never turns a local hit into not-found.
+ */
+export const ENRICHMENT_DEADLINE_MS = 400;
 /** Surface form plus a few lemmas (running → run, took → take). */
 const MAX_ENGLISH_ATTEMPTS = 4;
 
@@ -189,7 +196,100 @@ async function finishEnglish(
   return response;
 }
 
+function takeExamples(entry: DictionaryEntry | null | undefined): { text: string }[] {
+  if (!entry) return [];
+  return entry.senses.flatMap((sense) => sense.examples ?? []).filter((example) => example.text);
+}
+
+async function enrichWordNetHit(
+  query: string,
+  entry: DictionaryEntry,
+  deps: DictionaryLookupDeps
+): Promise<DictionaryLookupResponse> {
+  const head = entry.headword;
+  const freeP = safely(
+    "free-dictionary",
+    deps,
+    deps.fetchFreeDictionary && (() => deps.fetchFreeDictionary!(head)),
+    null
+  );
+  const wikiP = safely(
+    "wiktionary",
+    deps,
+    deps.fetchWiktionary && (() => deps.fetchWiktionary!(head, "en")),
+    null
+  );
+  const synonymsP = safely(
+    "datamuse",
+    deps,
+    deps.fetchSynonyms && (() => deps.fetchSynonyms!(head)),
+    [] as string[]
+  );
+  const [free, wiki, extraSynonyms] = await Promise.all([
+    withDeadline(freeP, ENRICHMENT_DEADLINE_MS),
+    withDeadline(wikiP, ENRICHMENT_DEADLINE_MS),
+    withDeadline(synonymsP, ENRICHMENT_DEADLINE_MS),
+  ]);
+
+  let usedFree = false;
+  if (free?.ipa) {
+    entry.ipa = free.ipa;
+    usedFree = true;
+  }
+  if (free?.audioUrl) {
+    entry.audioUrl = free.audioUrl;
+    usedFree = true;
+  }
+  const freeExamples = takeExamples(free);
+  const wikiExamples = takeExamples(wiki);
+  if ((freeExamples.length || wikiExamples.length) && entry.senses[0]) {
+    const seen = new Set((entry.senses[0].examples ?? []).map((example) => example.text));
+    const merged = [...(entry.senses[0].examples ?? [])];
+    for (const example of [...freeExamples, ...wikiExamples]) {
+      if (seen.has(example.text)) continue;
+      seen.add(example.text);
+      merged.push(example);
+      if (example && freeExamples.includes(example)) usedFree = true;
+      if (merged.length >= 4) break;
+    }
+    entry.senses[0].examples = merged;
+  }
+
+  const synonyms = Array.from(new Set([...(entry.synonyms ?? []), ...(extraSynonyms ?? [])])).slice(0, 20);
+  if (synonyms.length) entry.synonyms = synonyms;
+
+  const response = emptyResponse(query, "en");
+  response.entries = [entry];
+  response.notFound = false;
+  response.sources = ["wordnet"];
+  if (usedFree) response.sources.push("free-dictionary");
+  if (wikiExamples.length) response.sources.push("wiktionary");
+  if (extraSynonyms && extraSynonyms.length) response.sources.push("datamuse");
+  response.similar = (entry.synonyms ?? []).slice(0, 12).map((headword) => ({
+    headword,
+    gloss: "",
+    lang: "en",
+  }));
+  return response;
+}
+
 async function lookupEnglish(
+  query: string,
+  deps: DictionaryLookupDeps
+): Promise<DictionaryLookupResponse> {
+  const word = query.toLowerCase();
+  let index: DictionaryIndex | null = null;
+  try {
+    index = await deps.getIndex("en");
+  } catch (error) {
+    deps.onRemoteError?.("wordnet", error);
+  }
+  const local = index ? lookupWordNet(index, word) : null;
+  if (local) return enrichWordNetHit(query, local, deps);
+  return lookupEnglishRemote(query, deps);
+}
+
+async function lookupEnglishRemote(
   query: string,
   deps: DictionaryLookupDeps
 ): Promise<DictionaryLookupResponse> {

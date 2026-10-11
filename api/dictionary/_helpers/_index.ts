@@ -11,6 +11,11 @@ export interface DictionaryIndexOptions {
   readingKeys?: (entry: DictionaryEntry) => string[];
   /** Lower rank sorts first (0-255). */
   rank?: (entry: DictionaryEntry) => number;
+  /**
+   * Index gloss text for reverse lookup. English WordNet glosses are full
+   * sentences, so that index is skipped there; synonyms come from synsets.
+   */
+  indexGlosses?: boolean;
   /** Compact row encoding; defaults to JSON. */
   serialize?: (entry: DictionaryEntry) => string;
   materialize?: (row: string) => DictionaryEntry;
@@ -113,9 +118,11 @@ export class DictionaryIndex {
       this.keyStrings.push(keys.join(KEY_SEPARATOR));
       for (const key of keys) pushIndex(this.byHeadword, key, index);
       for (const key of options.readingKeys?.(entry) ?? []) pushIndex(this.byReading, key, index);
-      for (const sense of entry.senses) {
-        for (const gloss of sense.glosses) {
-          for (const key of glossKeys(gloss)) pushIndex(this.byGloss, key, index);
+      if (options.indexGlosses !== false) {
+        for (const sense of entry.senses) {
+          for (const gloss of sense.glosses) {
+            for (const key of glossKeys(gloss)) pushIndex(this.byGloss, key, index);
+          }
         }
       }
       index++;
