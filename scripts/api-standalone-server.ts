@@ -149,6 +149,12 @@ class BunResponseShim extends EventEmitter {
         this.streamController = controller;
       },
       cancel: () => {
+        // Client went away. Emit before writableEnded flips so handlers can
+        // abort the model and skip caching a partial body. A normal res.end()
+        // only emits "close", after writableEnded is already true.
+        if (!this.writableEnded) {
+          this.emit("aborted");
+        }
         this.closeStream();
       },
     });

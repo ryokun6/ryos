@@ -1,7 +1,6 @@
 import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import type {
-  DictionaryAiExtras,
   DictionaryAiMode,
   DictionaryAiResponse,
   DictionaryLanguage,
@@ -9,9 +8,10 @@ import type {
   DictionaryQueryLanguage,
 } from "@/shared/dictionary";
 import {
-  normalizeDictionaryAiExtras,
-  parseDictionaryAiStreamLine,
-  takeDictionaryAiStreamLines,
+  extrasToDictionaryNotes,
+  reduceDictionaryAiUiChunk,
+  takeDictionaryAiSseEvents,
+  type DictionaryAiUiChunk,
 } from "./dictionaryAiStream";
 import { readDictionaryClientCache, writeDictionaryClientCache } from "./dictionaryLookupCache";
 
@@ -134,15 +134,21 @@ function readStreamChunk(
   });
 }
 
+function notesFromAiResponse(data: DictionaryAiResponse): string {
+  if (typeof data.notes === "string" && data.notes.trim()) return data.notes;
+  if (data.extras) return extrasToDictionaryNotes(data.extras);
+  return "";
+}
+
 /**
- * Extras mode streams NDJSON partials. A cache hit is still one JSON body.
- * Calls `onExtras` as soon as the notes have visible text.
+ * Extras mode uses the same UI-message SSE stream as Chats.
+ * A Redis hit is one JSON body and is delivered in a single callback.
  */
 export async function streamDictionaryAiExtras(
   word: string,
   lang: DictionaryLanguage,
   locale: string,
-  onExtras: (extras: DictionaryAiExtras) => void,
+  onNotes: (notes: string) => void,
   signal?: AbortSignal
 ): Promise<void> {
   const timeoutSignal = AbortSignal.timeout(EXTRAS_STREAM_TIMEOUT_MS);
@@ -159,7 +165,8 @@ export async function streamDictionaryAiExtras(
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     const data = (await response.json()) as DictionaryAiResponse;
-    if (data.extras) onExtras(normalizeDictionaryAiExtras(data.extras));
+    const notes = notesFromAiResponse(data);
+    if (notes) onNotes(notes);
     return;
   }
 
@@ -168,21 +175,38 @@ export async function streamDictionaryAiExtras(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  const apply = (line: string) => {
-    const message = parseDictionaryAiStreamLine(line);
-    if (message.error) throw new DictionaryApiError(message.error, 502);
-    if (message.extras) onExtras(normalizeDictionaryAiExtras(message.extras));
+  let notes = "";
+  const applyEvent = (payload: string) => {
+    let chunk: DictionaryAiUiChunk;
+    try {
+      chunk = JSON.parse(payload) as DictionaryAiUiChunk;
+    } catch {
+      throw new DictionaryApiError("ai_unavailable", 502);
+    }
+    const next = reduceDictionaryAiUiChunk(notes, chunk);
+    if (next.error) throw new DictionaryApiError(next.error, 502);
+    if (next.notes !== notes) {
+      notes = next.notes;
+      onNotes(notes);
+    }
   };
   try {
     while (!requestSignal.aborted) {
       const { done, value } = await readStreamChunk(reader, requestSignal);
       buffer += decoder.decode(value, { stream: !done });
-      const taken = takeDictionaryAiStreamLines(buffer);
+      const taken = takeDictionaryAiSseEvents(buffer);
       buffer = taken.rest;
-      for (const line of taken.lines) apply(line);
+      for (const event of taken.events) applyEvent(event);
       if (done) break;
     }
-    if (buffer.trim() && !requestSignal.aborted) apply(buffer);
+    if (buffer.includes("data:") && !requestSignal.aborted) {
+      try {
+        const taken = takeDictionaryAiSseEvents(buffer.endsWith("\n\n") ? buffer : `${buffer}\n\n`);
+        for (const event of taken.events) applyEvent(event);
+      } catch {
+        // A trailing partial frame is not a failed note. Completed events already rendered.
+      }
+    }
   } catch (error) {
     await reader.cancel().catch(() => undefined);
     if (!signal?.aborted && timeoutSignal.aborted) {
