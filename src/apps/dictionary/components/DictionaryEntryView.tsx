@@ -7,6 +7,7 @@ import {
   type DictionaryEntry,
   type DictionaryExample,
   type DictionaryPhrase,
+  type DictionarySense,
   type DictionarySource,
 } from "@/shared/dictionary";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
@@ -76,6 +77,13 @@ function ExampleItem({
       />
     </li>
   );
+}
+
+function aiSenseMarkdown(sense: DictionarySense): string {
+  const gloss = sense.glosses.join("\n\n");
+  if (!sense.partOfSpeech) return gloss;
+  const pos = sense.partOfSpeech.replace(/[*_`#[\]]/g, "").trim();
+  return pos ? `*${pos}* ${gloss}` : gloss;
 }
 
 function DictionaryAiProse({
@@ -385,6 +393,7 @@ export function DictionaryEntryView({
         </div>
       ) : null}
 
+      {entry.senses.length > 0 ? (
       <ol className="mt-3 space-y-3">
         {entry.senses.map((sense, index) => (
           <li key={index} className="flex gap-2">
@@ -392,12 +401,23 @@ export function DictionaryEntryView({
               {index + 1}
             </span>
             <div className="min-w-0 flex-1">
-              {sense.partOfSpeech ? (
-                <span className="mr-1.5 text-[11px] italic text-black/50 dark:text-white/50">
-                  {sense.partOfSpeech}
-                </span>
-              ) : null}
-              <span className="text-[13px]">{sense.glosses.join("; ")}</span>
+              {entry.source === "ai" ? (
+                <div className="text-[13px]">
+                  <DictionaryAiProse
+                    text={aiSenseMarkdown(sense)}
+                    streaming={l.aiStatus === "streaming" && l.aiStreamingSense === index}
+                  />
+                </div>
+              ) : (
+                <>
+                  {sense.partOfSpeech ? (
+                    <span className="mr-1.5 text-[11px] italic text-black/50 dark:text-white/50">
+                      {sense.partOfSpeech}
+                    </span>
+                  ) : null}
+                  <span className="text-[13px]">{sense.glosses.join("; ")}</span>
+                </>
+              )}
               {sense.notes?.length ? (
                 <div className="text-[11px] text-black/45 dark:text-white/45">
                   {sense.notes.join(" · ")}
@@ -440,6 +460,7 @@ export function DictionaryEntryView({
           </li>
         ))}
       </ol>
+      ) : null}
 
       {entry.synonyms?.length ? (
         <>
@@ -452,7 +473,24 @@ export function DictionaryEntryView({
         </>
       ) : null}
 
-      {entry.lang === "zh" ? <DictionaryHanziCards entry={entry} l={l} /> : null}
+      {entry.source === "ai" && l.aiStatus === "streaming" ? (
+        <span className="mt-1 inline-block animate-pulse text-[13px]" aria-hidden>
+          ▍
+        </span>
+      ) : null}
+      {entry.source === "ai" && l.aiError && l.aiStatus === "error" ? (
+        <p className={cn("mt-2 text-[11px]", DICTIONARY_ERROR_TEXT_CLASS)}>
+          {l.aiError === "rate_limited"
+            ? t("apps.dictionary.ai.rateLimited")
+            : l.aiError === "not_found"
+              ? t("apps.dictionary.ai.notFound")
+              : t("apps.dictionary.ai.error")}
+        </p>
+      ) : null}
+
+      {entry.lang === "zh" && !(entry.source === "ai" && l.aiStatus === "streaming") ? (
+        <DictionaryHanziCards entry={entry} l={l} />
+      ) : null}
 
       {entry.kanji?.length ? (
         <>

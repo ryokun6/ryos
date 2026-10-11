@@ -9,6 +9,7 @@ import type {
 } from "@/shared/dictionary";
 import { dedupeDictionaryLookup } from "@/shared/dictionaryMerge";
 import {
+  entryToDictionaryFallbackText,
   extrasToDictionaryNotes,
   reduceDictionaryAiUiChunk,
   takeDictionaryAiSseEvents,
@@ -89,27 +90,7 @@ export async function lookupDictionaryWord(
   return body;
 }
 
-export async function askDictionaryAi(
-  word: string,
-  lang: DictionaryLanguage,
-  mode: DictionaryAiMode,
-  locale: string,
-  signal?: AbortSignal
-): Promise<DictionaryAiResponse> {
-  const response = await abortableFetch(getApiUrl("/api/dictionary/ai"), {
-    method: "POST",
-    signal,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ word, lang, mode, locale }),
-    timeout: 45000,
-    throwOnHttpError: false,
-    retry: { maxAttempts: 1, initialDelayMs: 200 },
-  });
-  if (!response.ok) throw await readError(response);
-  return (await response.json()) as DictionaryAiResponse;
-}
-
-const EXTRAS_STREAM_TIMEOUT_MS = 90_000;
+const AI_STREAM_TIMEOUT_MS = 90_000;
 
 /** Unblock a body read as soon as the caller aborts, instead of waiting for the next chunk. */
 function readStreamChunk(
@@ -137,39 +118,42 @@ function readStreamChunk(
   });
 }
 
-function notesFromAiResponse(data: DictionaryAiResponse): string {
+function textFromAiResponse(data: DictionaryAiResponse): string {
   if (typeof data.notes === "string" && data.notes.trim()) return data.notes;
   if (data.extras) return extrasToDictionaryNotes(data.extras);
+  if (data.entry) return entryToDictionaryFallbackText(data.entry);
   return "";
 }
 
 /**
- * Extras mode uses the same UI-message SSE stream as Chats.
+ * Fallback and extras share the Chats UI-message SSE stream.
  * A Redis hit is one JSON body and is delivered in a single callback.
+ * Aborting drops the socket; the server caches only a finished generation.
  */
-export async function streamDictionaryAiExtras(
+export async function streamDictionaryAi(
   word: string,
   lang: DictionaryLanguage,
+  mode: DictionaryAiMode,
   locale: string,
-  onNotes: (notes: string) => void,
+  onText: (text: string) => void,
   signal?: AbortSignal
 ): Promise<void> {
-  const timeoutSignal = AbortSignal.timeout(EXTRAS_STREAM_TIMEOUT_MS);
+  const timeoutSignal = AbortSignal.timeout(AI_STREAM_TIMEOUT_MS);
   const requestSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
   const response = await fetch(getApiUrl("/api/dictionary/ai"), {
     method: "POST",
     credentials: "include",
     signal: requestSignal,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ word, lang, mode: "extras", locale }),
+    body: JSON.stringify({ word, lang, mode, locale }),
   });
   if (!response.ok) throw await readError(response);
 
   const contentType = response.headers.get("content-type") ?? "";
   if (contentType.includes("application/json")) {
     const data = (await response.json()) as DictionaryAiResponse;
-    const notes = notesFromAiResponse(data);
-    if (notes) onNotes(notes);
+    const text = textFromAiResponse(data);
+    if (text) onText(text);
     return;
   }
 
@@ -178,7 +162,7 @@ export async function streamDictionaryAiExtras(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-  let notes = "";
+  let text = "";
   const applyEvent = (payload: string) => {
     let chunk: DictionaryAiUiChunk;
     try {
@@ -186,11 +170,11 @@ export async function streamDictionaryAiExtras(
     } catch {
       throw new DictionaryApiError("ai_unavailable", 502);
     }
-    const next = reduceDictionaryAiUiChunk(notes, chunk);
+    const next = reduceDictionaryAiUiChunk(text, chunk);
     if (next.error) throw new DictionaryApiError(next.error, 502);
-    if (next.notes !== notes) {
-      notes = next.notes;
-      onNotes(notes);
+    if (next.notes !== text) {
+      text = next.notes;
+      onText(text);
     }
   };
   try {

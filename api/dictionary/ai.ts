@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { generateText, NoObjectGeneratedError, Output, smoothStream, streamText } from "ai";
+import { smoothStream, streamText } from "ai";
 import { z } from "zod";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -10,15 +10,11 @@ import {
   DICTIONARY_LANGUAGES,
   DICTIONARY_QUERY_MAX_LENGTH,
   normalizeDictionaryQuery,
+  type DictionaryAiMode,
   type DictionaryAiResponse,
 } from "../../src/shared/dictionary.js";
 import { DICTIONARY_AI_STREAM_HEADERS, extrasToDictionaryNotes } from "../../src/shared/dictionaryAiNotes.js";
-import {
-  AI_LANGUAGE_NAMES,
-  buildDictionaryAiPrompt,
-  DictionaryAiFallbackSchema,
-  entryFromAi,
-} from "./_helpers/_ai.js";
+import { AI_LANGUAGE_NAMES, buildDictionaryAiPrompt } from "./_helpers/_ai.js";
 import { DICTIONARY_AI_CACHE_TTL_SECONDS, dictionaryCacheKey } from "./_helpers/_remote.js";
 
 const RequestSchema = z.object({
@@ -47,7 +43,7 @@ function cachedNotes(value: DictionaryAiResponse): string {
   return "";
 }
 
-async function streamDictionaryExtras({
+async function streamDictionaryAiText({
   req,
   res,
   redis,
@@ -58,6 +54,7 @@ async function streamDictionaryExtras({
   lang,
   mode,
   prompt,
+  temperature,
 }: {
   req: IncomingMessage;
   res: ServerResponse;
@@ -70,8 +67,9 @@ async function streamDictionaryExtras({
   cacheKey: string;
   word: string;
   lang: RequestBody["lang"];
-  mode: "extras";
+  mode: DictionaryAiMode;
   prompt: { instructions: string; user: string };
+  temperature: number;
 }): Promise<void> {
   const abort = new AbortController();
   const abortGeneration = () => {
@@ -100,7 +98,7 @@ async function streamDictionaryExtras({
     model: google("gemini-3-flash-preview"),
     instructions: prompt.instructions,
     messages: [{ role: "user", content: prompt.user }],
-    temperature: 0.4,
+    temperature,
     abortSignal: abort.signal,
     // Same word-sized chunks Chats uses, so CJK and Latin both paint smoothly.
     experimental_transform: smoothStream({
@@ -121,6 +119,7 @@ async function streamDictionaryExtras({
         if (isAborted || isCancelled || abort.signal.aborted || finishReason === "error") return;
         const notes = notesFromResponseMessage(responseMessage);
         if (!notes) return;
+        // Finished text only. Aborted, cancelled, and errored generations return above.
         const response: DictionaryAiResponse = { word, lang, mode, notes };
         try {
           await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
@@ -198,47 +197,23 @@ export default apiHandler<RequestBody>(
     logger.info("dictionary ai request", { lang, mode, locale, authed: !!user });
     try {
       const prompt = buildDictionaryAiPrompt({ word, lang, mode, locale });
-      let response: DictionaryAiResponse;
-      if (mode === "fallback") {
-        const { output } = await generateText({
-          model: google("gemini-3-flash-preview"),
-          instructions: prompt.instructions,
-          output: Output.object({ schema: DictionaryAiFallbackSchema, name: "dictionary_entry" }),
-          messages: [{ role: "user", content: prompt.user }],
-          temperature: 0.2,
-        });
-        if (!output) throw new Error("AI returned no entry");
-        response = { word, lang, mode, entry: entryFromAi(output, word, lang) ?? undefined };
-      } else {
-        await streamDictionaryExtras({
-          req,
-          res,
-          redis,
-          logger,
-          startTime,
-          cacheKey,
-          word,
-          lang,
-          mode,
-          prompt,
-        });
-        return;
-      }
-
-      try {
-        await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
-      } catch (error) {
-        logger.warn("dictionary ai cache write failed", { error: String(error) });
-      }
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json(response);
+      await streamDictionaryAiText({
+        req,
+        res,
+        redis,
+        logger,
+        startTime,
+        cacheKey,
+        word,
+        lang,
+        mode,
+        prompt,
+        temperature: mode === "fallback" ? 0.2 : 0.4,
+      });
     } catch (error) {
-      if (NoObjectGeneratedError.isInstance(error)) {
-        logger.warn("dictionary ai produced no object", { text: error.text });
-      } else {
-        logger.error("dictionary ai failed", error);
-      }
+      logger.error("dictionary ai failed", error);
       logger.response(502, Date.now() - startTime);
+      if (res.headersSent) return;
       res.status(502).json({
         error: "ai_unavailable",
         language: AI_LANGUAGE_NAMES[lang],
