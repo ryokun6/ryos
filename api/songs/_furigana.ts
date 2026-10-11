@@ -6,6 +6,7 @@
 
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
+import { decodeAnnotatedSegments } from "../_utils/html-entities.js";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/_song-service.js";
 import { normalizeFuriganaSegments as normalizeSharedFuriganaSegments } from "../../src/utils/furigana";
@@ -190,6 +191,14 @@ export function parseRubyMarkup(line: string): FuriganaSegment[] {
 
 export function normalizeFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
   return normalizeSharedFuriganaSegments(segments);
+}
+
+/**
+ * Decode cached furigana/readings on the way out. Newly generated markup is
+ * normalized and stored without this step, so a later read decodes once.
+ */
+export function presentFuriganaSegments(segments: FuriganaSegment[]): FuriganaSegment[] {
+  return normalizeFuriganaSegments(decodeAnnotatedSegments(segments));
 }
 
 /**

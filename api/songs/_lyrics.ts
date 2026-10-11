@@ -6,6 +6,7 @@
 
 import { openai } from "@ai-sdk/openai";
 import { Converter } from "opencc-js";
+import { decodeLyricText } from "../_utils/html-entities.js";
 import {
   shouldSkipLyricCreditLine,
 } from "../../src/shared/media/lyricCreditSkip.js";
@@ -155,14 +156,18 @@ export function extractChineseFromKrcLanguage(krc: string): string[] | null {
  */
 export function shouldSkipLine(text: string, title?: string, artist?: string): boolean {
   const trimmed = text.trim();
+  // Titles from the lyrics provider are compared in decoded form. The line
+  // text itself is decoded by the caller before it is stored.
+  const decodedTitle = title ? decodeLyricText(title) : undefined;
+  const decodedArtist = artist ? decodeLyricText(artist) : undefined;
 
   if (shouldSkipLyricCreditLine(trimmed)) {
     return true;
   }
 
-  if (title && artist) {
-    const titleArtist = `${title} - ${artist}`;
-    const artistTitle = `${artist} - ${title}`;
+  if (decodedTitle && decodedArtist) {
+    const titleArtist = `${decodedTitle} - ${decodedArtist}`;
+    const artistTitle = `${decodedArtist} - ${decodedTitle}`;
     // Also create simplified Chinese versions for matching lyrics with different character variants
     const titleArtistSimplified = traditionalToSimplified(titleArtist);
     const artistTitleSimplified = traditionalToSimplified(artistTitle);
@@ -179,9 +184,9 @@ export function shouldSkipLine(text: string, title?: string, artist?: string): b
   // Use minimum length to avoid false positives with short names
   const MIN_LENGTH = 3;
   
-  if (artist && artist.length >= MIN_LENGTH) {
-    const artistSimplified = traditionalToSimplified(artist);
-    if (trimmed === artist || trimmed === artistSimplified) {
+  if (decodedArtist && decodedArtist.length >= MIN_LENGTH) {
+    const artistSimplified = traditionalToSimplified(decodedArtist);
+    if (trimmed === decodedArtist || trimmed === artistSimplified) {
       return true;
     }
   }
@@ -217,11 +222,65 @@ export function filterLrcCreditLines(
     if (!line) continue;
     const match = line.match(LRC_TIMED_LINE_REGEX);
     if (!match) continue;
-    const text = match[4].trim();
+    const text = decodeLyricText(match[4].trim());
     if (!text || shouldSkipLine(text, title, artist)) continue;
-    kept.push(line);
+    kept.push(`[${match[1]}:${match[2]}.${match[3]}]${text}`);
   }
   return kept.join("\n");
+}
+
+/**
+ * Decode the lyric-text portion of a stored LRC document once.
+ * Timestamps and non-timed lines are preserved. Already-decoded text is unchanged.
+ */
+export function decodeLrcDocument(lrc: string): string {
+  if (!lrc.includes("&")) return lrc;
+  // Decode the whole line once. Timestamps have no `&`, and metadata tags
+  // such as [ar:Tom &amp; Jerry] need the same pass as the lyric text.
+  return lrc
+    .split("\n")
+    .map((line) => decodeLyricText(line))
+    .join("\n");
+}
+
+export function decodeLyricsSource<
+  T extends { title: string; artist: string; album?: string },
+>(source: T): T {
+  const title = decodeLyricText(source.title);
+  const artist = decodeLyricText(source.artist);
+  const album =
+    source.album === undefined ? undefined : decodeLyricText(source.album);
+  if (title === source.title && artist === source.artist && album === source.album) {
+    return source;
+  }
+  return {
+    ...source,
+    title,
+    artist,
+    ...(album !== undefined ? { album } : {}),
+  };
+}
+
+export function decodeParsedLyricLines<
+  T extends { words: string; wordTimings?: Array<{ text: string }> },
+>(lines: readonly T[]): T[] {
+  let changed = false;
+  const next = lines.map((line) => {
+    const words = decodeLyricText(line.words);
+    let timingsChanged = false;
+    const wordTimings = line.wordTimings?.map((timing) => {
+      const text = decodeLyricText(timing.text);
+      if (text === timing.text) return timing;
+      timingsChanged = true;
+      return { ...timing, text };
+    });
+    if (words === line.words && !timingsChanged) return line;
+    changed = true;
+    return wordTimings && timingsChanged
+      ? { ...line, words, wordTimings }
+      : { ...line, words };
+  });
+  return changed ? next : (lines as T[]);
 }
 
 // =============================================================================
@@ -242,7 +301,7 @@ export function parseLrcToLines(lrc: string, title?: string, artist?: string): L
       const seconds = parseInt(match[2], 10);
       const ms = match[3].length === 2 ? parseInt(match[3], 10) * 10 : parseInt(match[3], 10);
       const startTimeMs = String(minutes * 60 * 1000 + seconds * 1000 + ms);
-      const words = match[4].trim();
+      const words = decodeLyricText(match[4].trim()).trim();
       if (words && !shouldSkipLine(words, title, artist)) {
         lines.push({ words, startTimeMs });
       }
@@ -277,19 +336,20 @@ export function parseKrcToLines(krc: string, title?: string, artist?: string): P
       const [, offsetMs, durationMs, text] = match;
       
       if (text) {
+        const decoded = decodeLyricText(text);
         wordTimings.push({
-          text,
+          text: decoded,
           startTimeMs: parseInt(offsetMs, 10),
           durationMs: parseInt(durationMs, 10),
         });
-        fullText += text;
+        fullText += decoded;
       }
     }
 
     if (wordTimings.length === 0) {
       const plainText = content.replace(/<\d+,\d+,\d+>/g, "").trim();
       if (plainText) {
-        fullText = plainText;
+        fullText = decodeLyricText(plainText);
       }
     }
 
@@ -435,7 +495,10 @@ function parseRawKrcLines(krc: string, title?: string, artist?: string): RawKrcL
     }
 
     const trimmedText = fullText.trim();
-    const skip = shouldSkipLine(trimmedText, title, artist) || !trimmedText;
+    // Skip-matching uses decoded text. The stored words stay as fetched so a
+    // later translation read decodes them exactly once.
+    const skip =
+      shouldSkipLine(decodeLyricText(trimmedText), title, artist) || !trimmedText;
 
     lines.push({
       rawIndex,
@@ -472,7 +535,11 @@ export function buildChineseTranslationFromKrc(
     if (rawLine.shouldSkip) continue;
 
     const chineseLine = embeddedChinese[rawLine.rawIndex] || "";
-    const chineseIsMetadata = !chineseLine || shouldSkipLine(chineseLine, title, artist);
+    // Skip-matching decodes a copy. The saved translation text stays encoded
+    // so a later read (filterLrcCreditLines / decodeLrcDocument) decodes once.
+    const decodedChinese = decodeLyricText(chineseLine).trim();
+    const chineseIsMetadata =
+      !decodedChinese || shouldSkipLine(decodedChinese, title, artist);
     const sourceText = chineseIsMetadata ? rawLine.words : chineseLine;
     const textToUse = hasKanaText(sourceText)
       ? sourceText

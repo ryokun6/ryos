@@ -73,6 +73,9 @@ import {
   buildChineseTranslationVariantsFromKrc,
   filterLrcCreditLines,
   filterSkippedLyricLines,
+  decodeLrcDocument,
+  decodeLyricsSource,
+  decodeParsedLyricLines,
   getTranslationSystemPrompt,
   streamTranslation,
 } from "./_lyrics.js";
@@ -85,6 +88,7 @@ import {
   lyricsAreMostlyChinese,
   parseRubyMarkup,
   normalizeFuriganaSegments,
+  presentFuriganaSegments,
   lineNeedsFuriganaGeneration,
   FURIGANA_STREAM_SYSTEM_PROMPT,
 } from "./_furigana.js";
@@ -102,6 +106,10 @@ import {
 
 import { streamText } from "ai";
 import { openai } from "@ai-sdk/openai";
+import {
+  decodeAnnotatedSegments,
+  decodeLyricText,
+} from "../_utils/html-entities.js";
 
 // Helper for SSE responses with Node.js ApiResponse
 function sendSSEResponse(res: ApiResponse, origin: string | null, data: unknown): void {
@@ -152,10 +160,41 @@ function getParsedLyrics(
   title?: string,
   artist?: string
 ) {
+  // Re-parse raw LRC/KRC on every read. Redis keeps the provider payload, so
+  // entity decoding runs once per response and cached parsed lines do not need
+  // a purge or a second decode.
+  const parsedFromSource =
+    lyrics.lrc || lyrics.krc
+      ? parseLyricsContent(lyrics, title, artist, language)
+      : [];
   const lines =
-    lyrics.parsedLinesByLanguage?.[language] ??
-    parseLyricsContent(lyrics, title, artist, language);
+    parsedFromSource.length > 0
+      ? parsedFromSource
+      : decodeParsedLyricLines(lyrics.parsedLinesByLanguage?.[language] ?? []);
   return filterSkippedLyricLines(lines, title, artist);
+}
+
+function presentLyricsMetadata(song: {
+  title?: string;
+  artist?: string;
+  album?: string;
+  cover?: string;
+  coverColor?: string;
+  lyricsSource?: LyricsSource;
+}) {
+  const rawTitle = song.lyricsSource?.title || song.title;
+  const rawArtist = song.lyricsSource?.artist || song.artist;
+  const rawAlbum = song.lyricsSource?.album || song.album;
+  return {
+    title: rawTitle ? decodeLyricText(rawTitle) : rawTitle,
+    artist: rawArtist ? decodeLyricText(rawArtist) : rawArtist,
+    album: rawAlbum ? decodeLyricText(rawAlbum) : rawAlbum,
+    cover: song.cover,
+    coverColor: song.coverColor,
+    lyricsSource: song.lyricsSource
+      ? decodeLyricsSource(song.lyricsSource)
+      : undefined,
+  };
 }
 
 // =============================================================================
@@ -281,8 +320,35 @@ export default apiHandler<Record<string, unknown>>(
         song.lyrics = lyricsWithVariants;
       }
 
+      if (song.title) song.title = decodeLyricText(song.title);
+      if (song.artist) song.artist = decodeLyricText(song.artist);
+      if (song.album) song.album = decodeLyricText(song.album);
+      if (song.lyricsSource) {
+        song.lyricsSource = decodeLyricsSource(song.lyricsSource);
+      }
+      if (song.translations) {
+        const decodedTranslations: Record<string, string> = {};
+        for (const [lang, lrc] of Object.entries(song.translations)) {
+          decodedTranslations[lang] = decodeLrcDocument(lrc);
+        }
+        song.translations = decodedTranslations;
+      }
       if (song.furigana) {
-        song.furigana = song.furigana.map((segments) => normalizeFuriganaSegments(segments));
+        song.furigana = song.furigana.map((segments) => presentFuriganaSegments(segments));
+      }
+      if (song.soramimi) {
+        song.soramimi = song.soramimi.map((segments) => decodeAnnotatedSegments(segments));
+      }
+      if (song.soramimiByLang) {
+        const decodedSoramimi: NonNullable<typeof song.soramimiByLang> = {};
+        for (const [lang, lines] of Object.entries(song.soramimiByLang)) {
+          if (lines) {
+            decodedSoramimi[lang] = lines.map((segments) =>
+              decodeAnnotatedSegments(segments)
+            );
+          }
+        }
+        song.soramimiByLang = decodedSoramimi;
       }
 
       logger.info(`Response: 200 OK`, { 
@@ -633,7 +699,7 @@ export default apiHandler<Record<string, unknown>>(
               totalLines,
               cached: hasFurigana,
               ...(hasFurigana
-                ? { data: song.furigana!.map((segments) => normalizeFuriganaSegments(segments)) }
+                ? { data: song.furigana!.map((segments) => presentFuriganaSegments(segments)) }
                 : {}),
             };
           }
@@ -664,21 +730,20 @@ export default apiHandler<Record<string, unknown>>(
                 totalLines,
                 cached: hasSoramimi,
                 targetLanguage: soramimiTargetLanguage,
-                ...(hasSoramimi ? { data: cachedSoramimiData } : {}),
+                ...(hasSoramimi
+                  ? {
+                      data: cachedSoramimiData!.map((segments) =>
+                        decodeAnnotatedSegments(segments)
+                      ),
+                    }
+                  : {}),
               };
             }
           }
           
           // Include metadata if requested (useful for one-call song setup)
           if (returnMetadata) {
-            response.metadata = {
-              title: song.lyricsSource?.title || song.title,
-              artist: song.lyricsSource?.artist || song.artist,
-              album: song.lyricsSource?.album || song.album,
-              cover: song.cover,
-              coverColor: song.coverColor,
-              lyricsSource: song.lyricsSource,
-            };
+            response.metadata = presentLyricsMetadata(song);
           }
           
           return jsonResponse(response);
@@ -832,14 +897,7 @@ export default apiHandler<Record<string, unknown>>(
         // Include metadata if requested (useful for one-call song setup)
         // For fresh fetch, savedSong has the complete metadata
         if (returnMetadata) {
-          response.metadata = {
-            title: savedSong.title,
-            artist: savedSong.artist,
-            album: savedSong.album,
-            cover: savedSong.cover,
-            coverColor: savedSong.coverColor,
-            lyricsSource: savedSong.lyricsSource,
-          };
+          response.metadata = presentLyricsMetadata(savedSong);
         }
         
         return jsonResponse(response);
@@ -955,7 +1013,11 @@ export default apiHandler<Record<string, unknown>>(
               language: chineseTarget,
             });
             return jsonResponse({
-              translation: krcDerivedLrc,
+              translation: filterLrcCreditLines(
+                krcDerivedLrc,
+                song.lyricsSource?.title || song.title,
+                song.lyricsSource?.artist || song.artist
+              ),
               cached: false,
             });
           }
@@ -990,7 +1052,11 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         return jsonResponse({
-          translation: translatedLrc,
+          translation: filterLrcCreditLines(
+            translatedLrc,
+            song.lyricsSource?.title || song.title,
+            song.lyricsSource?.artist || song.artist
+          ),
           cached: false,
         });
       }
@@ -1122,7 +1188,11 @@ export default apiHandler<Record<string, unknown>>(
             });
             sendSSEResponse(res, effectiveOrigin, {
               type: "cached",
-              translation: krcDerivedLrc,
+              translation: filterLrcCreditLines(
+                krcDerivedLrc,
+                song.lyricsSource?.title || song.title,
+                song.lyricsSource?.artist || song.artist
+              ),
             });
             return;
           }
@@ -1314,7 +1384,7 @@ export default apiHandler<Record<string, unknown>>(
           logger.info("Returning cached furigana via SSE");
           sendSSEResponse(res, effectiveOrigin, {
             type: "cached",
-            furigana: song.furigana.map((segments) => normalizeFuriganaSegments(segments)),
+            furigana: song.furigana.map((segments) => presentFuriganaSegments(segments)),
           });
           return;
         }
@@ -1541,7 +1611,7 @@ export default apiHandler<Record<string, unknown>>(
           
           // Clean cached data
           const cleanedSoramimi = cachedSoramimi.map((lineSegments) =>
-            lineSegments.reduce<Array<(typeof lineSegments)[number]>>((acc, seg) => {
+            decodeAnnotatedSegments(lineSegments).reduce<Array<(typeof lineSegments)[number]>>((acc, seg) => {
               const candidate =
                 seg.reading && targetLanguage === "zh-TW"
                   ? (() => {
