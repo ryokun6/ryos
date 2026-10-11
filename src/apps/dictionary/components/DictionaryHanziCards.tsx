@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import type HanziWriter from "hanzi-writer";
-import type { HanziWriterOptions } from "hanzi-writer";
+import type { CharacterJson, HanziWriterOptions } from "hanzi-writer";
 import type { DictionaryEntry, DictionaryHanziInfo } from "@/shared/dictionary";
 import { useThemeStore } from "@/stores/useThemeStore";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
@@ -10,12 +10,20 @@ import {
   hanziCardVariant,
   hanziCardsForEntry,
 } from "../utils/hanziCards";
-import { hanziCharDataLoader, type HanziStrokeCharData } from "../utils/hanziStrokeData";
+import {
+  hanziCharDataLoader,
+  type HanziCharDataLoader,
+} from "../utils/hanziStrokeData";
 import { ReadingLine } from "./DictionaryReading";
 
 const STROKE_SIZE = 64;
 
 type StrokePhase = "loading" | "ready" | "fallback";
+
+type WriterSession = {
+  disposed: boolean;
+  loaded: boolean;
+};
 
 function withAlpha(color: string, alpha: number): string {
   const rgb = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
@@ -28,15 +36,63 @@ function withAlpha(color: string, alpha: number): string {
   return `rgba(17, 17, 17, ${alpha})`;
 }
 
-function HanziStroke({
+function isThenable(value: unknown): value is Promise<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as Promise<unknown>).then === "function"
+  );
+}
+
+/** hanzi-writer throws synchronously from `_withData` when character data failed. */
+function callWriter(writer: HanziWriter, call: (writer: HanziWriter) => unknown): void {
+  try {
+    const result = call(writer);
+    if (isThenable(result)) void result.catch(() => undefined);
+  } catch {
+    // Unloaded or failed writers throw "Failed to load character data".
+  }
+}
+
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
+function hanziStrokeKey(wordKey: string, card: DictionaryHanziInfo, glyph: string): string {
+  return `${wordKey}:${glyph}:${card.traditional}:${card.simplified}:${card.reading ?? ""}`;
+}
+
+function HanziGlyph({ character }: { character: string }) {
+  return (
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 flex items-center justify-center text-[32px] leading-none"
+      lang="zh"
+    >
+      {character}
+    </span>
+  );
+}
+
+const STROKE_FRAME_CLASS =
+  "relative size-16 shrink-0 overflow-hidden rounded border border-black/10 bg-os-input-bg text-os-text-primary dark:border-white/15";
+
+export function HanziStroke({
   character,
   label,
+  charDataLoader = hanziCharDataLoader,
 }: {
   character: string;
   label: string;
+  charDataLoader?: HanziCharDataLoader;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const writerRef = useRef<HanziWriter | null>(null);
+  const loadedRef = useRef(false);
   const replayTokenRef = useRef(0);
   const reduceMotionRef = useRef(false);
   const [phase, setPhase] = useState<StrokePhase>("loading");
@@ -48,16 +104,69 @@ function HanziStroke({
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    let cancelled = false;
-    setPhase("loading");
+
+    const session: WriterSession = { disposed: false, loaded: false };
+    const abort = new AbortController();
+    let activeWriter: HanziWriter | null = null;
+    let pageVisible = document.visibilityState !== "hidden";
+    let inView = true;
+    let observer: IntersectionObserver | null = null;
+
+    loadedRef.current = false;
     writerRef.current = null;
+    setPhase("loading");
     host.replaceChildren();
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    reduceMotionRef.current = reduceMotion;
+    reduceMotionRef.current = prefersReducedMotion();
+
+    const setPhaseIfActive = (next: StrokePhase) => {
+      if (session.disposed) return;
+      setPhase(next);
+    };
+
+    const syncPlayback = () => {
+      const writer = activeWriter;
+      if (session.disposed || !session.loaded || !writer) return;
+      if (reduceMotionRef.current) {
+        callWriter(writer, (current) => current.showCharacter());
+        return;
+      }
+      if (pageVisible && inView) {
+        callWriter(writer, (current) => current.loopCharacterAnimation());
+        return;
+      }
+      callWriter(writer, (current) => current.pauseAnimation());
+    };
+
+    const onVisibility = () => {
+      if (session.disposed) return;
+      pageVisible = document.visibilityState !== "hidden";
+      syncPlayback();
+    };
+    try {
+      document.addEventListener("visibilitychange", onVisibility, { signal: abort.signal });
+    } catch {
+      document.addEventListener("visibilitychange", onVisibility);
+    }
+
+    const ObserverCtor = window.IntersectionObserver;
+    if (typeof ObserverCtor === "function") {
+      try {
+        observer = new ObserverCtor((entries) => {
+          if (session.disposed) return;
+          const entry = entries[entries.length - 1];
+          if (!entry) return;
+          inView = entry.isIntersecting;
+          syncPlayback();
+        });
+        observer.observe(host);
+      } catch {
+        observer = null;
+      }
+    }
 
     void import("hanzi-writer")
       .then(({ default: HanziWriter }) => {
-        if (cancelled || hostRef.current !== host) return;
+        if (session.disposed || hostRef.current !== host) return;
         const ink = getComputedStyle(host).color || "#111111";
         const options: Partial<HanziWriterOptions> = {
           width: STROKE_SIZE,
@@ -73,61 +182,106 @@ function HanziStroke({
           radicalColor: null,
           outlineColor: withAlpha(ink, 0.28),
           charDataLoader: (char, onLoad, onError) => {
-            hanziCharDataLoader(char, onLoad as (data: HanziStrokeCharData) => void, onError);
+            charDataLoader(
+              char,
+              (data) => {
+                if (session.disposed || abort.signal.aborted) {
+                  onError?.(new DOMException("The operation was aborted.", "AbortError"));
+                  return;
+                }
+                onLoad(data as CharacterJson);
+              },
+              (error) => {
+                onError?.(error);
+              },
+              abort.signal
+            );
           },
           onLoadCharDataSuccess: () => {
-            if (!cancelled) setPhase("ready");
+            if (session.disposed) return;
+            session.loaded = true;
+            loadedRef.current = true;
+            setPhaseIfActive("ready");
+            syncPlayback();
           },
           onLoadCharDataError: () => {
-            if (!cancelled) setPhase("fallback");
+            if (session.disposed) return;
+            session.loaded = false;
+            loadedRef.current = false;
+            setPhaseIfActive("fallback");
           },
         };
-        const writer = HanziWriter.create(host, character, options);
-        writerRef.current = writer;
-        const started = reduceMotion ? writer.showCharacter() : writer.loopCharacterAnimation();
-        void Promise.resolve(started).catch(() => {
-          if (!cancelled) setPhase("fallback");
-        });
+        try {
+          activeWriter = new HanziWriter(host, options);
+          writerRef.current = activeWriter;
+          const pending = activeWriter.setCharacter(character);
+          void Promise.resolve(pending).catch(() => {
+            if (session.disposed) return;
+            session.loaded = false;
+            loadedRef.current = false;
+            setPhaseIfActive("fallback");
+          });
+        } catch {
+          activeWriter = null;
+          writerRef.current = null;
+          setPhaseIfActive("fallback");
+        }
       })
       .catch(() => {
-        if (!cancelled) setPhase("fallback");
+        setPhaseIfActive("fallback");
       });
 
     return () => {
-      cancelled = true;
-      replayTokenRef.current += 1;
-      const writer = writerRef.current;
+      const current = writerRef.current;
+      const wasLoaded = loadedRef.current;
+      session.disposed = true;
+      session.loaded = false;
+      loadedRef.current = false;
       writerRef.current = null;
-      if (writer) void writer.pauseAnimation();
-      host.replaceChildren();
+      activeWriter = null;
+      replayTokenRef.current += 1;
+      observer?.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (wasLoaded && current) {
+        try {
+          current.cancelQuiz();
+        } catch {
+          // Quiz teardown is optional once the node is discarded.
+        }
+        callWriter(current, (writer) => writer.pauseAnimation());
+      }
+      abort.abort();
+      try {
+        host.replaceChildren();
+      } catch {
+        // The host can already be detached during unmount.
+      }
     };
-  }, [character, currentTheme, isDarkMode]);
+  }, [character, charDataLoader, currentTheme, isDarkMode]);
 
   const replay = () => {
     const writer = writerRef.current;
-    if (!writer || phaseRef.current === "fallback") return;
+    if (!writer || !loadedRef.current || phaseRef.current === "fallback") return;
     const token = ++replayTokenRef.current;
-    void writer.animateCharacter({
-      onComplete: () => {
-        if (token !== replayTokenRef.current || reduceMotionRef.current) return;
-        void writer.loopCharacterAnimation().catch(() => undefined);
-      },
-    });
+    callWriter(writer, (active) =>
+      active.animateCharacter({
+        onComplete: () => {
+          if (
+            token !== replayTokenRef.current ||
+            reduceMotionRef.current ||
+            !loadedRef.current
+          ) {
+            return;
+          }
+          callWriter(active, (current) => current.loopCharacterAnimation());
+        },
+      })
+    );
   };
 
   return (
-    <div
-      className="relative size-16 shrink-0 overflow-hidden rounded border border-black/10 bg-os-input-bg text-os-text-primary dark:border-white/15"
-    >
-      {phase !== "ready" ? (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center text-[32px] leading-none"
-          lang="zh"
-        >
-          {character}
-        </span>
-      ) : null}
+    <div className={STROKE_FRAME_CLASS}>
+      {phase !== "ready" ? <HanziGlyph character={character} /> : null}
       <div
         ref={hostRef}
         role="button"
@@ -147,10 +301,16 @@ function HanziStroke({
 
 function HanziCard({
   card,
+  cardKey,
   l,
+  animate,
+  charDataLoader,
 }: {
   card: DictionaryHanziInfo;
+  cardKey: string;
   l: DictionaryLogic;
+  animate: boolean;
+  charDataLoader?: HanziCharDataLoader;
 }) {
   const glyph = hanziCardGlyph(card, l.chineseScript);
   const variant = hanziCardVariant(card, l.chineseScript);
@@ -162,11 +322,22 @@ function HanziCard({
   const variantLang = l.chineseScript === "traditional" ? "zh-CN" : "zh-TW";
 
   return (
-    <div className="flex gap-2 rounded border border-black/10 p-2 dark:border-white/10">
-      <HanziStroke
-        character={glyph}
-        label={l.t("apps.dictionary.ariaLabels.replayStrokes", { character: glyph })}
-      />
+    <div
+      data-hanzi-key={cardKey}
+      className="flex gap-2 rounded border border-black/10 p-2 dark:border-white/10"
+    >
+      {animate ? (
+        <HanziStroke
+          key={cardKey}
+          character={glyph}
+          label={l.t("apps.dictionary.ariaLabels.replayStrokes", { character: glyph })}
+          charDataLoader={charDataLoader}
+        />
+      ) : (
+        <div className={STROKE_FRAME_CLASS}>
+          <HanziGlyph character={glyph} />
+        </div>
+      )}
       <div className="min-w-0 text-[11px]">
         {card.meaning ? <div className="line-clamp-2">{card.meaning}</div> : null}
         <ReadingLine className="text-[11px]" parts={[readings.pinyin, readings.zhuyin]} />
@@ -181,30 +352,111 @@ function HanziCard({
   );
 }
 
+type HanziCardsBoundaryProps = {
+  children: ReactNode;
+  fallback: ReactNode;
+  resetKey: string;
+};
+
+type HanziCardsBoundaryState = {
+  hasError: boolean;
+  resetKey: string;
+};
+
+/** A stroke-card failure stays on the glyph fallback instead of crashing Dictionary. */
+export class HanziCardsErrorBoundary extends Component<
+  HanziCardsBoundaryProps,
+  HanziCardsBoundaryState
+> {
+  state: HanziCardsBoundaryState = {
+    hasError: false,
+    resetKey: this.props.resetKey,
+  };
+
+  static getDerivedStateFromError(): Partial<HanziCardsBoundaryState> {
+    return { hasError: true };
+  }
+
+  static getDerivedStateFromProps(
+    props: HanziCardsBoundaryProps,
+    state: HanziCardsBoundaryState
+  ): Partial<HanziCardsBoundaryState> | null {
+    if (props.resetKey !== state.resetKey) {
+      return { hasError: false, resetKey: props.resetKey };
+    }
+    return null;
+  }
+
+  render(): ReactNode {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
 const SECTION_TITLE_CLASS =
   "mt-4 mb-1.5 text-[10px] font-bold uppercase tracking-wide text-black/45 dark:text-white/45";
+
+function HanziCardGrid({
+  cards,
+  wordKey,
+  l,
+  animate,
+  charDataLoader,
+}: {
+  cards: DictionaryHanziInfo[];
+  wordKey: string;
+  l: DictionaryLogic;
+  animate: boolean;
+  charDataLoader?: HanziCharDataLoader;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {cards.map((card) => {
+        const glyph = hanziCardGlyph(card, l.chineseScript);
+        const cardKey = hanziStrokeKey(wordKey, card, glyph);
+        return (
+          <HanziCard
+            key={cardKey}
+            card={card}
+            cardKey={cardKey}
+            l={l}
+            animate={animate}
+            charDataLoader={charDataLoader}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export function DictionaryHanziCards({
   entry,
   l,
+  charDataLoader,
 }: {
   entry: DictionaryEntry;
   l: DictionaryLogic;
+  charDataLoader?: HanziCharDataLoader;
 }) {
   const cards = hanziCardsForEntry(entry);
   if (cards.length === 0) return null;
+  const wordKey = `${entry.id}:${entry.headword}`;
   return (
     <>
       <h3 className={SECTION_TITLE_CLASS}>{l.t("apps.dictionary.labels.characters")}</h3>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {cards.map((card) => (
-          <HanziCard
-            key={`${card.traditional}:${card.simplified}:${card.reading ?? ""}`}
-            card={card}
-            l={l}
-          />
-        ))}
-      </div>
+      <HanziCardsErrorBoundary
+        resetKey={wordKey}
+        fallback={
+          <HanziCardGrid cards={cards} wordKey={wordKey} l={l} animate={false} />
+        }
+      >
+        <HanziCardGrid
+          cards={cards}
+          wordKey={wordKey}
+          l={l}
+          animate
+          charDataLoader={charDataLoader}
+        />
+      </HanziCardsErrorBoundary>
     </>
   );
 }
