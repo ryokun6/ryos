@@ -289,7 +289,7 @@ describe("English lookup", () => {
       })
     );
     expect(result.notFound).toBe(true);
-    expect(errors.sort()).toEqual(["datamuse", "free-dictionary"]);
+    expect(errors.sort()).toEqual(["datamuse", "free-dictionary", "wordnet"]);
   });
 
   test("a missing local dataset still returns a response", async () => {

@@ -13,6 +13,7 @@ import {
   parseDictionaryAiStreamLine,
   takeDictionaryAiStreamLines,
 } from "./dictionaryAiStream";
+import { readDictionaryClientCache, writeDictionaryClientCache } from "./dictionaryLookupCache";
 
 export class DictionaryApiError extends Error {
   constructor(
@@ -40,6 +41,8 @@ export async function lookupDictionaryWord(
   lang: DictionaryQueryLanguage,
   signal?: AbortSignal
 ): Promise<DictionaryLookupResponse> {
+  const cached = readDictionaryClientCache(query, lang);
+  if (cached) return cached;
   const params = new URLSearchParams({ q: query, lang });
   const response = await abortableFetch(
     getApiUrl(`/api/dictionary?${params.toString()}`),
@@ -52,7 +55,9 @@ export async function lookupDictionaryWord(
     }
   );
   if (!response.ok) throw await readError(response);
-  return (await response.json()) as DictionaryLookupResponse;
+  const body = (await response.json()) as DictionaryLookupResponse;
+  writeDictionaryClientCache(query, lang, body);
+  return body;
 }
 
 export async function askDictionaryAi(

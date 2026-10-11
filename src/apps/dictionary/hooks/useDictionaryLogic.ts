@@ -25,6 +25,7 @@ import {
   lookupDictionaryWord,
   streamDictionaryAiExtras,
 } from "../utils/dictionaryApi";
+import { readDictionaryClientCache } from "../utils/dictionaryLookupCache";
 import { buildStudyQueue, type SrsGrade } from "../utils/srs";
 import { useDictionarySpeech } from "./useDictionarySpeech";
 
@@ -139,6 +140,19 @@ export function useDictionaryLogic({
       lastLookupKeyRef.current = key;
 
       lookupAbortRef.current?.abort();
+      const cached = readDictionaryClientCache(normalized, lang);
+      if (cached) {
+        lookupAbortRef.current = null;
+        setResult(cached);
+        setSelectedEntryId(cached.entries[0]?.id ?? null);
+        setStatus("ready");
+        setError(null);
+        resetAi();
+        if (options.record !== false && !cached.notFound) {
+          actions.recordHistory(normalized, lang);
+        }
+        return;
+      }
       const controller = new AbortController();
       lookupAbortRef.current = controller;
       setStatus("loading");

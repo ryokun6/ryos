@@ -9,7 +9,9 @@ import type {
   DictionaryLanguage,
 } from "../../../src/shared/dictionary.js";
 import { normalizePinyinSearchKey } from "../../../src/utils/zhuyin.js";
+import { DATASET_TIMEOUT_MS, DATASETS, type DatasetId } from "./_dataset-sources.js";
 import { DictionaryIndex } from "./_index.js";
+import { buildEnglishDictionary } from "./_wordnet.js";
 import {
   extractFirstTarFile,
   formatCedictLine,
@@ -22,38 +24,11 @@ import {
   type KanjidicFile,
 } from "./_parsers.js";
 
-const JMDICT_SIMPLIFIED_VERSION =
-  process.env.DICTIONARY_JMDICT_VERSION || "3.6.2+20261005200550";
-const JMDICT_BASE = `https://github.com/scriptin/jmdict-simplified/releases/download/${encodeURIComponent(JMDICT_SIMPLIFIED_VERSION)}`;
-const JMDICT_VARIANT =
-  process.env.DICTIONARY_JMDICT_VARIANT === "full" ? "jmdict-eng" : "jmdict-eng-common";
-
-export const DATASETS = {
-  cedict: {
-    url: "https://www.mdbg.net/chinese/export/cedict/cedict_1_0_ts_utf-8_mdbg.txt.gz",
-    file: "cedict.txt.gz",
-  },
-  jmdict: {
-    url: `${JMDICT_BASE}/${JMDICT_VARIANT}-${JMDICT_SIMPLIFIED_VERSION}.json.tgz`,
-    file: `${JMDICT_VARIANT}-${JMDICT_SIMPLIFIED_VERSION}.json.tgz`,
-  },
-  kanjidic: {
-    url: `${JMDICT_BASE}/kanjidic2-en-${JMDICT_SIMPLIFIED_VERSION}.json.tgz`,
-    file: `kanjidic2-en-${JMDICT_SIMPLIFIED_VERSION}.json.tgz`,
-  },
-  kengdic: {
-    url: "https://raw.githubusercontent.com/garfieldnate/kengdic/master/kengdic.tsv",
-    file: "kengdic.tsv",
-  },
-} as const;
-
-export type DatasetId = keyof typeof DATASETS;
+export { DATASETS, type DatasetId } from "./_dataset-sources.js";
 
 export function getDictionaryDataDir(): string {
   return process.env.DICTIONARY_DATA_DIR || path.join(tmpdir(), "ryos-dictionary");
 }
-
-const DOWNLOAD_TIMEOUT_MS = 60_000;
 
 /** Read a dataset from the disk cache, downloading it on first use. */
 export async function loadDatasetBytes(id: DatasetId): Promise<Uint8Array> {
@@ -66,7 +41,7 @@ export async function loadDatasetBytes(id: DatasetId): Promise<Uint8Array> {
     // not cached yet
   }
   const response = await fetch(url, {
-    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    signal: AbortSignal.timeout(DATASET_TIMEOUT_MS[id]),
     headers: { "User-Agent": "ryOS-dictionary/1.0 (+https://os.ryo.lu)" },
   });
   if (!response.ok) {
@@ -158,9 +133,38 @@ async function loadIndex(lang: DictionaryLanguage): Promise<DictionaryIndex> {
       const text = new TextDecoder().decode(await loadDatasetBytes("kengdic"));
       return buildKoreanIndex(parseKengdic(text));
     }
+    case "en":
+      return buildEnglishDictionary(await loadDatasetBytes("wordnet"));
     default:
       throw new Error(`No local dictionary for ${lang}`);
   }
+}
+
+/**
+ * Load every local dictionary into memory. Safe to call at process start:
+ * a failed dataset is logged by the caller and stays lazy for the next lookup.
+ */
+export async function warmDictionaryIndexes(): Promise<{ ok: string[]; failed: string[] }> {
+  const jobs: [string, Promise<unknown>][] = [
+    ["en", getDictionaryIndex("en")],
+    ["zh", getDictionaryIndex("zh")],
+    ["ja", getDictionaryIndex("ja")],
+    ["ko", getDictionaryIndex("ko")],
+    ["kanjidic", getKanjiInfoMap()],
+  ];
+  const ok: string[] = [];
+  const failed: string[] = [];
+  await Promise.all(
+    jobs.map(async ([name, task]) => {
+      try {
+        await task;
+        ok.push(name);
+      } catch {
+        failed.push(name);
+      }
+    })
+  );
+  return { ok, failed };
 }
 
 export function getDictionaryIndex(lang: DictionaryLanguage): Promise<DictionaryIndex> {

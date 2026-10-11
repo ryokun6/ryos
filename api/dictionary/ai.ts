@@ -22,7 +22,7 @@ import {
   extrasHaveContent,
   entryFromAi,
 } from "./_helpers/_ai.js";
-import { dictionaryCacheKey } from "./_helpers/_remote.js";
+import { DICTIONARY_AI_CACHE_TTL_SECONDS, dictionaryCacheKey } from "./_helpers/_remote.js";
 
 const RequestSchema = z.object({
   word: z.string().trim().min(1).max(DICTIONARY_QUERY_MAX_LENGTH),
@@ -36,8 +36,6 @@ const RequestSchema = z.object({
 });
 
 type RequestBody = z.infer<typeof RequestSchema>;
-
-const CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 function writeNdjson(res: ServerResponse, payload: unknown): boolean {
   return res.write(`${JSON.stringify(payload)}\n`);
@@ -107,7 +105,7 @@ async function streamDictionaryExtras({
     const extras = extrasFromAi(parsed.data, lang);
     const response: DictionaryAiResponse = { word, lang, mode, extras };
     try {
-      await redis.set(cacheKey, JSON.stringify(response), { ex: CACHE_TTL_SECONDS });
+      await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
     } catch (error) {
       logger.warn("dictionary ai cache write failed", { error: String(error) });
     }
@@ -215,7 +213,7 @@ export default apiHandler<RequestBody>(
       }
 
       try {
-        await redis.set(cacheKey, JSON.stringify(response), { ex: CACHE_TTL_SECONDS });
+        await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
       } catch (error) {
         logger.warn("dictionary ai cache write failed", { error: String(error) });
       }

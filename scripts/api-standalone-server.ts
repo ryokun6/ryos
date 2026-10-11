@@ -12,6 +12,7 @@ import { EventEmitter } from "node:events";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { warmDictionaryIndexes } from "../api/dictionary/_helpers/_datasets.js";
 import { createRedis, getRedisBackend } from "../api/_utils/redis.js";
 import {
   authorizeRealtimeChannel,
@@ -1244,6 +1245,13 @@ async function bootstrap(): Promise<void> {
   console.log(
     `[api-standalone] Listening on http://${API_HOST}:${API_PORT} (${routes.length} routes)`,
   );
+  void warmDictionaryIndexes().then(({ ok, failed }) => {
+    console.log(
+      `[api-standalone] Dictionary indexes ready (${ok.join(", ") || "none"})${
+        failed.length ? `; failed: ${failed.join(", ")}` : ""
+      }`,
+    );
+  });
   for (const route of routes) {
     console.log(`  ${route.routePath}  ->  api/${route.relativePath}`);
   }

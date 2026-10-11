@@ -16,6 +16,7 @@ export const DICTIONARY_SOURCES = [
   "jmdict",
   "kanjidic2",
   "kengdic",
+  "wordnet",
   "wiktionary",
   "free-dictionary",
   "datamuse",
@@ -49,6 +50,11 @@ export const DICTIONARY_SOURCE_INFO: Record<DictionarySource, DictionarySourceIn
     name: "kengdic",
     license: "MPL 2.0 / LGPL 2.0+",
     url: "https://github.com/garfieldnate/kengdic",
+  },
+  wordnet: {
+    name: "WordNet",
+    license: "WordNet 3.1 © 2011 Princeton University",
+    url: "https://wordnet.princeton.edu",
   },
   wiktionary: {
     name: "Wiktionary",

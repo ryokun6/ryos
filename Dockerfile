@@ -16,6 +16,20 @@ ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
 
 RUN bun run build
 
+# Dataset files change only when their URLs change, so this layer stays cached
+# across app rebuilds. A failed download fails the image build (an empty layer
+# would be cached). Runtime still lazy-loads if a file is missing.
+FROM --platform=linux/amd64 oven/bun:1.3.9 AS dictionary-data
+
+WORKDIR /app
+
+COPY api/dictionary/_helpers/_dataset-sources.ts ./api/dictionary/_helpers/_dataset-sources.ts
+COPY scripts/prefetch-dictionary-data.ts ./scripts/prefetch-dictionary-data.ts
+
+ENV DICTIONARY_DATA_DIR=/app/data/dictionary
+
+RUN mkdir -p /app/data/dictionary && bun scripts/prefetch-dictionary-data.ts
+
 FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
@@ -25,6 +39,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV API_HOST=0.0.0.0
+ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/bun.lock ./bun.lock
@@ -37,6 +52,7 @@ COPY --from=build /app/index.html ./index.html
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/tsconfig.node.json ./tsconfig.node.json
 COPY --from=build /app/tsconfig.app.json ./tsconfig.app.json
+COPY --from=dictionary-data /app/data/dictionary ./data/dictionary
 
 EXPOSE 3000
 

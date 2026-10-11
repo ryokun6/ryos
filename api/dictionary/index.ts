@@ -5,13 +5,18 @@ import { getClientIp } from "../_utils/_rate-limit.js";
 import {
   DICTIONARY_LANGUAGES,
   DICTIONARY_QUERY_MAX_LENGTH,
+  normalizeDictionaryQuery,
 } from "../../src/shared/dictionary.js";
 import { getDictionaryIndex, getKanjiInfoMap } from "./_helpers/_datasets.js";
 import { lookupDictionary } from "./_helpers/_lookup.js";
 import {
+  dictionaryCacheKey,
+  dictionaryHttpCacheControl,
   fetchDatamuseSynonyms,
   fetchFreeDictionary,
   fetchWiktionary,
+  readLookupCache,
+  writeLookupCache,
 } from "./_helpers/_remote.js";
 
 const QuerySchema = z.object({
@@ -48,6 +53,22 @@ export default apiHandler(
       return;
     }
 
+    const normalized = normalizeDictionaryQuery(parsed.data.q);
+    const lookupKey = dictionaryCacheKey("lookup", parsed.data.lang, normalized);
+    const cached = await readLookupCache(redis, lookupKey);
+    if (cached) {
+      logger.info("dictionary lookup", {
+        lang: cached.lang,
+        entries: cached.entries.length,
+        sources: cached.sources,
+        cache: "hit",
+      });
+      res.setHeader("Cache-Control", dictionaryHttpCacheControl(cached.notFound));
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json(cached);
+      return;
+    }
+
     try {
       const result = await lookupDictionary(parsed.data.q, parsed.data.lang, {
         getIndex: getDictionaryIndex,
@@ -61,12 +82,14 @@ export default apiHandler(
             error: error instanceof Error ? error.message : String(error),
           }),
       });
+      await writeLookupCache(redis, lookupKey, result);
       logger.info("dictionary lookup", {
         lang: result.lang,
         entries: result.entries.length,
         sources: result.sources,
+        cache: "miss",
       });
-      res.setHeader("Cache-Control", "public, max-age=300");
+      res.setHeader("Cache-Control", dictionaryHttpCacheControl(result.notFound));
       logger.response(200, Date.now() - startTime);
       res.status(200).json(result);
     } catch (error) {
