@@ -22,14 +22,14 @@ import {
 import { mergeDictionaryLookup } from "@/shared/dictionaryMerge";
 import {
   dictionaryAiNotesHaveContent,
+  parseDictionaryAiFallback,
   parseDictionaryAiNotes,
 } from "../utils/dictionaryAiStream";
 import { helpItems } from "../metadata";
 import {
-  askDictionaryAi,
   DictionaryApiError,
   lookupDictionaryWord,
-  streamDictionaryAiExtras,
+  streamDictionaryAi,
 } from "../utils/dictionaryApi";
 import { readDictionaryClientCache } from "../utils/dictionaryLookupCache";
 import { buildStudyQueue, type SrsGrade } from "../utils/srs";
@@ -110,6 +110,7 @@ export function useDictionaryLogic({
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
 
   const [aiEntry, setAiEntry] = useState<DictionaryEntry | null>(null);
+  const [aiStreamingSense, setAiStreamingSense] = useState<number | null>(null);
   const [aiNotes, setAiNotes] = useState<string | null>(null);
   const [aiNotesLang, setAiNotesLang] = useState<DictionaryLanguage>("en");
   const [aiStatus, setAiStatus] = useState<DictionaryAiStatus>("idle");
@@ -118,13 +119,17 @@ export function useDictionaryLogic({
   const lookupAbortRef = useRef<AbortController | null>(null);
   const aiAbortRef = useRef<AbortController | null>(null);
   const aiRequestRef = useRef(0);
+  /** Id of the fallback entry currently being generated. Selecting it must not abort the stream. */
+  const fallbackEntryIdRef = useRef<string | null>(null);
   const lastLookupKeyRef = useRef<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const resetAi = useCallback(() => {
     aiRequestRef.current += 1;
     aiAbortRef.current?.abort();
+    fallbackEntryIdRef.current = null;
     setAiEntry(null);
+    setAiStreamingSense(null);
     setAiNotes(null);
     setAiStatus("idle");
     setAiError(null);
@@ -290,41 +295,66 @@ export function useDictionaryLogic({
       if (mode === "extras") {
         setAiNotes(null);
         setAiNotesLang(lang);
+        setAiStreamingSense(null);
+      } else {
+        fallbackEntryIdRef.current = `ai:${lang}:${word}`;
+        setAiStreamingSense(null);
       }
       try {
-        if (mode === "extras") {
-          let sawText = false;
-          let pendingNotes = "";
-          let frame = 0;
-          const publish = (notes: string) => {
-            if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
-            pendingNotes = notes;
-            if (!notes.trim()) return;
-            sawText = true;
-            if (frame) return;
-            frame = requestAnimationFrame(() => {
-              frame = 0;
-              if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
-              setAiNotes(pendingNotes);
-              setAiStatus("streaming");
-            });
-          };
-          await streamDictionaryAiExtras(word, lang, locale, publish, controller.signal);
-          if (frame) cancelAnimationFrame(frame);
+        let sawText = false;
+        let pendingText = "";
+        let pendingEntry: DictionaryEntry | null = null;
+        let pendingSense: number | null = null;
+        let frame = 0;
+        const publish = (text: string) => {
           if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
-          if (sawText) setAiNotes(pendingNotes);
+          pendingText = text;
+          if (mode === "fallback") {
+            const parsed = parseDictionaryAiFallback(text, word, lang);
+            if (parsed.status !== "entry" || !parsed.entry) return;
+            pendingEntry = parsed.entry;
+            pendingSense = parsed.streamingSenseIndex;
+          } else if (!text.trim()) {
+            return;
+          }
+          sawText = true;
+          if (frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+            if (mode === "extras") {
+              setAiNotes(pendingText);
+            } else if (pendingEntry) {
+              setAiEntry(pendingEntry);
+              setAiStreamingSense(pendingSense);
+              setSelectedEntryId(pendingEntry.id);
+            }
+            setAiStatus("streaming");
+          });
+        };
+        await streamDictionaryAi(word, lang, mode, locale, publish, controller.signal);
+        if (frame) cancelAnimationFrame(frame);
+        if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+        if (mode === "extras") {
+          if (sawText) setAiNotes(pendingText);
           else setAiError("ai_unavailable");
           setAiStatus(sawText ? "idle" : "error");
           return;
         }
-        const response = await askDictionaryAi(word, lang, mode, locale, controller.signal);
-        if (controller.signal.aborted) return;
-        setAiEntry(response.entry ?? null);
-        if (response.entry) setSelectedEntryId(response.entry.id);
-        else setAiError("not_found");
-        setAiStatus("idle");
+        const finalParse = parseDictionaryAiFallback(pendingText, word, lang, { complete: true });
+        setAiStreamingSense(null);
+        if (finalParse.status === "entry" && finalParse.entry) {
+          setAiEntry(finalParse.entry);
+          setSelectedEntryId(finalParse.entry.id);
+          setAiStatus("idle");
+          return;
+        }
+        setAiEntry(null);
+        setAiError(finalParse.status === "not_found" ? "not_found" : "ai_unavailable");
+        setAiStatus("error");
       } catch (err) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+        setAiStreamingSense(null);
         setAiError(describeError(err));
         setAiStatus("error");
       }
@@ -332,16 +362,20 @@ export function useDictionaryLogic({
     [locale, query, resultLanguage, selectedEntry]
   );
 
+  // A new dictionary entry drops the previous AI notes. The fallback definition
+  // selects its own entry as soon as the first token is visible; that selection
+  // must not abort the generation still in flight.
   useEffect(() => {
+    if (selectedEntry?.source === "ai" && selectedEntry.id === fallbackEntryIdRef.current) {
+      return;
+    }
+    fallbackEntryIdRef.current = null;
     aiRequestRef.current += 1;
     aiAbortRef.current?.abort();
     setAiNotes(null);
+    setAiStreamingSense(null);
     setAiStatus("idle");
     setAiError(null);
-    return () => {
-      aiRequestRef.current += 1;
-      aiAbortRef.current?.abort();
-    };
   }, [selectedEntry?.id]);
 
   useEffect(() => {
@@ -466,6 +500,7 @@ export function useDictionaryLogic({
     aiError,
     aiExtras,
     aiEntry,
+    aiStreamingSense,
     // flashcards
     currentCard,
     studyQueueLength: studyQueue.length,

@@ -191,7 +191,11 @@ export interface DictionaryAiResponse {
   mode: DictionaryAiMode;
   entry?: DictionaryEntry;
   extras?: DictionaryAiExtras;
-  /** Markdown notes streamed for extras mode. Parsed into `extras` for display. */
+  /**
+   * Finished marker text for extras and the no-results fallback.
+   * Streamed live, then cached. Parsed into `extras` or `entry` for display.
+   * A legacy fallback hit may have `entry` and no `notes`.
+   */
   notes?: string;
   cached?: boolean;
 }

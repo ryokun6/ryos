@@ -115,11 +115,11 @@ export function DictionaryLookupPanel({ l }: { l: DictionaryLogic }) {
           variant={buttonVariant(l)}
           size="sm"
           className="mt-2 gap-1.5"
-          disabled={l.aiStatus === "loading"}
+          disabled={l.aiStatus === "loading" || l.aiStatus === "streaming"}
           onClick={() => void l.askAi("fallback")}
         >
           <Sparkle size={13} weight="fill" />
-          {l.aiStatus === "loading"
+          {l.aiStatus === "loading" || l.aiStatus === "streaming"
             ? t("apps.dictionary.ai.thinking")
             : t("apps.dictionary.ai.askFallback")}
         </Button>
