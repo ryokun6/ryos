@@ -5,6 +5,7 @@
  */
 
 import { Converter } from "opencc-js";
+import { decodeLyricText } from "../_utils/html-entities.js";
 import { kugouHeaders } from "./_constants.js";
 import {
   fetchWithTimeout,
@@ -26,6 +27,24 @@ const traditionalToSimplified = Converter({ from: "tw", to: "cn" });
  */
 function normalizeArtistSeparator(artist: string): string {
   return artist.replace(/、/g, " & ");
+}
+
+/** KuGou title/artist/album, in Traditional Chinese, with HTML entities decoded once. */
+export function presentKugouNames(song: {
+  songname: string;
+  singername: string;
+  album_name?: string;
+}): { title: string; artist: string; album?: string } {
+  const album = song.album_name
+    ? decodeLyricText(simplifiedToTraditional(song.album_name))
+    : undefined;
+  return {
+    title: decodeLyricText(simplifiedToTraditional(song.songname)),
+    artist: decodeLyricText(
+      normalizeArtistSeparator(simplifiedToTraditional(song.singername))
+    ),
+    ...(album ? { album } : {}),
+  };
 }
 
 // =============================================================================
@@ -168,13 +187,26 @@ export async function searchKugou(
     const cover = rawCover
       ? rawCover.replace(/^http:\/\//, "https://")
       : undefined;
+    const names = presentKugouNames(song);
     return {
-      title: simplifiedToTraditional(song.songname),
-      artist: normalizeArtistSeparator(simplifiedToTraditional(song.singername)),
-      album: song.album_name ? simplifiedToTraditional(song.album_name) : undefined,
+      title: names.title,
+      artist: names.artist,
+      album: names.album,
       hash: song.hash,
       albumId: song.album_id,
-      score: Math.round(scoreSongMatch(song, title, artist) * 1000) / 1000,
+      score: Math.round(
+        scoreSongMatch(
+          {
+            // Score decoded names so a catalog title like "I'm" matches
+            // a provider title stored as "I&apos;m". Script conversion stays
+            // inside scoreSongMatch.
+            songname: decodeLyricText(song.songname),
+            singername: decodeLyricText(song.singername),
+          },
+          title,
+          artist
+        ) * 1000
+      ) / 1000,
       cover,
       _kugouOrder: index,
     };
