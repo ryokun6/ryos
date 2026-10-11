@@ -3,6 +3,7 @@ import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
+import { resolveSongShareLinkPreview } from "./_utils/og-share.js";
 
 interface LinkMetadata {
   title?: string;
@@ -109,6 +110,40 @@ export default apiHandler(
     if (!url || typeof url !== "string") {
       logger.response(400, Date.now() - startTime);
       res.status(400).json({ error: "No URL provided" });
+      return;
+    }
+
+    // Karaoke / iPod share links resolve from the Redis song library before
+    // any outbound fetch. This also covers localhost share URLs that SSRF
+    // checks would otherwise reject.
+    try {
+      const songPreview = await resolveSongShareLinkPreview(url);
+      if (songPreview) {
+        logger.info("Resolved song share preview", {
+          url,
+          source: songPreview.source,
+          title: songPreview.title,
+        });
+        logger.response(200, Date.now() - startTime);
+        res.setHeader(
+          "Cache-Control",
+          songPreview.source === "redis"
+            ? "public, max-age=3600"
+            : "public, max-age=60"
+        );
+        res.status(200).json({
+          url: songPreview.url,
+          title: songPreview.title,
+          description: songPreview.description,
+          image: songPreview.image,
+          siteName: songPreview.siteName,
+        });
+        return;
+      }
+    } catch (error) {
+      logger.error("Song share preview failed", error);
+      logger.response(500, Date.now() - startTime);
+      res.status(500).json({ error: "Error fetching link preview" });
       return;
     }
 

@@ -5,7 +5,7 @@ import {
   linkPreviewReducer,
 } from "../linkPreviewReducer";
 import type { LinkPreviewAction, LinkPreviewState } from "../types";
-import { extractYouTubeVideoId, isYouTubeUrl } from "../utils";
+import { isYouTubeUrl } from "../utils";
 
 export function useLinkPreviewMetadata(url: string): [
   LinkPreviewState,
@@ -30,65 +30,8 @@ export function useLinkPreviewMetadata(url: string): [
         if (!isActive || abortController.signal.aborted) return;
         dispatch({ type: "fetchStart" });
 
-        if (url.includes("/ipod/") || url.includes("/karaoke/")) {
-          const videoId = extractYouTubeVideoId(url);
-          if (videoId) {
-            try {
-              const youtubeResponse = await abortableFetch(
-                `/api/link-preview?url=${encodeURIComponent(
-                  `https://www.youtube.com/watch?v=${videoId}`
-                )}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  retry: { maxAttempts: 2, initialDelayMs: 500 },
-                }
-              );
-
-              const youtubeData = await youtubeResponse.json();
-              if (!youtubeData.error && isActive && !abortController.signal.aborted) {
-                dispatch({
-                  type: "fetchSuccess",
-                  metadata: {
-                    title: youtubeData.title,
-                    description: youtubeData.description,
-                    image:
-                      youtubeData.image ||
-                      `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                    siteName: "YouTube",
-                    url: url,
-                  },
-                });
-                return;
-              }
-            } catch (youtubeError) {
-              if (
-                youtubeError instanceof Error &&
-                youtubeError.name === "AbortError"
-              ) {
-                return;
-              }
-              console.warn(
-                "Failed to fetch YouTube metadata, using fallback:",
-                youtubeError
-              );
-            }
-
-            if (!isActive || abortController.signal.aborted) return;
-            dispatch({
-              type: "fetchSuccess",
-              metadata: {
-                title: `YouTube Video ${videoId}`,
-                description: "Watch on YouTube",
-                image: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-                siteName: "YouTube",
-                url: url,
-              },
-            });
-            return;
-          }
-        }
-
+        // Karaoke and iPod share URLs are resolved server-side from the Redis
+        // song library (YouTube oEmbed only if the song is not stored).
         const response = await abortableFetch(
           `/api/link-preview?url=${encodeURIComponent(url)}`,
           {
