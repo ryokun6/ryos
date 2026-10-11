@@ -103,7 +103,8 @@ function englishDefinitionLead(html: string): string {
   return html;
 }
 
-function shortenEnglishGloss(gloss: string): string {
+/** First sentence, capped. Shared with the local Wiktionary index build. */
+export function shortenEnglishGloss(gloss: string): string {
   if (gloss.length <= 320) return gloss;
   const sentence = gloss.match(/^.{12,320}?[.!?]/);
   return (sentence ? sentence[0] : gloss.slice(0, 320)).trim();
@@ -428,11 +429,24 @@ export async function fetchDatamuseSynonyms(
   return result ?? [];
 }
 
+/** `remote` is the live REST API. `local` never calls out. `hybrid` uses the index, then the API. */
+export function wiktionarySourceMode(): "remote" | "local" | "hybrid" {
+  const raw = (process.env.DICTIONARY_WIKTIONARY_SOURCE || "").trim().toLowerCase();
+  if (raw === "local" || raw === "hybrid") return raw;
+  return "remote";
+}
+
 export async function fetchWiktionary(
   headword: string,
   lang: DictionaryLanguage,
   redis: RedisLike | null
 ): Promise<DictionaryEntry | null> {
+  const mode = wiktionarySourceMode();
+  if (mode !== "remote") {
+    const { lookupLocalWiktionary } = await import("./_wiktionary-local.js");
+    const local = lookupLocalWiktionary(headword, lang);
+    if (local || mode === "local") return local;
+  }
   return cached(redis, dictionaryCacheKey("wiktionary", lang, headword), async () =>
     parseWiktionaryResponse(
       await fetchJson(
