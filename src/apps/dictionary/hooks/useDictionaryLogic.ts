@@ -16,8 +16,13 @@ import {
   normalizeDictionaryQuery,
   type DictionaryAiExtras,
   type DictionaryEntry,
+  type DictionaryLanguage,
   type DictionaryLookupResponse,
 } from "@/shared/dictionary";
+import {
+  dictionaryAiNotesHaveContent,
+  parseDictionaryAiNotes,
+} from "../utils/dictionaryAiStream";
 import { helpItems } from "../metadata";
 import {
   askDictionaryAi,
@@ -102,19 +107,22 @@ export function useDictionaryLogic({
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
 
   const [aiEntry, setAiEntry] = useState<DictionaryEntry | null>(null);
-  const [aiExtras, setAiExtras] = useState<DictionaryAiExtras | null>(null);
+  const [aiNotes, setAiNotes] = useState<string | null>(null);
+  const [aiNotesLang, setAiNotesLang] = useState<DictionaryLanguage>("en");
   const [aiStatus, setAiStatus] = useState<DictionaryAiStatus>("idle");
   const [aiError, setAiError] = useState<string | null>(null);
 
   const lookupAbortRef = useRef<AbortController | null>(null);
   const aiAbortRef = useRef<AbortController | null>(null);
+  const aiRequestRef = useRef(0);
   const lastLookupKeyRef = useRef<string>("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const resetAi = useCallback(() => {
+    aiRequestRef.current += 1;
     aiAbortRef.current?.abort();
     setAiEntry(null);
-    setAiExtras(null);
+    setAiNotes(null);
     setAiStatus("idle");
     setAiError(null);
   }, []);
@@ -266,34 +274,39 @@ export function useDictionaryLogic({
           : normalizeDictionaryQuery(query);
       if (!word) return;
       const lang = mode === "extras" && selectedEntry ? selectedEntry.lang : resultLanguage;
+      const requestId = ++aiRequestRef.current;
       aiAbortRef.current?.abort();
       const controller = new AbortController();
       aiAbortRef.current = controller;
       setAiStatus("loading");
       setAiError(null);
+      if (mode === "extras") {
+        setAiNotes(null);
+        setAiNotesLang(lang);
+      }
       try {
         if (mode === "extras") {
           let sawText = false;
-          await streamDictionaryAiExtras(
-            word,
-            lang,
-            locale,
-            (extras) => {
-              if (controller.signal.aborted) return;
-              const visible =
-                extras.usageNotes.length > 0 ||
-                Boolean(extras.nuance) ||
-                extras.synonyms.length > 0 ||
-                extras.examples.length > 0;
-              if (!visible) return;
-              sawText = true;
-              setAiExtras(extras);
+          let pendingNotes = "";
+          let frame = 0;
+          const publish = (notes: string) => {
+            if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+            pendingNotes = notes;
+            if (!notes.trim()) return;
+            sawText = true;
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+              frame = 0;
+              if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+              setAiNotes(pendingNotes);
               setAiStatus("streaming");
-            },
-            controller.signal
-          );
-          if (controller.signal.aborted) return;
-          if (!sawText) setAiError("ai_unavailable");
+            });
+          };
+          await streamDictionaryAiExtras(word, lang, locale, publish, controller.signal);
+          if (frame) cancelAnimationFrame(frame);
+          if (controller.signal.aborted || aiRequestRef.current !== requestId) return;
+          if (sawText) setAiNotes(pendingNotes);
+          else setAiError("ai_unavailable");
           setAiStatus(sawText ? "idle" : "error");
           return;
         }
@@ -313,23 +326,22 @@ export function useDictionaryLogic({
   );
 
   useEffect(() => {
+    aiRequestRef.current += 1;
     aiAbortRef.current?.abort();
-    setAiExtras(null);
+    setAiNotes(null);
     setAiStatus("idle");
     setAiError(null);
+    return () => {
+      aiRequestRef.current += 1;
+      aiAbortRef.current?.abort();
+    };
   }, [selectedEntry?.id]);
 
   useEffect(() => {
-    if (
-      aiExtrasEnabled &&
-      selectedEntry &&
-      selectedEntry.source !== "ai" &&
-      !aiExtras &&
-      aiStatus === "idle"
-    ) {
+    if (aiExtrasEnabled && selectedEntry && selectedEntry.source !== "ai") {
       void askAi("extras");
     }
-    // Only auto-run once per selected entry.
+    // Restart when the entry or the toggle changes. askAi aborts the previous stream.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aiExtrasEnabled, selectedEntry?.id]);
 
@@ -399,6 +411,14 @@ export function useDictionaryLogic({
     setQuery((current) => `${current}${text}`);
     searchInputRef.current?.focus();
   }, []);
+
+  const aiExtras = useMemo<DictionaryAiExtras | null>(() => {
+    if (!aiNotes) return null;
+    const parsed = parseDictionaryAiNotes(aiNotes, aiNotesLang, {
+      complete: aiStatus !== "streaming",
+    });
+    return dictionaryAiNotesHaveContent(parsed) ? parsed : null;
+  }, [aiNotes, aiNotesLang, aiStatus]);
 
   return {
     t,

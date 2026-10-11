@@ -1,7 +1,7 @@
 import { google } from "@ai-sdk/google";
-import { generateText, NoObjectGeneratedError, Output, streamText } from "ai";
+import { generateText, NoObjectGeneratedError, Output, smoothStream, streamText } from "ai";
 import { z } from "zod";
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { apiHandler } from "../_utils/api-handler.js";
 import type { Redis } from "../_utils/redis.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
@@ -12,14 +12,11 @@ import {
   normalizeDictionaryQuery,
   type DictionaryAiResponse,
 } from "../../src/shared/dictionary.js";
+import { DICTIONARY_AI_STREAM_HEADERS, extrasToDictionaryNotes } from "../../src/shared/dictionaryAiNotes.js";
 import {
   AI_LANGUAGE_NAMES,
   buildDictionaryAiPrompt,
-  DictionaryAiExtrasSchema,
   DictionaryAiFallbackSchema,
-  extrasFromAi,
-  extrasFromPartial,
-  extrasHaveContent,
   entryFromAi,
 } from "./_helpers/_ai.js";
 import { DICTIONARY_AI_CACHE_TTL_SECONDS, dictionaryCacheKey } from "./_helpers/_remote.js";
@@ -37,11 +34,21 @@ const RequestSchema = z.object({
 
 type RequestBody = z.infer<typeof RequestSchema>;
 
-function writeNdjson(res: ServerResponse, payload: unknown): boolean {
-  return res.write(`${JSON.stringify(payload)}\n`);
+function notesFromResponseMessage(message: { parts?: Array<{ type?: string; text?: string }> }): string {
+  return (message.parts ?? [])
+    .map((part) => (part.type === "text" ? part.text ?? "" : ""))
+    .join("")
+    .trim();
+}
+
+function cachedNotes(value: DictionaryAiResponse): string {
+  if (typeof value.notes === "string" && value.notes.trim()) return value.notes;
+  if (value.extras) return extrasToDictionaryNotes(value.extras);
+  return "";
 }
 
 async function streamDictionaryExtras({
+  req,
   res,
   redis,
   logger,
@@ -52,9 +59,13 @@ async function streamDictionaryExtras({
   mode,
   prompt,
 }: {
+  req: IncomingMessage;
   res: ServerResponse;
   redis: Redis;
-  logger: { warn: (message: string, extra?: object) => void; response: (status: number, durationMs: number) => void };
+  logger: {
+    warn: (message: string, extra?: object) => void;
+    response: (status: number, durationMs: number) => void;
+  };
   startTime: number;
   cacheKey: string;
   word: string;
@@ -63,73 +74,73 @@ async function streamDictionaryExtras({
   prompt: { instructions: string; user: string };
 }): Promise<void> {
   const abort = new AbortController();
+  const abortGeneration = () => {
+    if (!abort.signal.aborted) abort.abort();
+  };
+  const responseEvents = res as ServerResponse & {
+    once(event: "aborted" | "close", listener: () => void): void;
+    off(event: "aborted" | "close", listener: () => void): void;
+  };
+  const handleResponseClose = () => {
+    if (res.writableEnded) return;
+    abortGeneration();
+  };
+  responseEvents.once("aborted", abortGeneration);
+  responseEvents.once("close", handleResponseClose);
+  req.once("aborted", abortGeneration);
+  req.socket?.once("close", abortGeneration);
+  const clearAbortListeners = () => {
+    responseEvents.off("aborted", abortGeneration);
+    responseEvents.off("close", handleResponseClose);
+    req.off("aborted", abortGeneration);
+    req.socket?.off("close", abortGeneration);
+  };
+
   const result = streamText({
     model: google("gemini-3-flash-preview"),
     instructions: prompt.instructions,
-    output: Output.object({ schema: DictionaryAiExtrasSchema, name: "dictionary_extras" }),
     messages: [{ role: "user", content: prompt.user }],
     temperature: 0.4,
     abortSignal: abort.signal,
+    // Same word-sized chunks Chats uses, so CJK and Latin both paint smoothly.
+    experimental_transform: smoothStream({
+      chunking: /[\u4E00-\u9FFF]|\S+\s+/,
+    }),
+    providerOptions: {
+      google: {
+        thinkingConfig: { thinkingLevel: "minimal", includeThoughts: false },
+      },
+    },
   });
 
-  let started = false;
-  const begin = () => {
-    if (started) return;
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache, no-transform");
-    res.setHeader("X-Accel-Buffering", "no");
-    started = true;
-  };
-
   try {
-    for await (const partial of result.partialOutputStream) {
-      if (abort.signal.aborted) break;
-      const extras = extrasFromPartial(partial, lang);
-      if (!extrasHaveContent(extras)) continue;
-      begin();
-      if (!writeNdjson(res, { extras })) {
-        abort.abort();
-        break;
-      }
-    }
-
-    if (abort.signal.aborted) {
-      if (started && !res.writableEnded) res.end();
-      return;
-    }
-
-    const output = await result.output;
-    const parsed = DictionaryAiExtrasSchema.safeParse(output);
-    if (!parsed.success) throw new Error("AI returned no extras");
-    const extras = extrasFromAi(parsed.data, lang);
-    const response: DictionaryAiResponse = { word, lang, mode, extras };
-    try {
-      await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
-    } catch (error) {
-      logger.warn("dictionary ai cache write failed", { error: String(error) });
-    }
-    if (!started) {
-      res.statusCode = 200;
-      res.setHeader("Content-Type", "application/json; charset=utf-8");
-      res.end(JSON.stringify(response));
-    } else {
-      writeNdjson(res, { extras, done: true });
-      res.end();
-    }
-    logger.response(200, Date.now() - startTime);
+    await result.pipeUIMessageStreamToResponse(res, {
+      status: 200,
+      headers: DICTIONARY_AI_STREAM_HEADERS,
+      onEnd: async ({ isAborted, isCancelled, responseMessage, finishReason }) => {
+        if (isAborted || isCancelled || abort.signal.aborted || finishReason === "error") return;
+        const notes = notesFromResponseMessage(responseMessage);
+        if (!notes) return;
+        const response: DictionaryAiResponse = { word, lang, mode, notes };
+        try {
+          await redis.set(cacheKey, JSON.stringify(response), { ex: DICTIONARY_AI_CACHE_TTL_SECONDS });
+        } catch (error) {
+          logger.warn("dictionary ai cache write failed", { error: String(error) });
+        }
+      },
+    });
+    if (!abort.signal.aborted) logger.response(200, Date.now() - startTime);
   } catch (error) {
-    if (abort.signal.aborted) {
-      if (started && !res.writableEnded) res.end();
+    if (abort.signal.aborted) return;
+    if (res.headersSent) {
+      logger.warn("dictionary ai stream failed", { error: String(error) });
+      if (!res.writableEnded) res.end();
+      logger.response(502, Date.now() - startTime);
       return;
     }
-    if (!started) throw error;
-    logger.warn("dictionary ai stream failed", { error: String(error) });
-    if (!res.writableEnded) {
-      writeNdjson(res, { error: "ai_unavailable" });
-      res.end();
-    }
-    logger.response(502, Date.now() - startTime);
+    throw error;
+  } finally {
+    clearAbortListeners();
   }
 }
 
@@ -149,8 +160,9 @@ export default apiHandler<RequestBody>(
       const hit = await redis.get<DictionaryAiResponse | string>(cacheKey);
       if (hit) {
         const value = typeof hit === "string" ? (JSON.parse(hit) as DictionaryAiResponse) : hit;
+        const notes = value.mode === "extras" ? cachedNotes(value) : "";
         logger.response(200, Date.now() - startTime);
-        res.status(200).json({ ...value, cached: true });
+        res.status(200).json(notes ? { ...value, notes, cached: true } : { ...value, cached: true });
         return;
       }
     } catch (error) {
@@ -199,6 +211,7 @@ export default apiHandler<RequestBody>(
         response = { word, lang, mode, entry: entryFromAi(output, word, lang) ?? undefined };
       } else {
         await streamDictionaryExtras({
+          req,
           res,
           redis,
           logger,

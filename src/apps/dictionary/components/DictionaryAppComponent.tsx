@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "streamdown/styles.css";
 import type { AppProps, DictionaryInitialData } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";

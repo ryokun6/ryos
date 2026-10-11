@@ -191,6 +191,9 @@ export interface DictionaryAiResponse {
   mode: DictionaryAiMode;
   entry?: DictionaryEntry;
   extras?: DictionaryAiExtras;
+  /** Markdown notes streamed for extras mode. Parsed into `extras` for display. */
+  notes?: string;
+  cached?: boolean;
 }
 
 export const DICTIONARY_QUERY_MAX_LENGTH = 64;

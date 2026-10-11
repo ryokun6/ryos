@@ -1,4 +1,5 @@
 import { Sparkle, Star } from "@phosphor-icons/react";
+import { Streamdown } from "streamdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -74,6 +75,29 @@ function ExampleItem({
         className="-mr-1 mt-0.5"
       />
     </li>
+  );
+}
+
+function DictionaryAiProse({
+  text,
+  streaming,
+}: {
+  text: string;
+  streaming: boolean;
+}) {
+  if (!text) return null;
+  return (
+    <Streamdown
+      className="ryos-chat-streamdown"
+      mode={streaming ? "streaming" : "static"}
+      parseIncompleteMarkdown={streaming}
+      isAnimating={false}
+      controls={false}
+      skipHtml
+      unwrapDisallowed
+    >
+      {text}
+    </Streamdown>
   );
 }
 
@@ -213,10 +237,10 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
             variant={l.isSystem7Theme ? "retro" : l.isMacOSTheme ? "aqua" : "default"}
             size="sm"
             className="h-6 text-[11px]"
-            disabled={aiStatus === "loading"}
+            disabled={aiStatus === "loading" || aiStatus === "streaming"}
             onClick={() => void l.askAi("extras")}
           >
-            {aiStatus === "loading"
+            {aiStatus === "loading" || aiStatus === "streaming"
               ? t("apps.dictionary.ai.thinking", { defaultValue: "Thinking…" })
               : t("apps.dictionary.ai.askExtras", { defaultValue: "Explain Usage" })}
           </Button>
@@ -234,16 +258,16 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
       {aiExtras ? (
         <div className="mt-2 space-y-2 text-[12px]">
           {aiExtras.usageNotes || aiStatus === "streaming" ? (
-            <p>
-              {aiExtras.usageNotes}
-              {aiStatus === "streaming" ? (
-                <span className="ml-0.5 inline-block animate-pulse" aria-hidden>
-                  ▍
-                </span>
-              ) : null}
-            </p>
+            <DictionaryAiProse
+              text={aiExtras.usageNotes}
+              streaming={aiStatus === "streaming" && !aiExtras.nuance}
+            />
           ) : null}
-          {aiExtras.nuance ? <p className="text-black/70 dark:text-white/70">{aiExtras.nuance}</p> : null}
+          {aiExtras.nuance ? (
+            <div className="text-black/70 dark:text-white/70">
+              <DictionaryAiProse text={aiExtras.nuance} streaming={aiStatus === "streaming"} />
+            </div>
+          ) : null}
           {aiExtras.synonyms.length > 0 ? (
             <div className="flex flex-wrap gap-1">
               {aiExtras.synonyms.map((word) => (
@@ -253,16 +277,21 @@ function AiExtrasSection({ l, entry }: { l: DictionaryLogic; entry: DictionaryEn
           ) : null}
           {aiExtras.examples.length > 0 ? (
             <ul className="space-y-1.5">
-              {aiExtras.examples.map((example) => (
+              {aiExtras.examples.map((example, index) => (
                 <ExampleItem
-                  key={example.text}
+                  key={`${index}:${example.text}`}
                   l={l}
                   entry={entry}
                   example={example}
-                  speechKey={`${entry.id}:ai:${example.text}`}
+                  speechKey={`${entry.id}:ai:${index}:${example.text}`}
                 />
               ))}
             </ul>
+          ) : null}
+          {aiStatus === "streaming" ? (
+            <span className="inline-block animate-pulse" aria-hidden>
+              ▍
+            </span>
           ) : null}
           <p className="text-[10px] text-black/40 dark:text-white/40">
             {t("apps.dictionary.ai.disclaimer", {

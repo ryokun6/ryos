@@ -1,6 +1,5 @@
 import { z } from "zod";
 import type {
-  DictionaryAiExtras,
   DictionaryAiMode,
   DictionaryEntry,
   DictionaryExample,
@@ -34,13 +33,6 @@ export const DictionaryAiFallbackSchema = z.object({
     )
     .max(6),
   synonyms: z.array(z.string().max(64)).max(10),
-});
-
-export const DictionaryAiExtrasSchema = z.object({
-  usageNotes: z.string().max(1200),
-  nuance: z.string().max(800).nullable(),
-  synonyms: z.array(z.string().max(64)).max(10),
-  examples: z.array(ExampleSchema).max(5),
 });
 
 const READING_RULES: Record<DictionaryLanguage, string> = {
@@ -82,8 +74,15 @@ export function buildDictionaryAiPrompt({
   return {
     instructions: [
       ...shared,
-      "Give extra context a learner would not get from a bare dictionary: usage notes (register, collocations, common mistakes), nuance versus near-synonyms, synonyms, and 3-5 example sentences.",
-      "Keep usageNotes under 120 words.",
+      "Give extra context a learner would not get from a bare dictionary.",
+      `Start the reply immediately with usage notes (register, collocations, common mistakes) written in ${explanationLanguage}. No title, label, or preamble. Keep that opening under 120 words. Light Markdown is fine.`,
+      "Then add these sections, in order. Put each marker on its own line and do not mention the markers in the prose:",
+      "<<<NUANCE>>>",
+      `One short paragraph on how the word differs from near-synonyms, in ${explanationLanguage}. Omit this marker if there is nothing to add.`,
+      "<<<SYNONYMS>>>",
+      `Up to 8 synonyms or near-equivalents, one per line, in ${languageName}.`,
+      "<<<EXAMPLES>>>",
+      `3 to 5 lines. Each line is an everyday ${languageName} sentence, then " || ", then a translation in ${explanationLanguage}.`,
     ].join("\n"),
     user: `Word: ${word}`,
   };
@@ -128,56 +127,4 @@ export function entryFromAi(
   }
   if (output.synonyms.length) entry.synonyms = output.synonyms;
   return entry;
-}
-
-export function extrasFromAi(
-  output: z.infer<typeof DictionaryAiExtrasSchema>,
-  lang: DictionaryLanguage
-): DictionaryAiExtras {
-  const extras: DictionaryAiExtras = {
-    usageNotes: output.usageNotes.trim(),
-    synonyms: output.synonyms,
-    examples: output.examples.map((e) => toExample(e, lang)),
-  };
-  if (output.nuance) extras.nuance = output.nuance.trim();
-  return extras;
-}
-
-function textField(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-/** Coerce a partial model object into extras that can render mid-stream. */
-export function extrasFromPartial(value: unknown, lang: DictionaryLanguage): DictionaryAiExtras {
-  const raw = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-  const synonyms = Array.isArray(raw.synonyms)
-    ? raw.synonyms.flatMap((item) => {
-        const text = textField(item);
-        return text ? [text] : [];
-      })
-    : [];
-  const examples = Array.isArray(raw.examples)
-    ? raw.examples.flatMap((item) => {
-        if (!item || typeof item !== "object") return [];
-        const record = item as { text?: unknown; translation?: unknown };
-        const text = textField(record.text);
-        if (!text) return [];
-        const translation = textField(record.translation);
-        return [toExample({ text, translation: translation || null }, lang)];
-      })
-    : [];
-  const nuance = textField(raw.nuance);
-  const extras: DictionaryAiExtras = {
-    usageNotes: textField(raw.usageNotes),
-    synonyms,
-    examples,
-  };
-  if (nuance) extras.nuance = nuance;
-  return extras;
-}
-
-export function extrasHaveContent(extras: DictionaryAiExtras): boolean {
-  return Boolean(
-    extras.usageNotes || extras.nuance || extras.synonyms.length || extras.examples.length
-  );
 }
