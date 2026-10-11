@@ -2508,11 +2508,17 @@
         "kunyomi": "Kun",
         "onyomi": "On",
         "phrases": "Wörter & Wendungen",
+        "characters": "Zeichen",
+        "simplifiedShort": "einf.",
+        "traditionalShort": "trad.",
         "similar": "Ähnliche Wörter",
         "strokes_one": "{{count}} Strich",
         "strokes_other": "{{count}} Striche",
         "synonyms": "Synonyme",
         "synonymsShort": "Syn."
+      },
+      "ariaLabels": {
+        "replayStrokes": "{{character}} erneut abspielen"
       },
       "language": "Sprache",
       "languages": {

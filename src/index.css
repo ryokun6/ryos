@@ -1112,6 +1112,30 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
   transform: rotateY(180deg);
 }
 
+/* Handwriting pad only. iOS Safari and the iOS WKWebView show a text
+   selection callout and magnifier loupe on long-press. Definitions stay
+   selectable via .select-text; these rules are unlayered so they win if a
+   selectable ancestor ever wraps the pad. */
+.dictionary-handwriting,
+.dictionary-handwriting-canvas,
+.dictionary-handwriting-candidates,
+.dictionary-handwriting-candidates * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.dictionary-handwriting-canvas {
+  touch-action: none;
+  -ms-touch-action: none;
+}
+
+.dictionary-hanzi-stroke {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /*
  * Interlude countdown dots (U+25CF) — MUST be unlayered: themes.css applies unlayered
  * `.ipod-force-font *` / `.karaoke-force-font * { font-size: unset !important }`, which beats

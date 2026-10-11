@@ -107,6 +107,16 @@ export interface DictionaryKanjiInfo {
   frequency?: number;
 }
 
+/** One Han character from a Chinese entry, with the CC-CEDICT gloss when known. */
+export interface DictionaryHanziInfo {
+  simplified: string;
+  traditional: string;
+  /** Numbered pinyin for this character in the word ("xue2"), when aligned. */
+  reading?: string;
+  /** Short CC-CEDICT gloss. */
+  meaning?: string;
+}
+
 export interface DictionaryEntry {
   /** Stable id, `${source}:${key}` — used for favorites. */
   id: string;
@@ -130,6 +140,8 @@ export interface DictionaryEntry {
   synonyms?: string[];
   tags?: string[];
   kanji?: DictionaryKanjiInfo[];
+  /** zh: per-character cards (script pair, reading, CC-CEDICT gloss). */
+  hanzi?: DictionaryHanziInfo[];
   source: DictionarySource;
 }
 

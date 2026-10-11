@@ -2517,6 +2517,9 @@
         "kunyomi": "Кун",
         "onyomi": "Он",
         "phrases": "Слова и фразы",
+        "characters": "иероглифы",
+        "simplifiedShort": "упр.",
+        "traditionalShort": "трад.",
         "similar": "Похожие слова",
         "strokes_few": "{{count}} черты",
         "strokes_many": "{{count}} черт",
@@ -2524,6 +2527,9 @@
         "strokes_other": "{{count}} черты",
         "synonyms": "Синонимы",
         "synonymsShort": "син."
+      },
+      "ariaLabels": {
+        "replayStrokes": "повторить {{character}}"
       },
       "language": "Язык",
       "languages": {

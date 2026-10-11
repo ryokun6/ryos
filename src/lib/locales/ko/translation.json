@@ -2508,11 +2508,17 @@
         "kunyomi": "훈독",
         "onyomi": "음독",
         "phrases": "단어 및 구문",
+        "characters": "한자",
+        "simplifiedShort": "간체",
+        "traditionalShort": "번체",
         "similar": "유사어",
         "strokes_one": "{{count}}획",
         "strokes_other": "{{count}}획",
         "synonyms": "유의어",
         "synonymsShort": "유의어"
+      },
+      "ariaLabels": {
+        "replayStrokes": "{{character}} 필순 다시 보기"
       },
       "language": "언어",
       "languages": {

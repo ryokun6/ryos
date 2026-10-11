@@ -14,6 +14,7 @@ import {
   DictionaryHeadword,
   ReadingLine,
 } from "./DictionaryReading";
+import { DictionaryHanziCards } from "./DictionaryHanziCards";
 import { DictionarySpeakButton } from "./DictionarySpeakButton";
 import { headwordSpeechText } from "../utils/speech";
 import {
@@ -302,7 +303,7 @@ export function DictionaryEntryView({
   ];
 
   return (
-    <div className="px-5 py-4">
+    <div className="select-text px-5 py-4">
       <DictionaryHeadword
         entry={entry}
         chineseScript={l.chineseScript}
@@ -421,6 +422,8 @@ export function DictionaryEntryView({
           </div>
         </>
       ) : null}
+
+      {entry.lang === "zh" ? <DictionaryHanziCards entry={entry} l={l} /> : null}
 
       {entry.kanji?.length ? (
         <>

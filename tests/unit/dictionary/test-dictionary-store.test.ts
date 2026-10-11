@@ -32,6 +32,10 @@ const entry: DictionaryEntry = {
     { glosses: ["5"] },
   ],
   kanji: [{ literal: "学", meanings: [], onyomi: [], kunyomi: [] }],
+  hanzi: [
+    { simplified: "学", traditional: "學", reading: "xue2", meaning: "to learn" },
+    { simplified: "习", traditional: "習", reading: "xi2", meaning: "to practice" },
+  ],
   source: "cc-cedict",
 };
 
@@ -44,6 +48,7 @@ describe("favorite snapshots", () => {
       examples: [{ text: "一" }, { text: "二" }],
     });
     expect(snapshot.kanji).toBeUndefined();
+    expect(snapshot.hanzi).toEqual(entry.hanzi);
     expect(snapshot).toMatchObject({ traditional: "學習", reading: "xue2 xi2" });
   });
 

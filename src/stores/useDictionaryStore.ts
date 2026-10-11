@@ -82,6 +82,16 @@ export function snapshotDictionaryEntry(entry: DictionaryEntry): DictionaryEntry
     ...(entry.reading ? { reading: entry.reading } : {}),
     ...(entry.hanja ? { hanja: entry.hanja } : {}),
     ...(entry.ipa ? { ipa: entry.ipa } : {}),
+    ...(entry.hanzi?.length
+      ? {
+          hanzi: entry.hanzi.slice(0, 12).map((item) => ({
+            simplified: item.simplified,
+            traditional: item.traditional,
+            ...(item.reading ? { reading: item.reading } : {}),
+            ...(item.meaning ? { meaning: item.meaning } : {}),
+          })),
+        }
+      : {}),
     senses,
     source: entry.source,
   };

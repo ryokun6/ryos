@@ -20,6 +20,7 @@ import {
   leadingFormOfLemma,
   mergeSurfaceSenses,
 } from "./_english.js";
+import { attachChineseHanzi } from "./_hanzi.js";
 import type { DictionaryIndex } from "./_index.js";
 import { lookupWordNet } from "./_wordnet.js";
 
@@ -640,6 +641,9 @@ async function buildCjk(
       }
     }
     findCompoundsMs = performance.now() - compoundStarted;
+  }
+  if (lang === "zh" && index && response.entries.length) {
+    attachChineseHanzi(response.entries, index);
   }
   response.notFound = response.entries.length === 0;
   if (index && response.notFound && hasCjkScript(query)) {

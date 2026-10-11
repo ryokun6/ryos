@@ -52,6 +52,7 @@
         "epubjs": "^0.3.93",
         "formidable": "^3.5.4",
         "hangul-romanization": "^1.0.1",
+        "hanzi-writer": "^3.7.3",
         "i18next": "^26.3.6",
         "ioredis": "^5.11.1",
         "irc-framework": "^4.14.0",
@@ -1791,6 +1792,8 @@
     "hachure-fill": ["hachure-fill@0.5.2", "", {}, "sha512-3GKBOn+m2LX9iq+JC1064cSFprJY4jL1jCXTcpnfER5HYE2l/4EfWSGzkPa/ZDBmYI0ZOEj5VHV/eKnPGkHuOg=="],
 
     "hangul-romanization": ["hangul-romanization@1.0.1", "", {}, "sha512-Nh67VGRK0Zet2JRDWII4/RW004XSZyWVySSurM9PEAR1p+7/5Kr8OrrcSYQcQhyGCcBEKyQm98xd+rRnyO0uXg=="],
+
+    "hanzi-writer": ["hanzi-writer@3.7.3", "", {}, "sha512-fdOFrb1cXWL/pV/oplJkcdziCvjJzhhf+qoIBm5IpVGxPBZEu4eLB6ZG5RJDbKXyNbNlyx8oIpa3XrcUBcSXpg=="],
 
     "happy-dom": ["happy-dom@20.10.6", "", { "dependencies": { "@types/node": ">=20.0.0", "@types/whatwg-mimetype": "^3.0.2", "@types/ws": "^8.18.1", "buffer-image-size": "^0.6.4", "entities": "^7.0.1", "whatwg-mimetype": "^3.0.0", "ws": "^8.21.0" } }, "sha512-6QD0ilzDDt93tX44y8tbmZdAcdTRYDhUP+Asgi6pC8Pp5IA3cvaZGyoVN/EGtlq9ziT65iPuBBn3ASLr6hCgVw=="],
 

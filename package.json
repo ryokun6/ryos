@@ -142,6 +142,7 @@
     "epubjs": "^0.3.93",
     "formidable": "^3.5.4",
     "hangul-romanization": "^1.0.1",
+    "hanzi-writer": "^3.7.3",
     "i18next": "^26.3.6",
     "ioredis": "^5.11.1",
     "irc-framework": "^4.14.0",
