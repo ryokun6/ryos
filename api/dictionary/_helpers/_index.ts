@@ -3,8 +3,17 @@ import type {
   DictionaryLanguage,
   DictionaryPhrase,
 } from "../../../src/shared/dictionary.js";
+import {
+  HeadwordPrefixIndex,
+  readPostings,
+  type PostingList,
+} from "./_prefix.js";
+
+export type { PostingList } from "./_prefix.js";
 
 export interface DictionaryIndexOptions {
+  /** Prebuilt parts. Skips parsing `entries`. */
+  restore?: DictionaryIndexRestore;
   /** Extra keys (besides headword) that should resolve to the entry. */
   headwordKeys?: (entry: DictionaryEntry) => string[];
   /** Normalized phonetic keys (toneless pinyin, hiragana). */
@@ -19,6 +28,13 @@ export interface DictionaryIndexOptions {
   /** Compact row encoding; defaults to JSON. */
   serialize?: (entry: DictionaryEntry) => string;
   materialize?: (row: string) => DictionaryEntry;
+  /** `cedict` rows round-trip through `formatCedictLine`. */
+  rowEncoding?: "json" | "cedict";
+  /**
+   * Build the infix suffix array used by compound phrases. WordNet never
+   * lists compounds, so English skips it and builds lazily if asked.
+   */
+  compounds?: boolean;
 }
 
 const NON_MEANING_GLOSS_RE =
@@ -46,8 +62,6 @@ export function glossKeys(gloss: string): string[] {
   return keys;
 }
 
-type PostingList = number | number[];
-
 function pushIndex(map: Map<string, PostingList>, key: string, index: number) {
   if (!key) return;
   const list = map.get(key);
@@ -59,13 +73,6 @@ function pushIndex(map: Map<string, PostingList>, key: string, index: number) {
     list.push(index);
   }
 }
-
-function postings(list: PostingList | undefined): number[] {
-  if (list === undefined) return [];
-  return typeof list === "number" ? [list] : list;
-}
-
-const KEY_SEPARATOR = "\u0001";
 
 export function firstGloss(entry: DictionaryEntry): string {
   return entry.senses[0]?.glosses.slice(0, 2).join("; ") ?? "";
@@ -83,21 +90,44 @@ export function toPhrase(entry: DictionaryEntry): DictionaryPhrase {
   return phrase;
 }
 
+export interface DictionaryIndexParts {
+  lang: DictionaryLanguage;
+  rowEncoding: "json" | "cedict";
+  rows: string[];
+  ranks: Uint8Array;
+  headwords: string[];
+  headKeys: string[];
+  headPostings: PostingList[];
+  readings: [string, PostingList][];
+  glosses: [string, PostingList][];
+  suffixKey: Uint32Array | null;
+  suffixOffset: Uint32Array | null;
+}
+
+export interface DictionaryIndexRestore extends DictionaryIndexParts {
+  materialize: (row: string) => DictionaryEntry;
+}
+
 /**
  * In-memory lookup index over one dictionary. Entries are kept as compact
  * serialized rows (raw CC-CEDICT lines / minimal JSON) and materialized on
  * demand so ~120k-entry datasets stay at tens of MB instead of hundreds.
  * Every lookup returns fresh objects that callers may mutate.
+ *
+ * Prefix and infix scans use {@link HeadwordPrefixIndex}. Reading keys stay
+ * on a hash map: pinyin and kana lookup is an exact normalized key, not a scan.
  */
 export class DictionaryIndex {
   readonly lang: DictionaryLanguage;
+  readonly rowEncoding: "json" | "cedict";
   private readonly rows: string[];
   private readonly materializeRow: (row: string) => DictionaryEntry;
   private readonly ranks: Uint8Array;
-  private readonly keyStrings: string[];
+  private readonly headwords: string[];
   private readonly byHeadword = new Map<string, PostingList>();
   private readonly byReading = new Map<string, PostingList>();
   private readonly byGloss = new Map<string, PostingList>();
+  private readonly prefix: HeadwordPrefixIndex;
 
   constructor(
     lang: DictionaryLanguage,
@@ -105,17 +135,38 @@ export class DictionaryIndex {
     options: DictionaryIndexOptions = {}
   ) {
     this.lang = lang;
+    if (options.restore) {
+      const parts = options.restore;
+      this.rowEncoding = parts.rowEncoding;
+      this.rows = parts.rows;
+      this.materializeRow = parts.materialize;
+      this.ranks = parts.ranks;
+      this.headwords = parts.headwords;
+      this.byReading = new Map(parts.readings);
+      this.byGloss = new Map(parts.glosses);
+      for (let i = 0; i < parts.headKeys.length; i++) {
+        this.byHeadword.set(parts.headKeys[i], parts.headPostings[i]);
+      }
+      this.prefix = HeadwordPrefixIndex.restore(
+        parts.headKeys,
+        parts.headPostings,
+        parts.suffixKey,
+        parts.suffixOffset
+      );
+      return;
+    }
+    this.rowEncoding = options.rowEncoding ?? "json";
     const serialize = options.serialize ?? ((entry: DictionaryEntry) => JSON.stringify(entry));
     this.materializeRow = options.materialize ?? ((row: string) => JSON.parse(row) as DictionaryEntry);
     this.rows = [];
-    this.keyStrings = [];
+    this.headwords = [];
     const ranks: number[] = [];
     let index = 0;
     for (const entry of entries) {
       this.rows.push(serialize(entry));
+      this.headwords.push(entry.headword);
       ranks.push(Math.min(255, Math.max(0, options.rank?.(entry) ?? 0)));
       const keys = Array.from(new Set([entry.headword, ...(options.headwordKeys?.(entry) ?? [])]));
-      this.keyStrings.push(keys.join(KEY_SEPARATOR));
       for (const key of keys) pushIndex(this.byHeadword, key, index);
       for (const key of options.readingKeys?.(entry) ?? []) pushIndex(this.byReading, key, index);
       if (options.indexGlosses !== false) {
@@ -128,6 +179,28 @@ export class DictionaryIndex {
       index++;
     }
     this.ranks = Uint8Array.from(ranks);
+    this.prefix = HeadwordPrefixIndex.fromMap(this.byHeadword, options.compounds !== false);
+  }
+
+  static restore(parts: DictionaryIndexRestore): DictionaryIndex {
+    return new DictionaryIndex(parts.lang, [], { restore: parts });
+  }
+
+  exportParts(): DictionaryIndexParts {
+    const suffixes = this.prefix.exportSuffixes();
+    return {
+      lang: this.lang,
+      rowEncoding: this.rowEncoding,
+      rows: this.rows,
+      ranks: this.ranks,
+      headwords: this.headwords,
+      headKeys: this.prefix.keys,
+      headPostings: this.prefix.keys.map((_, i) => this.prefix.postingsAt(i)),
+      readings: Array.from(this.byReading.entries()),
+      glosses: Array.from(this.byGloss.entries()),
+      suffixKey: suffixes?.key ?? null,
+      suffixOffset: suffixes?.offset ?? null,
+    };
   }
 
   get size(): number {
@@ -139,9 +212,7 @@ export class DictionaryIndex {
   }
 
   private headwordAt(index: number): string {
-    const keys = this.keyStrings[index];
-    const separator = keys.indexOf(KEY_SEPARATOR);
-    return separator === -1 ? keys : keys.slice(0, separator);
+    return this.headwords[index] ?? "";
   }
 
   private sortedIndexes(indexes: Iterable<number>): number[] {
@@ -157,18 +228,18 @@ export class DictionaryIndex {
   }
 
   lookupHeadword(query: string): DictionaryEntry[] {
-    return this.sorted(postings(this.byHeadword.get(query)));
+    return this.sorted(readPostings(this.byHeadword.get(query)));
   }
 
   lookupReading(key: string): DictionaryEntry[] {
-    return this.sorted(postings(this.byReading.get(key)));
+    return this.sorted(readPostings(this.byReading.get(key)));
   }
 
   /** English → target language ("learn" → 学习, 学, ...). */
   lookupGloss(english: string, limit = 40): DictionaryEntry[] {
     const key = glossKeys(english)[0];
     if (!key) return [];
-    return this.sortedIndexes(postings(this.byGloss.get(key)))
+    return this.sortedIndexes(readPostings(this.byGloss.get(key)))
       .slice(0, limit)
       .map((index) => this.entryAt(index));
   }
@@ -179,42 +250,20 @@ export class DictionaryIndex {
    */
   findCompoundEntries(headword: string, limit = 40): DictionaryEntry[] {
     if (!headword) return [];
-    const matches: { index: number; length: number }[] = [];
-    for (let index = 0; index < this.keyStrings.length; index++) {
-      const keys = this.keyStrings[index].split(KEY_SEPARATOR);
-      if (keys.some((key) => key === headword)) continue;
-      let length = 0;
-      for (const key of keys) {
-        if (!key.startsWith(headword)) continue;
-        const keyLength = Array.from(key).length;
-        if (length === 0 || keyLength < length) length = keyLength;
-      }
-      if (length === 0) continue;
-      matches.push({ index, length });
-    }
+    const matches = this.prefix.prefixCompounds(headword);
     matches.sort(
-      (a, b) =>
-        this.ranks[a.index] - this.ranks[b.index] || a.length - b.length || a.index - b.index
+      (a, b) => this.ranks[a.index] - this.ranks[b.index] || a.length - b.length || a.index - b.index
     );
     const entries: DictionaryEntry[] = [];
-    for (const { index } of matches) {
-      entries.push(this.entryAt(index));
-      if (entries.length >= limit) break;
-    }
+    const cap = Math.min(limit, matches.length);
+    for (let i = 0; i < cap; i++) entries.push(this.entryAt(matches[i].index));
     return entries;
   }
 
   /** Words whose written form contains `headword` (compounds, set phrases). */
   findCompounds(headword: string, limit = 12): DictionaryPhrase[] {
     if (!headword) return [];
-    const exact = `${KEY_SEPARATOR}${headword}${KEY_SEPARATOR}`;
-    const matches: number[] = [];
-    for (let index = 0; index < this.keyStrings.length; index++) {
-      const keys = this.keyStrings[index];
-      if (!keys.includes(headword)) continue;
-      if (`${KEY_SEPARATOR}${keys}${KEY_SEPARATOR}`.includes(exact)) continue;
-      matches.push(index);
-    }
+    const matches = this.prefix.containing(headword);
     matches.sort((a, b) => {
       const aw = this.headwordAt(a);
       const bw = this.headwordAt(b);
@@ -239,7 +288,7 @@ export class DictionaryIndex {
     const scores = new Map<number, number>();
     const keys = new Set((entry.senses[0]?.glosses ?? []).flatMap((gloss) => glossKeys(gloss)));
     for (const key of keys) {
-      const hits = postings(this.byGloss.get(key));
+      const hits = readPostings(this.byGloss.get(key));
       if (hits.length > 200) continue;
       for (const index of hits) scores.set(index, (scores.get(index) ?? 0) + 1);
     }
@@ -267,17 +316,10 @@ export class DictionaryIndex {
     const words: string[] = [];
     let i = 0;
     while (i < chars.length) {
-      let matched = "";
-      for (let length = Math.min(maxWordLength, chars.length - i); length >= 1; length--) {
-        const candidate = chars.slice(i, i + length).join("");
-        if (this.byHeadword.has(candidate)) {
-          matched = candidate;
-          break;
-        }
-      }
-      if (matched) {
-        words.push(matched);
-        i += Array.from(matched).length;
+      const matched = this.prefix.longest(chars, i, maxWordLength);
+      if (matched > 0) {
+        words.push(chars.slice(i, i + matched).join(""));
+        i += matched;
       } else {
         i += 1;
       }
@@ -288,15 +330,15 @@ export class DictionaryIndex {
   /** Headwords starting with `prefix` (autocomplete / "did you mean"). */
   suggest(prefix: string, limit = 8): string[] {
     if (!prefix) return [];
-    const results: number[] = [];
-    for (const [key, list] of this.byHeadword) {
-      if (key !== prefix && key.startsWith(prefix)) results.push(postings(list)[0]);
-      if (results.length > limit * 20) break;
-    }
+    // The previous scan stopped one past `limit * 20` matches, in insertion order.
+    const cap = limit * 20 + 1;
+    const results = this.prefix.suggestEntries(prefix, cap);
     return Array.from(
       new Set(
         results
-          .sort((a, b) => this.ranks[a] - this.ranks[b] || this.headwordAt(a).length - this.headwordAt(b).length)
+          .sort(
+            (a, b) => this.ranks[a] - this.ranks[b] || this.headwordAt(a).length - this.headwordAt(b).length
+          )
           .map((index) => this.headwordAt(index))
       )
     ).slice(0, limit);

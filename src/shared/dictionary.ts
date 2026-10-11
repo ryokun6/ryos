@@ -155,7 +155,14 @@ export interface DictionaryLookupResponse {
   suggestions: string[];
   sources: DictionarySource[];
   notFound: boolean;
+  /**
+   * Set on the fast CJK response while Wiktionary is still loading.
+   * `/api/dictionary/enrich` returns the same lookup with this omitted.
+   */
+  enrichmentPending?: boolean;
 }
+
+export const DICTIONARY_ENRICHMENT_HEADER = "X-Dictionary-Enrichment";
 
 export type DictionaryAiMode = "fallback" | "extras";
 

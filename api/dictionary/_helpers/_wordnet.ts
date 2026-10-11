@@ -32,6 +32,17 @@ const MAX_LEMMA_CANDIDATES = 6;
 
 const exceptionsByIndex = new WeakMap<DictionaryIndex, Map<string, string[]>>();
 
+export function wordNetExceptions(index: DictionaryIndex): Map<string, string[]> | undefined {
+  return exceptionsByIndex.get(index);
+}
+
+export function setWordNetExceptions(
+  index: DictionaryIndex,
+  exceptions: Map<string, string[]>
+): void {
+  exceptionsByIndex.set(index, exceptions);
+}
+
 export interface WordNetTexts {
   "data.noun": string;
   "data.verb": string;
@@ -245,6 +256,7 @@ export function buildEnglishIndex(texts: WordNetTexts): DictionaryIndex {
   const { entries, exceptions } = buildWordNetEntries(texts);
   const index = new DictionaryIndex("en", entries, {
     indexGlosses: false,
+    compounds: false,
     rank: (entry) => Math.min(255, Math.max(0, MAX_SENSES - entry.senses.length)),
   });
   exceptionsByIndex.set(index, exceptions);

@@ -11,7 +11,13 @@ import type {
 import { normalizePinyinSearchKey } from "../../../src/utils/zhuyin.js";
 import { DATASET_TIMEOUT_MS, DATASETS, type DatasetId } from "./_dataset-sources.js";
 import { DictionaryIndex } from "./_index.js";
-import { buildEnglishDictionary } from "./_wordnet.js";
+import {
+  indexSnapshotPath,
+  kanjiSnapshotPath,
+  readIndexSnapshot,
+  readKanjiSnapshot,
+} from "./_snapshot.js";
+import { buildEnglishDictionary, setWordNetExceptions } from "./_wordnet.js";
 import {
   extractFirstTarFile,
   formatCedictLine,
@@ -68,6 +74,7 @@ function decodeTgzJson<T>(bytes: Uint8Array): T {
 
 export function buildChineseIndex(entries: Iterable<DictionaryEntry>): DictionaryIndex {
   return new DictionaryIndex("zh", entries, {
+    rowEncoding: "cedict",
     serialize: formatCedictLine,
     materialize: (row) => parseCedictLine(row)!,
     headwordKeys: (entry) => [entry.traditional ?? "", entry.simplified ?? ""].filter(Boolean),
@@ -119,7 +126,24 @@ export function buildKoreanIndex(entries: DictionaryEntry[]): DictionaryIndex {
 const indexPromises = new Map<DictionaryLanguage, Promise<DictionaryIndex>>();
 let kanjiPromise: Promise<Map<string, DictionaryKanjiInfo>> | null = null;
 
-async function loadIndex(lang: DictionaryLanguage): Promise<DictionaryIndex> {
+function materializeRow(encoding: "json" | "cedict"): (row: string) => DictionaryEntry {
+  if (encoding === "cedict") return (row) => parseCedictLine(row)!;
+  return (row) => JSON.parse(row) as DictionaryEntry;
+}
+
+async function loadIndexSnapshot(lang: DictionaryLanguage): Promise<DictionaryIndex | null> {
+  const bundle = await readIndexSnapshot(indexSnapshotPath(getDictionaryDataDir(), lang));
+  if (!bundle || bundle.parts.lang !== lang || bundle.parts.rows.length === 0) return null;
+  const index = DictionaryIndex.restore({
+    ...bundle.parts,
+    materialize: materializeRow(bundle.parts.rowEncoding),
+  });
+  if (lang === "en" && bundle.exceptions.size) setWordNetExceptions(index, bundle.exceptions);
+  return index;
+}
+
+/** Parse the raw dataset. Used at image build time and when no snapshot is present. */
+export async function loadIndexFromRaw(lang: DictionaryLanguage): Promise<DictionaryIndex> {
   switch (lang) {
     case "zh": {
       const text = new TextDecoder().decode(gunzipSync(await loadDatasetBytes("cedict")));
@@ -138,6 +162,23 @@ async function loadIndex(lang: DictionaryLanguage): Promise<DictionaryIndex> {
     default:
       throw new Error(`No local dictionary for ${lang}`);
   }
+}
+
+async function loadIndex(lang: DictionaryLanguage): Promise<DictionaryIndex> {
+  try {
+    const snapshot = await loadIndexSnapshot(lang);
+    if (snapshot) return snapshot;
+  } catch (error) {
+    console.warn(
+      `[dictionary] ${lang} snapshot unreadable, parsing raw data`,
+      error instanceof Error ? error.message : error
+    );
+  }
+  return loadIndexFromRaw(lang);
+}
+
+export async function loadKanjiFromRaw(): Promise<Map<string, DictionaryKanjiInfo>> {
+  return parseKanjidic(decodeTgzJson<KanjidicFile>(await loadDatasetBytes("kanjidic")));
 }
 
 /**
@@ -181,8 +222,8 @@ export function getDictionaryIndex(lang: DictionaryLanguage): Promise<Dictionary
 
 export function getKanjiInfoMap(): Promise<Map<string, DictionaryKanjiInfo>> {
   if (!kanjiPromise) {
-    kanjiPromise = loadDatasetBytes("kanjidic")
-      .then((bytes) => parseKanjidic(decodeTgzJson<KanjidicFile>(bytes)))
+    kanjiPromise = readKanjiSnapshot(kanjiSnapshotPath(getDictionaryDataDir()))
+      .then((snapshot) => snapshot ?? loadKanjiFromRaw())
       .catch((error) => {
         kanjiPromise = null;
         throw error;
