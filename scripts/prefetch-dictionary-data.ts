@@ -7,37 +7,39 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
-  DATASET_TIMEOUT_MS,
   DATASETS,
+  datasetCacheFiles,
+  fetchDatasetBytes,
   type DatasetId,
 } from "../api/dictionary/_helpers/_dataset-sources.js";
 
 const dir = process.env.DICTIONARY_DATA_DIR || path.join(process.cwd(), "data", "dictionary");
 
-async function download(id: DatasetId): Promise<void> {
-  const { url, file } = DATASETS[id];
-  const target = path.join(dir, file);
-  try {
-    const existing = await readFile(target);
-    if (existing.byteLength > 0) {
-      console.log(`[dictionary] ${id} cached (${existing.byteLength} bytes)`);
-      return;
+async function cachedFile(id: DatasetId): Promise<{ file: string; bytes: number } | null> {
+  for (const file of datasetCacheFiles(id)) {
+    try {
+      const existing = await readFile(path.join(dir, file));
+      if (existing.byteLength > 0) return { file, bytes: existing.byteLength };
+    } catch {
+      // try the next cached name
     }
-  } catch {
-    // not on disk yet
   }
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(DATASET_TIMEOUT_MS[id]),
-    headers: { "User-Agent": "ryOS-dictionary/1.0 (+https://os.ryo.lu)" },
-  });
-  if (!response.ok) throw new Error(`${id} download failed: ${response.status}`);
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength === 0) throw new Error(`${id} download was empty`);
+  return null;
+}
+
+async function download(id: DatasetId): Promise<void> {
+  const cached = await cachedFile(id);
+  if (cached) {
+    console.log(`[dictionary] ${id} cached ${cached.file} (${cached.bytes} bytes)`);
+    return;
+  }
+  const { bytes, file } = await fetchDatasetBytes(id);
   await mkdir(dir, { recursive: true });
+  const target = path.join(dir, file);
   const temp = `${target}.${process.pid}.tmp`;
   await writeFile(temp, bytes);
   await rename(temp, target);
-  console.log(`[dictionary] ${id} saved (${bytes.byteLength} bytes)`);
+  console.log(`[dictionary] ${id} saved ${file} (${bytes.byteLength} bytes)`);
 }
 
 const failed: string[] = [];

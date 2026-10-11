@@ -9,7 +9,11 @@ import type {
   DictionaryLanguage,
 } from "../../../src/shared/dictionary.js";
 import { normalizePinyinSearchKey } from "../../../src/utils/zhuyin.js";
-import { DATASET_TIMEOUT_MS, DATASETS, type DatasetId } from "./_dataset-sources.js";
+import {
+  datasetCacheFiles,
+  fetchDatasetBytes,
+  type DatasetId,
+} from "./_dataset-sources.js";
 import { DictionaryIndex } from "./_index.js";
 import {
   indexSnapshotPath,
@@ -37,24 +41,22 @@ export function getDictionaryDataDir(): string {
 }
 
 /** Read a dataset from the disk cache, downloading it on first use. */
-export async function loadDatasetBytes(id: DatasetId): Promise<Uint8Array> {
-  const { url, file } = DATASETS[id];
+export async function loadDatasetBytes(
+  id: DatasetId,
+  options?: Parameters<typeof fetchDatasetBytes>[1]
+): Promise<Uint8Array> {
   const dir = getDictionaryDataDir();
-  const target = path.join(dir, file);
-  try {
-    return new Uint8Array(await readFile(target));
-  } catch {
-    // not cached yet
+  for (const file of datasetCacheFiles(id)) {
+    try {
+      const cached = new Uint8Array(await readFile(path.join(dir, file)));
+      if (cached.byteLength > 0) return cached;
+    } catch {
+      // try the next cached name
+    }
   }
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(DATASET_TIMEOUT_MS[id]),
-    headers: { "User-Agent": "ryOS-dictionary/1.0 (+https://os.ryo.lu)" },
-  });
-  if (!response.ok) {
-    throw new Error(`Dictionary dataset ${id} download failed: ${response.status}`);
-  }
-  const bytes = new Uint8Array(await response.arrayBuffer());
+  const { bytes, file } = await fetchDatasetBytes(id, options);
   await mkdir(dir, { recursive: true });
+  const target = path.join(dir, file);
   const temp = `${target}.${process.pid}.tmp`;
   await writeFile(temp, bytes);
   await rename(temp, target);
