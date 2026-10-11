@@ -1,12 +1,16 @@
+import { unzipSync } from "fflate";
 import { gunzipSync } from "node:zlib";
 import type { DictionaryEntry, DictionarySense } from "../../../src/shared/dictionary.js";
 import { englishLemmaCandidates } from "./_english.js";
 import { DictionaryIndex } from "./_index.js";
 
 /**
- * Princeton WordNet 3.1 (`wn3.1.dict.tar.gz`).
+ * Princeton WordNet 3.1.
  * WordNet 3.1 Copyright 2011 by Princeton University. All rights reserved.
  * Used under the WordNet License.
+ *
+ * The NLTK mirror is a zip whose files live under `wordnet31/`. Princeton
+ * ships the same files under `dict/` in `wn3.1.dict.tar.gz`.
  */
 
 const POS_FILES = [
@@ -290,15 +294,41 @@ function extractTarText(tar: Uint8Array, wanted: Set<string>): Map<string, strin
   return found;
 }
 
-export function buildEnglishDictionary(gzippedTar: Uint8Array): DictionaryIndex {
-  const tar = gunzipSync(gzippedTar);
+function isZip(bytes: Uint8Array): boolean {
+  return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b;
+}
+
+function extractZipText(zip: Uint8Array, wanted: Set<string>): Map<string, string> {
+  const decoder = new TextDecoder();
+  const found = new Map<string, string>();
+  for (const [name, data] of Object.entries(unzipSync(zip))) {
+    const base = name.split("/").pop() ?? name;
+    if (!base || data.byteLength === 0 || !wanted.has(base)) continue;
+    found.set(base, decoder.decode(data));
+    if (found.size === wanted.size) break;
+  }
+  return found;
+}
+
+/** Read WordNet database files from an NLTK zip or a Princeton gzip tar. */
+export function readWordNetArchive(bytes: Uint8Array): WordNetTexts {
   const wanted = new Set<string>(POS_FILES.flatMap((file) => [file.data, file.index, file.exc]));
-  const files = extractTarText(new Uint8Array(tar.buffer, tar.byteOffset, tar.byteLength), wanted);
+  let files: Map<string, string>;
+  if (isZip(bytes)) {
+    files = extractZipText(bytes, wanted);
+  } else {
+    const tar = gunzipSync(bytes);
+    files = extractTarText(new Uint8Array(tar.buffer, tar.byteOffset, tar.byteLength), wanted);
+  }
   const missing = [...wanted].filter((name) => !files.has(name));
   if (missing.length) {
     throw new Error(`WordNet archive missing ${missing.join(", ")}`);
   }
-  return buildEnglishIndex(Object.fromEntries(files) as WordNetTexts);
+  return Object.fromEntries(files) as WordNetTexts;
+}
+
+export function buildEnglishDictionary(archive: Uint8Array): DictionaryIndex {
+  return buildEnglishIndex(readWordNetArchive(archive));
 }
 
 /** Exact lemma, then WordNet exception list, then the suffix fallback (`running` → `run`). */

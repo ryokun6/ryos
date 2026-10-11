@@ -23,11 +23,14 @@ import {
 
 const CEDICT = `
 學習 学习 [xue2 xi2] /to learn/to study/
+習 习 [xi2] /to practice/habit/
 學生 学生 [xue2 sheng5] /student/schoolchild/
 學校 学校 [xue2 xiao4] /school/CL:所[suo3]/
 學 学 [xue2] /to learn/to study/science/-ology/
 銀行 银行 [yin2 hang2] /bank/CL:家[jia1]/
+銀 银 [yin2] /silver/
 行 行 [xing2] /to walk/to go/capable/
+行 行 [hang2] /row/profession/
 中國 中国 [Zhong1 guo2] /China/
 中文 中文 [Zhong1 wen2] /Chinese language/
 我 我 [wo3] /I/me/my/
@@ -128,6 +131,29 @@ describe("Chinese lookup", () => {
     expect(traditional.entries[0].headword).toBe("学习");
   });
 
+  test("attaches per-character CC-CEDICT cards, matching the word's reading", async () => {
+    const learned = await lookupDictionary("学习", "zh", makeDeps());
+    expect(learned.entries[0].hanzi).toEqual([
+      { simplified: "学", traditional: "學", reading: "xue2", meaning: "to learn" },
+      { simplified: "习", traditional: "習", reading: "xi2", meaning: "to practice" },
+    ]);
+
+    const bank = await lookupDictionary("银行", "zh", makeDeps());
+    expect(bank.entries[0].hanzi).toEqual([
+      { simplified: "银", traditional: "銀", reading: "yin2", meaning: "silver" },
+      { simplified: "行", traditional: "行", reading: "hang2", meaning: "row" },
+    ]);
+
+    const big = await lookupDictionary("大", "zh", makeDeps());
+    const byReading = Object.fromEntries(
+      big.entries
+        .filter((entry) => entry.headword === "大" && entry.reading)
+        .map((entry) => [entry.reading, entry.hanzi?.[0]?.meaning])
+    );
+    expect(byReading.da4).toBe("big");
+    expect(byReading.dai4).toBe("doctor");
+  });
+
   test("finds words by toneless or tone-marked pinyin", async () => {
     expect(headwords((await lookupDictionary("xuexi", "zh", makeDeps())).entries)).toEqual(["学习"]);
     expect(headwords((await lookupDictionary("xué xí", "zh", makeDeps())).entries)).toEqual([
@@ -199,10 +225,11 @@ describe("Japanese lookup", () => {
     const result = await lookupDictionary("学習", "auto", makeDeps());
     expect(result.lang).toBe("ja");
     expect(result.entries[0]).toMatchObject({ headword: "学習", reading: "がくしゅう" });
-    // An explicit Chinese choice does not fall back.
+    // An explicit Chinese choice does not fall back. 習 is a character entry, so
+    // the query segments instead of returning the Japanese word.
     const chinese = await lookupDictionary("学習", "zh", makeDeps());
     expect(chinese.lang).toBe("zh");
-    expect(headwords(chinese.entries)).toEqual(["学"]);
+    expect(headwords(chinese.entries)).toEqual(["学", "习"]);
   });
 
   test("finds kanji words and attaches KANJIDIC2 info", async () => {
@@ -210,6 +237,7 @@ describe("Japanese lookup", () => {
     expect(result.lang).toBe("ja");
     expect(result.entries[0]).toMatchObject({ headword: "勉強", reading: "べんきょう" });
     expect(result.entries[0].kanji?.map((k) => k.literal)).toEqual(["勉", "強"]);
+    expect(result.entries[0].hanzi).toBeUndefined();
     expect(result.sources).toEqual(["jmdict", "kanjidic2"]);
     expect(headwords(result.phrases)).toContain("勉強会");
   });

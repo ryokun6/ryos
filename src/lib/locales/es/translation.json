@@ -2511,12 +2511,18 @@
         "kunyomi": "Kun",
         "onyomi": "On",
         "phrases": "Palabras y frases",
+        "characters": "caracteres",
+        "simplifiedShort": "simp.",
+        "traditionalShort": "trad.",
         "similar": "Palabras similares",
         "strokes_many": "{{count}} trazos",
         "strokes_one": "{{count}} trazo",
         "strokes_other": "{{count}} trazos",
         "synonyms": "Sinónimos",
         "synonymsShort": "sin."
+      },
+      "ariaLabels": {
+        "replayStrokes": "repetir {{character}}"
       },
       "language": "Idioma",
       "languages": {

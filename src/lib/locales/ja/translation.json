@@ -2508,11 +2508,17 @@
         "kunyomi": "訓",
         "onyomi": "音",
         "phrases": "語句",
+        "characters": "漢字",
+        "simplifiedShort": "簡",
+        "traditionalShort": "繁",
         "similar": "類語",
         "strokes_one": "{{count}} 画",
         "strokes_other": "{{count}} 画",
         "synonyms": "同義語",
         "synonymsShort": "同義語"
+      },
+      "ariaLabels": {
+        "replayStrokes": "{{character}}の筆順を再生"
       },
       "language": "言語",
       "languages": {

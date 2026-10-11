@@ -1,7 +1,10 @@
 #!/usr/bin/env bun
+import { gzipSync } from "node:zlib";
 import { describe, expect, test } from "bun:test";
+import { zipSync } from "fflate";
 import { ENRICHMENT_DEADLINE_MS, lookupDictionary } from "../../../api/dictionary/_helpers/_lookup";
 import {
+  buildEnglishDictionary,
   buildEnglishIndex,
   lookupWordNet,
   parseWordNetExceptions,
@@ -107,6 +110,60 @@ describe("WordNet parsing", () => {
     expect(exceptions.get("took")).toEqual(["take"]);
     expect(exceptions.get("mice")).toEqual(["mouse"]);
     expect(exceptions.get("better")).toEqual(["good", "well"]);
+  });
+});
+
+describe("WordNet archives", () => {
+  const encoder = new TextEncoder();
+
+  function archiveFiles(): Record<string, Uint8Array> {
+    const filled = texts({
+      "data.verb": `${DATA_VERB}\n00000004 03 v 01 go 0 000 | to move from one place to another\n`,
+      "index.verb": `${INDEX_VERB}\ngo v 1 0 1 1 00000004\n`,
+      "verb.exc": "went go\n",
+      "data.adj": "00000021 03 a 01 happy 0 000 | enjoying or showing pleasure\n",
+      "index.adj": "happy a 1 0 1 0 00000021\n",
+    });
+    return Object.fromEntries(
+      Object.entries(filled).map(([name, text]) => [name, encoder.encode(text.length > 0 ? text : "\n")])
+    );
+  }
+
+  function tarArchive(files: Record<string, Uint8Array>, prefix: string): Uint8Array {
+    const chunks: Uint8Array[] = [];
+    for (const [name, content] of Object.entries(files)) {
+      const header = new Uint8Array(512);
+      header.set(encoder.encode(`${prefix}${name}`), 0);
+      header.set(encoder.encode(content.length.toString(8).padStart(11, "0")), 124);
+      header[156] = "0".charCodeAt(0);
+      const body = new Uint8Array(Math.ceil(content.length / 512) * 512);
+      body.set(content);
+      chunks.push(header, body);
+    }
+    chunks.push(new Uint8Array(1024));
+    const tar = new Uint8Array(chunks.reduce((sum, chunk) => sum + chunk.length, 0));
+    let offset = 0;
+    for (const chunk of chunks) {
+      tar.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return gzipSync(tar);
+  }
+
+  function expectEnglish(archive: Uint8Array) {
+    const index = buildEnglishDictionary(archive);
+    expect(lookupWordNet(index, "run")?.senses[0]?.glosses[0]).toBe("to move swiftly");
+    expect(lookupWordNet(index, "happy")?.senses[0]?.glosses[0]).toBe("enjoying or showing pleasure");
+    expect(lookupWordNet(index, "went")?.headword).toBe("go");
+  }
+
+  test("reads the NLTK zip and the Princeton tar.gz", () => {
+    const files = archiveFiles();
+    const zipped = zipSync(
+      Object.fromEntries(Object.entries(files).map(([name, data]) => [`wordnet31/${name}`, data]))
+    );
+    expectEnglish(zipped);
+    expectEnglish(tarArchive(files, "dict/"));
   });
 });
 

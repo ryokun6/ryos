@@ -3993,12 +3993,18 @@
         "antonymsShort": "ant.",
         "synonyms": "Synonyms",
         "kanji": "Kanji",
+        "characters": "characters",
+        "traditionalShort": "trad.",
+        "simplifiedShort": "simp.",
         "onyomi": "On",
         "kunyomi": "Kun",
         "strokes_one": "{{count}} stroke",
         "strokes_other": "{{count}} strokes",
         "phrases": "Words & Phrases",
         "similar": "Similar Words"
+      },
+      "ariaLabels": {
+        "replayStrokes": "replay {{character}}"
       },
       "ai": {
         "extrasTitle": "AI Notes",

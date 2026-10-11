@@ -87,6 +87,25 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
     redraw();
   }, [redraw, currentTheme, isDarkMode]);
 
+  // iOS Safari / WKWebView shows the text-selection callout and magnifier loupe
+  // on a long-press unless touchstart/pointerdown is cancelled from a
+  // non-passive listener. React's delegated listeners are not a substitute.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const preventTextGesture = (event: Event) => {
+      event.preventDefault();
+    };
+    canvas.addEventListener("touchstart", preventTextGesture, { passive: false });
+    canvas.addEventListener("pointerdown", preventTextGesture, { passive: false });
+    canvas.addEventListener("contextmenu", preventTextGesture);
+    return () => {
+      canvas.removeEventListener("touchstart", preventTextGesture);
+      canvas.removeEventListener("pointerdown", preventTextGesture);
+      canvas.removeEventListener("contextmenu", preventTextGesture);
+    };
+  }, []);
+
   const runRecognition = useCallback(async () => {
     const id = ++recognizeIdRef.current;
     if (strokesRef.current.length === 0) {
@@ -162,7 +181,7 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 border-t border-black/15 bg-white/95 p-2.5 shadow-[0_-10px_28px_rgba(0,0,0,0.18)]",
+        "dictionary-handwriting flex flex-col gap-2 border-t border-black/15 bg-white/95 p-2.5 shadow-[0_-10px_28px_rgba(0,0,0,0.18)]",
         "dark:border-white/15 dark:bg-neutral-800 dark:shadow-[0_-10px_28px_rgba(0,0,0,0.55)]"
       )}
       role="group"
@@ -206,15 +225,22 @@ export function DictionaryHandwritingPad({ l }: { l: DictionaryLogic }) {
       <div className="flex min-w-0 gap-3">
         <canvas
           ref={canvasRef}
-          style={{ width: PAD_SIZE, height: PAD_SIZE, touchAction: "none" }}
-          className="shrink-0 cursor-crosshair rounded border border-black/20 bg-os-input-bg text-os-text-primary shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)] dark:border-white/20 dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]"
+          style={{
+            width: PAD_SIZE,
+            height: PAD_SIZE,
+            touchAction: "none",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            WebkitTouchCallout: "none",
+          }}
+          className="dictionary-handwriting-canvas shrink-0 cursor-crosshair rounded border border-black/20 bg-os-input-bg text-os-text-primary shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)] dark:border-white/20 dark:shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]"
           aria-label={t("apps.dictionary.handwriting.canvas")}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={finishStroke}
           onPointerCancel={finishStroke}
         />
-        <div className="flex min-w-0 flex-1 flex-wrap content-start gap-1">
+        <div className="dictionary-handwriting-candidates flex min-w-0 flex-1 flex-wrap content-start gap-1">
           {status === "loading" ? (
             <p className="text-[11px] text-black/50 dark:text-white/50">{t("apps.dictionary.handwriting.loading")}</p>
           ) : status === "error" ? (
