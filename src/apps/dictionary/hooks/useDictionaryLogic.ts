@@ -19,6 +19,7 @@ import {
   type DictionaryLanguage,
   type DictionaryLookupResponse,
 } from "@/shared/dictionary";
+import { mergeDictionaryLookup } from "@/shared/dictionaryMerge";
 import {
   dictionaryAiNotesHaveContent,
   parseDictionaryAiNotes,
@@ -102,6 +103,8 @@ export function useDictionaryLogic({
   const speech = useDictionarySpeech(chineseScript);
   const [query, setQuery] = useState(initialData?.word ?? "");
   const [result, setResult] = useState<DictionaryLookupResponse | null>(null);
+  const resultRef = useRef<DictionaryLookupResponse | null>(null);
+  resultRef.current = result;
   const [status, setStatus] = useState<DictionaryLookupStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
@@ -152,6 +155,7 @@ export function useDictionaryLogic({
       const cached = readDictionaryClientCache(normalized, lang, locale);
       if (cached) {
         lookupAbortRef.current = null;
+        resultRef.current = cached;
         setResult(cached);
         setSelectedEntryId(cached.entries[0]?.id ?? null);
         setStatus("ready");
@@ -172,16 +176,19 @@ export function useDictionaryLogic({
           locale,
           onEnrichment: (enriched) => {
             if (controller.signal.aborted || lastLookupKeyRef.current !== key) return;
-            setResult(enriched);
+            const next = mergeDictionaryLookup(resultRef.current, enriched);
+            resultRef.current = next;
+            setResult(next);
             setSelectedEntryId((current) =>
-              enriched.entries.some((entry) => entry.id === current)
+              next.entries.some((entry) => entry.id === current)
                 ? current
-                : (enriched.entries[0]?.id ?? null)
+                : (next.entries[0]?.id ?? null)
             );
           },
         });
         if (controller.signal.aborted) return;
         const { enrichmentPending: _enrichmentPending, ...visible } = response;
+        resultRef.current = visible;
         setResult(visible);
         setSelectedEntryId(visible.entries[0]?.id ?? null);
         setStatus("ready");

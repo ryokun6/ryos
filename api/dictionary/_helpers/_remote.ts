@@ -5,6 +5,7 @@ import type {
   DictionaryLookupResponse,
   DictionarySense,
 } from "../../../src/shared/dictionary.js";
+import { dedupeDictionaryLookup } from "../../../src/shared/dictionaryMerge.js";
 import { redisKey } from "../../../src/shared/redisKeys.js";
 import { parseInlineFurigana } from "../../../src/utils/furigana.js";
 import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
@@ -380,7 +381,7 @@ export async function readLookupCache(
     const hit = await redis.get<DictionaryLookupResponse | string>(key);
     if (!hit) return null;
     const value = typeof hit === "string" ? (JSON.parse(hit) as unknown) : hit;
-    return isLookupResponse(value) ? value : null;
+    return isLookupResponse(value) ? dedupeDictionaryLookup(value) : null;
   } catch {
     return null;
   }
