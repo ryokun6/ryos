@@ -356,11 +356,222 @@ const LOCAL_SOURCE: Record<Exclude<DictionaryLanguage, "en">, DictionarySource> 
   ko: "kengdic",
 };
 
-async function lookupCjk(
+export interface DictionaryLookupTimings {
+  indexSearchMs: number;
+  segmentMs: number;
+  findCompoundsMs: number;
+  wiktionaryMs: number;
+  kanjidicMs: number;
+  /** Time to probe the other Han index in auto mode. Zero for an explicit language. */
+  autoSecondPassMs: number;
+  /** Wall time until the local result is ready. Wiktionary is not included. */
+  totalMs: number;
+}
+
+export interface DictionaryLookupOptions {
+  /** UI locale. A `ja` locale prefers Japanese when both Han indexes whole-match. */
+  locale?: string;
+}
+
+export interface DictionaryLookupPending {
+  /** Local index result. Never waits on Wiktionary. */
+  local: DictionaryLookupResponse;
+  /** Local result plus Wiktionary, when enrichment can still change it. */
+  final: Promise<DictionaryLookupResponse>;
+  enrichmentPending: boolean;
+  timings: DictionaryLookupTimings;
+}
+
+export function dictionaryLookupTimingEnabled(): boolean {
+  const flag = process.env.DICTIONARY_LOOKUP_TIMING;
+  if (flag === "0" || flag === "false") return false;
+  if (flag === "1" || flag === "true") return true;
+  return process.env.NODE_ENV !== "production";
+}
+
+export function prefersJapaneseLocale(locale?: string): boolean {
+  return (locale ?? "").trim().toLowerCase().startsWith("ja");
+}
+
+/**
+ * Han-only auto mode. Kana is not a tie: a kana query never reaches this
+ * function. Japanese wins when only JMdict has the whole word; a `ja` locale
+ * also wins ties (both match, or neither matches).
+ */
+export function chooseAutoCjkLanguage(
+  chineseWhole: boolean,
+  japaneseWhole: boolean,
+  locale?: string
+): "zh" | "ja" {
+  const preferJa = prefersJapaneseLocale(locale);
+  if (chineseWhole && japaneseWhole) return preferJa ? "ja" : "zh";
+  if (japaneseWhole) return "ja";
+  if (chineseWhole) return "zh";
+  return preferJa ? "ja" : "zh";
+}
+
+export function dictionaryLookupCacheId(queryLang: string, locale?: string): string {
+  if (queryLang === "auto" && prefersJapaneseLocale(locale)) return "auto:ja";
+  return queryLang;
+}
+
+const inflightLookups = new Map<string, Promise<DictionaryLookupResponse>>();
+
+/** Keep the in-flight final result until `persist` finishes so enrich can share it. */
+export function publishDictionaryLookup(
+  key: string,
+  final: Promise<DictionaryLookupResponse>,
+  persist: (result: DictionaryLookupResponse) => Promise<void>
+): void {
+  const published = final.then(async (result) => {
+    await persist(result);
+    return result;
+  });
+  inflightLookups.set(key, published);
+  void published.catch(() => undefined).finally(() => {
+    if (inflightLookups.get(key) === published) inflightLookups.delete(key);
+  });
+}
+
+export function inflightDictionaryLookup(key: string): Promise<DictionaryLookupResponse> | undefined {
+  return inflightLookups.get(key);
+}
+
+/** Test hook. */
+export function clearInflightDictionaryLookups(): void {
+  inflightLookups.clear();
+}
+
+function blankTimings(): DictionaryLookupTimings {
+  return {
+    indexSearchMs: 0,
+    segmentMs: 0,
+    findCompoundsMs: 0,
+    wiktionaryMs: 0,
+    kanjidicMs: 0,
+    autoSecondPassMs: 0,
+    totalMs: 0,
+  };
+}
+
+function settled(
+  response: DictionaryLookupResponse,
+  timings: DictionaryLookupTimings,
+  started: number
+): DictionaryLookupPending {
+  timings.totalMs = performance.now() - started;
+  return {
+    local: response,
+    final: Promise.resolve(response),
+    enrichmentPending: false,
+    timings,
+  };
+}
+
+interface BuiltCjk {
+  response: DictionaryLookupResponse;
+  segmented: boolean;
+  wholeWordMatch: boolean;
+  wikiHeadword: string | null;
+  indexSearchMs: number;
+  segmentMs: number;
+  findCompoundsMs: number;
+  kanjidicMs: number;
+}
+
+function copyPhases(target: DictionaryLookupTimings, built: BuiltCjk) {
+  target.indexSearchMs = built.indexSearchMs;
+  target.segmentMs = built.segmentMs;
+  target.findCompoundsMs = built.findCompoundsMs;
+  target.kanjidicMs = built.kanjidicMs;
+}
+
+function wikiHeadwordFor(
+  query: string,
+  lang: Exclude<DictionaryLanguage, "en">,
+  top: DictionaryEntry | undefined,
+  segmented: boolean
+): string | null {
+  if (segmented || !(top || hasCjkScript(query))) return null;
+  return lang === "zh" ? (top?.traditional ?? query) : (top?.headword ?? query);
+}
+
+/** zh/ja Wiktionary only adds examples. A local example already answers that. */
+function wiktionaryCanChange(
+  lang: Exclude<DictionaryLanguage, "en">,
+  top: DictionaryEntry | undefined,
+  headword: string | null
+): boolean {
+  if (!headword) return false;
+  if (lang !== "ko" && top?.senses[0]?.examples?.length) return false;
+  return true;
+}
+
+function insertSource(sources: DictionarySource[], source: DictionarySource) {
+  if (sources.includes(source)) return;
+  const kanjiAt = sources.indexOf("kanjidic2");
+  if (source === "wiktionary" && kanjiAt >= 0) sources.splice(kanjiAt, 0, source);
+  else sources.push(source);
+}
+
+function applyWiktionary(
+  response: DictionaryLookupResponse,
+  wiktionary: DictionaryEntry | null,
+  lang: Exclude<DictionaryLanguage, "en">
+): DictionaryLookupResponse {
+  if (!wiktionary) return response;
+  const entries = response.entries.slice();
+  const sources = response.sources.slice();
+  const top = entries[0];
+  let changed = false;
+  if (lang === "ko") {
+    wiktionary.headword = top?.headword ?? wiktionary.headword;
+    if (top?.hanja) wiktionary.hanja = top.hanja;
+    entries.unshift(wiktionary);
+    insertSource(sources, "wiktionary");
+    changed = true;
+  } else if (top) {
+    const sense = top.senses[0];
+    const copy: DictionaryEntry = {
+      ...top,
+      senses: top.senses.map((item, index) =>
+        index === 0 ? { ...item, examples: sense?.examples?.slice() } : item
+      ),
+    };
+    if (mergeExamples(copy, wiktionary)) {
+      entries[0] = copy;
+      insertSource(sources, "wiktionary");
+      changed = true;
+    }
+  } else {
+    entries.push(wiktionary);
+    insertSource(sources, "wiktionary");
+    changed = true;
+  }
+  if (!changed) return response;
+  return {
+    ...response,
+    entries,
+    sources,
+    notFound: entries.length === 0,
+    suggestions: entries.length ? [] : response.suggestions,
+  };
+}
+
+function startWiktionary(
+  headword: string | null,
+  lang: Exclude<DictionaryLanguage, "en">,
+  deps: DictionaryLookupDeps
+): Promise<DictionaryEntry | null> {
+  if (!headword || !deps.fetchWiktionary) return Promise.resolve(null);
+  return safely("wiktionary", deps, () => deps.fetchWiktionary!(headword, lang), null);
+}
+
+async function buildCjk(
   query: string,
   lang: Exclude<DictionaryLanguage, "en">,
   deps: DictionaryLookupDeps
-): Promise<DictionaryLookupResponse & { wholeWordMatch: boolean }> {
+): Promise<BuiltCjk> {
   const response = emptyResponse(query, lang);
   let index: DictionaryIndex | null = null;
   try {
@@ -368,53 +579,55 @@ async function lookupCjk(
   } catch (error) {
     deps.onRemoteError?.(LOCAL_SOURCE[lang], error);
   }
-  const { entries, segmented } = index
-    ? findLocalEntries(index, query, lang)
-    : { entries: [], segmented: false };
-  response.entries = entries.slice(0, MAX_ENTRIES);
-  if (response.entries.length) response.sources.push(LOCAL_SOURCE[lang]);
-
-  const top = response.entries[0];
-  const wiktionaryHeadword =
-    !segmented && (top || hasCjkScript(query))
-      ? lang === "zh"
-        ? top?.traditional ?? query
-        : top?.headword ?? query
-      : null;
-
-  const [wiktionary, kanji] = await Promise.all([
-    wiktionaryHeadword
-      ? safely(
-          "wiktionary",
-          deps,
-          deps.fetchWiktionary && (() => deps.fetchWiktionary!(wiktionaryHeadword, lang)),
-          null
-        )
-      : Promise.resolve(null),
-    lang === "ja"
-      ? safely("kanjidic2", deps, deps.getKanjiInfo, null)
-      : Promise.resolve(null),
-  ]);
-
-  if (wiktionary) {
-    if (lang === "ko") {
-      wiktionary.headword = top?.headword ?? wiktionary.headword;
-      if (top?.hanja) wiktionary.hanja = top.hanja;
-      response.entries.unshift(wiktionary);
-      response.sources.push("wiktionary");
-    } else if (top && mergeExamples(top, wiktionary)) {
-      response.sources.push("wiktionary");
-    } else if (!top) {
-      response.entries.push(wiktionary);
-      response.sources.push("wiktionary");
+  let indexSearchMs = 0;
+  let segmentMs = 0;
+  let segmented = false;
+  if (index) {
+    if (hasCjkScript(query)) {
+      const exactStarted = performance.now();
+      const exact = index.lookupHeadword(query);
+      indexSearchMs += performance.now() - exactStarted;
+      if (exact.length) {
+        response.entries = exact.slice(0, MAX_ENTRIES);
+      } else {
+        const segmentStarted = performance.now();
+        const words = index.segment(query);
+        segmentMs = performance.now() - segmentStarted;
+        if (words.length > 1 || (words.length === 1 && words[0] !== query)) {
+          segmented = true;
+          const entries: DictionaryEntry[] = [];
+          for (const word of words) {
+            const hit = index.lookupHeadword(word)[0];
+            if (hit) entries.push(hit);
+            if (entries.length >= MAX_ENTRIES) break;
+          }
+          response.entries = entries;
+        }
+      }
+    } else {
+      const readingStarted = performance.now();
+      const { entries } = findLocalEntries(index, query, lang);
+      indexSearchMs += performance.now() - readingStarted;
+      response.entries = entries.slice(0, MAX_ENTRIES);
     }
   }
-  if (kanji && response.entries.length) {
-    attachKanji(response.entries, kanji);
-    if (response.entries.some((entry) => entry.kanji?.length)) response.sources.push("kanjidic2");
+  if (response.entries.length) response.sources.push(LOCAL_SOURCE[lang]);
+
+  let kanjidicMs = 0;
+  if (lang === "ja" && response.entries.length && deps.getKanjiInfo) {
+    const kanjiStarted = performance.now();
+    const kanji = await safely("kanjidic2", deps, deps.getKanjiInfo, null);
+    kanjidicMs = performance.now() - kanjiStarted;
+    if (kanji) {
+      attachKanji(response.entries, kanji);
+      if (response.entries.some((entry) => entry.kanji?.length)) response.sources.push("kanjidic2");
+    }
   }
 
+  const top = response.entries[0];
+  let findCompoundsMs = 0;
   if (index && top && !segmented) {
+    const compoundStarted = performance.now();
     const compoundKey = hasCjkScript(query) ? query : top.headword;
     response.phrases = index.findCompounds(compoundKey, 12);
     response.similar = index.findSimilar(top, 10);
@@ -426,36 +639,154 @@ async function lookupCjk(
         response.entries.push(compound);
       }
     }
+    findCompoundsMs = performance.now() - compoundStarted;
   }
   response.notFound = response.entries.length === 0;
   if (index && response.notFound && hasCjkScript(query)) {
     response.suggestions = index.suggest(Array.from(query)[0] ?? query, 8);
   }
-  return Object.assign(response, { wholeWordMatch: !segmented && !response.notFound });
+  return {
+    response,
+    segmented,
+    wholeWordMatch: !segmented && Boolean(top),
+    wikiHeadword: wikiHeadwordFor(query, lang, top, segmented),
+    indexSearchMs,
+    segmentMs,
+    findCompoundsMs,
+    kanjidicMs,
+  };
 }
 
-function withoutMatchFlag({
-  wholeWordMatch: _wholeWordMatch,
-  ...response
-}: DictionaryLookupResponse & { wholeWordMatch: boolean }): DictionaryLookupResponse {
-  return response;
+function enrichBuilt(
+  built: BuiltCjk,
+  lang: Exclude<DictionaryLanguage, "en">,
+  deps: DictionaryLookupDeps,
+  timings: DictionaryLookupTimings
+): DictionaryLookupPending {
+  const local = built.response;
+  const canChange =
+    Boolean(deps.fetchWiktionary) && wiktionaryCanChange(lang, local.entries[0], built.wikiHeadword);
+  if (!canChange || !built.wikiHeadword) {
+    return {
+      local,
+      final: Promise.resolve(local),
+      enrichmentPending: false,
+      timings,
+    };
+  }
+  const headword = built.wikiHeadword;
+  const started = performance.now();
+  const final = startWiktionary(headword, lang, deps).then((wiki) => {
+    timings.wiktionaryMs += performance.now() - started;
+    return applyWiktionary(local, wiki, lang);
+  });
+  return { local, final, enrichmentPending: true, timings };
+}
+
+async function beginHanAuto(
+  query: string,
+  deps: DictionaryLookupDeps,
+  locale: string | undefined,
+  started: number
+): Promise<DictionaryLookupPending> {
+  const timings = blankTimings();
+  let zhMs = 0;
+  let jaMs = 0;
+  const [chinese, japanese] = await Promise.all([
+    (async () => {
+      const t = performance.now();
+      const built = await buildCjk(query, "zh", deps);
+      zhMs = performance.now() - t;
+      return built;
+    })(),
+    (async () => {
+      const t = performance.now();
+      const built = await buildCjk(query, "ja", deps);
+      jaMs = performance.now() - t;
+      return built;
+    })(),
+  ]);
+  const chosenLang = chooseAutoCjkLanguage(
+    chinese.wholeWordMatch,
+    japanese.wholeWordMatch,
+    locale
+  );
+  const chosen = chosenLang === "ja" ? japanese : chinese;
+  copyPhases(timings, chosen);
+  timings.autoSecondPassMs = chosenLang === "zh" ? jaMs : zhMs;
+  timings.totalMs = performance.now() - started;
+
+  // An empty, unsegmented Chinese probe used to wait for Wiktionary before
+  // falling through to Japanese. The local preview uses the index-only choice;
+  // `final` still applies that Wiktionary override so the cached result matches.
+  const zhWikiDecides =
+    !chinese.segmented &&
+    chinese.response.entries.length === 0 &&
+    hasCjkScript(query) &&
+    Boolean(deps.fetchWiktionary);
+
+  if (!zhWikiDecides) return enrichBuilt(chosen, chosenLang, deps, timings);
+
+  // Japanese already has the word and the UI is in Japanese: don't wait to
+  // discover whether Wiktionary also has a Chinese page.
+  if (prefersJapaneseLocale(locale) && japanese.wholeWordMatch) {
+    return enrichBuilt(japanese, "ja", deps, timings);
+  }
+
+  const final = (async () => {
+    const wikiStarted = performance.now();
+    const zhWiki = await startWiktionary(chinese.wikiHeadword, "zh", deps);
+    timings.wiktionaryMs += performance.now() - wikiStarted;
+    const zhFinal = applyWiktionary(chinese.response, zhWiki, "zh");
+    const zhWhole = zhFinal.entries.length > 0;
+    if (zhWhole && !japanese.wholeWordMatch) return zhFinal;
+    const jaFinal = await enrichBuilt(japanese, "ja", deps, timings).final;
+    const jaWhole = !japanese.segmented && jaFinal.entries.length > 0;
+    if (zhWhole && jaWhole) return prefersJapaneseLocale(locale) ? jaFinal : zhFinal;
+    if (jaWhole) return jaFinal;
+    if (zhWhole) return zhFinal;
+    return prefersJapaneseLocale(locale) ? jaFinal : zhFinal;
+  })();
+
+  return {
+    local: chosen.response,
+    final,
+    enrichmentPending: true,
+    timings,
+  };
+}
+
+export async function beginDictionaryLookup(
+  rawQuery: string,
+  preferred: DictionaryQueryLanguage,
+  deps: DictionaryLookupDeps,
+  options: DictionaryLookupOptions = {}
+): Promise<DictionaryLookupPending> {
+  const started = performance.now();
+  const query = normalizeDictionaryQuery(rawQuery);
+  const lang = detectDictionaryLanguage(query, preferred);
+  if (!query) return settled(emptyResponse(query, lang), blankTimings(), started);
+  if (lang === "en") {
+    const response = await lookupEnglish(query, deps);
+    return settled(response, blankTimings(), started);
+  }
+  // Kana (and Hangul) already picked a single language. Han-only auto probes both.
+  if (preferred === "auto" && isHanOnlyQuery(query)) {
+    return beginHanAuto(query, deps, options.locale, started);
+  }
+  const timings = blankTimings();
+  const built = await buildCjk(query, lang, deps);
+  copyPhases(timings, built);
+  timings.totalMs = performance.now() - started;
+  return enrichBuilt(built, lang, deps, timings);
 }
 
 export async function lookupDictionary(
   rawQuery: string,
   preferred: DictionaryQueryLanguage,
-  deps: DictionaryLookupDeps
+  deps: DictionaryLookupDeps,
+  options?: DictionaryLookupOptions
 ): Promise<DictionaryLookupResponse> {
-  const query = normalizeDictionaryQuery(rawQuery);
-  const lang = detectDictionaryLanguage(query, preferred);
-  if (!query) return emptyResponse(query, lang);
-  if (lang === "en") return lookupEnglish(query, deps);
-  const response = await lookupCjk(query, lang, deps);
-  // Han-only text defaults to Chinese; in auto mode prefer Japanese when only
-  // JMdict knows the whole word (学習, 手紙 in its Japanese sense, …).
-  if (preferred === "auto" && lang === "zh" && !response.wholeWordMatch && isHanOnlyQuery(query)) {
-    const japanese = await lookupCjk(query, "ja", deps);
-    if (japanese.wholeWordMatch) return withoutMatchFlag(japanese);
-  }
-  return withoutMatchFlag(response);
+  const pending = await beginDictionaryLookup(rawQuery, preferred, deps, options);
+  return pending.final;
 }

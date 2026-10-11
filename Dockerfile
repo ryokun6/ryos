@@ -1,21 +1,3 @@
-FROM --platform=linux/amd64 oven/bun:1.3.9 AS build
-
-WORKDIR /app
-
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
-
-COPY . .
-
-# Commit SHA passed in by CI (e.g. GitHub Actions). The prebuild script
-# (`scripts/generate-build-version.ts`) reads this to populate the build
-# number in `public/version.json`. Without it, the script falls back to
-# 'dev' because the `.git` directory is excluded by `.dockerignore`.
-ARG GIT_COMMIT_SHA=""
-ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
-
-RUN bun run build
-
 # Dataset files change only when their URLs change, so this layer stays cached
 # across app rebuilds. A failed download fails the image build (an empty layer
 # would be cached). Runtime still lazy-loads if a file is missing.
@@ -29,6 +11,26 @@ COPY scripts/prefetch-dictionary-data.ts ./scripts/prefetch-dictionary-data.ts
 ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 RUN mkdir -p /app/data/dictionary && bun scripts/prefetch-dictionary-data.ts
+
+FROM --platform=linux/amd64 oven/bun:1.3.9 AS build
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+COPY --from=dictionary-data /app/data/dictionary ./data/dictionary
+
+# Commit SHA passed in by CI (e.g. GitHub Actions). The prebuild script
+# (`scripts/generate-build-version.ts`) reads this to populate the build
+# number in `public/version.json`. Without it, the script falls back to
+# 'dev' because the `.git` directory is excluded by `.dockerignore`.
+ARG GIT_COMMIT_SHA=""
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA
+ENV DICTIONARY_DATA_DIR=/app/data/dictionary
+
+RUN bun scripts/build-dictionary-indexes.ts && bun run build
 
 FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
 
@@ -52,7 +54,7 @@ COPY --from=build /app/index.html ./index.html
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/tsconfig.node.json ./tsconfig.node.json
 COPY --from=build /app/tsconfig.app.json ./tsconfig.app.json
-COPY --from=dictionary-data /app/data/dictionary ./data/dictionary
+COPY --from=build /app/data/dictionary ./data/dictionary
 
 EXPOSE 3000
 

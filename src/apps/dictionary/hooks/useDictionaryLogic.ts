@@ -126,7 +126,8 @@ export function useDictionaryLogic({
     ) => {
       const normalized = normalizeDictionaryQuery(rawQuery);
       const lang = options.lang ?? useDictionaryStore.getState().queryLanguage;
-      const key = `${lang}:${normalized}`;
+      const localeHint = locale.toLowerCase().startsWith("ja") ? "ja" : "";
+      const key = `${lang}:${localeHint}:${normalized}`;
       if (!normalized) {
         lookupAbortRef.current?.abort();
         lastLookupKeyRef.current = "";
@@ -140,7 +141,7 @@ export function useDictionaryLogic({
       lastLookupKeyRef.current = key;
 
       lookupAbortRef.current?.abort();
-      const cached = readDictionaryClientCache(normalized, lang);
+      const cached = readDictionaryClientCache(normalized, lang, locale);
       if (cached) {
         lookupAbortRef.current = null;
         setResult(cached);
@@ -159,14 +160,22 @@ export function useDictionaryLogic({
       setError(null);
       resetAi();
       try {
-        const response = await lookupDictionaryWord(
-          normalized,
-          lang,
-          controller.signal
-        );
+        const response = await lookupDictionaryWord(normalized, lang, controller.signal, {
+          locale,
+          onEnrichment: (enriched) => {
+            if (controller.signal.aborted || lastLookupKeyRef.current !== key) return;
+            setResult(enriched);
+            setSelectedEntryId((current) =>
+              enriched.entries.some((entry) => entry.id === current)
+                ? current
+                : (enriched.entries[0]?.id ?? null)
+            );
+          },
+        });
         if (controller.signal.aborted) return;
-        setResult(response);
-        setSelectedEntryId(response.entries[0]?.id ?? null);
+        const { enrichmentPending: _enrichmentPending, ...visible } = response;
+        setResult(visible);
+        setSelectedEntryId(visible.entries[0]?.id ?? null);
         setStatus("ready");
         if (options.record !== false && !response.notFound) {
           actions.recordHistory(normalized, lang);
@@ -178,7 +187,7 @@ export function useDictionaryLogic({
         setStatus("error");
       }
     },
-    [actions, resetAi]
+    [actions, locale, resetAi]
   );
 
   // Debounced search-as-you-type; Enter submits immediately.

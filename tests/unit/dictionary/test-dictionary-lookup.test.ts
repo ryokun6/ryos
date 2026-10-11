@@ -5,9 +5,14 @@ import {
   buildJapaneseIndex,
   buildKoreanIndex,
 } from "../../../api/dictionary/_helpers/_datasets";
-import { lookupDictionary, type DictionaryLookupDeps } from "../../../api/dictionary/_helpers/_lookup";
+import {
+  beginDictionaryLookup,
+  chooseAutoCjkLanguage,
+  lookupDictionary,
+  type DictionaryLookupDeps,
+} from "../../../api/dictionary/_helpers/_lookup";
 import { parseCedict, parseKengdic } from "../../../api/dictionary/_helpers/_parsers";
-import type { DictionaryIndex } from "../../../api/dictionary/_helpers/_index";
+import { DictionaryIndex } from "../../../api/dictionary/_helpers/_index";
 import {
   detectDictionaryLanguage,
   normalizeDictionaryQuery,
@@ -247,6 +252,166 @@ describe("Korean lookup", () => {
     );
     expect(result.entries.map((e) => e.source)).toEqual(["wiktionary", "kengdic"]);
     expect(result.entries[0].hanja).toBe("學校");
+  });
+});
+
+describe("auto mode Han choice", () => {
+  test("prefers a Japanese whole word, and a ja locale wins ties", () => {
+    expect(chooseAutoCjkLanguage(true, true)).toBe("zh");
+    expect(chooseAutoCjkLanguage(true, true, "ja")).toBe("ja");
+    expect(chooseAutoCjkLanguage(true, true, "ja-JP")).toBe("ja");
+    expect(chooseAutoCjkLanguage(false, true, "zh-CN")).toBe("ja");
+    expect(chooseAutoCjkLanguage(true, false, "ja")).toBe("zh");
+    expect(chooseAutoCjkLanguage(false, false)).toBe("zh");
+    expect(chooseAutoCjkLanguage(false, false, "ja")).toBe("ja");
+  });
+
+  test("probes both indexes together and keeps the existing whole-word winner", async () => {
+    const seen: string[] = [];
+    const deps = makeDeps({
+      getIndex: async (lang) => {
+        seen.push(lang);
+        if (lang === "en") throw new Error("no local english");
+        return indexes[lang];
+      },
+    });
+    const learned = await beginDictionaryLookup("学习", "auto", deps);
+    expect(learned.local.lang).toBe("zh");
+    expect(learned.local.wholeWordMatch).toBeUndefined();
+    expect(seen).toEqual(["zh", "ja"]);
+    seen.length = 0;
+    const study = await lookupDictionary("学習", "auto", deps);
+    expect(study.lang).toBe("ja");
+    expect(study.entries[0].headword).toBe("学習");
+  });
+
+  test("ja locale prefers Japanese when both indexes have the word", async () => {
+    const japanese = buildJapaneseIndex([
+      ...JMDICT,
+      jaEntry("bank", "銀行", "ぎんこう", ["bank"]),
+    ]);
+    const deps = makeDeps({
+      getIndex: async (lang) => {
+        if (lang === "ja") return japanese;
+        if (lang === "en") throw new Error("no local english");
+        return indexes[lang];
+      },
+    });
+    const inJapanese = await lookupDictionary("銀行", "auto", deps, { locale: "ja" });
+    expect(inJapanese.lang).toBe("ja");
+    expect(inJapanese.entries[0].reading).toBe("ぎんこう");
+    const inChinese = await lookupDictionary("銀行", "auto", deps, { locale: "en" });
+    expect(inChinese.lang).toBe("zh");
+    expect(inChinese.entries[0].headword).toBe("银行");
+  });
+
+  test("kana skips the Chinese index", async () => {
+    const seen: string[] = [];
+    const result = await lookupDictionary(
+      "たべる",
+      "auto",
+      makeDeps({
+        getIndex: async (lang) => {
+          seen.push(lang);
+          if (lang === "en") throw new Error("no local english");
+          return indexes[lang];
+        },
+      })
+    );
+    expect(result.entries[0].headword).toBe("食べる");
+    expect(seen).toEqual(["ja"]);
+  });
+});
+
+describe("non-blocking Wiktionary enrichment", () => {
+  test("returns the local entry while Wiktionary is still pending", async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let wikiStarted = false;
+    const pending = await beginDictionaryLookup(
+      "学习",
+      "zh",
+      makeDeps({
+        fetchWiktionary: async () => {
+          wikiStarted = true;
+          await gate;
+          return {
+            id: "wiktionary:zh:學習",
+            lang: "zh",
+            headword: "學習",
+            senses: [{ glosses: ["to study"], examples: [{ text: "我们学习中文。" }] }],
+            source: "wiktionary",
+          };
+        },
+      })
+    );
+    expect(wikiStarted).toBe(true);
+    expect(pending.enrichmentPending).toBe(true);
+    expect(pending.local.sources).toEqual(["cc-cedict"]);
+    expect(pending.local.entries[0].headword).toBe("学习");
+    expect(pending.local.entries[0].senses[0].examples).toBeUndefined();
+    release?.();
+    const final = await pending.final;
+    expect(final.entries[0].headword).toBe("学习");
+    expect(final.entries[0].senses[0].examples).toEqual([{ text: "我们学习中文。" }]);
+    expect(final.sources).toEqual(["cc-cedict", "wiktionary"]);
+    expect(final.entries.map((entry) => entry.headword)).toEqual(
+      pending.local.entries.map((entry) => entry.headword)
+    );
+  });
+
+  test("skips Wiktionary when the local entry already has an example", async () => {
+    let called = false;
+    const [row] = parseCedict("學習 学习 [xue2 xi2] /to learn/");
+    const withExample = new DictionaryIndex("zh", [
+      {
+        ...row,
+        senses: [{ glosses: ["to learn"], examples: [{ text: "already here" }] }],
+      },
+    ]);
+    const pending = await beginDictionaryLookup(
+      "学习",
+      "zh",
+      makeDeps({
+        getIndex: async (lang) => {
+          if (lang !== "zh") throw new Error(lang);
+          return withExample;
+        },
+        fetchWiktionary: async () => {
+          called = true;
+          return {
+            id: "wiktionary:zh:學習",
+            lang: "zh",
+            headword: "學習",
+            senses: [{ glosses: ["to study"], examples: [{ text: "extra" }] }],
+            source: "wiktionary",
+          };
+        },
+      })
+    );
+    expect(called).toBe(false);
+    expect(pending.enrichmentPending).toBe(false);
+    expect(pending.local.entries[0].senses[0].examples).toEqual([{ text: "already here" }]);
+    expect(await pending.final).toBe(pending.local);
+  });
+
+  test("a segmented sentence does not wait for Wiktionary", async () => {
+    let called = false;
+    const pending = await beginDictionaryLookup(
+      "我爱中国",
+      "auto",
+      makeDeps({
+        fetchWiktionary: async () => {
+          called = true;
+          return null;
+        },
+      })
+    );
+    expect(called).toBe(false);
+    expect(pending.enrichmentPending).toBe(false);
+    expect(pending.local.entries.map((entry) => entry.headword)).toEqual(["我", "爱", "中国"]);
   });
 });
 

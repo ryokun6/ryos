@@ -39,11 +39,18 @@ async function readError(response: Response): Promise<DictionaryApiError> {
 export async function lookupDictionaryWord(
   query: string,
   lang: DictionaryQueryLanguage,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  options?: {
+    locale?: string;
+    /** Called when Wiktionary examples arrive. The local result is already returned. */
+    onEnrichment?: (response: DictionaryLookupResponse) => void;
+  }
 ): Promise<DictionaryLookupResponse> {
-  const cached = readDictionaryClientCache(query, lang);
+  const locale = options?.locale;
+  const cached = readDictionaryClientCache(query, lang, locale);
   if (cached) return cached;
   const params = new URLSearchParams({ q: query, lang });
+  if (locale) params.set("locale", locale);
   const response = await abortableFetch(
     getApiUrl(`/api/dictionary?${params.toString()}`),
     {
@@ -56,7 +63,26 @@ export async function lookupDictionaryWord(
   );
   if (!response.ok) throw await readError(response);
   const body = (await response.json()) as DictionaryLookupResponse;
-  writeDictionaryClientCache(query, lang, body);
+  if (!body.enrichmentPending || !options?.onEnrichment) {
+    writeDictionaryClientCache(query, lang, body, locale);
+    return body;
+  }
+  const enrichParams = new URLSearchParams(params);
+  void abortableFetch(getApiUrl(`/api/dictionary/enrich?${enrichParams.toString()}`), {
+    method: "GET",
+    signal,
+    timeout: 8000,
+    throwOnHttpError: false,
+    retry: { maxAttempts: 1, initialDelayMs: 200 },
+  })
+    .then(async (enrichResponse) => {
+      if (!enrichResponse.ok || signal?.aborted) return;
+      const enriched = (await enrichResponse.json()) as DictionaryLookupResponse;
+      if (signal?.aborted) return;
+      writeDictionaryClientCache(query, lang, enriched, locale);
+      options.onEnrichment?.(enriched);
+    })
+    .catch(() => undefined);
   return body;
 }
 
