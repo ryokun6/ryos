@@ -23,11 +23,52 @@ export function loadHanziStrokeData(char: string): Promise<HanziStrokeCharData> 
   return tracked;
 }
 
-/** hanzi-writer `charDataLoader`. Failures call `onError` instead of throwing. */
-export function hanziCharDataLoader(
+export type HanziCharDataLoader = (
   char: string,
   onLoad: (data: HanziStrokeCharData) => void,
-  onError?: (error?: unknown) => void
-): void {
-  loadHanziStrokeData(char).then(onLoad, (error: unknown) => onError?.(error));
+  onError?: (error?: unknown) => void,
+  signal?: AbortSignal
+) => void;
+
+function abortError(): DOMException {
+  return new DOMException("The operation was aborted.", "AbortError");
 }
+
+/**
+ * hanzi-writer `charDataLoader`. Failures call `onError` instead of throwing.
+ * An aborted signal drops the result so a disposed card cannot apply it.
+ */
+export const hanziCharDataLoader: HanziCharDataLoader = (
+  char,
+  onLoad,
+  onError,
+  signal
+) => {
+  if (signal?.aborted) {
+    onError?.(abortError());
+    return;
+  }
+  let dropped = false;
+  const drop = () => {
+    dropped = true;
+  };
+  signal?.addEventListener("abort", drop, { once: true });
+  loadHanziStrokeData(char).then(
+    (data) => {
+      signal?.removeEventListener("abort", drop);
+      if (dropped || signal?.aborted) {
+        onError?.(abortError());
+        return;
+      }
+      onLoad(data);
+    },
+    (error: unknown) => {
+      signal?.removeEventListener("abort", drop);
+      if (dropped || signal?.aborted) {
+        onError?.(abortError());
+        return;
+      }
+      onError?.(error);
+    }
+  );
+};

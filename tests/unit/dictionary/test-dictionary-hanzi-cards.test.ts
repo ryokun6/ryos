@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { hanziCharDataLoader } from "../../../src/apps/dictionary/utils/hanziStrokeData";
 import type { DictionaryEntry } from "../../../src/shared/dictionary";
 import {
   hanziCardGlyph,
@@ -95,8 +96,32 @@ describe("hanzi cards", () => {
     expect(component).toContain('import("hanzi-writer")');
     expect(component).toContain("charDataLoader");
     expect(component).toContain("loopCharacterAnimation");
+    expect(component).toContain("onLoadCharDataSuccess");
+    expect(component).toContain("onLoadCharDataError");
+    expect(component).toContain("HanziCardsErrorBoundary");
+    expect(component).toContain("entry.headword");
     expect(loader).toContain("hanzi-writer-data@2.0.1");
     expect(loader).toContain("onError");
+    expect(loader).toContain("AbortSignal");
+  });
+
+  test("an aborted stroke load does not deliver character data", () => {
+    const controller = new AbortController();
+    controller.abort();
+    let loaded = false;
+    let errored = false;
+    hanziCharDataLoader(
+      "字",
+      () => {
+        loaded = true;
+      },
+      () => {
+        errored = true;
+      },
+      controller.signal
+    );
+    expect(loaded).toBe(false);
+    expect(errored).toBe(true);
   });
 });
 
