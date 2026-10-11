@@ -13,6 +13,8 @@ import {
   getListenShareMetadataFromRaw,
   getSongShareMetadataFromRaw,
   resolveSongShareId,
+  resolveSongShareLinkPreview,
+  resolveSongSharePreview,
 } from "../../../api/_utils/og-share";
 import { UpdateSongSchema } from "../../../api/songs/_constants";
 import { redisKeys } from "../../../src/shared/redisKeys";
@@ -23,13 +25,19 @@ import * as actualRedis from "../../../api/_utils/redis";
 const ORIGINAL_ENV = { ...process.env };
 
 let fake: FakeRedis;
+let redisFactoryError: Error | null = null;
 
 // Point createRedis at a fake so song-key cutover tests exercise real
 // getSongFromRedis key-reading. Spread the real module so other exports
 // survive — Bun module mocks are global across files in the same run.
 mock.module("../../../api/_utils/redis.js", () => ({
   ...actualRedis,
-  createRedis: () => fake,
+  createRedis: () => {
+    if (redisFactoryError) {
+      throw redisFactoryError;
+    }
+    return fake;
+  },
 }));
 
 afterAll(() => {
@@ -38,6 +46,7 @@ afterAll(() => {
 
 beforeEach(() => {
   fake = new FakeRedis();
+  redisFactoryError = null;
 });
 
 afterEach(() => {
@@ -563,6 +572,37 @@ describe("og share response", () => {
     ).toBe("am:1616228595");
   });
 
+  test("prefers curated library fields over the raw lyrics source", () => {
+    expect(
+      getSongShareMetadataFromRaw({
+        title: "Curated Title",
+        artist: "Curated Artist",
+        cover: "https://example.com/curated.jpg",
+        lyricsSource: {
+          title: "Raw Kugou Title",
+          artist: "Raw Kugou Artist",
+        },
+      })
+    ).toEqual({
+      title: "Curated Title",
+      artist: "Curated Artist",
+      cover: "https://example.com/curated.jpg",
+    });
+
+    expect(
+      getSongShareMetadataFromRaw({
+        lyricsSource: {
+          title: "Only Raw",
+          artist: "Only Raw Artist",
+        },
+      })
+    ).toEqual({
+      title: "Only Raw",
+      artist: "Only Raw Artist",
+      cover: null,
+    });
+  });
+
   test("extracts album artwork fields from stored song metadata", () => {
     expect(
       getSongShareMetadataFromRaw({
@@ -598,6 +638,170 @@ describe("og share response", () => {
         cover: "https://example.com/cover.jpg",
       }).cover
     ).toBe("https://example.com/cover.jpg");
+  });
+});
+
+describe("song share resolver", () => {
+  const songId = "abc123DEF45";
+
+  function mockYouTube(title: string) {
+    const fetchMock = mock(async () => {
+      return new Response(JSON.stringify({ title }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    return {
+      fetchMock,
+      restore() {
+        globalThis.fetch = originalFetch;
+      },
+    };
+  }
+
+  test("Redis hit uses curated title, artist, and cover", async () => {
+    await fake.set(
+      redisKeys.media.songMeta(songId),
+      JSON.stringify({
+        title: "Curated Title",
+        artist: "Curated Artist",
+        cover: "https://cdn.example.com/curated.jpg",
+        lyricsSource: {
+          title: "Raw Kugou Title",
+          artist: "Raw Kugou Artist",
+        },
+      })
+    );
+    const yt = mockYouTube("YouTube - Fallback Title");
+    try {
+      const resolved = await resolveSongSharePreview(songId);
+      expect(resolved.source).toBe("redis");
+      expect(resolved.songInfo).toEqual({
+        title: "Curated Title",
+        artist: "Curated Artist",
+        cover: "https://cdn.example.com/curated.jpg",
+      });
+      expect(resolved.imageUrl).toBe("https://cdn.example.com/curated.jpg");
+      expect(yt.fetchMock).not.toHaveBeenCalled();
+
+      const karaoke = await resolveSongShareLinkPreview(
+        `https://os.ryo.lu/karaoke/${songId}`
+      );
+      expect(karaoke).toMatchObject({
+        title: "Sing Curated Title - Curated Artist on ryOS",
+        description: "Sing along on ryOS Karaoke",
+        image: "https://cdn.example.com/curated.jpg",
+        siteName: "ryOS",
+        source: "redis",
+      });
+
+      const ipod = await resolveSongShareLinkPreview(
+        `https://os.ryo.lu/ipod/${songId}`
+      );
+      expect(ipod?.title).toBe("Curated Title - Curated Artist");
+      expect(ipod?.description).toBe("Listen on ryOS iPod");
+      expect(ipod?.source).toBe("redis");
+    } finally {
+      yt.restore();
+    }
+  });
+
+  test("Redis miss falls back to YouTube oEmbed", async () => {
+    const yt = mockYouTube("Queen - Bohemian Rhapsody (Official Video)");
+    try {
+      const resolved = await resolveSongSharePreview(songId);
+      expect(resolved.source).toBe("youtube");
+      expect(resolved.songInfo).toEqual({
+        title: "Bohemian Rhapsody",
+        artist: "Queen",
+        cover: null,
+      });
+      expect(resolved.imageUrl).toBe(
+        "https://i.ytimg.com/vi/abc123DEF45/hqdefault.jpg"
+      );
+      expect(yt.fetchMock).toHaveBeenCalledTimes(1);
+
+      const preview = await resolveSongShareLinkPreview(
+        `https://os.ryo.lu/karaoke/${songId}`
+      );
+      expect(preview?.source).toBe("youtube");
+      expect(preview?.title).toBe(
+        "Sing Bohemian Rhapsody - Queen on ryOS"
+      );
+    } finally {
+      yt.restore();
+    }
+  });
+
+  test("Redis error falls back to YouTube oEmbed", async () => {
+    redisFactoryError = new Error("redis down");
+    const yt = mockYouTube("Queen - Bohemian Rhapsody");
+    try {
+      const resolved = await resolveSongSharePreview(songId);
+      expect(resolved.source).toBe("youtube");
+      expect(resolved.songInfo).toEqual({
+        title: "Bohemian Rhapsody",
+        artist: "Queen",
+        cover: null,
+      });
+      expect(yt.fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      yt.restore();
+    }
+  });
+
+  test("lookup throw falls back to YouTube oEmbed", async () => {
+    const yt = mockYouTube("Queen - Bohemian Rhapsody");
+    try {
+      const resolved = await resolveSongSharePreview(songId, {
+        getSong: async () => {
+          throw new Error("redis boom");
+        },
+      });
+      expect(resolved.source).toBe("youtube");
+      expect(resolved.songInfo?.title).toBe("Bohemian Rhapsody");
+      expect(resolved.songInfo?.artist).toBe("Queen");
+      expect(yt.fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      yt.restore();
+    }
+  });
+
+  test("escapes curated song fields in OG html and keeps link-preview text plain", async () => {
+    process.env.APP_PUBLIC_ORIGIN = "https://os.example.com";
+    await fake.set(
+      redisKeys.media.songMeta(songId),
+      JSON.stringify({
+        title: `Rock & Roll <Live> "Night"`,
+        artist: "Artist's Band",
+        cover: "https://cdn.example.com/cover.jpg?w=1&h=2",
+      })
+    );
+
+    const response = await createOgShareResponse(
+      new Request(`https://os.example.com/karaoke/${songId}`)
+    );
+    const body = await response!.text();
+    expect(body).toContain(
+      '<meta property="og:title" content="Sing Rock &amp; Roll &lt;Live&gt; &quot;Night&quot; - Artist&#039;s Band on ryOS">'
+    );
+    expect(body).toContain(
+      '<title>Sing Rock &amp; Roll &lt;Live&gt; &quot;Night&quot; - Artist&#039;s Band on ryOS</title>'
+    );
+    expect(body).toContain(
+      '<meta property="og:image" content="https://cdn.example.com/cover.jpg?w=1&amp;h=2">'
+    );
+    expect(body).not.toContain(`content="Sing Rock & Roll <Live>`);
+
+    const preview = await resolveSongShareLinkPreview(
+      `https://os.example.com/karaoke/${songId}`
+    );
+    expect(preview?.title).toBe(
+      `Sing Rock & Roll <Live> "Night" - Artist's Band on ryOS`
+    );
+    expect(preview?.image).toBe("https://cdn.example.com/cover.jpg?w=1&h=2");
   });
 });
 

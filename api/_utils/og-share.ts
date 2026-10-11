@@ -188,6 +188,17 @@ function asNonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+/** Collapse control characters so share titles stay a single plain-text line. */
+function asShareText(value: unknown): string | null {
+  const text = asNonEmptyString(value);
+  if (!text) return null;
+  const cleaned = text
+    .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || null;
+}
+
 function getRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object"
     ? (value as Record<string, unknown>)
@@ -276,15 +287,16 @@ export function getSongShareMetadataFromRaw(
 
   const lyricsSource = getRecord(meta.lyricsSource);
   const artwork = getRecord(meta.artwork);
+  // Curated library fields win. lyricsSource is the raw lyrics-match title
+  // (Kugou / import), used only when the library row has no display title.
   const title =
-    asNonEmptyString(lyricsSource?.title) || asNonEmptyString(meta?.title);
+    asShareText(meta.title) || asShareText(lyricsSource?.title);
   if (!title) return null;
 
   return {
     title,
     artist:
-      asNonEmptyString(lyricsSource?.artist) ||
-      asNonEmptyString(meta?.artist),
+      asShareText(meta.artist) || asShareText(lyricsSource?.artist),
     cover:
       asNonEmptyString(meta?.cover) ||
       asNonEmptyString(meta?.artworkUrl) ||
@@ -511,46 +523,191 @@ async function getYouTubeInfo(
 }
 
 /**
- * Resolve song metadata + cover image for iPod / Karaoke OG pages.
+ * Resolve song metadata + cover image for iPod / Karaoke share previews.
  *
- * Prefers the song stored in Redis (richest data: album cover, curated
- * title/artist). When the song hasn't been persisted yet — e.g. it was shared
- * by a logged-out user, the metadata save failed, or it simply isn't in the
- * library — fall back to YouTube oEmbed (mirroring the `/videos/` path) so the
- * preview still shows a real title and thumbnail instead of the generic app
- * fallback.
+ * Prefers the Redis song library (curated title, artist, and cover). The
+ * previous source — YouTube oEmbed — is used only when the song is not in
+ * Redis, or when the Redis read itself fails.
  */
-type SongShareSource = "redis" | "youtube" | "none";
+export type SongShareSource = "redis" | "youtube" | "none";
 
-async function resolveSongShareInfo(
-  songId: string,
-  getSong: (songId: string) => Promise<SongShareMetadata | null>
-): Promise<{
+export type SongShareApp = "ipod" | "karaoke";
+
+export type ResolvedSongShare = {
   songInfo: SongShareMetadata | null;
   imageUrl: string | null;
   source: SongShareSource;
-}> {
-  const stored = await getSong(songId);
-  if (stored) {
+};
+
+export type SongShareResolverDeps = {
+  getSong?: (songId: string) => Promise<SongShareMetadata | null>;
+  getYouTubeInfo?: (
+    videoId: string
+  ) => Promise<{ title: string; artist: string | null } | null>;
+};
+
+const SONG_SHARE_PATH = /^\/(ipod|karaoke)\/([^/?#]+)$/;
+
+export function parseSongShareUrl(
+  pageUrl: string
+): { app: SongShareApp; songId: string } | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(pageUrl);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    return null;
+  }
+  const match = parsed.pathname.match(SONG_SHARE_PATH);
+  if (!match) return null;
+  const songId = resolveSongShareId(match[2]);
+  if (!songId) return null;
+  return { app: match[1] as SongShareApp, songId };
+}
+
+export function presentSongShare(
+  app: SongShareApp,
+  resolved: ResolvedSongShare,
+  fallbackImageUrl: string
+): { title: string; description: string; imageUrl: string } {
+  const imageUrl = resolved.imageUrl || fallbackImageUrl;
+  const songInfo = resolved.songInfo;
+  if (!songInfo) {
+    if (app === "karaoke") {
+      return {
+        title: "Sing on ryOS Karaoke",
+        description: "Sing along on ryOS Karaoke",
+        imageUrl,
+      };
+    }
     return {
-      songInfo: stored,
-      imageUrl: formatMusicCoverUrl(stored.cover, 400),
-      source: "redis",
+      title: "Shared Song - ryOS",
+      description: "Listen on ryOS iPod",
+      imageUrl,
     };
   }
 
-  if (YOUTUBE_VIDEO_ID_REGEX.test(songId)) {
-    const ytInfo = await getYouTubeInfo(songId);
-    if (ytInfo) {
+  const songDisplay = songInfo.artist
+    ? `${songInfo.title} - ${songInfo.artist}`
+    : songInfo.title;
+  if (app === "karaoke") {
+    return {
+      title: `Sing ${songDisplay} on ryOS`,
+      description: "Sing along on ryOS Karaoke",
+      imageUrl,
+    };
+  }
+  return {
+    title: songDisplay,
+    description: "Listen on ryOS iPod",
+    imageUrl,
+  };
+}
+
+export async function resolveSongSharePreview(
+  songId: string,
+  deps: SongShareResolverDeps = {}
+): Promise<ResolvedSongShare> {
+  const getSong = deps.getSong ?? getSongFromRedis;
+  try {
+    const stored = await getSong(songId);
+    if (stored) {
       return {
-        songInfo: { title: ytInfo.title, artist: ytInfo.artist, cover: null },
-        imageUrl: `https://i.ytimg.com/vi/${songId}/hqdefault.jpg`,
-        source: "youtube",
+        songInfo: stored,
+        imageUrl: formatMusicCoverUrl(stored.cover, 400),
+        source: "redis",
       };
+    }
+  } catch {
+    // Redis errors use the same fallback as a miss so previews still render.
+  }
+
+  const fetchYouTube = deps.getYouTubeInfo ?? getYouTubeInfo;
+  if (YOUTUBE_VIDEO_ID_REGEX.test(songId)) {
+    try {
+      const ytInfo = await fetchYouTube(songId);
+      if (ytInfo) {
+        return {
+          songInfo: {
+            title: ytInfo.title,
+            artist: ytInfo.artist,
+            cover: null,
+          },
+          imageUrl: `https://i.ytimg.com/vi/${songId}/hqdefault.jpg`,
+          source: "youtube",
+        };
+      }
+    } catch {
+      // oEmbed failure falls through to the generic app card.
     }
   }
 
   return { songInfo: null, imageUrl: null, source: "none" };
+}
+
+export type SongShareLinkPreview = {
+  url: string;
+  title: string;
+  description: string;
+  image?: string;
+  siteName: "ryOS";
+  source: SongShareSource;
+};
+
+/**
+ * Chat / API unfurl for `/karaoke/<id>` and `/ipod/<id>`.
+ * Same Redis-first resolution as the OG HTML page.
+ */
+export async function resolveSongShareLinkPreview(
+  pageUrl: string,
+  deps: SongShareResolverDeps = {}
+): Promise<SongShareLinkPreview | null> {
+  const target = parseSongShareUrl(pageUrl);
+  if (!target) return null;
+
+  let requestOrigin = "https://os.ryo.lu";
+  try {
+    requestOrigin = new URL(pageUrl).origin;
+  } catch {
+    // parseSongShareUrl already accepted this URL.
+  }
+  const publicOrigin = getAppPublicOrigin(requestOrigin);
+  const resolved = await resolveSongSharePreview(target.songId, deps);
+  const presented = presentSongShare(
+    target.app,
+    resolved,
+    getAppIconUrl(publicOrigin, target.app)
+  );
+  return {
+    url: pageUrl,
+    title: presented.title,
+    description: presented.description,
+    image: presented.imageUrl,
+    siteName: "ryOS",
+    source: resolved.source,
+  };
+}
+
+async function loadSongSharePresentation(
+  app: SongShareApp,
+  songId: string,
+  publicOrigin: string,
+  getSong?: (songId: string) => Promise<SongShareMetadata | null>
+): Promise<{
+  title: string;
+  description: string;
+  imageUrl: string;
+  source: SongShareSource;
+}> {
+  const resolved = await resolveSongSharePreview(songId, { getSong });
+  const presented = presentSongShare(
+    app,
+    resolved,
+    getAppIconUrl(publicOrigin, app)
+  );
+  return { ...presented, source: resolved.source };
 }
 
 export async function createOgShareResponse(
@@ -621,56 +778,34 @@ export async function createOgShareResponse(
 
   const ipodMatch = pathname.match(/^\/ipod\/([^/?#]+)$/);
   if (ipodMatch) {
-    const songId = resolveSongShareId(ipodMatch[1]);
-    imageUrl = getAppIconUrl(publicOrigin, "ipod");
-
-    const {
-      songInfo,
-      imageUrl: songImageUrl,
-      source,
-    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
-    if (source !== "redis") {
+    const presented = await loadSongSharePresentation(
+      "ipod",
+      resolveSongShareId(ipodMatch[1]),
+      publicOrigin,
+      options.getSong
+    );
+    imageUrl = presented.imageUrl;
+    title = presented.title;
+    description = presented.description;
+    if (presented.source !== "redis") {
       cacheMaxAge = FALLBACK_CACHE_SECONDS;
-    }
-    if (songInfo) {
-      imageUrl = songImageUrl || imageUrl;
-      if (songInfo.artist) {
-        title = `${songInfo.title} - ${songInfo.artist}`;
-        description = "Listen on ryOS iPod";
-      } else {
-        title = songInfo.title;
-        description = "Listen on ryOS iPod";
-      }
-    } else {
-      title = "Shared Song - ryOS";
-      description = "Listen on ryOS iPod";
     }
     matched = true;
   }
 
   const karaokeMatch = pathname.match(/^\/karaoke\/([^/?#]+)$/);
   if (karaokeMatch) {
-    const songId = resolveSongShareId(karaokeMatch[1]);
-    imageUrl = getAppIconUrl(publicOrigin, "karaoke");
-
-    const {
-      songInfo,
-      imageUrl: songImageUrl,
-      source,
-    } = await resolveSongShareInfo(songId, options.getSong || getSongFromRedis);
-    if (source !== "redis") {
+    const presented = await loadSongSharePresentation(
+      "karaoke",
+      resolveSongShareId(karaokeMatch[1]),
+      publicOrigin,
+      options.getSong
+    );
+    imageUrl = presented.imageUrl;
+    title = presented.title;
+    description = presented.description;
+    if (presented.source !== "redis") {
       cacheMaxAge = FALLBACK_CACHE_SECONDS;
-    }
-    if (songInfo) {
-      imageUrl = songImageUrl || imageUrl;
-      const songDisplay = songInfo.artist
-        ? `${songInfo.title} - ${songInfo.artist}`
-        : songInfo.title;
-      title = `Sing ${songDisplay} on ryOS`;
-      description = "Sing along on ryOS Karaoke";
-    } else {
-      title = "Sing on ryOS Karaoke";
-      description = "Sing along on ryOS Karaoke";
     }
     matched = true;
   }

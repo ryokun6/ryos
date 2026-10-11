@@ -485,7 +485,7 @@
 <p>ryOS provides several utility API endpoints for common operations like fetching link previews, checking iframe embeddability, sharing applets, Sync v2, and admin operations. These endpoints are implemented as Node.js API functions.</p>
 <p>Many utility endpoints now use the shared <code>apiHandler</code> + <code>request-auth</code> utilities for consistent CORS/auth/method handling.</p>
 <h2>Link Preview</h2>
-<p>Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs.</p>
+<p>Fetches metadata from URLs for rich link previews. Supports Open Graph, Twitter Cards, and standard meta tags with special handling for YouTube URLs. Karaoke and iPod share URLs (<code>/karaoke/&lt;id&gt;</code>, <code>/ipod/&lt;id&gt;</code>) resolve title, artist, and cover from the Redis song library first; YouTube oEmbed is used only when that song is missing or Redis cannot be read. The public OG page HTML-escapes those fields; this endpoint returns them as plain text.</p>
 <h3>Endpoint</h3>
 <table><thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead><tbody><tr><td>GET</td><td><code>/api/link-preview</code></td><td>Fetch URL metadata for previews</td></tr></tbody></table>
 <h3>Request</h3>
