@@ -150,13 +150,21 @@ export async function signIn(page: Page) {
   console.log("[signIn]", username, res.status);
 }
 
-/** Import a Vite module from inside the page – resolves to the same instance the app uses. */
+/**
+ * Run `fn` in the page with `import("/src/…")` resolved to the URL the app itself loaded. After an HMR update Vite
+ * serves the app `…?t=<ts>`, and importing the bare path would create a second, disconnected store instance.
+ */
 export async function store<T = unknown>(page: Page, fn: string, arg?: unknown): Promise<T> {
   return page.evaluate(
     async ({ fn, arg }) => {
+      const loaded = (p: string) => {
+        const urls = performance.getEntriesByType("resource").map((e) => e.name);
+        const hit = urls.reverse().find((u) => new URL(u).pathname === p);
+        return hit ?? p;
+      };
       // eslint-disable-next-line no-new-func
-      const f = new Function("arg", `return (async () => { ${fn} })()`);
-      return f(arg);
+      const f = new Function("arg", "__load", `return (async () => { ${fn.replace(/import\(\s*"(\/src\/[^"]+)"\s*\)/g, 'import(__load("$1"))')} })()`);
+      return f(arg, loaded);
     },
     { fn, arg }
   );

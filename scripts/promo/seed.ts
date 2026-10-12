@@ -60,6 +60,28 @@ export async function seedFitness(page: Page) {
   await page.waitForTimeout(500);
 }
 
+/**
+ * Real desktop shortcuts, the same way "Add to Desktop" does it (useDesktop / Finder): a default shortcut that the
+ * theme hides is unhidden in place, otherwise `createAlias` makes one. Icons resolve per theme via getAppIconPath.
+ */
+export async function seedDesktopShortcuts(page: Page, apps: [appId: string, name: string][] = [["dictionary", "Dictionary"], ["fitness", "Fitness"]]) {
+  await store(
+    page,
+    `const { useFilesStore } = await import("/src/stores/useFilesStore.ts");
+     // Default shortcuts are created asynchronously after boot; seeding before that would be overwritten.
+     for (let t = 0; t < 100 && !useFilesStore.getState().items["/Desktop/Dictionary"]; t++) await new Promise((r) => setTimeout(r, 200));
+     for (const [appId, name] of arg) {
+       const fs = useFilesStore.getState();
+       const existing = Object.values(fs.items).find(
+         (i) => i.status === "active" && i.path.startsWith("/Desktop/") && i.aliasType === "app" && i.aliasTarget === appId);
+       if (!existing) fs.createAlias("", name, "app", appId);
+       else if (existing.hiddenOnThemes?.length) fs.updateItemMetadata(existing.path, { hiddenOnThemes: [] });
+     }`,
+    apps
+  );
+  await page.waitForTimeout(800);
+}
+
 export async function setLanguage(page: Page, lang: string) {
   await store(page, `const m = await import("/src/stores/useLanguageStore.ts"); await m.useLanguageStore.getState().setLanguage(arg);`, lang);
   await page.waitForTimeout(800);
