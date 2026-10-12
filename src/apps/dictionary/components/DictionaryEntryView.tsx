@@ -11,12 +11,9 @@ import {
   type DictionarySource,
 } from "@/shared/dictionary";
 import type { DictionaryLogic } from "../hooks/useDictionaryLogic";
-import {
-  DictionaryExampleText,
-  DictionaryHeadword,
-  ReadingLine,
-} from "./DictionaryReading";
+import { DictionaryExampleText, DictionaryHeadword } from "./DictionaryReading";
 import { DictionaryHanziCards } from "./DictionaryHanziCards";
+import { DictionaryKanjiCards } from "./DictionaryKanjiCards";
 import { DictionarySpeakButton } from "./DictionarySpeakButton";
 import { headwordSpeechText } from "../utils/speech";
 import {
@@ -492,55 +489,7 @@ export function DictionaryEntryView({
         <DictionaryHanziCards entry={entry} l={l} />
       ) : null}
 
-      {entry.kanji?.length ? (
-        <>
-          <SectionTitle>{t("apps.dictionary.labels.kanji", { defaultValue: "Kanji" })}</SectionTitle>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {entry.kanji.map((kanji) => (
-              <div
-                key={kanji.literal}
-                className="flex gap-2 rounded border border-black/10 p-2 dark:border-white/10"
-              >
-                <span className="text-[28px] leading-none" lang="ja">
-                  {kanji.literal}
-                </span>
-                <div className="min-w-0 text-[11px]">
-                  <div className="truncate">{kanji.meanings.join(", ")}</div>
-                  {kanji.onyomi.length ? (
-                    <ReadingLine
-                      className="text-[11px]"
-                      parts={[
-                        `${t("apps.dictionary.labels.onyomi", { defaultValue: "On" })}: ${kanji.onyomi.join("、")}`,
-                      ]}
-                    />
-                  ) : null}
-                  {kanji.kunyomi.length ? (
-                    <ReadingLine
-                      className="text-[11px]"
-                      parts={[
-                        `${t("apps.dictionary.labels.kunyomi", { defaultValue: "Kun" })}: ${kanji.kunyomi.join("、")}`,
-                      ]}
-                    />
-                  ) : null}
-                  <div className="text-black/40 dark:text-white/40">
-                    {[
-                      kanji.strokeCount
-                        ? t("apps.dictionary.labels.strokes", {
-                            count: kanji.strokeCount,
-                            defaultValue: "{{count}} strokes",
-                          })
-                        : null,
-                      kanji.jlpt ? `JLPT N${kanji.jlpt}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : null}
+      <DictionaryKanjiCards entry={entry} l={l} />
 
       {isTopEntry && result?.phrases.length ? (
         <>

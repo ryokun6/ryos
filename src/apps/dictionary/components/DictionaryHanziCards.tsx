@@ -14,6 +14,8 @@ import {
   hanziCharDataLoader,
   type HanziCharDataLoader,
 } from "../utils/hanziStrokeData";
+import { cn } from "@/lib/utils";
+import { DICTIONARY_CHARACTER_CARD_BUTTON_CLASS } from "../utils/styles";
 import { ReadingLine } from "./DictionaryReading";
 
 const STROKE_SIZE = 64;
@@ -321,24 +323,39 @@ function HanziCard({
       : l.t("apps.dictionary.labels.traditionalShort");
   const variantLang = l.chineseScript === "traditional" ? "zh-CN" : "zh-TW";
 
+  const lookUp = () => l.searchFor(glyph, "zh");
+
+  // The stroke box replays; the rest of the card is one button that looks the
+  // character up, so the two targets never overlap or nest.
   return (
     <div
       data-hanzi-key={cardKey}
-      className="flex gap-2 rounded border border-black/10 p-2 dark:border-white/10"
+      className="flex overflow-hidden rounded border border-black/10 dark:border-white/10"
     >
-      {animate ? (
-        <HanziStroke
-          key={cardKey}
-          character={glyph}
-          label={l.t("apps.dictionary.ariaLabels.replayStrokes", { character: glyph })}
-          charDataLoader={charDataLoader}
-        />
-      ) : (
-        <div className={STROKE_FRAME_CLASS}>
-          <HanziGlyph character={glyph} />
-        </div>
-      )}
-      <div className="min-w-0 text-[11px]">
+      <div className="shrink-0 p-2 pr-0">
+        {animate ? (
+          <HanziStroke
+            key={cardKey}
+            character={glyph}
+            label={l.t("apps.dictionary.ariaLabels.replayStrokes", { character: glyph })}
+            charDataLoader={charDataLoader}
+          />
+        ) : (
+          <div aria-hidden className={cn(STROKE_FRAME_CLASS, "cursor-pointer")} onClick={lookUp}>
+            <HanziGlyph character={glyph} />
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        data-hanzi-lookup={glyph}
+        className={cn(
+          DICTIONARY_CHARACTER_CARD_BUTTON_CLASS,
+          "block min-w-0 flex-1 self-stretch p-2 text-[11px]"
+        )}
+        aria-label={l.t("apps.dictionary.ariaLabels.lookUpCharacter", { character: glyph })}
+        onClick={lookUp}
+      >
         {card.meaning ? <div className="line-clamp-2">{card.meaning}</div> : null}
         <ReadingLine className="text-[11px]" parts={[readings.pinyin, readings.zhuyin]} />
         {variant ? (
@@ -347,7 +364,7 @@ function HanziCard({
             <span lang={variantLang}>{variant}</span>
           </div>
         ) : null}
-      </div>
+      </button>
     </div>
   );
 }

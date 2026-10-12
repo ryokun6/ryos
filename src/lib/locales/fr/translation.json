@@ -2522,7 +2522,8 @@
         "synonymsShort": "syn."
       },
       "ariaLabels": {
-        "replayStrokes": "rejouer {{character}}"
+        "replayStrokes": "rejouer {{character}}",
+        "lookUpCharacter": "rechercher {{character}}"
       },
       "language": "Langue",
       "languages": {

@@ -2518,7 +2518,8 @@
         "synonymsShort": "유의어"
       },
       "ariaLabels": {
-        "replayStrokes": "{{character}} 필순 다시 보기"
+        "replayStrokes": "{{character}} 필순 다시 보기",
+        "lookUpCharacter": "{{character}} 찾아보기"
       },
       "language": "언어",
       "languages": {

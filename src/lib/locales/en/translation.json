@@ -4004,7 +4004,8 @@
         "similar": "Similar Words"
       },
       "ariaLabels": {
-        "replayStrokes": "replay {{character}}"
+        "replayStrokes": "replay {{character}}",
+        "lookUpCharacter": "look up {{character}}"
       },
       "ai": {
         "extrasTitle": "AI Notes",

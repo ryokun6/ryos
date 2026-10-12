@@ -2518,7 +2518,8 @@
         "synonymsShort": "同义词"
       },
       "ariaLabels": {
-        "replayStrokes": "重播{{character}}的笔顺"
+        "replayStrokes": "重播{{character}}的笔顺",
+        "lookUpCharacter": "查询{{character}}"
       },
       "language": "语言",
       "languages": {

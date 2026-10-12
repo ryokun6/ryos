@@ -2529,7 +2529,8 @@
         "synonymsShort": "син."
       },
       "ariaLabels": {
-        "replayStrokes": "повторить {{character}}"
+        "replayStrokes": "повторить {{character}}",
+        "lookUpCharacter": "найти {{character}}"
       },
       "language": "Язык",
       "languages": {
