@@ -154,6 +154,24 @@ def behind(dst, layer, x, y, clip_y):
         paste_rgba(dst, layer, x, y)
 
 
+def paste_rows(dst, layer, x, y, lo, hi):
+    """Paste a layer showing only output rows lo..hi (a caption window)."""
+    a, b = max(0, int(lo) - y), min(layer.shape[0], int(hi) - y)
+    if b > a:
+        paste_rgba(dst, layer[a:b], x, y + a)
+
+
+def roll(dst, old, old_at, new, new_at, u):
+    """Caption change in place: the old block rolls up out of the caption window while the new one rolls up into
+    it from below, on the caption curve, both cut by the window (the union of their resting boxes). No fades."""
+    (ox, oy), (nx, ny) = old_at, new_at
+    lo, hi = min(oy, ny), max(oy + old.h, ny + new.h)
+    e = ease_cap_in(min(max(u, 0.0), 1.0))
+    for cap, ax, y, off in ((old, ox, oy, -e * (hi - lo)), (new, nx, ny, (1 - e) * (hi - lo))):
+        for l, (lx, ly) in zip(cap.lines, cap.line_xy(ax, int(round(y + off)))):
+            paste_rows(dst, l, lx, ly, lo, hi)
+
+
 def behind_x(dst, layer, x, y, clip_x):
     """Paste a layer with every pixel at or right of clip_x hidden (it is behind the device). clip_x is a number or
     one x per layer row (the device's silhouette edge on that row; inf where the device doesn't reach)."""
@@ -698,6 +716,8 @@ def plan(L, dev, B, length=30):
                     cap_in_s=cap_in_s)
 
     O = dict(STYLE["open"])
+    if length == 60 and O.get("push_at_beats_60") is not None:
+        O["push_at_beats"] = O["push_at_beats_60"]
     for key in ("move_at", "push_at"):
         if O.get(f"{key}_beats") is not None:
             O[f"{key}_s"] = O[f"{key}_beats"] * B
@@ -1041,6 +1061,12 @@ def render_device(L, dev, sc, B, n):
     T = STYLE["tap"]
     t_in = sc["cap_in_s"] if sc.get("cap_in_s") is not None else sc["cap_in"] * B
     in_s = sc.get("cap_dur_s") or STYLE["caption"]["in_s"]
+    rolled = None
+    if sc.get("roll_from"):
+        # The previous step's caption is still up: change it in place instead of entering again.
+        old_cap, old_at, _ = make_caption(L, dev, sc["roll_from"], False)
+        rolled, roll_n = (old_cap, old_at), round(STYLE["caption"]["roll_s"] * FPS)
+        t_in = -in_s
     t_out = sc["cap_out"] * B if sc["cap_out"] is not None else None
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
     behind_mode = STYLE["caption_entrance"] == "behind"
@@ -1070,7 +1096,9 @@ def render_device(L, dev, sc, B, n):
             else:
                 for (tt, px, py) in taps:
                     draw_tap(f, dev, cam, (px, py), tau_shot - tt)
-            if tau >= t_in and (t_gone is None or tau < t_gone):
+            if rolled and bounds[k] + j < roll_n:
+                roll(f, rolled[0], rolled[1], cap, (cx, cy), (bounds[k] + j + 1) / roll_n)
+            elif tau >= t_in and (t_gone is None or tau < t_gone):
                 if side_cam:
                     e = ease_cap_in((tau - t_in) / in_s)
                     if t_out is not None and tau >= t_out:
@@ -1201,12 +1229,16 @@ def compose(L, B, out, music=None, music_start=0.0):
     for i, (_, _, sc) in enumerate(scenes):
         sc["index"] = i
         sc["enter_kind"], sc["enter_s"] = entrance(sc, scenes[i - 1][2] if i else None)
-    # In-place steps within an app: a caption without a zoom tucks back behind the device before the cut, so the
-    # next step's caption can slide out from behind it on the same device.
+    # In-place steps within an app: a caption still up at the cut rolls over to the next step's caption
+    # (caption.change "roll"), or tucks back behind the device so the next one can slide out again ("tuck").
     for i in range(len(scenes) - 1):
         b0, b1, sc = scenes[i]
-        if scenes[i + 1][2]["enter_kind"] == "inplace" and sc["cap_out"] is None:
-            sc["cap_out"] = (b1 - b0) - (STYLE["caption"]["out_s"] + 0.1) / B
+        nxt = scenes[i + 1][2]
+        if nxt["enter_kind"] == "inplace" and sc["cap_out"] is None:
+            if STYLE["caption"].get("change") == "roll":
+                nxt["roll_from"] = sc["caption"]
+            else:
+                sc["cap_out"] = (b1 - b0) - (STYLE["caption"]["out_s"] + 0.1) / B
     written, prev, tail = 0, None, []
     for i, (b0, b1, sc) in enumerate(scenes):
         f0 = round(b0 * B * FPS)
@@ -1280,6 +1312,6 @@ if __name__ == "__main__":
     DURATION = float(args.length)
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{'30s-v9' if args.length == 30 else '60s'}{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{'30s-v10' if args.length == 30 else '60s-v2'}{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)

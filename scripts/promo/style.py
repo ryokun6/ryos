@@ -44,6 +44,9 @@ DEFAULTS = {
         "in_ease": [0.16, 1, 0.3, 1], "out_ease": [0.7, 0, 0.84, 0],
         "out_dir": "down",          # "down": back out through the bottom of its mask, "up": out through the top
         "pad_em": 0.14,             # transparent margin around every line's glyphs; the reveal mask is that box
+        # Between in-place steps of one app: "tuck" (the caption slides back behind the device and the next slides
+        # out) or "roll" (the caption stays up and rolls over to the next one in its window, over roll_s).
+        "change": "tuck", "roll_s": 0.6,
     },
     "move": {
         "duration_s": 1.0,
@@ -90,7 +93,7 @@ DEFAULTS = {
     # move_at_beats / push_at_beats, when set, put those two hits on the music grid instead (they win over *_s).
     "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3,
              "v_title_push": False, "title_in_beats": 0.5, "word_stagger_beats": 0.25, "word_in_s": 0.3,
-             "push_at_s": 1.4, "move_at_beats": None, "push_at_beats": None},
+             "push_at_s": 1.4, "move_at_beats": None, "push_at_beats": None, "push_at_beats_60": None},
     "tap": {
         "phone": "dot", "mac": "dot",   # "dot": grey press dot; phone "ios": hover disc + blue ring; mac "cursor"
         # iOS indicator, in px of a 1080p frame whose iPhone is `ref_device_h` tall (scaled to the device on screen).
