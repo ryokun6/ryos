@@ -3,10 +3,15 @@ import { mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 export const BASE = process.env.RYOS_URL || "http://localhost:5173";
-/** `PROMO_DEVICE=phone` captures the mobile layout (390x844 CSS at 3x) for the vertical cut. */
+/**
+ * Viewports match the screens of the bezels build.py frames them in:
+ * desktop = MacBook Air 13" (1280x832 CSS at 2x = 2560x1664), `PROMO_DEVICE=phone` = iPhone 18 Pro (402x874 at 3x = 1206x2622).
+ */
 export const DEVICE = process.env.PROMO_DEVICE === "phone" ? "phone" : "desktop";
-export const VIEWPORT = DEVICE === "phone" ? { width: 390, height: 844 } : { width: 1440, height: 810 };
+export const VIEWPORT = DEVICE === "phone" ? { width: 402, height: 874 } : { width: 1280, height: 832 };
 export const DSF = DEVICE === "phone" ? 3 : 2;
+/** Status-bar inset kept clear of the Dynamic Island, like the ryOS iOS shell's env(safe-area-inset-top). */
+export const PHONE_SAFE_TOP = 62;
 /** Scratch dir for captures and renders (gitignored). */
 export const WORK_DIR = process.env.PROMO_WORK_DIR || path.resolve(import.meta.dir, "../../tmp/promo");
 
@@ -34,7 +39,7 @@ export async function launch(): Promise<{ browser: Browser; ctx: BrowserContext;
   const ctx = await chromium.launchPersistentContext(profile, {
     executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
     headless: false,
-    ...(DEVICE === "phone" ? { viewport: VIEWPORT, deviceScaleFactor: DSF } : { viewport: null }),
+    ...(DEVICE === "phone" ? { viewport: VIEWPORT, deviceScaleFactor: DSF, hasTouch: true } : { viewport: null }),
     env: { ...process.env, DISPLAY: X_DISPLAY },
     args: [
       "--kiosk",
@@ -76,6 +81,15 @@ async function launchHeadless(): Promise<{ browser: Browser; ctx: BrowserContext
 
 /** Boot ryOS at `/`, quiet the desktop, sign in, optionally set language. */
 export async function boot(page: Page, opts: { language?: string } = {}) {
+  if (DEVICE === "phone") {
+    await page.addInitScript((top) => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const s = document.createElement("style");
+        s.textContent = `html { --menubar-safe-top: ${top}px !important; }`;
+        document.head.appendChild(s);
+      });
+    }, PHONE_SAFE_TOP);
+  }
   await page.addInitScript((lang) => {
     try {
       sessionStorage.removeItem("ryos:nextBootMessage");
@@ -165,6 +179,27 @@ export async function placeWindow(page: Page, box: { x: number; y: number; w: nu
   await page.mouse.move(sx + (box.x + box.w - (b.x + b.width)), sy + (box.y + box.h - (b.y + b.height)), { steps: 10 });
   await page.mouse.up();
   await page.mouse.move(VIEWPORT.width - 5, VIEWPORT.height / 2);
+  await page.waitForTimeout(500);
+}
+
+/** Place the newest window centred on the screen (both axes) and log how far off the result is. */
+export async function centerWindow(page: Page, w: number, h: number) {
+  await placeWindow(page, { x: Math.round((VIEWPORT.width - w) / 2), y: Math.round((VIEWPORT.height - h) / 2), w, h });
+  const b = (await page.locator("[data-window-instance-id]").last().boundingBox())!;
+  const dx = b.x + b.width / 2 - VIEWPORT.width / 2;
+  const dy = b.y + b.height / 2 - VIEWPORT.height / 2;
+  console.log(`[window] ${Math.round(b.width)}x${Math.round(b.height)} at ${Math.round(b.x)},${Math.round(b.y)} (centre off by ${dx.toFixed(1)}, ${dy.toFixed(1)})`);
+}
+
+/** The mobile layout has no resize handle: grow the newest window to fill the space between the menubar and the dock. */
+export async function fillPhoneWindow(page: Page, height = 700) {
+  const id = await page.locator("[data-window-instance-id]").last().getAttribute("data-window-instance-id");
+  await store(
+    page,
+    `const s = (await import("/src/stores/useAppStore.ts")).useAppStore.getState();
+     s.updateInstanceWindowState(arg.id, s.instances[arg.id].position, { width: ${VIEWPORT.width}, height: arg.height });`,
+    { id, height }
+  );
   await page.waitForTimeout(500);
 }
 

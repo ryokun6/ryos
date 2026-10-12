@@ -1,12 +1,13 @@
 import { mkdir } from "node:fs/promises";
-import { boot, DEVICE, launch, launchApp, placeWindow, sleep, WORK_DIR } from "./lib";
+import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, sleep, WORK_DIR } from "./lib";
 // Reference crop of the Dictionary welcome-screen sample chips (per device), used by check_welcome.py.
 await mkdir(`${WORK_DIR}/rec`, { recursive: true });
 const { browser, page } = await launch();
 await boot(page);
 await launchApp(page, "dictionary");
 await sleep(800);
-if (DEVICE === "desktop") await placeWindow(page, { x: 150, y: 36, w: 1140, h: 690 });
+if (DEVICE === "phone") await fillPhoneWindow(page);
+else await centerWindow(page, 1100, 676);
 await sleep(1000);
 const chip = page.getByRole("button", { name: "serendipity", exact: true }).first();
 const row = chip.locator("xpath=..");

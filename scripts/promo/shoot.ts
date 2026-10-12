@@ -1,12 +1,13 @@
 /**
  * Capture real ryOS footage for the Dictionary + Fitness promo.
- *   bun scripts/promo/shoot.ts dictionary|fitness
- *   PROMO_DEVICE=phone bun scripts/promo/shoot.ts dictionary|fitness   # mobile layout for the vertical cut
+ *   bun scripts/promo/shoot.ts desktop|dictionary|fitness
+ *   PROMO_DEVICE=phone bun scripts/promo/shoot.ts desktop|dictionary|fitness   # mobile layout for the vertical cut
+ * `desktop` is a few seconds of the idle ryOS desktop for the opening shot.
  * Writes capture.mkv + marks.json to $PROMO_WORK_DIR/rec/<device>-<session>/ (default tmp/promo).
  * Marks named `tap:*` carry the clicked element's box (CSS px) for tap indicators.
  */
 import type { Locator, Page } from "playwright";
-import { boot, DEVICE, launch, launchApp, placeWindow, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
+import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
 import { fitnessView, seedFitness } from "./seed";
 
 const session = process.argv[2] ?? "dictionary";
@@ -28,7 +29,8 @@ async function retype(page: Page, input: Locator, text: string, delay = 95) {
 async function dictionary(page: Page) {
   await launchApp(page, "dictionary");
   await sleep(1000);
-  if (!phone) await placeWindow(page, { x: 150, y: 36, w: 1140, h: 690 });
+  if (phone) await fillPhoneWindow(page);
+  else await centerWindow(page, 1100, 676);
   const input = page.getByPlaceholder("Look up a word");
   const win = page.locator("[data-window-instance-id]").last();
   await retype(page, input, "serendipity", 20);
@@ -99,7 +101,8 @@ async function fitness(page: Page) {
   await seedFitness(page);
   await launchApp(page, "fitness");
   await sleep(1000);
-  if (!phone) await placeWindow(page, { x: 390, y: 34, w: 660, h: 700 });
+  if (phone) await fillPhoneWindow(page);
+  else await centerWindow(page, 660, 676);
   await fitnessView(page, "food");
   await sleep(1500);
   const win = page.locator("[data-window-instance-id]").last();
@@ -145,10 +148,19 @@ async function fitness(page: Page) {
   await rec.stop();
 }
 
+async function desktop() {
+  await sleep(1500);
+  const rec = new X11Recorder(dir);
+  await rec.start();
+  await sleep(4500);
+  await rec.stop();
+}
+
 const { browser, page } = await launch();
 await boot(page);
 await signIn(page);
-if (session === "dictionary") await dictionary(page);
+if (session === "desktop") await desktop();
+else if (session === "dictionary") await dictionary(page);
 else await fitness(page);
 await page.screenshot({ path: `${dir}-last.png`, timeout: 5000 }).catch(() => {});
 await browser.close();
