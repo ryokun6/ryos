@@ -652,7 +652,14 @@ def plan(L, dev, B):
                     cap_in_s=cap_in_s)
 
     O = STYLE["open"]
-    if O["from_center"]:
+    if L["key"] == "v" and O.get("v_title_push"):
+        # The title fills the screen on its own; then the phone pushes up from below and pushes it out.
+        s0, fx, fy = rest
+        below = (s0, fx, fy - (L["H"] + 8 - STYLE["layout"]["v"]["device_top"]) / s0)
+        opening = dict(kind="device", caption="New apps on ryOS", title=True, cap_in=0, cap_out=None, cap_in_s=None,
+                       title_push=True, shots=[shot(home, 0, home.t("start", 0.3), cam=below,
+                                                    moves=[(O["push_at_s"], rest, STYLE["move"]["duration_s"])])])
+    elif O["from_center"]:
         # Device already on screen, centred; it moves up to rest to make room as the title slides out from behind it.
         s0, fx, _ = rest
         centred = (s0, fx, (dev.bbox[1] + dev.bbox[3]) / 2)
@@ -687,7 +694,7 @@ def make_caption(L, dev, text, title):
     refuses layouts where the block would leave the frame or overlap the resting device."""
     lay = STYLE["layout"][L["key"]]
     size = lay["title_size"] if title else lay["caption_size"]
-    if lay["caption_anchor"] == "side":
+    if (lay.get("title_anchor") or lay["caption_anchor"] if title else lay["caption_anchor"]) == "side":
         return side_caption(L, dev, text, size, lay)
     cap = Caption(text, size, min(lay["caption_max_w"], L["W"] - 2 * lay["margin"]), lay["line_height"])
     dev_bottom = dev.out_box(dev.rest)[3]
@@ -714,8 +721,14 @@ def side_caption(L, dev, text, size, lay):
     ink_right = x + cap.w - 2 * cap.pad
     left, right = ink_right + lay["device_gap"], W - x
     bx0, by0, bx1, by1 = dev.bbox
-    s = min((right - left) / (bx1 - bx0), lay["side_device_h_max"] / (by1 - by0), S_MAX)
-    cam = (s, bx1 - (right - W / 2) / s, (by0 + by1) / 2)
+    if lay.get("side_scale") == "rest":
+        # Translate only: the device keeps its wide-shot size, its left edge device_gap px right of the block
+        # (it may run off the right edge of the frame).
+        s = dev.rest[0]
+        cam = (s, bx0 + (W / 2 - left) / s, (by0 + by1) / 2)
+    else:
+        s = min((right - left) / (bx1 - bx0), lay["side_device_h_max"] / (by1 - by0), S_MAX)
+        cam = (s, bx1 - (right - W / 2) / s, (by0 + by1) / 2)
     if y < lay["margin"] or y + cap.h > H - lay["margin"]:
         raise ValueError(f"caption {text!r} is too tall for the side layout – adjust layout.{L['key']}")
     return cap, (x, y), cam
@@ -755,6 +768,8 @@ def entrance(sc, prev_sc):
         return "wipe_in", P["in_s"]
     if P["kind"] == "wipe" and prev_sc["kind"] == "icon":
         return "wipe_out", P["out_s"]
+    if STYLE["transition"]["kind"] == "inplace" and sc["kind"] == prev_sc["kind"] == "device":
+        return "inplace", 0.0
     if STYLE["transition"]["kind"] == "push":
         return "push", STYLE["transition"]["duration_s"]
     return ("push", STYLE["push_s"]) if sc.get("enter") == "push" else (None, 0.0)
@@ -860,7 +875,31 @@ def render_end(L, sc, B, n, prev=None, focus=None):
         yield f
 
 
+def render_title_push(L, dev, sc, n):
+    """Hero title alone (mask reveal), then the phone pushes up from below and carries the title up and out."""
+    lay = STYLE["layout"][L["key"]]
+    cap = Caption(sc["caption"], lay["hero_size"], L["W"] - 2 * lay["margin"], lay["line_height"])
+    cx, y0 = L["W"] / 2, int(round(L["H"] / 2 - cap.h / 2))
+    s = sc["shots"][0]
+    top0 = dev.out_box(s["cam"])[1]
+    t_in, in_s = STYLE["open"]["title_in_s"], STYLE["caption"]["in_s"]
+    for j, fr in enumerate(s["take"].frames(s["src"], s["rate"], n)):
+        tau = j / FPS
+        cam = cam_at(s, tau)
+        sc["last_cam"] = cam
+        f = dev.render(fr, cam)
+        moved = top0 - dev.out_box(cam)[1]
+        y = int(round(y0 - moved))
+        if tau >= t_in and y + cap.h > 0:
+            cap.draw(f, cx, y, tau - t_in)
+            check_caption(L, cap, cx, y, None, tau + sc["t0"], tau - t_in >= in_s and moved < 0.5)
+        yield f
+
+
 def render_device(L, dev, sc, B, n):
+    if sc.get("title_push"):
+        yield from render_title_push(L, dev, sc, n)
+        return
     cap, (cx, cy), side_cam = make_caption(L, dev, sc["caption"], sc["title"])
     T = STYLE["tap"]
     t_in = sc["cap_in_s"] if sc.get("cap_in_s") is not None else sc["cap_in"] * B
@@ -974,6 +1013,12 @@ def compose(L, B, out, music=None, music_start=0.0):
     for i, (_, _, sc) in enumerate(scenes):
         sc["index"] = i
         sc["enter_kind"], sc["enter_s"] = entrance(sc, scenes[i - 1][2] if i else None)
+    # In-place steps within an app: a caption without a zoom tucks back behind the device before the cut, so the
+    # next step's caption can slide out from behind it on the same device.
+    for i in range(len(scenes) - 1):
+        b0, b1, sc = scenes[i]
+        if scenes[i + 1][2]["enter_kind"] == "inplace" and sc["cap_out"] is None:
+            sc["cap_out"] = (b1 - b0) - (STYLE["caption"]["out_s"] + 0.1) / B
     written, prev, tail = 0, None, []
     for i, (b0, b1, sc) in enumerate(scenes):
         f0 = round(b0 * B * FPS)
@@ -986,6 +1031,13 @@ def compose(L, B, out, music=None, music_start=0.0):
         extra = round(enter_s(nxt) * FPS) if nxt is not None else 0
         enter_n = round(enter_s(sc) * FPS)
         trans = TRANSITIONS.get(sc["enter_kind"])
+        last = scenes[i - 1][2].get("last_cam") if i else None
+        if sc["enter_kind"] == "inplace" and last and max(abs(a - b) for a, b in zip(last, sc["shots"][0]["cam"])) > 1e-3:
+            # Continuous camera: start where the last step ended (e.g. zoomed in) and ease back to this step's framing.
+            first = sc["shots"][0]
+            first["moves"].insert(0, (0.0, first["cam"]))
+            first["cam"] = last
+            sc["cap_in_s"] = max(sc.get("cap_in_s") or 0.0, STYLE["move"]["duration_s"] - STYLE["caption"]["in_s"] + 0.1)
         focus = None
         if kind == "end" and i and scenes[i - 1][2].get("last_cam"):
             sx, sy, sw, sh = dev.screen
@@ -1036,6 +1088,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v6{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v7{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
