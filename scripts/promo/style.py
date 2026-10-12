@@ -35,7 +35,9 @@ DEFAULTS = {
               "title_anchor": None, "side_scale": "fit"},
         "v": {"device_h": 1440, "device_top": 150, "caption_anchor": "band", "caption_gap": 48,
               "caption_size": 68, "title_size": 76, "caption_max_w": 920, "line_height": 1.12, "margin": 60,
-              "icon": 300, "name_size": 90, "url_size": 72, "hero_size": 210},
+              "icon": 300, "name_size": 90, "url_size": 72,
+              # Vertical hero title: one word per line, left-aligned at hero_x_frac x width.
+              "hero_size": 300, "hero_x_frac": 0.07, "hero_line_height": 0.98},
     },
     "caption": {
         "in_s": 0.4, "out_s": 0.3, "stagger_s": 0.06,
@@ -74,10 +76,12 @@ DEFAULTS = {
     "transition": {"kind": "cut", "duration_s": 1.0},
     # Opening: start with the device centred and move it to rest at `move_at_s` over `move_s`; the title slides
     # out from behind it at the same time and settles after `title_s`. from_center=False keeps v4's static opening.
-    # v_title_push (vertical): the hero title (layout.v.hero_size) reveals alone at title_in_s, then at push_at_s
-    # the phone pushes up from below the frame and carries the title up and out.
+    # v_title_push (vertical): the hero title (layout.v.hero_*) reveals alone, word by word – the first word at
+    # title_in_beats, then one every word_stagger_beats, each sliding up in its mask over word_in_s – then at
+    # push_at_s the phone pushes up from below the frame and carries the title up and out.
     "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3,
-             "v_title_push": False, "title_in_s": 0.15, "push_at_s": 1.4},
+             "v_title_push": False, "title_in_beats": 0.5, "word_stagger_beats": 0.25, "word_in_s": 0.3,
+             "push_at_s": 1.4},
     "tap": {
         "phone": "dot", "mac": "dot",   # "dot": grey press dot; phone "ios": hover disc + blue ring; mac "cursor"
         # iOS indicator, in px of a 1080p frame whose iPhone is `ref_device_h` tall (scaled to the device on screen).
