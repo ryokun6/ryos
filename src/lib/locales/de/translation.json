@@ -2518,7 +2518,8 @@
         "synonymsShort": "Syn."
       },
       "ariaLabels": {
-        "replayStrokes": "{{character}} erneut abspielen"
+        "replayStrokes": "{{character}} erneut abspielen",
+        "lookUpCharacter": "{{character}} nachschlagen"
       },
       "language": "Sprache",
       "languages": {

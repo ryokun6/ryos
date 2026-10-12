@@ -2518,7 +2518,8 @@
         "synonymsShort": "同義"
       },
       "ariaLabels": {
-        "replayStrokes": "重播{{character}}的筆順"
+        "replayStrokes": "重播{{character}}的筆順",
+        "lookUpCharacter": "查詢{{character}}"
       },
       "language": "語言",
       "languages": {

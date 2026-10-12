@@ -33,6 +33,72 @@ export function shortHanziMeaning(entry: DictionaryEntry): string | undefined {
     : clause;
 }
 
+const VARIANT_OF_RE = /(?:^|\()(?:old |archaic )?variant of ([^\s[|),]+)/gi;
+
+function isVariantRow(entry: DictionaryEntry): boolean {
+  return entry.senses.some((sense) =>
+    sense.glosses.some((gloss) => gloss.trim().match(VARIANT_OF_RE) !== null)
+  );
+}
+
+/**
+ * A row whose traditional form is only a variant spelling of its own
+ * simplified character (荳 豆 "variant of 豆", 攷 考 "variant of 考"). The
+ * standard traditional form is the simplified character itself.
+ */
+export function isTraditionalVariantRow(entry: DictionaryEntry): boolean {
+  const simplified = entry.simplified ?? entry.headword;
+  const traditional = entry.traditional ?? simplified;
+  if (traditional === simplified) return false;
+  return entry.senses.some((sense) =>
+    sense.glosses.some((gloss) =>
+      Array.from(gloss.matchAll(VARIANT_OF_RE)).some((match) => match[1] === simplified)
+    )
+  );
+}
+
+function tonedPinyinKey(syllable: string): string {
+  return syllable.trim().toLowerCase().replaceAll("u:", "v").replaceAll("ü", "v");
+}
+
+/** Neutral tone (le5) or no tone digit: the word's syllable, not the character's. */
+function isNeutralToneSyllable(syllable: string): boolean {
+  return !/[1-4]$/.test(syllable.trim());
+}
+
+/**
+ * Best single-character row for the reading and gloss. Rows spelled exactly
+ * like the word come first, so 豆 in 豆腐 uses 豆/豆 rather than the 荳/豆
+ * variant row; then the same toned syllable (hao4 in 爱好), the same
+ * syllable in any tone (fu5 → fu3 in 豆腐), then non-variant glosses.
+ */
+function pickHanziRow(
+  hits: DictionaryEntry[],
+  simp: string,
+  trad: string,
+  token: string | undefined
+): DictionaryEntry | undefined {
+  const tokenKey = token ? normalizePinyinSearchKey(token) : "";
+  const tonedKey = token ? tonedPinyinKey(token) : "";
+  let best: DictionaryEntry | undefined;
+  let bestScore = -1;
+  for (const hit of hits) {
+    const hitSimplified = hit.simplified ?? hit.headword;
+    const hitTraditional = hit.traditional ?? hitSimplified;
+    const hitReading = hit.reading?.trim() ?? "";
+    let score = 0;
+    if (hitSimplified === simp && hitTraditional === trad) score += 8;
+    if (tonedKey && hitReading && tonedPinyinKey(hitReading) === tonedKey) score += 4;
+    if (tokenKey && hitReading && normalizePinyinSearchKey(hitReading) === tokenKey) score += 2;
+    if (!isVariantRow(hit)) score += 1;
+    if (score > bestScore) {
+      best = hit;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 function singleCharacterHits(index: DictionaryIndex, char: string): DictionaryEntry[] {
   if (!isHanChar(char)) return [];
   return index.lookupHeadword(char).filter((entry) => {
@@ -89,19 +155,25 @@ export function attachChineseHanzi(entries: DictionaryEntry[], index: Dictionary
       }
 
       const token = alignedReading ? tokens[i] : undefined;
-      const tokenKey = token ? normalizePinyinSearchKey(token) : "";
-      const matched = tokenKey
-        ? unique.find((hit) => hit.reading && normalizePinyinSearchKey(hit.reading) === tokenKey)
-        : undefined;
-      const chosen = matched ?? unique[0];
-      const chosenSimplified = chosen?.simplified ?? chosen?.headword;
-      const chosenTraditional = chosen?.traditional ?? chosenSimplified;
+      const chosen = pickHanziRow(unique, simp, trad, token);
+      const rowSyllable = chosen?.reading?.trim().split(/\s+/)[0];
+      // The glyphs come from the word, never the row: a row's other script can
+      // be a variant (荳 for 豆, 裡 for 里 in 公里) that the word does not use.
       const card: DictionaryHanziInfo = {
-        simplified: isHanChar(chosenSimplified) ? chosenSimplified : simp,
-        traditional: isHanChar(chosenTraditional) ? chosenTraditional : trad,
+        simplified: isHanChar(simp) ? simp : trad,
+        traditional: isHanChar(trad) ? trad : simp,
       };
-      if (token) card.reading = token;
-      else if (chosen?.reading) card.reading = chosen.reading.split(/\s+/)[0];
+      // 行 keeps the word's háng in 银行, but 腐 in 豆腐 (fu5) is fǔ on its own.
+      const ownReading =
+        token &&
+        rowSyllable &&
+        isNeutralToneSyllable(token) &&
+        normalizePinyinSearchKey(rowSyllable) === normalizePinyinSearchKey(token)
+          ? rowSyllable
+          : undefined;
+      if (ownReading) card.reading = ownReading;
+      else if (token) card.reading = token;
+      else if (rowSyllable) card.reading = rowSyllable;
       const meaning = chosen ? shortHanziMeaning(chosen) : undefined;
       if (meaning) card.meaning = meaning;
       cards.push(card);

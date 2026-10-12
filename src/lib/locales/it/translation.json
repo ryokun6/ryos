@@ -2522,7 +2522,8 @@
         "synonymsShort": "sin."
       },
       "ariaLabels": {
-        "replayStrokes": "riproduci {{character}}"
+        "replayStrokes": "riproduci {{character}}",
+        "lookUpCharacter": "cerca {{character}}"
       },
       "language": "Lingua",
       "languages": {

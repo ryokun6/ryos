@@ -14,6 +14,7 @@ import {
   fetchDatasetBytes,
   type DatasetId,
 } from "./_dataset-sources.js";
+import { isTraditionalVariantRow } from "./_hanzi.js";
 import { DictionaryIndex } from "./_index.js";
 import {
   indexSnapshotPath,
@@ -86,7 +87,9 @@ export function buildChineseIndex(entries: Iterable<DictionaryEntry>): Dictionar
       let rank = 0;
       if (entry.reading && /^[A-Z]/.test(entry.reading)) rank += 2;
       const gloss = entry.senses[0]?.glosses[0] ?? "";
-      if (/^(variant of|old variant of|surname |see )/i.test(gloss)) rank += 1;
+      if (/^(variant of|old variant of|surname |see )/i.test(gloss) || isTraditionalVariantRow(entry)) {
+        rank += 1;
+      }
       return rank;
     },
   });

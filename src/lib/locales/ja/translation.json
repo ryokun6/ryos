@@ -2518,7 +2518,8 @@
         "synonymsShort": "同義語"
       },
       "ariaLabels": {
-        "replayStrokes": "{{character}}の筆順を再生"
+        "replayStrokes": "{{character}}の筆順を再生",
+        "lookUpCharacter": "{{character}}を調べる"
       },
       "language": "言語",
       "languages": {

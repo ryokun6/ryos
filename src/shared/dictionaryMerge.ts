@@ -223,6 +223,10 @@ function discriminatorsCompatible(a: DictionaryEntry, b: DictionaryEntry): boole
   const hanjaA = fieldKey(a.hanja, false);
   const hanjaB = fieldKey(b.hanja, false);
   if (hanjaA && hanjaB && hanjaA !== hanjaB) return false;
+  // Same simplified headword, different words: 乾 (dry) vs 干 (to concern), 豆 vs its variant 荳.
+  const traditionalA = fieldKey(a.traditional, false);
+  const traditionalB = fieldKey(b.traditional, false);
+  if (traditionalA && traditionalB && traditionalA !== traditionalB) return false;
   const readingA = fieldKey(a.reading, true);
   const readingB = fieldKey(b.reading, true);
   if (readingA && readingB && readingA !== readingB) return false;
