@@ -29,10 +29,13 @@ DEFAULTS = {
               "caption_size": 56, "title_size": 64, "caption_max_w": 1500, "line_height": 1.12, "margin": 40,
               "icon": 256, "name_size": 80, "url_size": 64,
               "text_x_frac": 0.063, "block_w_frac": 0.49, "max_chars": None, "device_gap": 133,
-              "side_device_h_max": 700, "icon_align": "center"},
+              "side_device_h_max": 700, "icon_align": "center",
+              # title_anchor: layout for title captions only (None = caption_anchor). side_scale: "fit" shrinks
+              # the device into the space beside the text, "rest" keeps its wide-shot size and only translates it.
+              "title_anchor": None, "side_scale": "fit"},
         "v": {"device_h": 1440, "device_top": 150, "caption_anchor": "band", "caption_gap": 48,
               "caption_size": 68, "title_size": 76, "caption_max_w": 920, "line_height": 1.12, "margin": 60,
-              "icon": 300, "name_size": 90, "url_size": 72},
+              "icon": 300, "name_size": 90, "url_size": 72, "hero_size": 210},
     },
     "caption": {
         "in_s": 0.4, "out_s": 0.3, "stagger_s": 0.06,
@@ -66,10 +69,15 @@ DEFAULTS = {
     "shadow": True,                 # soft contact shadow under the device
     "trailing_period": True,        # captions end with "."
     "caption_entrance": "mask",     # "mask": rise inside the line's own box; "behind": slide out from behind the device
-    "transition": {"kind": "cut", "duration_s": 1.0},   # between scenes: "cut" or "push" (device slide on move.ease)
+    # Between scenes: "cut", "push" (device slide on move.ease) or "inplace" (steps within an app stay on the same
+    # device: the camera eases back from the last step's zoom and the captions change under it).
+    "transition": {"kind": "cut", "duration_s": 1.0},
     # Opening: start with the device centred and move it to rest at `move_at_s` over `move_s`; the title slides
     # out from behind it at the same time and settles after `title_s`. from_center=False keeps v4's static opening.
-    "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3},
+    # v_title_push (vertical): the hero title (layout.v.hero_size) reveals alone at title_in_s, then at push_at_s
+    # the phone pushes up from below the frame and carries the title up and out.
+    "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3,
+             "v_title_push": False, "title_in_s": 0.15, "push_at_s": 1.4},
     "tap": {
         "phone": "dot", "mac": "dot",   # "dot": grey press dot; phone "ios": hover disc + blue ring; mac "cursor"
         # iOS indicator, in px of a 1080p frame whose iPhone is `ref_device_h` tall (scaled to the device on screen).
