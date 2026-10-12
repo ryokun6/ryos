@@ -30,7 +30,7 @@ async function dictionary(page: Page) {
   await launchApp(page, "dictionary");
   await sleep(1000);
   if (phone) await fillPhoneWindow(page);
-  else await centerWindow(page, 1100, 676);
+  else await centerWindow(page, 700, 676);
   const input = page.getByPlaceholder("Look up a word");
   const win = page.locator("[data-window-instance-id]").last();
   await retype(page, input, "serendipity", 20);

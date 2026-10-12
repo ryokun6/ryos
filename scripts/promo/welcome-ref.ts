@@ -7,7 +7,7 @@ await boot(page);
 await launchApp(page, "dictionary");
 await sleep(800);
 if (DEVICE === "phone") await fillPhoneWindow(page);
-else await centerWindow(page, 1100, 676);
+else await centerWindow(page, 700, 676);
 await sleep(1000);
 const chip = page.getByRole("button", { name: "serendipity", exact: true }).first();
 const row = chip.locator("xpath=..");

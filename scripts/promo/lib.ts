@@ -10,8 +10,8 @@ export const BASE = process.env.RYOS_URL || "http://localhost:5173";
 export const DEVICE = process.env.PROMO_DEVICE === "phone" ? "phone" : "desktop";
 export const VIEWPORT = DEVICE === "phone" ? { width: 402, height: 874 } : { width: 1280, height: 832 };
 export const DSF = DEVICE === "phone" ? 3 : 2;
-/** Status-bar inset kept clear of the Dynamic Island, like the ryOS iOS shell's env(safe-area-inset-top). */
-export const PHONE_SAFE_TOP = 62;
+/** iPhone 18 Pro portrait safe-area insets (CSS px): status bar / Dynamic Island on top, home indicator below. */
+export const PHONE_SAFE_AREA = { top: 62, bottom: 34, left: 0, right: 0 };
 /** Scratch dir for captures and renders (gitignored). */
 export const WORK_DIR = process.env.PROMO_WORK_DIR || path.resolve(import.meta.dir, "../../tmp/promo");
 
@@ -81,15 +81,7 @@ async function launchHeadless(): Promise<{ browser: Browser; ctx: BrowserContext
 
 /** Boot ryOS at `/`, quiet the desktop, sign in, optionally set language. */
 export async function boot(page: Page, opts: { language?: string } = {}) {
-  if (DEVICE === "phone") {
-    await page.addInitScript((top) => {
-      document.addEventListener("DOMContentLoaded", () => {
-        const s = document.createElement("style");
-        s.textContent = `html { --menubar-safe-top: ${top}px !important; }`;
-        document.head.appendChild(s);
-      });
-    }, PHONE_SAFE_TOP);
-  }
+  if (DEVICE === "phone") await emulateIosShell(page);
   await page.addInitScript((lang) => {
     try {
       sessionStorage.removeItem("ryos:nextBootMessage");
@@ -123,6 +115,21 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
   }, opts.language ?? "en");
   await page.goto(`${BASE}/?_ryo=1`);
   await page.waitForTimeout(5000);
+}
+
+/**
+ * Look like ryOS in its iOS app on an iPhone 18 Pro: CDP makes env(safe-area-inset-*) report the device's insets,
+ * and <html data-ios-shell> is the marker the app sets so ryOS consumes the top inset (the browser leaves it at 0).
+ * Only the attribute is set – no window.ryosDesktop bridge, so no native calls are attempted.
+ */
+async function emulateIosShell(page: Page) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setSafeAreaInsetsOverride" as never, { insets: PHONE_SAFE_AREA } as never);
+  await page.addInitScript(() => {
+    const mark = () => document.documentElement?.setAttribute("data-ios-shell", "");
+    if (document.documentElement) mark();
+    else new MutationObserver((_, o) => document.documentElement && (mark(), o.disconnect())).observe(document, { childList: true });
+  });
 }
 
 export async function signIn(page: Page) {
@@ -192,14 +199,19 @@ export async function centerWindow(page: Page, w: number, h: number) {
 }
 
 /** The mobile layout has no resize handle: grow the newest window to fill the space between the menubar and the dock. */
-export async function fillPhoneWindow(page: Page, height = 700) {
-  const id = await page.locator("[data-window-instance-id]").last().getAttribute("data-window-instance-id");
+export async function fillPhoneWindow(page: Page, gap = 8) {
+  const win = page.locator("[data-window-instance-id]").last();
+  const id = await win.getAttribute("data-window-instance-id");
+  const top = (await win.boundingBox())!.y;
+  const dockTop = (await page.locator("[data-dock-placement]").first().boundingBox())?.y ?? VIEWPORT.height - 100;
+  const height = Math.floor(dockTop - gap - top);
   await store(
     page,
     `const s = (await import("/src/stores/useAppStore.ts")).useAppStore.getState();
      s.updateInstanceWindowState(arg.id, s.instances[arg.id].position, { width: ${VIEWPORT.width}, height: arg.height });`,
     { id, height }
   );
+  console.log(`[window] ${VIEWPORT.width}x${height} at y ${Math.round(top)}, dock top ${Math.round(dockTop)}`);
   await page.waitForTimeout(500);
 }
 
