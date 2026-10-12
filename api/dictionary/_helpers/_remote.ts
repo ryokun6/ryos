@@ -25,7 +25,7 @@ export const LOOKUP_NOT_FOUND_TTL_SECONDS = 60 * 60 * 6;
 export const DICTIONARY_AI_CACHE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const USER_AGENT = "ryOS-dictionary/1.0 (+https://os.ryo.lu)";
 /** Bump when parser output changes so cached entries are re-parsed. */
-const PARSER_CACHE_VERSION = "v5";
+const PARSER_CACHE_VERSION = "v6";
 
 export type RemoteCacheOutcome = "hit" | "miss" | "timeout";
 
