@@ -54,9 +54,10 @@ async function dictionary(page: Page) {
   await cards.first().evaluate((el) => el.scrollIntoView({ block: "center", behavior: "smooth" }));
   await sleep(900);
   rec.mark("cards", union([await box(cards.first()), await box(cards.last())]));
-  await rec.tap(cards.first(), "hanzi1");
+  // Only the stroke box replays; the rest of a hanzi card looks that character up.
+  await rec.tap(page.getByRole("button", { name: "replay 豆", exact: true }), "hanzi1");
   await sleep(120);
-  await cards.last().evaluate((el) => (el as HTMLElement).click());
+  await page.getByRole("button", { name: "replay 腐", exact: true }).first().click();
   rec.mark("hanzi-start", union([await box(cards.first()), await box(cards.last())]));
   await sleep(5200);
   rec.mark("hanzi-end");

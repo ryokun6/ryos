@@ -390,7 +390,7 @@ def compose(L, B, out, music=None, music_start=0.0):
     tmp_video = out + ".video.mp4"
     enc = subprocess.Popen(
         ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{W}x{H}", "-r", str(FPS),
-         "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", os.environ.get("PROMO_CRF", "20"),
+         "-i", "-", "-c:v", "libx264", "-preset", "slow", "-crf", os.environ.get("PROMO_CRF", "16"),
          "-tune", "animation", "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp_video],
         stdin=subprocess.PIPE)
     chrome = draw_device(L)
