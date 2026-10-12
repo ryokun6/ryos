@@ -683,7 +683,10 @@ def plan(L, dev, B):
         return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
                     cap_in_s=cap_in_s)
 
-    O = STYLE["open"]
+    O = dict(STYLE["open"])
+    for key in ("move_at", "push_at"):
+        if O.get(f"{key}_beats") is not None:
+            O[f"{key}_s"] = O[f"{key}_beats"] * B
     if L["key"] == "v" and O.get("v_title_push"):
         # The title fills the screen on its own; then the phone pushes up from below and pushes it out.
         s0, fx, fy = rest
