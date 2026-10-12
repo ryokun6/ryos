@@ -52,11 +52,31 @@ DEFAULTS = {
     "icon": {"pop_s": 0.34, "overshoot": 1.9, "name_delay_beats": 0.5, "url_delay_beats": 1.0},
     "push_s": 0.32,
     "caption_in_beat": {"open": 1},
+    # --- switches the Apple Support override (styles/apple-support.json) turns on; defaults keep the v4 look.
+    "shadow": True,                 # soft contact shadow under the device
+    "trailing_period": True,        # captions end with "."
+    "caption_entrance": "mask",     # "mask": rise inside the line's own box; "behind": slide out from behind the device
+    "transition": {"kind": "cut", "duration_s": 1.0},   # between scenes: "cut" or "push" (device slide on move.ease)
+    # Opening: start with the device centred and move it to rest at `move_at_s` over `move_s`; the title slides
+    # out from behind it at the same time and settles after `title_s`. from_center=False keeps v4's static opening.
+    "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3},
+    "tap": {
+        "phone": "dot", "mac": "dot",   # "dot": grey press dot; phone "ios": hover disc + blue ring; mac "cursor"
+        # iOS indicator, in px of a 1080p frame whose iPhone is `ref_device_h` tall (scaled to the device on screen).
+        "ref_device_h": 950, "hover_d": 85, "lead_s": 0.8, "rest_s": 0.3, "chain_s": 1.5,
+        "ring_d": 59, "ring_w": 4, "ring_min_d": 55, "ring_max_d": 67, "ring_s": 0.25, "ring_tighten_s": 0.06,
+        "hover_rgba": [120, 120, 128, 0.32], "ring_rgb": [0, 122, 255],
+        "cursor_css": 1.0,              # macOS arrow at its native point size (x the camera scale)
+    },
+    # End card: "pop" (icon pops in) or "mask" (the last shot shrinks through an icon-shaped mask onto the icon).
+    "end": {"kind": "pop", "mask_s": 0.47, "overshoot": 0.09, "icon_above_mid_1080": 0},
 }
 
 
 def _merge(a, b):
     for k, v in b.items():
+        if k.startswith("_"):
+            continue
         if isinstance(v, dict) and isinstance(a.get(k), dict):
             _merge(a[k], v)
         else:
