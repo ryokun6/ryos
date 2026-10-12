@@ -1,14 +1,15 @@
 /**
  * Capture real ryOS footage for the Dictionary + Fitness promo.
- *   bun scripts/promo/shoot.ts desktop|dictionary|fitness
- *   PROMO_DEVICE=phone bun scripts/promo/shoot.ts desktop|dictionary|fitness   # mobile layout for the vertical cut
- * `desktop` is a few seconds of the idle ryOS desktop for the opening shot.
+ *   bun scripts/promo/shoot.ts desktop|dictionary|fitness|dict-extra|fitness-extra|exercises
+ *   PROMO_DEVICE=phone bun scripts/promo/shoot.ts …   # mobile layout for the vertical cut
+ * `desktop` is a few seconds of the idle ryOS desktop for the opening shot. Every session first puts the
+ * Dictionary and Fitness shortcuts on the desktop. The last three sessions feed only the 60 s cut.
  * Writes capture.mkv + marks.json to $PROMO_WORK_DIR/rec/<device>-<session>/ (default tmp/promo).
  * Marks named `tap:*` carry the clicked element's box (CSS px) for tap indicators.
  */
 import type { Locator, Page } from "playwright";
 import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
-import { fitnessView, seedFitness } from "./seed";
+import { fitnessView, seedDesktopShortcuts, seedFitness } from "./seed";
 
 const session = process.argv[2] ?? "dictionary";
 const dir = `${WORK_DIR}/rec/${DEVICE}-${session}`;
@@ -148,6 +149,178 @@ async function fitness(page: Page) {
   await rec.stop();
 }
 
+/** Pronunciation playback (the entry's recorded audio) and the Readings menu (Zhuyin on 豆腐), for the 60 s cut. */
+async function dictExtra(page: Page) {
+  await launchApp(page, "dictionary");
+  await sleep(1000);
+  if (phone) await fillPhoneWindow(page);
+  else await centerWindow(page, 700, 676);
+  const input = page.getByPlaceholder("Look up a word");
+  const win = page.locator("[data-window-instance-id]").last();
+  await retype(page, input, "serendipity", 20);
+  await sleep(2500);
+  // dictionaryapi.dev mirrors Wikimedia Commons recordings (…/en/serendipity-au.mp3 = File:En-au-serendipity.ogg).
+  // When the mirror is down, serve the same Commons file so playback is real; keep the bytes for the soundtrack.
+  const clips = new Map<string, { url: string; body: Buffer; type: string }>();
+  const resolveClip = async (url: string) => {
+    if (clips.has(url)) return clips.get(url)!;
+    const up = await fetch(url, { signal: AbortSignal.timeout(4000) }).catch(() => null);
+    let clip: { url: string; body: Buffer; type: string } | null = null;
+    if (up?.ok) clip = { url, body: Buffer.from(await up.arrayBuffer()), type: up.headers.get("content-type") ?? "audio/mpeg" };
+    else {
+      const m = url.match(/pronunciations\/([a-z]+)\/(.+)-([a-z]+)\.mp3$/i);
+      const file = m ? `${m[1][0].toUpperCase()}${m[1].slice(1)}-${m[3]}-${m[2]}.ogg` : null;
+      const api = `https://commons.wikimedia.org/w/api.php?action=query&titles=File:${encodeURIComponent(file ?? "")}&prop=imageinfo&iiprop=url&format=json`;
+      // Wikimedia answers requests without a descriptive User-Agent with an HTML error page.
+      const headers = { "User-Agent": "ryOS-promo/1.0 (https://os.ryo.lu)" };
+      const info = file ? await (await fetch(api, { headers })).json() : null;
+      const src = info && (Object.values(info.query.pages)[0] as { imageinfo?: { url: string }[] }).imageinfo?.[0]?.url;
+      const res = src ? await fetch(src, { headers }) : null;
+      if (res?.ok && res.headers.get("content-type")?.startsWith("audio/"))
+        clip = { url: src, body: Buffer.from(await res.arrayBuffer()), type: "audio/ogg" };
+      console.log(`[listen] mirror ${up?.status ?? "timeout"} for ${url}; Commons ${file}: ${src ? "ok" : "missing"}`);
+    }
+    if (clip) clips.set(url, clip);
+    return clip;
+  };
+  let played: { url: string; body: Buffer; type: string } | null = null;
+  // Chromium won't play a fulfilled media body (MEDIA_ERR_SRC_NOT_SUPPORTED), so redirect to the source instead.
+  await page.route("https://api.dictionaryapi.dev/media/pronunciations/**", async (route) => {
+    const url = route.request().url();
+    const clip = await resolveClip(url);
+    if (!clip) return route.continue();
+    played = clip;
+    return clip.url === url ? route.continue() : route.fulfill({ status: 302, headers: { location: clip.url } });
+  });
+  await resolveClip("https://api.dictionaryapi.dev/media/pronunciations/en/serendipity-au.mp3"); // warm: no wait on camera
+  // Wall-clock marks for when the recording actually starts and stops, to line the clip up in the soundtrack.
+  let rec: X11Recorder | null = null;
+  await page.exposeFunction("__promoAudio", (ev: string) => rec?.mark(`audio-${ev}`));
+  await page.evaluate(() => {
+    const play = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function (this: HTMLMediaElement) {
+      const w = window as unknown as { __promoAudio: (ev: string) => void };
+      this.addEventListener("playing", () => w.__promoAudio("playing"), { once: true });
+      this.addEventListener("ended", () => w.__promoAudio("ended"), { once: true });
+      return play.call(this);
+    };
+  });
+  rec = new X11Recorder(dir);
+  await rec.start();
+  await sleep(900);
+
+  const listen = page.getByRole("button", { name: "Listen", exact: true }).first();
+  rec.mark("listen-ready", union([await box(page.locator("h2").first()), await box(listen)]));
+  await sleep(1200);
+  // The label flips to "Stop" while it plays, so poll the element itself rather than the "Listen" locator.
+  const btn = (await listen.elementHandle())!;
+  await rec.tap(listen, "listen");
+  const t0 = Date.now();
+  let on = false;
+  while (Date.now() - t0 < 6000) {
+    const pressed = (await btn.getAttribute("aria-pressed").catch(() => null)) === "true";
+    if (pressed && !on) {
+      rec.mark("listen-on", await btn.boundingBox());
+      on = true;
+    } else if (!pressed && on) break;
+    await sleep(40);
+  }
+  rec.mark("listen-off");
+  console.log(`[listen] active ${on} for ${Date.now() - t0}ms`);
+  await sleep(900);
+
+  rec.mark("zh-type");
+  await retype(page, input, "豆腐", 200);
+  await sleep(1600);
+  const head = page.locator('h2[lang^="zh"]').first();
+  rec.mark("zh-result", await box(head));
+  await sleep(900);
+  await rec.tap(page.getByRole("menuitem", { name: /^Reading/ }), "readings");
+  await sleep(700);
+  await rec.tap(page.getByRole("menuitem", { name: "Chinese", exact: true }), "zh-menu");
+  await sleep(700);
+  await rec.tap(page.getByRole("menuitemcheckbox", { name: /Zhuyin/ }), "zhuyin");
+  await sleep(400);
+  await page.keyboard.press("Escape").catch(() => {});
+  rec.mark("zhuyin-on", await box(head));
+  await sleep(3000);
+  rec.mark("zhuyin-end", await box(head));
+  await rec.stop();
+  const clip = played as { url: string; body: Buffer; type: string } | null;
+  if (clip) {
+    const ext = clip.type.includes("ogg") ? "ogg" : "mp3";
+    await Bun.write(`${dir}/listen.${ext}`, clip.body);
+    await Bun.write(`${dir}/listen.json`, JSON.stringify({ url: clip.url, file: `listen.${ext}` }));
+    console.log(`[listen] saved listen.${ext} from ${clip.url}`);
+  }
+}
+
+/** The week plan, then Start Workout and a set-by-set log of one lift. */
+async function fitnessExtra(page: Page) {
+  await seedFitness(page);
+  await launchApp(page, "fitness");
+  await sleep(1000);
+  if (phone) await fillPhoneWindow(page);
+  else await centerWindow(page, 660, 676);
+  await fitnessView(page, "schedule");
+  await sleep(2500);
+  const win = page.locator("[data-window-instance-id]").last();
+  const rec = new X11Recorder(dir);
+  await rec.start();
+  await sleep(900);
+
+  const week = page.getByText("This Week", { exact: true }).first().locator("xpath=ancestor::div[2]");
+  rec.mark("schedule", await box(week));
+  await sleep(2600);
+  await rec.tap(page.getByRole("button", { name: "Start Workout" }), "start");
+  await sleep(1300);
+  rec.mark("workouts", await box(win));
+  await rec.tap(page.getByRole("button", { name: /Barbell Bench Press - Medium Grip/ }).first(), "lift");
+  await sleep(1100);
+  const entry = page.getByRole("button", { name: "Add Set" }).first().locator("xpath=ancestor::section[1]");
+  const entryBox = async () => (await box(entry)) ?? (await box(page.getByRole("button", { name: "Add Set" })));
+  rec.mark("entry", await entryBox());
+  for (let i = 1; i <= 3; i++) {
+    await sleep(700);
+    await rec.tap(page.getByRole("button", { name: "Add Set" }), `set${i}`);
+  }
+  await sleep(600);
+  rec.mark("sets-done", await entryBox());
+  await sleep(2200);
+  await rec.stop();
+}
+
+/** The exercise library in Japanese: localized names, muscles and instructions (session boots in ja). */
+async function exercises(page: Page) {
+  await seedFitness(page);
+  await launchApp(page, "fitness");
+  await sleep(1000);
+  if (phone) await fillPhoneWindow(page);
+  else await centerWindow(page, 660, 676);
+  await fitnessView(page, "exercises");
+  await page.getByRole("option").first().waitFor({ timeout: 30000 });
+  await sleep(1500);
+  const win = page.locator("[data-window-instance-id]").last();
+  const rec = new X11Recorder(dir);
+  await rec.start();
+  await sleep(900);
+
+  const search = page.locator("[data-window-instance-id] input[data-os-search-input]").first();
+  rec.mark("ex-start", await box(win));
+  await rec.tap(search, "search");
+  await search.pressSequentially("ベンチプレス", { delay: 140 });
+  await sleep(900);
+  rec.mark("ex-results", await box(page.getByRole("listbox")));
+  await rec.tap(page.getByRole("option").filter({ hasText: "Barbell Bench Press - Medium Grip" }).first(), "pick");
+  await page.locator("ol li").first().waitFor({ timeout: 20000 });
+  await sleep(600);
+  const detail = page.locator("ol").first().locator("xpath=ancestor::div[contains(@class,'overflow-y-auto')][1]");
+  rec.mark("ex-detail", await box(detail));
+  await sleep(3800);
+  rec.mark("ex-end", await box(detail));
+  await rec.stop();
+}
+
 async function desktop() {
   await sleep(1500);
   const rec = new X11Recorder(dir);
@@ -157,10 +330,13 @@ async function desktop() {
 }
 
 const { browser, page } = await launch();
-await boot(page);
+await boot(page, { language: session === "exercises" ? "ja" : "en" });
 await signIn(page);
-if (session === "desktop") await desktop();
-else if (session === "dictionary") await dictionary(page);
-else await fitness(page);
+await seedDesktopShortcuts(page);
+const sessions: Record<string, (page: Page) => Promise<void>> = {
+  desktop, dictionary, fitness, "dict-extra": dictExtra, "fitness-extra": fitnessExtra, exercises,
+};
+if (!sessions[session]) throw new Error(`unknown session ${session}: ${Object.keys(sessions).join(", ")}`);
+await sessions[session](page);
 await page.screenshot({ path: `${dir}-last.png`, timeout: 5000 }).catch(() => {});
 await browser.close();
