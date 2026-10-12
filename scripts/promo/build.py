@@ -138,6 +138,17 @@ def reveal(dst, layer, x, y, u_in, u_out=0.0):
         paste_rgba(dst, layer[-dy:], x, y)
 
 
+def behind(dst, layer, x, y, clip_y):
+    """Paste a layer with every row above clip_y hidden (it is behind the device or icon)."""
+    cut = int(math.ceil(clip_y - y)) if clip_y is not None else 0
+    if cut >= layer.shape[0]:
+        return
+    if cut > 0:
+        paste_rgba(dst, layer[cut:], x, y + cut)
+    else:
+        paste_rgba(dst, layer, x, y)
+
+
 def wrap(text, size, max_w):
     """Fewest lines that fit max_w, then the most even break into that many lines."""
     font = ImageFont.truetype(FONT, size)
@@ -169,6 +180,17 @@ class Caption:
 
     def rect(self, cx, y):
         return (int(round(cx - self.w / 2)), y, int(round(cx + self.w / 2)), y + self.h)
+
+    def draw_behind(self, dst, cx, y, e, clip_y, clip0):
+        """Slide out from behind the device: e=0 tucked fully above clip0 (the resting device's bottom edge), e=1 at
+        rest. Only rows below the device's current bottom edge clip_y are drawn."""
+        if e <= 0:
+            return
+        e = 1.0 if e >= 0.999 else e
+        yt = int(round(y - (1 - e) * (y + self.h - clip0)))
+        for i, l in enumerate(self.lines):
+            behind(dst, l, int(round(cx - l.shape[1] / 2)), yt + i * self.lh, clip_y)
+        return yt
 
     def draw(self, dst, cx, y, t_in, t_out=None):
         """(cx, y): top-centre of the block. Times in s since the reveal / exit started."""
@@ -321,7 +343,8 @@ class Device:
         W, H = self.L["W"], self.L["H"]
         bg = np.empty((H, W, 3), np.float32)
         bg[:] = np.array(BG[::-1], np.float32) / 255.0
-        p = self._place(self.shadow, self.shadow_off[0], self.shadow_off[1], cam, self.shadow_q, cv2.INTER_LINEAR)
+        p = STYLE["shadow"] and self._place(self.shadow, self.shadow_off[0], self.shadow_off[1], cam, self.shadow_q,
+                                            cv2.INTER_LINEAR)
         if p:
             x, y, img = p
             bg[y:y + img.shape[0], x:x + img.shape[1]] *= 1 - img[..., None]
@@ -374,12 +397,117 @@ def lerp_cam(a, b, u):
 
 
 def cam_at(shot, tau):
+    """Camera at shot time tau. Moves are (t0, target[, duration]); all run on the one move curve."""
     cam = shot["cam"]
-    for (t0, target) in shot.get("moves", []):
+    for mv in shot.get("moves", []):
+        t0, target = mv[0], mv[1]
         if tau <= t0:
             break
-        cam = lerp_cam(cam, target, ease_move((tau - t0) / STYLE["move"]["duration_s"]))
+        cam = lerp_cam(cam, target, ease_move((tau - t0) / (mv[2] if len(mv) > 2 else STYLE["move"]["duration_s"])))
     return cam
+
+
+def blend_disc(f, cx, cy, d, rgb, alpha, ring_w=None):
+    """Anti-aliased filled disc (or ring of width ring_w) of diameter d, alpha-blended onto f."""
+    if d <= 0 or alpha <= 0:
+        return
+    r = d / 2
+    pad = int(r + 4)
+    x0, y0 = int(cx) - pad, int(cy) - pad
+    x1, y1 = x0 + 2 * pad, y0 + 2 * pad
+    H, W = f.shape[:2]
+    if x1 <= 0 or y1 <= 0 or x0 >= W or y0 >= H:
+        return
+    yy, xx = np.mgrid[y0:y1, x0:x1].astype(np.float32)
+    dist = np.hypot(xx + 0.5 - cx, yy + 0.5 - cy)
+    cov = np.clip(r - dist + 0.5, 0, 1)
+    if ring_w:
+        cov *= np.clip(dist - (r - ring_w) + 0.5, 0, 1)
+    cx0, cy0, cx1, cy1 = max(0, x0), max(0, y0), min(W, x1), min(H, y1)
+    a = (cov[cy0 - y0:cy1 - y0, cx0 - x0:cx1 - x0] * alpha)[..., None]
+    roi = f[cy0:cy1, cx0:cx1].astype(np.float32)
+    f[cy0:cy1, cx0:cx1] = (roi * (1 - a) + np.array(rgb[::-1], np.float32) * a).astype(np.uint8)
+
+
+def shot_taps(L, shot):
+    """Taps of a shot as (output time since shot start, x, y in capture px), in order."""
+    out = []
+    for mk in shot["take"].taps:
+        b = mk["box"]
+        out.append(((mk["t"] - shot["src"]) / shot["rate"], (b["x"] + b["width"] / 2) * L["dsf"], (b["y"] + b["height"] / 2) * L["dsf"]))
+    return sorted(out)
+
+
+def draw_ios_taps(f, dev, cam, taps, tau):
+    """iOS screen-recording touches: a grey hover disc arrives lead_s before the tap, glides to the target and rests
+    rest_s; on touch-down it becomes a blue ring that tightens, then grows while it fades."""
+    T = STYLE["tap"]
+    k = dev.out_box(cam)[3] - dev.out_box(cam)[1]
+    k /= T["ref_device_h"]
+    css = dev.L["dsf"]
+    for i, (tt, px, py) in enumerate(taps):
+        ts = tt - T["lead_s"]
+        if not (ts <= tau <= tt + T["ring_tighten_s"] + T["ring_s"]):
+            continue
+        chained = i > 0 and tt - taps[i - 1][0] <= T["chain_s"]
+        sx, sy = (taps[i - 1][1], taps[i - 1][2]) if chained else (px + 28 * css, py + 44 * css)
+        if tau < tt:
+            g = ease_move((tau - ts) / max(1e-3, T["lead_s"] - T["rest_s"]))
+            bx, by = sx + (px - sx) * g, sy + (py - sy) * g
+            grow = 1.0 if chained else min(1.0, (tau - ts) / 0.12)
+            ox, oy = dev.to_out(cam, bx + dev.screen[0], by + dev.screen[1])
+            r, g_, b_, a = T["hover_rgba"]
+            blend_disc(f, ox, oy, T["hover_d"] * k * grow, (r, g_, b_), a)
+        else:
+            ox, oy = dev.to_out(cam, px + dev.screen[0], py + dev.screen[1])
+            dt = tau - tt
+            if dt < T["ring_tighten_s"]:
+                d, a = T["ring_d"] + (T["ring_min_d"] - T["ring_d"]) * dt / T["ring_tighten_s"], 1.0
+            else:
+                u = min(1.0, (dt - T["ring_tighten_s"]) / T["ring_s"])
+                d, a = T["ring_min_d"] + (T["ring_max_d"] - T["ring_min_d"]) * u, 1 - u
+            blend_disc(f, ox, oy, d * k, T["ring_rgb"], 0.9 * a, ring_w=T["ring_w"] * k)
+
+
+_CURSORS = {}
+
+
+def cursor_tile(scale):
+    """The standard macOS arrow pointer (black, white outline), tip at (pad, pad); RGBA, scale = px per point."""
+    key = round(scale, 2)
+    if key in _CURSORS:
+        return _CURSORS[key]
+    ss, pad = 4, 3
+    pts = [(0, 0), (0, 16.6), (3.9, 12.8), (6.7, 19.3), (9.4, 18.2), (6.7, 11.9), (12.1, 11.9)]
+    w, h = int((13 + 2 * pad) * scale * ss), int((21 + 2 * pad) * scale * ss)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    poly = [((x + pad) * scale * ss, (y + pad) * scale * ss) for x, y in pts]
+    d.polygon(poly, fill=(255, 255, 255, 255), outline=(255, 255, 255, 255), width=int(2.2 * scale * ss))
+    d.line(poly + [poly[0]], fill=(255, 255, 255, 255), width=int(2.2 * scale * ss), joint="curve")
+    d.polygon(poly, fill=(0, 0, 0, 255))
+    tile = np.array(img.resize((w // ss, h // ss), Image.LANCZOS))
+    _CURSORS[key] = (tile, int(round(pad * scale)))
+    return _CURSORS[key]
+
+
+def draw_cursor(f, dev, cam, taps, tau):
+    """macOS arrow: parked near the first target, glides to each click target on the move curve, no click ring."""
+    if not taps:
+        return
+    T = STYLE["tap"]
+    css = dev.L["dsf"]
+    glide = T["lead_s"] - T["rest_s"]
+    x, y = taps[0][1] + 60 * css, taps[0][2] + 90 * css
+    for tt, px, py in taps:
+        g0 = tt - T["lead_s"]
+        if tau <= g0:
+            break
+        g = ease_move((tau - g0) / glide)
+        x, y = x + (px - x) * g, y + (py - y) * g
+    ox, oy = dev.to_out(cam, x + dev.screen[0], y + dev.screen[1])
+    tile, pad = cursor_tile(cam[0] * css * T["cursor_css"])
+    paste_rgba(f, tile, int(round(ox)) - pad, int(round(oy)) - pad)
 
 
 def draw_tap(f, dev, cam, pt, age):
@@ -474,19 +602,35 @@ def plan(L, dev, B):
     split_src = fz.t("tap:split", -1.25)
     split_rate = (fz.t("tap:half", 0.55) - split_src) / (6 * B)
 
-    def D(caption, shots, zoom=None, cap_in=0, title=False):
-        """Captioned device scene. With `zoom`, the caption exits on that zoom's beat as the device moves in."""
+    def D(caption, shots, zoom=None, cap_in=0, title=False, cap_in_s=None):
+        """Captioned device scene. With `zoom`, the caption exits on that zoom's beat as the device moves in.
+        cap_in is in beats; cap_in_s (seconds) overrides it."""
         cap_out = None
-        if zoom:
+        if zoom and Z.get(zoom):
             t = Z[zoom]["beat"] * B
             s = [sh_ for sh_ in shots if sh_["at"] <= t][-1]
             s["moves"].append((t - s["at"], dev.zoom(targets[zoom], Z[zoom]["factor"])))
             cap_out = Z[zoom]["beat"]
-        return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots)
+        if not STYLE["trailing_period"]:
+            caption = caption.rstrip(".")
+        return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
+                    cap_in_s=cap_in_s)
+
+    O = STYLE["open"]
+    if O["from_center"]:
+        # Device already on screen, centred; it moves up to rest to make room as the title slides out from behind it.
+        s0, fx, _ = rest
+        centred = (s0, fx, (dev.bbox[1] + dev.bbox[3]) / 2)
+        opening = D("New apps on ryOS", [shot(home, 0, home.t("start", 0.3), cam=centred,
+                                              moves=[(O["move_at_s"], rest, O["move_s"])])],
+                    zoom="open", cap_in_s=O["move_at_s"], title=True)
+        opening["cap_dur_s"] = O["title_s"]
+    else:
+        opening = D("New apps on ryOS", [shot(home, 0, home.t("start", 0.6))], zoom="open",
+                    cap_in=STYLE["caption_in_beat"]["open"], title=True)
 
     return [
-        (0, 7, D("New apps on ryOS", [shot(home, 0, home.t("start", 0.6))], zoom="open",
-                 cap_in=STYLE["caption_in_beat"]["open"], title=True)),
+        (0, 7, opening),
         (7, 11, dict(kind="icon", icon="macosx/dictionary.png", name="Dictionary")),
         (11, 17, D("Look up any word, in any language.", [
             shot(d, 0, d.t("en", 0.1)), shot(d, 2 * B, d.t("ja", -0.05)), shot(d, 4 * B, d.t("ko", -0.05))])),
@@ -522,17 +666,20 @@ def make_caption(L, dev, text, title):
     return cap, (L["W"] // 2, y)
 
 
-CAPTION_LOG = {"frames": 0, "overlap": [], "offframe": []}
+CAPTION_LOG = {"frames": 0, "rest": 0, "overlap": [], "offframe": []}
 
 
-def check_caption(L, dev, cap, cx, y, cam, tau):
-    """Per frame with any caption line on screen: the block stays inside the frame and clear of the device."""
+def check_caption(L, cap, cx, y, clip_y, tau, at_rest):
+    """Per frame with text on screen: the block (at its current position) stays inside the frame, and once it has
+    settled no part of its glyph box is hidden behind the device."""
     CAPTION_LOG["frames"] += 1
     x0, y0, x1, y1 = cap.rect(cx, y)
-    if x0 < 0 or y0 < 0 or x1 > L["W"] or y1 > L["H"]:
+    if x0 < 0 or x1 > L["W"] or y1 > L["H"] or (at_rest and y0 < 0):
         CAPTION_LOG["offframe"].append(round(tau, 2))
-    if dev.out_box(cam)[3] > y0 + cap.pad:
-        CAPTION_LOG["overlap"].append(round(tau, 2))
+    if at_rest:
+        CAPTION_LOG["rest"] += 1
+        if clip_y is not None and clip_y > y0 + cap.pad:
+            CAPTION_LOG["overlap"].append(round(tau, 2))
 
 
 def blank(L):
@@ -541,8 +688,30 @@ def blank(L):
     return f
 
 
+def enter_s(sc):
+    """How long this scene's entrance transition overlaps the previous scene."""
+    if sc.get("index", 0) == 0:
+        return 0.0
+    if sc["kind"] == "end" and STYLE["end"]["kind"] == "mask":
+        return STYLE["end"]["mask_s"]
+    if STYLE["transition"]["kind"] == "push":
+        return STYLE["transition"]["duration_s"]
+    return STYLE["push_s"] if sc.get("enter") == "push" else 0.0
+
+
+def slide_text(dst, layer, x, y, t, clip_y):
+    """Name / URL entrance: slides out from behind the icon above it ("behind"), or rises in its mask ("mask")."""
+    if t <= 0:
+        return
+    if STYLE["caption_entrance"] == "behind":
+        e = ease_cap_in(t / STYLE["caption"]["in_s"])
+        behind(dst, layer, x, int(round(y - (1 - e) * (y + layer.shape[0] - clip_y))), clip_y)
+    else:
+        reveal(dst, layer, x, y, t / STYLE["caption"]["in_s"])
+
+
 def render_icon(L, sc, B, n):
-    """App intro: the theme icon pops in, its name reveals under it."""
+    """App intro: the theme icon pops in, its name comes out from under it."""
     lay, ic = STYLE["layout"][L["key"]], STYLE["icon"]
     icon = load_icon(sc["icon"])
     name = text_layer(sc["name"], lay["name_size"])
@@ -550,63 +719,112 @@ def render_icon(L, sc, B, n):
     gap = int(size * 0.12)
     top = (L["H"] - (size + gap + name.shape[0])) // 2
     base = blank(L)
-    t_icon = STYLE["push_s"] if sc.get("enter") == "push" else 0.0
+    t_icon = enter_s(sc) * 0.4
     for i in range(n):
         tau = i / FPS
         f = base.copy()
         pop(f, icon, L["W"] / 2, top + size / 2, size, (tau - t_icon) / ic["pop_s"])
-        u = (tau - t_icon - ic["name_delay_beats"] * B) / STYLE["caption"]["in_s"]
-        if u > 0:
-            reveal(f, name, (L["W"] - name.shape[1]) // 2, top + size + gap, u)
+        slide_text(f, name, (L["W"] - name.shape[1]) // 2, top + size + gap, tau - t_icon - ic["name_delay_beats"] * B,
+                   top + size)
         yield f
 
 
-def render_end(L, sc, B, n):
-    lay, ic = STYLE["layout"][L["key"]], STYLE["icon"]
+def rounded_mask(H, W, cx, cy, side, radius_frac=0.2237):
+    """Anti-aliased rounded-square coverage (H, W) centred at (cx, cy)."""
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    h = side / 2
+    r = side * radius_frac
+    qx = np.abs(xx + 0.5 - cx) - (h - r)
+    qy = np.abs(yy + 0.5 - cy) - (h - r)
+    d = np.hypot(np.maximum(qx, 0), np.maximum(qy, 0)) + np.minimum(np.maximum(qx, qy), 0) - r
+    return np.clip(0.5 - d, 0, 1)
+
+
+def render_end(L, sc, B, n, prev=None):
+    """End card. "mask": the last shot shrinks through an icon-shaped mask onto the ryOS icon (overshoots by
+    end.overshoot, springs back); otherwise the icon pops in. The URL then comes out from under the icon."""
+    lay, ic, E = STYLE["layout"][L["key"]], STYLE["icon"], STYLE["end"]
     icon = load_icon(sc["icon"])
     url = text_layer(sc["url"], lay["url_size"])
     size = int(lay["icon"] * 1.15)
     gap = int(size * 0.1)
-    top = (L["H"] - (size + gap + url.shape[0])) // 2
+    cy = L["H"] / 2 - E["icon_above_mid_1080"] * L["H"] / 1080
+    top = int(round(cy - size / 2))
     base = blank(L)
+    mask_n = len(prev) if (E["kind"] == "mask" and prev) else 0
+    t_icon = mask_n / FPS if mask_n else enter_s(sc)
+    cover = 2.7 * max(L["W"] / 2, L["H"] / 2 + abs(cy - L["H"] / 2))
+    split = 0.72
     for i in range(n):
         tau = i / FPS
         f = base.copy()
-        pop(f, icon, L["W"] / 2, top + size / 2, size, (tau - STYLE["push_s"]) / ic["pop_s"])
-        u = (tau - STYLE["push_s"] - ic["url_delay_beats"] * B) / STYLE["caption"]["in_s"]
-        if u > 0:
-            reveal(f, url, (L["W"] - url.shape[1]) // 2, top + size + gap, u)
+        if i < mask_n:
+            u = (i + 1) / mask_n
+            if u <= split:
+                side = cover + (size * (1 - E["overshoot"]) - cover) * ease_move(u / split)
+                m = rounded_mask(L["H"], L["W"], L["W"] / 2, cy, side)[..., None]
+                f = (prev[i].astype(np.float32) * m + f.astype(np.float32) * (1 - m)).astype(np.uint8)
+            else:
+                v = (u - split) / (1 - split)
+                k = (1 - E["overshoot"]) + E["overshoot"] * (1 - (1 - v) ** 3)
+                pop(f, icon, L["W"] / 2, cy, size * k, 1.0)
+        elif E["kind"] == "mask":
+            pop(f, icon, L["W"] / 2, cy, size, 1.0)
+        else:
+            pop(f, icon, L["W"] / 2, cy, size, (tau - t_icon) / ic["pop_s"])
+        slide_text(f, url, (L["W"] - url.shape[1]) // 2, top + size + gap, tau - t_icon - ic["url_delay_beats"] * B,
+                   top + size)
         yield f
 
 
 def render_device(L, dev, sc, B, n):
     cap, (cx, cy) = make_caption(L, dev, sc["caption"], sc["title"])
-    t_in = sc["cap_in"] * B
+    T = STYLE["tap"]
+    t_in = sc["cap_in_s"] if sc.get("cap_in_s") is not None else sc["cap_in"] * B
+    in_s = sc.get("cap_dur_s") or STYLE["caption"]["in_s"]
     t_out = sc["cap_out"] * B if sc["cap_out"] is not None else None
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
+    behind_mode = STYLE["caption_entrance"] == "behind"
+    clip0 = dev.out_box(dev.rest)[3]
+    tap_kind = T["phone" if L["device"] == "phone" else "mac"]
     shots = sc["shots"]
     bounds = [min(n, round(s["at"] * FPS)) for s in shots] + [n]
     for k, s in enumerate(shots):
         if bounds[k + 1] <= bounds[k]:
             continue
         count = bounds[k + 1] - bounds[k]
-        taps = [(mk["t"], (mk["box"]["x"] + mk["box"]["width"] / 2) * L["dsf"], (mk["box"]["y"] + mk["box"]["height"] / 2) * L["dsf"])
-                for mk in s["take"].taps]
+        taps = shot_taps(L, s)
         for j, fr in enumerate(s["take"].frames(s["src"], s["rate"], count)):
             tau_shot = j / FPS
             tau = bounds[k] / FPS + tau_shot
             cam = cam_at(s, tau_shot)
             f = dev.render(fr, cam)
-            src_t = s["src"] + tau_shot * s["rate"]
-            for (tt, px, py) in taps:
-                draw_tap(f, dev, cam, (px, py), (src_t - tt) / s["rate"])
+            if tap_kind == "ios":
+                draw_ios_taps(f, dev, cam, taps, tau_shot)
+            elif tap_kind == "cursor":
+                draw_cursor(f, dev, cam, taps, tau_shot)
+            else:
+                for (tt, px, py) in taps:
+                    draw_tap(f, dev, cam, (px, py), tau_shot - tt)
             if tau >= t_in and (t_gone is None or tau < t_gone):
-                check_caption(L, dev, cap, cx, cy, cam, tau + sc["t0"])
-                cap.draw(f, cx, cy, tau - t_in, tau - t_out if t_out is not None and tau >= t_out else None)
+                if behind_mode:
+                    e = ease_cap_in((tau - t_in) / in_s)
+                    if t_out is not None and tau >= t_out:
+                        e *= 1 - ease_cap_out((tau - t_out) / STYLE["caption"]["out_s"])
+                    clip_y = dev.out_box(cam)[3]
+                    yt = cap.draw_behind(f, cx, cy, e, clip_y, clip0)
+                    if yt is not None:
+                        check_caption(L, cap, cx, yt, clip_y, tau + sc["t0"], e >= 0.999)
+                else:
+                    check_caption(L, cap, cx, cy, dev.out_box(cam)[3], tau + sc["t0"],
+                                  tau - t_in >= in_s + STYLE["caption"]["stagger_s"] * cap.n and t_out is None or
+                                  (t_out is not None and t_in + in_s <= tau < t_out))
+                    cap.draw(f, cx, cy, tau - t_in, tau - t_out if t_out is not None and tau >= t_out else None)
             yield f
 
 
 def push(prev, cur, u):
+    """Device slide: the next scene pushes in from the right on the move curve."""
     W = cur.shape[1]
     x = int(round(ease_move(u) * W))
     out = np.empty_like(cur)
@@ -640,24 +858,37 @@ def compose(L, B, out, music=None, music_start=0.0):
         stdin=subprocess.PIPE)
     dev = Device(L)
     scenes = plan(L, dev, B)
-    written, prev = 0, None
-    for b0, b1, sc in scenes:
+    for i, (_, _, sc) in enumerate(scenes):
+        sc["index"] = i
+    written, prev, tail = 0, None, []
+    for i, (b0, b1, sc) in enumerate(scenes):
         f0 = round(b0 * B * FPS)
         f1 = total if b1 is None else round(b1 * B * FPS)
         n = f1 - f0
         kind = sc["kind"]
         sc["t0"] = f0 / FPS
-        gen = (render_icon(L, sc, B, n) if kind == "icon" else render_end(L, sc, B, n) if kind == "end"
-               else render_device(L, dev, sc, B, n))
-        hold = prev
-        push_n = round(STYLE["push_s"] * FPS) if sc.get("enter") == "push" and hold is not None else 0
+        # A scene keeps rendering past its end for as long as the next scene's entrance overlaps it.
+        nxt = scenes[i + 1][2] if i + 1 < len(scenes) else None
+        if nxt is not None:
+            nxt["index"] = i + 1
+        extra = round(enter_s(nxt) * FPS) if nxt is not None else 0
+        enter_n = round(enter_s(sc) * FPS)
+        overlap = STYLE["transition"]["kind"] == "push" or (kind == "end" and STYLE["end"]["kind"] == "mask")
+        gen = (render_icon(L, sc, B, n + extra) if kind == "icon"
+               else render_end(L, sc, B, n + extra, prev=tail if kind == "end" and STYLE["end"]["kind"] == "mask" else None)
+               if kind == "end" else render_device(L, dev, sc, B, n + extra))
         print(f"[{f0 / FPS:6.2f}s] beat {b0:>2} {kind:6s} {sc.get('caption') or sc.get('name') or sc.get('url')}", flush=True)
-        for i, f in enumerate(gen):
+        hold, new_tail = prev, []
+        for j, f in enumerate(gen):
+            if j >= n:
+                new_tail.append(f)
+                continue
             prev = f
-            if i < push_n:
-                f = push(hold, f, (i + 1) / push_n)
+            if j < enter_n and hold is not None and not (kind == "end" and STYLE["end"]["kind"] == "mask"):
+                f = push(tail[j] if overlap and j < len(tail) else hold, f, (j + 1) / enter_n)
             enc.stdin.write(f.tobytes())
             written += 1
+        tail = new_tail
     enc.stdin.close()
     enc.wait()
     if music:
@@ -673,7 +904,8 @@ def compose(L, B, out, music=None, music_start=0.0):
     print(f"[done] {out} {written} frames = {written / FPS:.2f}s")
     log = CAPTION_LOG
     print(f"[captions] {log['frames']} frames with text: {len(log['offframe'])} off-frame, "
-          f"{len(log['overlap'])} overlapping the device" + (f" at {log['overlap'][:6]}…" if log["overlap"] else ""))
+          f"{log['rest']} settled, {len(log['overlap'])} settled frames partly behind the device"
+          + (f" at {log['overlap'][:6]}…" if log["overlap"] else ""))
 
 
 if __name__ == "__main__":
@@ -687,6 +919,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v4{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v5{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
