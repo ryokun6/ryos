@@ -1,20 +1,26 @@
-import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 export const BASE = process.env.RYOS_URL || "http://localhost:5173";
-export const VIEWPORT = { width: 1440, height: 810 };
-export const DSF = 2;
+/** `PROMO_DEVICE=phone` captures the mobile layout (390x844 CSS at 3x) for the vertical cut. */
+export const DEVICE = process.env.PROMO_DEVICE === "phone" ? "phone" : "desktop";
+export const VIEWPORT = DEVICE === "phone" ? { width: 390, height: 844 } : { width: 1440, height: 810 };
+export const DSF = DEVICE === "phone" ? 3 : 2;
 /** Scratch dir for captures and renders (gitignored). */
 export const WORK_DIR = process.env.PROMO_WORK_DIR || path.resolve(import.meta.dir, "../../tmp/promo");
 
-/** Headed Chrome in kiosk mode on a private Xvfb display sized to the 2x viewport. */
-export const X_DISPLAY = process.env.PROMO_DISPLAY || ":99";
+/** Chrome won't size a window below ~500 DIP, so the phone viewport is emulated inside a wider window and the capture crops its top-left. */
+const WINDOW = DEVICE === "phone" ? { width: 520, height: VIEWPORT.height } : VIEWPORT;
+
+/** Headed Chrome in kiosk mode on a private Xvfb display sized to the window at DSF. */
+export const X_DISPLAY = process.env.PROMO_DISPLAY || (DEVICE === "phone" ? ":98" : ":99");
 
 export async function ensureXvfb() {
   const lock = `/tmp/.X${X_DISPLAY.slice(1)}-lock`;
   if (await Bun.file(lock).exists()) return;
-  Bun.spawn(["Xvfb", X_DISPLAY, "-screen", "0", `${VIEWPORT.width * DSF}x${VIEWPORT.height * DSF}x24`, "-nolisten", "tcp"], {
+  const size = `${WINDOW.width * DSF}x${WINDOW.height * DSF}x24`;
+  Bun.spawn(["Xvfb", X_DISPLAY, "-screen", "0", size, "-nolisten", "tcp"], {
     stdout: "ignore",
     stderr: "ignore",
   }).unref();
@@ -28,12 +34,12 @@ export async function launch(): Promise<{ browser: Browser; ctx: BrowserContext;
   const ctx = await chromium.launchPersistentContext(profile, {
     executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome-stable",
     headless: false,
-    viewport: null,
+    ...(DEVICE === "phone" ? { viewport: VIEWPORT, deviceScaleFactor: DSF } : { viewport: null }),
     env: { ...process.env, DISPLAY: X_DISPLAY },
     args: [
       "--kiosk",
       "--window-position=0,0",
-      `--window-size=${VIEWPORT.width},${VIEWPORT.height}`,
+      `--window-size=${WINDOW.width},${WINDOW.height}`,
       `--force-device-scale-factor=${DSF}`,
       "--font-render-hinting=none",
       "--force-color-profile=srgb",
@@ -45,6 +51,13 @@ export async function launch(): Promise<{ browser: Browser; ctx: BrowserContext;
   });
   const page = ctx.pages()[0] ?? (await ctx.newPage());
   page.on("pageerror", (e) => console.log("[pageerror]", e.message.slice(0, 200)));
+  if (DEVICE === "phone") {
+    // Kiosk is dropped when Playwright emulates the viewport; fullscreen hides the tab strip again.
+    const cdp = await ctx.newCDPSession(page);
+    const { windowId } = await cdp.send("Browser.getWindowForTarget");
+    await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "fullscreen" } });
+    await sleep(800);
+  }
   const browser = { close: () => ctx.close() } as unknown as Browser;
   return { browser, ctx, page };
 }
@@ -55,7 +68,7 @@ async function launchHeadless(): Promise<{ browser: Browser; ctx: BrowserContext
     headless: true,
     args: ["--font-render-hinting=none", "--force-color-profile=srgb"],
   });
-  const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: DSF });
+  const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: DSF, hasTouch: DEVICE === "phone" });
   const page = await ctx.newPage();
   page.on("pageerror", (e) => console.log("[pageerror]", e.message.slice(0, 200)));
   return { browser, ctx, page };
@@ -181,6 +194,13 @@ export class X11Recorder {
   mark(name: string, box?: Box | null) {
     this.marks.push({ name, ts: Date.now() / 1000, ...(box ? { box } : {}) });
     console.log(`[mark] ${name}`);
+  }
+
+  /** Click with a recorded `tap` mark so the compositor can draw a tap indicator there. */
+  async tap(target: Locator, label = "tap") {
+    const b = await target.first().boundingBox();
+    if (b) this.mark(`tap:${label}`, b);
+    await target.first().click();
   }
 
   async stop() {
