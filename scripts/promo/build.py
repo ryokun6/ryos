@@ -152,11 +152,19 @@ def behind(dst, layer, x, y, clip_y):
 
 
 def behind_x(dst, layer, x, y, clip_x):
-    """Paste a layer with every column right of clip_x hidden (it is behind the device)."""
-    keep = int(math.floor(clip_x - x)) if clip_x is not None else layer.shape[1]
-    if keep <= 0:
+    """Paste a layer with every pixel at or right of clip_x hidden (it is behind the device). clip_x is a number or
+    one x per layer row (the device's silhouette edge on that row; inf where the device doesn't reach)."""
+    if clip_x is None:
+        paste_rgba(dst, layer, x, y)
         return
-    paste_rgba(dst, layer[:, :keep], x, y)
+    keep = np.broadcast_to(np.asarray(clip_x, np.float32) - x, (layer.shape[0],))
+    if keep.max() <= 0:
+        return
+    cols = np.arange(layer.shape[1], dtype=np.float32)
+    cov = np.clip(keep[:, None] - cols[None, :], 0, 1)
+    masked = layer.copy()
+    masked[..., 3] = (masked[..., 3] * cov).astype(np.uint8)
+    paste_rgba(dst, masked, x, y)
 
 
 def wrap(text, size, max_w, max_chars=None):
@@ -182,8 +190,10 @@ def wrap(text, size, max_w, max_chars=None):
 class Caption:
     """Multi-line caption, centred or left-aligned; each line is its own mask box."""
 
-    def __init__(self, text, size, max_w, line_height, max_chars=None, align="center"):
-        self.lines = [text_layer(l, size) for l in wrap(text, size, max_w, max_chars)]
+    def __init__(self, text, size, max_w, line_height, max_chars=None, align="center", lines=None):
+        self.lines = [text_layer(l, size) for l in (lines or wrap(text, size, max_w, max_chars))]
+        if lines and max(l.shape[1] for l in self.lines) > max_w:
+            raise ValueError(f"{text!r} is wider than {max_w}px at {size}px")
         self.lh = int(round(size * line_height))
         self.pad = int(math.ceil(size * STYLE["caption"]["pad_em"]))
         self.w = max(l.shape[1] for l in self.lines)
@@ -197,15 +207,22 @@ class Caption:
             return (cx - self.pad, y, cx - self.pad + self.w, y + self.h)
         return (int(round(cx - self.w / 2)), y, int(round(cx + self.w / 2)), y + self.h)
 
-    def draw_side(self, dst, x, y, e, clip_x, clip0):
+    def line_xy(self, ax, y):
+        """Top-left of every line layer for anchor ax (centre x, or the ink's left edge when left-aligned)."""
+        if self.align == "left":
+            return [(ax - self.pad, y + i * self.lh) for i in range(self.n)]
+        return [(int(round(ax - l.shape[1] / 2)), y + i * self.lh) for i, l in enumerate(self.lines)]
+
+    def draw_side(self, dst, x, y, e, clip_rows, clip0):
         """Left-aligned block that slides out leftward from behind the device: e=0 its ink starts at clip0 (the
-        resting device's left edge), e=1 at x. Only columns left of the device's current left edge clip_x show."""
+        resting device's left silhouette edge), e=1 at x. clip_rows(y0, h) gives the device's current left
+        silhouette edge for each output row; only pixels left of it show."""
         if e <= 0:
             return
         e = 1.0 if e >= 0.999 else e
         xt = int(round(x + (1 - e) * (clip0 - x)))
-        for i, l in enumerate(self.lines):
-            behind_x(dst, l, xt - self.pad, y + i * self.lh, clip_x)
+        for l, (lx, ly) in zip(self.lines, self.line_xy(xt, y)):
+            behind_x(dst, l, lx, ly, clip_rows(ly, l.shape[0]))
         return xt
 
     def draw_behind(self, dst, cx, y, e, clip_y, clip0):
@@ -261,6 +278,11 @@ class Device:
         self.screen = (int(xs.min()), int(ys.min()), int(xs.max() - xs.min() + 1), int(ys.max() - ys.min() + 1))
         ys, xs = np.where(a > 0.03)
         self.bbox = (int(xs.min()), int(ys.min()), int(xs.max() + 1), int(ys.max() + 1))
+        # Left silhouette edge per bezel row (a MacBook's lid is much narrower than its base): text that slides
+        # out from behind the device is hidden at this edge, not at the bbox.
+        solid = a > 0.5
+        any_ = solid.any(axis=1)
+        self.left_col = np.where(any_, solid.argmax(axis=1), np.inf).astype(np.float64)
         # Footage runs a few px under the bezel's inner edge so its anti-aliased rim never shows the background.
         sm = cv2.dilate(scr.astype(np.uint8), np.ones((3, 3), np.uint8), iterations=3).astype(np.float32)
         color = rgba[..., :3] * a[..., None]
@@ -332,6 +354,16 @@ class Device:
         """Output-space bbox of the whole device (bezel incl.) under a camera."""
         (ax, ay), (bx, by) = self.to_out(cam, self.bbox[0], self.bbox[1]), self.to_out(cam, self.bbox[2], self.bbox[3])
         return (ax, ay, bx, by)
+
+    def left_edge_rows(self, cam, y0, h):
+        """Output-space x of the device's left silhouette edge on output rows y0 .. y0+h-1 (inf: no device there)."""
+        s, fx, fy = cam
+        rows = fy + (np.arange(y0, y0 + h) + 0.5 - self.L["H"] / 2) / s
+        idx = np.floor(rows).astype(np.int64)
+        ok = (idx >= 0) & (idx < len(self.left_col))
+        col = np.full(h, np.inf)
+        col[ok] = self.left_col[idx[ok]]
+        return (col - fx) * s + self.L["W"] / 2
 
     def from_capture(self, box_px):
         x, y, w, h = box_px
@@ -734,12 +766,33 @@ def side_caption(L, dev, text, size, lay):
     return cap, (x, y), cam
 
 
-CAPTION_LOG = {"frames": 0, "rest": 0, "overlap": [], "offframe": []}
+CAPTION_LOG = {"frames": 0, "rest": 0, "overlap": [], "offframe": [], "ref_checked": 0, "mismatch": []}
 
 
-def check_caption(L, cap, cx, y, clip_y, tau, at_rest, behind=False):
+def text_mismatch(frame, cap, ax, y):
+    """Largest per-channel difference, over the caption's glyph pixels, between the rendered frame and the same
+    lines pasted unmasked onto a plain background: 0 means every glyph is fully visible and uncut."""
+    pos = cap.line_xy(ax, y)
+    x0, y0 = min(p[0] for p in pos), min(p[1] for p in pos)
+    x1 = max(p[0] + l.shape[1] for p, l in zip(pos, cap.lines))
+    y1 = max(p[1] + l.shape[0] for p, l in zip(pos, cap.lines))
+    H, W = frame.shape[:2]
+    if x0 < 0 or y0 < 0 or x1 > W or y1 > H:
+        return 255
+    ref = np.empty((y1 - y0, x1 - x0, 3), np.uint8)
+    ref[:] = BG[::-1]
+    ink = np.zeros(ref.shape[:2], bool)
+    for (px, py), l in zip(pos, cap.lines):
+        paste_rgba(ref, l, px - x0, py - y0)
+        ink[py - y0:py - y0 + l.shape[0], px - x0:px - x0 + l.shape[1]] |= l[..., 3] > 0
+    d = np.abs(frame[y0:y1, x0:x1].astype(np.int16) - ref.astype(np.int16)).max(axis=2)
+    return int(d[ink].max())
+
+
+def check_caption(L, cap, cx, y, clip_y, tau, at_rest, behind=False, frame=None):
     """Per frame with text on screen: the block (at its current position) stays inside the frame, and once it has
-    settled no part of its glyph box is hidden behind the device (below it, or right of it with `behind`)."""
+    settled no part of its glyph box is hidden behind the device (below it, or right of it with `behind`), and its
+    glyphs match an unmasked reference render pixel for pixel."""
     CAPTION_LOG["frames"] += 1
     x0, y0, x1, y1 = cap.rect(cx, y)
     if x0 < 0 or y1 > L["H"] or (at_rest and (y0 < 0 or x1 > L["W"])):
@@ -748,6 +801,10 @@ def check_caption(L, cap, cx, y, clip_y, tau, at_rest, behind=False):
         CAPTION_LOG["rest"] += 1
         if behind or (clip_y is not None and clip_y > y0 + cap.pad):
             CAPTION_LOG["overlap"].append(round(tau, 2))
+        if frame is not None:
+            CAPTION_LOG["ref_checked"] += 1
+            if text_mismatch(frame, cap, cx, y) > 2:
+                CAPTION_LOG["mismatch"].append(round(tau, 2))
 
 
 def blank(L):
@@ -875,14 +932,18 @@ def render_end(L, sc, B, n, prev=None, focus=None):
         yield f
 
 
-def render_title_push(L, dev, sc, n):
-    """Hero title alone (mask reveal), then the phone pushes up from below and carries the title up and out."""
-    lay = STYLE["layout"][L["key"]]
-    cap = Caption(sc["caption"], lay["hero_size"], L["W"] - 2 * lay["margin"], lay["line_height"])
-    cx, y0 = L["W"] / 2, int(round(L["H"] / 2 - cap.h / 2))
+def render_title_push(L, dev, sc, n, B):
+    """Hero title alone, left-aligned with one word per line; each word slides up in its own mask box, one after
+    another on beat subdivisions. Then the phone pushes up from below and carries the title up and out."""
+    lay, O = STYLE["layout"][L["key"]], STYLE["open"]
+    x = int(round(lay["hero_x_frac"] * L["W"]))
+    cap = Caption(sc["caption"], lay["hero_size"], L["W"] - x - lay["margin"], lay["hero_line_height"],
+                  align="left", lines=sc["caption"].split(" "))
+    y0 = int(round(L["H"] / 2 - cap.h / 2))
     s = sc["shots"][0]
     top0 = dev.out_box(s["cam"])[1]
-    t_in, in_s = STYLE["open"]["title_in_s"], STYLE["caption"]["in_s"]
+    t_in, step, word_s = O["title_in_beats"] * B, O["word_stagger_beats"] * B, O["word_in_s"]
+    settled = t_in + step * (cap.n - 1) + word_s
     for j, fr in enumerate(s["take"].frames(s["src"], s["rate"], n)):
         tau = j / FPS
         cam = cam_at(s, tau)
@@ -891,14 +952,15 @@ def render_title_push(L, dev, sc, n):
         moved = top0 - dev.out_box(cam)[1]
         y = int(round(y0 - moved))
         if tau >= t_in and y + cap.h > 0:
-            cap.draw(f, cx, y, tau - t_in)
-            check_caption(L, cap, cx, y, None, tau + sc["t0"], tau - t_in >= in_s and moved < 0.5)
+            for i, (l, (lx, ly)) in enumerate(zip(cap.lines, cap.line_xy(x, y))):
+                reveal(f, l, lx, ly, (tau - t_in - i * step) / word_s)
+            check_caption(L, cap, x, y, None, tau + sc["t0"], tau >= settled and moved < 0.5, frame=f)
         yield f
 
 
 def render_device(L, dev, sc, B, n):
     if sc.get("title_push"):
-        yield from render_title_push(L, dev, sc, n)
+        yield from render_title_push(L, dev, sc, n, B)
         return
     cap, (cx, cy), side_cam = make_caption(L, dev, sc["caption"], sc["title"])
     T = STYLE["tap"]
@@ -907,7 +969,11 @@ def render_device(L, dev, sc, B, n):
     t_out = sc["cap_out"] * B if sc["cap_out"] is not None else None
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
     behind_mode = STYLE["caption_entrance"] == "behind"
-    clip0 = dev.out_box(side_cam)[0] if side_cam else dev.out_box(dev.rest)[3]
+    if side_cam:
+        edge = dev.left_edge_rows(side_cam, cy, cap.h)
+        clip0 = float(edge[np.isfinite(edge)].max())   # tucked: the ink starts behind the lid on every text row
+    else:
+        clip0 = dev.out_box(dev.rest)[3]
     tap_kind = T["phone" if L["device"] == "phone" else "mac"]
     shots = sc["shots"]
     bounds = [min(n, round(s["at"] * FPS)) for s in shots] + [n]
@@ -934,11 +1000,11 @@ def render_device(L, dev, sc, B, n):
                     e = ease_cap_in((tau - t_in) / in_s)
                     if t_out is not None and tau >= t_out:
                         e *= 1 - ease_cap_out((tau - t_out) / STYLE["caption"]["out_s"])
-                    clip_x = dev.out_box(cam)[0]
-                    xt = cap.draw_side(f, cx, cy, e, clip_x, clip0)
+                    clip_rows = lambda y0, h, cam=cam: dev.left_edge_rows(cam, y0, h)  # noqa: E731
+                    xt = cap.draw_side(f, cx, cy, e, clip_rows, clip0)
                     if xt is not None:
                         check_caption(L, cap, xt, cy, None, tau + sc["t0"], e >= 0.999,
-                                      behind=xt - cap.pad + cap.w - cap.pad > clip_x)
+                                      behind=xt + cap.w - 2 * cap.pad > clip_rows(cy, cap.h).min(), frame=f)
                 elif behind_mode:
                     e = ease_cap_in((tau - t_in) / in_s)
                     if t_out is not None and tau >= t_out:
@@ -946,12 +1012,12 @@ def render_device(L, dev, sc, B, n):
                     clip_y = dev.out_box(cam)[3]
                     yt = cap.draw_behind(f, cx, cy, e, clip_y, clip0)
                     if yt is not None:
-                        check_caption(L, cap, cx, yt, clip_y, tau + sc["t0"], e >= 0.999)
+                        check_caption(L, cap, cx, yt, clip_y, tau + sc["t0"], e >= 0.999, frame=f)
                 else:
+                    cap.draw(f, cx, cy, tau - t_in, tau - t_out if t_out is not None and tau >= t_out else None)
                     check_caption(L, cap, cx, cy, dev.out_box(cam)[3], tau + sc["t0"],
                                   tau - t_in >= in_s + STYLE["caption"]["stagger_s"] * cap.n and t_out is None or
-                                  (t_out is not None and t_in + in_s <= tau < t_out))
-                    cap.draw(f, cx, cy, tau - t_in, tau - t_out if t_out is not None and tau >= t_out else None)
+                                  (t_out is not None and t_in + in_s <= tau < t_out), frame=f)
             yield f
 
 
@@ -1074,7 +1140,9 @@ def compose(L, B, out, music=None, music_start=0.0):
     log = CAPTION_LOG
     print(f"[captions] {log['frames']} frames with text: {len(log['offframe'])} off-frame, "
           f"{log['rest']} settled, {len(log['overlap'])} settled frames partly behind the device"
-          + (f" at {log['overlap'][:6]}…" if log["overlap"] else ""))
+          + (f" at {log['overlap'][:6]}…" if log["overlap"] else "")
+          + f"; {log['ref_checked']} settled frames vs unmasked reference: {len(log['mismatch'])} with cut/hidden glyphs"
+          + (f" at {log['mismatch'][:6]}…" if log["mismatch"] else ""))
 
 
 if __name__ == "__main__":
@@ -1088,6 +1156,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v7{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v8{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
