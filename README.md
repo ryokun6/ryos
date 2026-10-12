@@ -47,6 +47,9 @@ A modern web-based desktop environment inspired by classic macOS and Windows, bu
 - **Maps** — Apple MapKit place search with chat integration
 - **Books** — EPUB reader with synced reading progress and Finder import
 - **Calculator** — Theme-aware calculator with basic, scientific, and conversion modes
+- **Stuff** — Wooden inventory shelf with barcodes, tags, locations, and print labels
+- **Dictionary** — English, Chinese, Japanese, and Korean lookup with readings, handwriting, and flashcards
+- **Fitness** — Exercise guide, workout log, weekly plan, body stats, and AI food log
 - **Admin** — Restricted analytics and system administration
 - **Applet Store** — Browse, install, and share community-created HTML applets
 - **Stickies** — Sticky notes for quick reminders

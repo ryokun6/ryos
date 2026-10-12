@@ -1,6 +1,6 @@
 # Overview
 
-ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 29 fully-functional apps, an AI assistant, and a complete virtual file system.
+ryOS is a web-based desktop environment that brings the nostalgia of classic operating systems to modern browsers. Experience the charm of Mac OS X Aqua, System 7, Windows XP, and Windows 98—all running in your browser with 31 fully-functional apps, an AI assistant, and a complete virtual file system.
 
 Whether you're exploring the retro aesthetics, building HTML applets, or chatting with Ryo (the AI assistant), ryOS offers a unique blend of nostalgia and modern web technology.
 
@@ -21,7 +21,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 ## Key Features
 
 - **[Multi-Theme Support](/docs/theme-system):** system7/System 7, macosx/Aqua, xp/XP, win98/98
-- **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, Maps, Books (EPUB reader), Stuff (inventory shelf), and more
+- **[Built-in Apps](/docs/apps):** Finder, TextEdit, Paint, iPod, Infinite Mac, Winamp, Calendar, Dashboard, Contacts, Maps, Books (EPUB reader), Stuff (inventory shelf), Dictionary, Fitness, and more
 - **[AI Assistant (Ryo)](/docs/ai-system):** Chat, tool calling, app control, code generation
 - **[Virtual File System](/docs/file-system):** IndexedDB-backed with lazy loading and cloud sync
 - **[Real-time Chat](/docs/rooms-api):** RESTful rooms with AI integration
@@ -61,7 +61,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 ├── tests/            # bun:test suites (unit/<domain>, integration/api, helpers)
 ├── src/
 │   ├── api/          # Frontend API clients (auth, rooms, admin, songs, listen, core, telegram, irc, aiConversations)
-│   ├── apps/         # 29 app modules
+│   ├── apps/         # 31 app modules
 │   ├── components/   # Shared React components
 │   ├── config/       # App registry
 │   ├── hooks/        # 81 custom hooks

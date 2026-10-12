@@ -71,6 +71,11 @@ graph LR
 | `/api/stuff/shares` | Read, publish, or delete a shared shelf |
 | `/api/stuff/shares/:id/reserve` | Reserve an item on a shared shelf |
 | `/api/stuff/shares/:id/bid` | Place an offer on a shared-shelf item |
+| `/api/dictionary` | Dictionary lookup (`q`, `lang` of auto, en, zh, ja, or ko). Local WordNet, CC-CEDICT, JMdict, and kengdic return first |
+| `/api/dictionary/enrich` | Same lookup after Wiktionary examples are merged |
+| `/api/dictionary/ai` | POST streamed AI notes (`extras`) or a no-results definition (`fallback`) |
+| `/api/fitness/exercises` | Pinned free-exercise-db list, or one exercise with instructions when `id` is set |
+| `/api/fitness/food-analyze` | POST a meal photo or text for an editable calorie and macro estimate |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |
 | `/api/ai/extract-memories` | Daily-note and long-term memory extraction |

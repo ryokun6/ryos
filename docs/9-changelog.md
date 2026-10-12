@@ -17,6 +17,40 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 
 ---
 
+## October 2026
+
+<div class="changelog-feature-grid">
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-02-dictionary-16x9.webp" alt="Dictionary in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Dictionary</h3><p>Stroke-order cards for 豆腐 show each character's own reading and meaning.</p></div></article>
+<article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-01-fitness-16x9.webp" alt="Fitness in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Fitness</h3><p>Estimate a shared meal, then split your portion beside the meal type.</p></div></article>
+</div>
+<details>
+<summary>More from this month (22)</summary>
+
+- **Dictionary**: look up English, Chinese, Japanese, and Korean with readings, handwriting, speech, favorites, and spaced-repetition flashcards.
+- Read English from local WordNet 3.1, including irregular forms, and keep a finished lookup in Redis for 30 days.
+- Return Chinese, Japanese, and Korean from local CC-CEDICT, JMdict, and kengdic immediately. Wiktionary examples merge in on a follow-up request.
+- Show a card for each Chinese character with a Hanzi Writer stroke-order animation, that character's own reading, and a short CC-CEDICT meaning. Glyphs come from the headword, so 豆 in 豆腐 stays 豆.
+- Give each character its own meaning. A neutral tone in the word uses the character's dictionary tone, so 腐 in 豆腐 is fǔ, decay.
+- Look up one character by tapping its hanzi or kanji card. Tap the stroke box to replay the animation.
+- Keep the iOS handwriting pad from opening the text-selection callout and magnifier while drawing.
+- Stream AI usage notes as tokens arrive, and stream a definition the same way when the dictionaries have no entry.
+- Merge duplicate headwords into one entry, including Korean rows that Wiktionary used to repeat. Chinese rows with different traditional forms stay separate (干 and 乾).
+- Store dictionary lookups under cache v6 so an older payload is not reused.
+- Keep Dictionary open when a character card unmounts before its stroke data has loaded.
+- Download WordNet from the NLTK zip, retry each dataset, and fall back to Princeton's archive.
+- Load prebuilt dictionary index snapshots from the Docker image at boot.
+- **Fitness**: browse 876 exercises, log sets, plan a weekly schedule, record body stats, and estimate a meal from a photo.
+- Localize exercise names and instructions. A non-English exercise view shows the translated name with the English name underneath.
+- Split a shared meal with ÷2, ÷3, ÷4, or a custom count next to the meal type, and log only your share.
+- Open workout, body, food, schedule, and exercise details in a side sheet.
+- On iOS, the food photo button opens the system sheet (Photo Library, Take Photo, Choose File). Desktop keeps the file picker.
+- Polish Fitness charts and the food estimate: drop the weekly-goal trophy and the confidence pill, and show loading inside the estimate button.
+- **Karaoke / iPod**: use the Redis song library title, artist, and cover for share pages and chat link previews, and fall back to YouTube when that song is missing.
+- Decode HTML entities in lyrics, translations, furigana, and KuGou titles on read, leaving the stored LRC/KRC payload unchanged.
+- Localize the Stuff app name in the dock, menus, Finder, window title, Spotlight, and About.
+
+</details>
+
 ## September 2026
 
 <div class="changelog-feature-grid">
