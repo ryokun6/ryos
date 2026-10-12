@@ -1,0 +1,91 @@
+"""
+Tunable look of the promo. Every number build.py uses for motion, zoom and type lives here.
+
+Override any subset with a JSON file (deep-merged over these defaults):
+  PROMO_STYLE=style.json python3 scripts/promo/build.py      # or --style style.json
+e.g. {"move": {"duration_s": 1.1, "ease": [0.25, 0.1, 0.25, 1]}, "zoom": {"strokes": {"factor": 1.25}}}
+
+Units: seconds, output px, beats of the music grid. Eases are CSS cubic-bezier control points [x1, y1, x2, y2].
+Zoom factors are relative to the resting device (1.0 = no zoom); the camera always moves the whole device.
+"""
+import copy
+import json
+import os
+
+REPO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
+
+DEFAULTS = {
+    # Myriad Pro bold cut shipped with ryOS (fontconfig: "Myriad Pro | Semibold,Bold"); used for every caption.
+    "font": os.path.join(REPO, "public", "fonts", "MyriadPro-Semibold.otf"),
+    "tracking_em": -0.01,
+    "colors": {"bg": [245, 245, 247], "ink": [29, 29, 31]},
+    "layout": {
+        # Resting device: its height and top edge. Captions sit centred under it: "band" centres them in the
+        # space between the device and the frame bottom, "gap" puts their top `caption_gap` px under the device.
+        "h": {"device_h": 790, "device_top": 56, "caption_anchor": "band", "caption_gap": 36,
+              "caption_size": 56, "title_size": 64, "caption_max_w": 1500, "line_height": 1.12, "margin": 40,
+              "icon": 256, "name_size": 80, "url_size": 64},
+        "v": {"device_h": 1440, "device_top": 150, "caption_anchor": "band", "caption_gap": 48,
+              "caption_size": 68, "title_size": 76, "caption_max_w": 920, "line_height": 1.12, "margin": 60,
+              "icon": 300, "name_size": 90, "url_size": 72},
+    },
+    "caption": {
+        "in_s": 0.4, "out_s": 0.3, "stagger_s": 0.06,
+        "in_ease": [0.16, 1, 0.3, 1], "out_ease": [0.7, 0, 0.84, 0],
+        "out_dir": "down",          # "down": back out through the bottom of its mask, "up": out through the top
+        "pad_em": 0.14,             # transparent margin around every line's glyphs; the reveal mask is that box
+    },
+    "move": {
+        "duration_s": 1.0,
+        "ease": [0.42, 0, 0.58, 1],  # ease-in-out
+        "pull": 0.7,                 # how far the zoom recentres on its target (0 = straight in, 1 = target centred)
+    },
+    # One entry per zoom in the cut: factor vs the resting device, and the beat (within its scene) it starts on.
+    # The scene's caption exits on the same beat.
+    "zoom": {
+        "open": {"factor": 1.15, "beat": 4.5},
+        "strokes": {"factor": 1.35, "beat": 3},
+        "ai": {"factor": 1.3, "beat": 3},
+        "review": {"factor": 1.25, "beat": 4},
+        "progress": {"factor": 1.2, "beat": 2},
+    },
+    "icon": {"pop_s": 0.34, "overshoot": 1.9, "name_delay_beats": 0.5, "url_delay_beats": 1.0},
+    "push_s": 0.32,
+    "caption_in_beat": {"open": 1},
+}
+
+
+def _merge(a, b):
+    for k, v in b.items():
+        if isinstance(v, dict) and isinstance(a.get(k), dict):
+            _merge(a[k], v)
+        else:
+            a[k] = v
+    return a
+
+
+def load(path=None):
+    style = copy.deepcopy(DEFAULTS)
+    path = path or os.environ.get("PROMO_STYLE")
+    if path:
+        with open(path) as f:
+            _merge(style, json.load(f))
+    return style
+
+
+def bezier(x1, y1, x2, y2):
+    """CSS cubic-bezier easing u -> eased u."""
+    def at(t, a, b):
+        return 3 * a * t * (1 - t) ** 2 + 3 * b * t ** 2 * (1 - t) + t ** 3
+
+    def f(u):
+        u = min(max(u, 0.0), 1.0)
+        lo, hi = 0.0, 1.0
+        for _ in range(40):
+            mid = (lo + hi) / 2
+            if at(mid, x1, x2) < u:
+                lo = mid
+            else:
+                hi = mid
+        return at((lo + hi) / 2, y1, y2)
+    return f
