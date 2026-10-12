@@ -24,15 +24,18 @@ Open **More from this month** for fixes, polish, infrastructure, and smaller upd
 <article class="changelog-feature"><img src="/docs-assets/changelog/2026-10-01-fitness-16x9.webp" alt="Fitness in the October 2026 ryOS snapshot" width="1280" height="720" loading="lazy"><div class="changelog-feature-copy"><h3>Fitness</h3><p>Log workouts, plan the week, and estimate a shared meal from a photo.</p></div></article>
 </div>
 <details>
-<summary>More from this month (19)</summary>
+<summary>More from this month (22)</summary>
 
 - **Dictionary**: look up English, Chinese, Japanese, and Korean with readings, handwriting, speech, favorites, and spaced-repetition flashcards.
 - Read English from local WordNet 3.1, including irregular forms, and keep a finished lookup in Redis for 30 days.
 - Return Chinese, Japanese, and Korean from local CC-CEDICT, JMdict, and kengdic immediately. Wiktionary examples merge in on a follow-up request.
-- Show a card for each Chinese character with a Hanzi Writer stroke-order animation, the active reading, and a short CC-CEDICT meaning.
+- Show a card for each Chinese character with a Hanzi Writer stroke-order animation, that character's own reading, and a short CC-CEDICT meaning. Glyphs come from the headword, so 豆 in 豆腐 stays 豆.
+- Give each character its own meaning. A neutral tone in the word uses the character's dictionary tone, so 腐 in 豆腐 is fǔ, decay.
+- Look up one character by tapping its hanzi or kanji card. Tap the stroke box to replay the animation.
 - Keep the iOS handwriting pad from opening the text-selection callout and magnifier while drawing.
 - Stream AI usage notes as tokens arrive, and stream a definition the same way when the dictionaries have no entry.
-- Merge duplicate headwords into one entry, including Korean rows that Wiktionary used to repeat.
+- Merge duplicate headwords into one entry, including Korean rows that Wiktionary used to repeat. Chinese rows with different traditional forms stay separate (干 and 乾).
+- Store dictionary lookups under cache v6 so an older payload is not reused.
 - Keep Dictionary open when a character card unmounts before its stroke data has loaded.
 - Download WordNet from the NLTK zip, retry each dataset, and fall back to Princeton's archive.
 - Load prebuilt dictionary index snapshots from the Docker image at boot.
