@@ -79,9 +79,10 @@ DEFAULTS = {
     # v_title_push (vertical): the hero title (layout.v.hero_*) reveals alone, word by word – the first word at
     # title_in_beats, then one every word_stagger_beats, each sliding up in its mask over word_in_s – then at
     # push_at_s the phone pushes up from below the frame and carries the title up and out.
+    # move_at_beats / push_at_beats, when set, put those two hits on the music grid instead (they win over *_s).
     "open": {"from_center": False, "move_at_s": 1.0, "move_s": 1.24, "title_s": 1.3,
              "v_title_push": False, "title_in_beats": 0.5, "word_stagger_beats": 0.25, "word_in_s": 0.3,
-             "push_at_s": 1.4},
+             "push_at_s": 1.4, "move_at_beats": None, "push_at_beats": None},
     "tap": {
         "phone": "dot", "mac": "dot",   # "dot": grey press dot; phone "ios": hover disc + blue ring; mac "cursor"
         # iOS indicator, in px of a 1080p frame whose iPhone is `ref_device_h` tall (scaled to the device on screen).
@@ -106,12 +107,20 @@ def _merge(a, b):
     return a
 
 
+def _load_file(style, path):
+    """Merge a style file; "extends" (relative to the file) is merged first, so a file can override another."""
+    with open(path) as f:
+        data = json.load(f)
+    if data.get("extends"):
+        _load_file(style, os.path.join(os.path.dirname(os.path.abspath(path)), data.pop("extends")))
+    _merge(style, data)
+
+
 def load(path=None):
     style = copy.deepcopy(DEFAULTS)
     path = path or os.environ.get("PROMO_STYLE")
     if path:
-        with open(path) as f:
-            _merge(style, json.load(f))
+        _load_file(style, path)
     return style
 
 
