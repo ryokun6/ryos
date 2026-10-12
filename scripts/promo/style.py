@@ -22,9 +22,14 @@ DEFAULTS = {
     "layout": {
         # Resting device: its height and top edge. Captions sit centred under it: "band" centres them in the
         # space between the device and the frame bottom, "gap" puts their top `caption_gap` px under the device.
+        # "side" is Apple's title-card layout: the block left-aligned at text_x_frac x width, vertically centred,
+        # max_chars per line within block_w_frac x width; the device sits device_gap px right of the block's widest
+        # line (at most side_device_h_max tall), its right edge mirroring the left margin.
         "h": {"device_h": 790, "device_top": 56, "caption_anchor": "band", "caption_gap": 36,
               "caption_size": 56, "title_size": 64, "caption_max_w": 1500, "line_height": 1.12, "margin": 40,
-              "icon": 256, "name_size": 80, "url_size": 64},
+              "icon": 256, "name_size": 80, "url_size": 64,
+              "text_x_frac": 0.063, "block_w_frac": 0.49, "max_chars": None, "device_gap": 133,
+              "side_device_h_max": 700, "icon_align": "center"},
         "v": {"device_h": 1440, "device_top": 150, "caption_anchor": "band", "caption_gap": 48,
               "caption_size": 68, "title_size": 76, "caption_max_w": 920, "line_height": 1.12, "margin": 60,
               "icon": 300, "name_size": 90, "url_size": 72},
@@ -52,6 +57,11 @@ DEFAULTS = {
     "icon": {"pop_s": 0.34, "overshoot": 1.9, "name_delay_beats": 0.5, "url_delay_beats": 1.0},
     "push_s": 0.32,
     "caption_in_beat": {"open": 1},
+    "caption_in_s": 0.4,            # side layout: when a scene's caption starts sliding out (s into the scene)
+    # App intros: "none" = icon card on the background; "wipe" = a solid panel wipes in from the left over the last
+    # scene (in_s), carries the icon + label in `ink`, then slides off to the right (out_s) into the app demo.
+    "panel": {"kind": "none", "color": [44, 44, 46], "ink": [255, 255, 255], "in_s": 1.0, "out_s": 0.93,
+              "content_at_s": 0.45},
     # --- switches the Apple Support override (styles/apple-support.json) turns on; defaults keep the v4 look.
     "shadow": True,                 # soft contact shadow under the device
     "trailing_period": True,        # captions end with "."
