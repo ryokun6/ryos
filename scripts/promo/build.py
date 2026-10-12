@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Compose the 30 s Dictionary + Fitness promo from real ryOS captures.
+Compose the 30 s (or --length 60) Dictionary + Fitness promo from real ryOS captures.
 
   python3 scripts/promo/build.py [--vertical] [--out path.mp4] [--style style.json] [--music track.mp3]
-                                 [--music-start 110.705] [--bpm 126.35]
+                                 [--music-start 110.705] [--bpm 126.35] [--length 30|60]
 
 Horizontal = desktop takes in Apple's MacBook Air 13" bezel; --vertical = phone takes in the iPhone 18 Pro bezel.
 Bezels come from Apple Design Resources and are downloaded + cached by bezels.py (never committed). The captures
@@ -19,13 +19,16 @@ The phone gets an iOS home indicator (the bezel's screen is empty). Every size, 
 zoom beat is in style.py and can be overridden with a JSON file (--style / $PROMO_STYLE). Each render reports
 how many frames carried text and whether any of it left the frame or overlapped the device.
 
-Inputs: $PROMO_WORK_DIR/rec/{desktop,phone}-{desktop,dictionary,fitness}/ (capture.mkv + marks.json from shoot.ts);
+Inputs: $PROMO_WORK_DIR/rec/{desktop,phone}-{desktop,dictionary,fitness}/ (capture.mkv + marks.json from shoot.ts),
+plus -{dict-extra,fitness-extra,exercises}/ for the 60 s cut;
 PROMO_WORK_DIR defaults to tmp/promo at the repo root. App icons are the repo's macOS X theme icons in public/icons.
 
 Music: --music or $PROMO_MUSIC (never committed). Every cut and text hit is placed on the track's beat
 grid: --music-start ($PROMO_MUSIC_START) is the downbeat the excerpt starts on and --bpm ($PROMO_BPM) its
 tempo – find both with music.py. The excerpt is faded out over the end card, normalized to -14 LUFS and
-muxed as AAC 192k. Without music the video is silent on the same grid.
+muxed as AAC 192k. In the 60 s cut the pronunciation clip the Listen button played (dict-extra/listen.*) is
+mixed in at the moment it plays on screen, with the music ducked under it (style "sfx").
+Without music the video is silent on the same grid.
 
 Needs numpy, Pillow, opencv-python-headless, ffmpeg and 7z (for bezels.py).
 """
@@ -627,12 +630,14 @@ def union(*boxes):
 
 
 # ---------------------------------------------------------------- timeline
-def plan(L, dev, B):
+def plan(L, dev, B, length=30):
     """Scenes on the beat grid: (start_beat, end_beat, scene). Captions sit under the device at rest and slide
-    out as the camera punches in, so a zoomed device never has text over it."""
+    out as the camera punches in, so a zoomed device never has text over it. `length` 60 adds speech, readings,
+    schedule, set logging and the exercise library (sessions dict-extra, fitness-extra, exercises)."""
     k = L["dsf"]
     home, d, fz = Take(L, "desktop"), Take(L, "dictionary"), Take(L, "fitness")
-    for t in (home, d, fz):
+    extra = (Take(L, "dict-extra"), Take(L, "fitness-extra"), Take(L, "exercises")) if length == 60 else ()
+    for t in (home, d, fz, *extra):
         assert t.size == dev.screen[2:], f"{t.dir}: capture {t.size} != bezel screen {dev.screen[2:]} – re-shoot"
     rest = dev.rest
     cb = lambda box: dev.from_capture(box)  # noqa: E731
@@ -655,15 +660,23 @@ def plan(L, dev, B):
         "review": cb((rv[0], rv[1], rv[2], sd[1] + sd[3] + 40 * k - rv[1])),
         "progress": cb((body[0], body[1], body[2], min(body[3], 200 * k))),
     }
+    if extra:
+        dx, fx_, ex = extra
+        targets.update({
+            "listen": cb(dx.box("listen-ready")),
+            "readings": cb(dx.box("zhuyin-on")),
+            "lift": cb(fx_.box("sets-done")),
+            "exercise": cb(ex.box("ex-detail")),
+        })
 
     meal_src = fz.t("tap:describe", -0.35)
     ai_src = d.t("tap:explain", -0.45)
     split_src = fz.t("tap:split", -1.25)
     split_rate = (fz.t("tap:half", 0.55) - split_src) / (6 * B)
 
-    def D(caption, shots, zoom=None, cap_in=0, title=False, cap_in_s=None):
-        """Captioned device scene. With `zoom`, the caption exits on that zoom's beat as the device moves in.
-        cap_in is in beats; cap_in_s (seconds) overrides it."""
+    def D(caption, shots, zoom=None, cap_in=0, title=False, cap_in_s=None, zoom_beat=None):
+        """Captioned device scene. With `zoom`, the caption exits on that zoom's beat (style, or `zoom_beat`) as the
+        device moves in. cap_in is in beats; cap_in_s (seconds) overrides it."""
         cap_out = None
         if not STYLE["trailing_period"]:
             caption = caption.rstrip(".")
@@ -676,10 +689,11 @@ def plan(L, dev, B):
             if cap_in_s is None:
                 cap_in_s = STYLE["caption_in_s"]
         if zoom and Z.get(zoom):
-            t = Z[zoom]["beat"] * B
+            beat = Z[zoom]["beat"] if zoom_beat is None else zoom_beat
+            t = beat * B
             s = [sh_ for sh_ in shots if sh_["at"] <= t][-1]
             s["moves"].append((t - s["at"], dev.zoom(targets[zoom], Z[zoom]["factor"])))
-            cap_out = Z[zoom]["beat"]
+            cap_out = beat
         return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
                     cap_in_s=cap_in_s)
 
@@ -706,6 +720,8 @@ def plan(L, dev, B):
         opening = D("New apps on ryOS", [shot(home, 0, home.t("start", 0.6))], zoom="open",
                     cap_in=STYLE["caption_in_beat"]["open"], title=True)
 
+    if length == 60:
+        return plan60(d, fz, extra, B, shot, D, opening, ai_src, meal_src, split_src)
     return [
         (0, 7, opening),
         (7, 11, dict(kind="icon", icon="macosx/dictionary.png", name="Dictionary")),
@@ -721,6 +737,62 @@ def plan(L, dev, B):
         (45, 51, D("Split it ÷2.", [shot(fz, 0, split_src, split_rate)])),
         (51, 56, D("See your progress.", [shot(fz, 0, fz.t("body", 0.1))], zoom="progress")),
         (56, None, dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")),
+    ]
+
+
+def span_rate(a, b, beats, B):
+    """Playback rate that fits take time a..b into `beats`."""
+    return (b - a) / (beats * B)
+
+
+def plan60(d, fz, extra, B, shot, D, opening, ai_src, meal_src, split_src):
+    """The 60 s cut: the 30 s story plus pronunciation, reading guides, the week plan, set logging and the
+    exercise library (in Japanese). Scenes start on bar lines (the split runs 6 beats); zooms start on the half
+    beat nearest the moment they show (audio starts, Zhuyin turns on, sets land, detail opens)."""
+    dx, fx_, ex = extra
+    move_beats = STYLE["move"]["duration_s"] / B
+
+    def at(take, mark, src, rate, beats, off=0.0):
+        """Zoom beat for a take mark, kept clear of the caption's entrance and done before the scene ends."""
+        b = round((take.t(mark, off) - src) / rate / B * 2) / 2
+        return min(max(3.0, b), math.floor(beats - move_beats))
+
+    listen_src = dx.t("tap:listen", -1.3)
+    read_src = dx.t("tap:readings", -0.9)
+    read_rate = span_rate(read_src, dx.t("zhuyin-on", 2.0), 10, B)
+    sched_src = fx_.t("tap:start", -3.4)
+    lift_src = fx_.t("tap:lift", -1.0)
+    lift_rate = span_rate(lift_src, fx_.t("sets-done", 1.0), 10, B)
+    ex_src = ex.t("tap:search", -0.6)
+    ex_rate = span_rate(ex_src, ex.t("ex-detail", 1.9), 8, B)
+
+    listen = D("Hear how it's said.", [shot(dx, 0, listen_src)], zoom="listen",
+               zoom_beat=at(dx, "audio-playing", listen_src, 1.0, 8))
+    clip = json.load(open(os.path.join(dx.dir, "listen.json")))["file"]
+    listen["sfx"] = [(dx, "audio-playing", os.path.join(dx.dir, clip))]
+    return [
+        (0, 12, opening),
+        (12, 16, dict(kind="icon", icon="macosx/dictionary.png", name="Dictionary")),
+        (16, 28, D("Look up any word, in any language.", [
+            shot(d, 0, d.t("en", -0.5)), shot(d, 4 * B, d.t("ja", -0.6)), shot(d, 8 * B, d.t("ko", -0.6))])),
+        (28, 36, listen),
+        (36, 44, D("Watch every stroke.", [shot(d, 0, d.t("tap:hanzi1", -0.3))], zoom="strokes")),
+        (44, 54, D("Show readings like Zhuyin.", [shot(dx, 0, read_src, read_rate)], zoom="readings",
+                   zoom_beat=at(dx, "zhuyin-on", read_src, read_rate, 10, 0.2))),
+        (54, 64, D("Ask AI how a word is used.", [
+            shot(d, 0, ai_src, span_rate(ai_src, d.t("ai-end", 0.25), 10, B))], zoom="ai")),
+        (64, 68, dict(kind="icon", icon="macosx/fitness.png", name="Fitness", enter="push")),
+        (68, 76, D("Plan your week.", [shot(fx_, 0, sched_src, span_rate(sched_src, fx_.t("tap:start", 0.25), 8, B))])),
+        (76, 86, D("Log every set.", [shot(fx_, 0, lift_src, lift_rate)], zoom="lift",
+                   zoom_beat=at(fx_, "entry", lift_src, lift_rate, 10))),
+        (86, 94, D("Learn moves in your language.", [shot(ex, 0, ex_src, ex_rate)], zoom="exercise",
+                   zoom_beat=at(ex, "ex-detail", ex_src, ex_rate, 8))),
+        (94, 104, D("Log a meal with AI.", [
+            shot(fz, 0, meal_src, (fz.t("tap:estimate", 0.45) - meal_src) / (4 * B)),
+            shot(fz, 4 * B, fz.t("food-review", -0.25))], zoom="review")),
+        (104, 110, D("Split it ÷2.", [shot(fz, 0, split_src, (fz.t("tap:half", 0.55) - split_src) / (6 * B))])),
+        (110, 118, D("See your progress.", [shot(fz, 0, fz.t("body", 0.1))], zoom="progress")),
+        (118, None, dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")),
     ]
 
 
@@ -1055,17 +1127,64 @@ TRANSITIONS = {"push": push, "wipe_in": wipe_in, "wipe_out": wipe_out}
 
 
 # ---------------------------------------------------------------- audio
-def build_audio(music, start, out_wav):
-    fade = 1.6
-    chain = f"afade=t=in:d=0.02,afade=t=out:st={DURATION - fade:.2f}:d={fade}"
-    probe = subprocess.run(["ffmpeg", "-hide_banner", "-ss", f"{start}", "-t", f"{DURATION}", "-i", music,
-                            "-af", chain + ",loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"],
-                           capture_output=True, text=True).stderr
+def build_audio(music, start, out_wav, sfx=()):
+    """Music excerpt with a short fade over the end card, plus any in-app sounds (`sfx`: (output time, file)) with
+    the music ducked under them; the mix is normalized to -14 LUFS (two-pass loudnorm)."""
+    fade, A = 1.6, STYLE["sfx"]
+    inputs = ["-ss", f"{start}", "-t", f"{DURATION}", "-i", music]
+    music_chain = f"afade=t=in:d=0.02,afade=t=out:st={DURATION - fade:.2f}:d={fade}"
+    graph, mix = [], "[m]"
+    if sfx:
+        duck, r = 1 - 10 ** (-A["duck_db"] / 20), A["duck_ramp_s"]
+        terms = []
+        for t, path in sfx:
+            dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+                                       capture_output=True, text=True).stdout)
+            a, b = t - A["duck_lead_s"], t + dur + A["duck_tail_s"]
+            terms.append(f"min(max((t-{a - r:.3f})/{r},0),1)*min(max(({b + r:.3f}-t)/{r},0),1)")
+        env = terms[0]
+        for term in terms[1:]:
+            env = f"max({env},{term})"
+        music_chain += f",volume='1-{duck:.4f}*{env}':eval=frame"
+        labels = []
+        for i, (t, path) in enumerate(sfx):
+            inputs += ["-i", path]
+            ms = int(round(t * 1000))
+            graph.append(f"[{i + 1}:a]aresample=48000,aformat=channel_layouts=stereo,volume={A['gain_db']}dB,"
+                         f"adelay={ms}|{ms},apad[s{i}]")
+            labels.append(f"[s{i}]")
+        graph.insert(0, f"[0:a]aresample=48000,aformat=channel_layouts=stereo,{music_chain}[m]")
+        graph.append(f"[m]{''.join(labels)}amix=inputs={len(labels) + 1}:normalize=0:duration=first[mix]")
+        mix = "[mix]"
+    else:
+        graph.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo,{music_chain}[m]")
+
+    def run(tail, extra, **kw):
+        return subprocess.run(["ffmpeg", "-hide_banner", "-y", *inputs, "-filter_complex", ";".join(graph) + f";{mix}{tail}",
+                               *extra], **kw)
+
+    probe = run("loudnorm=I=-14:TP=-1:LRA=11:print_format=json[out]", ["-map", "[out]", "-f", "null", "-"],
+                capture_output=True, text=True).stderr
     st = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
     norm = (f"loudnorm=I=-14:TP=-1:LRA=11:measured_I={st['input_i']}:measured_TP={st['input_tp']}:"
             f"measured_LRA={st['input_lra']}:measured_thresh={st['input_thresh']}:offset={st['target_offset']}:linear=true")
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start}", "-t", f"{DURATION}", "-i", music,
-                    "-af", f"{chain},{norm},aresample=48000", "-ac", "2", out_wav], check=True)
+    run(f"{norm},aresample=48000[out]", ["-map", "[out]", "-ac", "2", "-t", f"{DURATION}", out_wav],
+        check=True, capture_output=True)
+
+
+def sfx_times(scenes):
+    """(output time, file) for each in-app sound: the take mark mapped through the shot that plays it."""
+    out = []
+    for _, _, sc in scenes:
+        for take, mark, path in sc.get("sfx", ()):
+            mt = take.t(mark)
+            # The shot on screen when the mark plays: the last one that has started by then.
+            sh = [s for s in sc["shots"] if s["take"] is take and mt >= s["src"]
+                  and all(o["at"] > s["at"] + (mt - s["src"]) / s["rate"] for o in sc["shots"] if o["at"] > s["at"])][-1]
+            out.append((sc["t0"] + sh["at"] + (mt - sh["src"]) / sh["rate"], path))
+    for t, path in out:
+        print(f"[sfx] {t:6.2f}s {os.path.basename(path)}")
+    return out
 
 
 def compose(L, B, out, music=None, music_start=0.0):
@@ -1078,7 +1197,7 @@ def compose(L, B, out, music=None, music_start=0.0):
          "-tune", "animation", "-pix_fmt", "yuv420p", "-movflags", "+faststart", tmp_video],
         stdin=subprocess.PIPE)
     dev = Device(L)
-    scenes = plan(L, dev, B)
+    scenes = plan(L, dev, B, int(DURATION))
     for i, (_, _, sc) in enumerate(scenes):
         sc["index"] = i
         sc["enter_kind"], sc["enter_s"] = entrance(sc, scenes[i - 1][2] if i else None)
@@ -1132,7 +1251,7 @@ def compose(L, B, out, music=None, music_start=0.0):
     if music:
         with tempfile.TemporaryDirectory() as td:
             wav = os.path.join(td, "music.wav")
-            build_audio(music, music_start, wav)
+            build_audio(music, music_start, wav, sfx_times(scenes))
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp_video, "-i", wav, "-map", "0:v", "-map", "1:a",
                             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out],
                            check=True)
@@ -1156,9 +1275,11 @@ if __name__ == "__main__":
     ap.add_argument("--music", default=os.environ.get("PROMO_MUSIC"))
     ap.add_argument("--music-start", type=float, default=float(os.environ.get("PROMO_MUSIC_START", "110.705")))
     ap.add_argument("--bpm", type=float, default=float(os.environ.get("PROMO_BPM", "126.35")))
+    ap.add_argument("--length", type=int, choices=(30, 60), default=int(os.environ.get("PROMO_LENGTH", "30")))
     args = ap.parse_args()
+    DURATION = float(args.length)
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v8{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{'30s-v9' if args.length == 30 else '60s'}{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)

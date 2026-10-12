@@ -50,6 +50,9 @@ DEFAULTS = {
         "ease": [0.42, 0, 0.58, 1],  # ease-in-out
         "pull": 0.7,                 # how far the zoom recentres on its target (0 = straight in, 1 = target centred)
     },
+    # In-app sounds (the 60 s cut's pronunciation clip): the music dips by duck_db, ramping over duck_ramp_s,
+    # from duck_lead_s before the sound until duck_tail_s after it; gain_db lifts the clip itself.
+    "sfx": {"duck_db": 10, "duck_ramp_s": 0.15, "duck_lead_s": 0.1, "duck_tail_s": 0.3, "gain_db": 5},
     # One entry per zoom in the cut: factor vs the resting device, and the beat (within its scene) it starts on.
     # The scene's caption exits on the same beat.
     "zoom": {
@@ -58,6 +61,11 @@ DEFAULTS = {
         "ai": {"factor": 1.3, "beat": 3},
         "review": {"factor": 1.25, "beat": 4},
         "progress": {"factor": 1.2, "beat": 2},
+        # 60 s cut only: their beat comes from the take's marks (audio start, Zhuyin on, set entry, detail open).
+        "listen": {"factor": 1.4, "beat": 3},
+        "readings": {"factor": 1.45, "beat": 6},
+        "lift": {"factor": 1.3, "beat": 4},
+        "exercise": {"factor": 1.25, "beat": 4},
     },
     "icon": {"pop_s": 0.34, "overshoot": 1.9, "name_delay_beats": 0.5, "url_delay_beats": 1.0},
     "push_s": 0.32,
