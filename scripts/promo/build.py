@@ -11,8 +11,10 @@ are the bezel's native screen size, so footage maps 1:1 onto the screen cut-out 
 the Dynamic Island come from the bezel's own alpha). The camera moves the whole device: zooms scale and slide
 the framed device, never crop inside the screen, and stop at 1 output px per screen px.
 
-Apple Support layout: captions (Myriad Pro) sit centred under the resting device. On a zoom's beat the caption
-exits through its mask and the whole device eases in by a subtle factor. App intros and the end card are centred.
+Apple Support layout: captions (Myriad Pro) sit centred under the resting device, or (layout "side", Apple's
+title card) left-aligned beside it, sliding out from behind the device's edge. On a zoom's beat the caption
+exits and the whole device eases in by a subtle factor. App intros are icon cards, optionally on a solid panel
+that wipes in over the last scene and slides off into the app demo; the end card is centred.
 The phone gets an iOS home indicator (the bezel's screen is empty). Every size, duration, easing, zoom factor and
 zoom beat is in style.py and can be overridden with a JSON file (--style / $PROMO_STYLE). Each render reports
 how many frames carried text and whether any of it left the frame or overlapped the device.
@@ -149,8 +151,16 @@ def behind(dst, layer, x, y, clip_y):
         paste_rgba(dst, layer, x, y)
 
 
-def wrap(text, size, max_w):
-    """Fewest lines that fit max_w, then the most even break into that many lines."""
+def behind_x(dst, layer, x, y, clip_x):
+    """Paste a layer with every column right of clip_x hidden (it is behind the device)."""
+    keep = int(math.floor(clip_x - x)) if clip_x is not None else layer.shape[1]
+    if keep <= 0:
+        return
+    paste_rgba(dst, layer[:, :keep], x, y)
+
+
+def wrap(text, size, max_w, max_chars=None):
+    """Fewest lines that fit max_w (and max_chars per line), then the most even break into that many lines."""
     font = ImageFont.truetype(FONT, size)
     width = lambda s: font.getlength(s) + max(0, len(s) - 1) * size * STYLE["tracking_em"]  # noqa: E731
     words = text.split(" ")
@@ -159,27 +169,44 @@ def wrap(text, size, max_w):
         for cuts in itertools.combinations(range(1, len(words)), n - 1):
             b = (0,) + cuts + (len(words),)
             lines = [" ".join(words[b[i]:b[i + 1]]) for i in range(n)]
+            if max_chars and max(len(l) for l in lines) > max_chars:
+                continue
             w = max(width(l) for l in lines)
             if best is None or w < best[0]:
                 best = (w, lines)
-        if best[0] <= max_w:
+        if best and best[0] <= max_w:
             return best[1]
     raise ValueError(f"{text!r} has a word wider than {max_w}px at {size}px")
 
 
 class Caption:
-    """Centred multi-line caption; each line reveals in its own mask box, staggered top to bottom."""
+    """Multi-line caption, centred or left-aligned; each line is its own mask box."""
 
-    def __init__(self, text, size, max_w, line_height):
-        self.lines = [text_layer(l, size) for l in wrap(text, size, max_w)]
+    def __init__(self, text, size, max_w, line_height, max_chars=None, align="center"):
+        self.lines = [text_layer(l, size) for l in wrap(text, size, max_w, max_chars)]
         self.lh = int(round(size * line_height))
         self.pad = int(math.ceil(size * STYLE["caption"]["pad_em"]))
         self.w = max(l.shape[1] for l in self.lines)
         self.h = self.lh * (len(self.lines) - 1) + self.lines[-1].shape[0]
         self.n = len(self.lines)
+        self.align = align
 
     def rect(self, cx, y):
+        """Block box incl. padding; anchor is the top-centre ("center") or the ink's left edge ("left")."""
+        if self.align == "left":
+            return (cx - self.pad, y, cx - self.pad + self.w, y + self.h)
         return (int(round(cx - self.w / 2)), y, int(round(cx + self.w / 2)), y + self.h)
+
+    def draw_side(self, dst, x, y, e, clip_x, clip0):
+        """Left-aligned block that slides out leftward from behind the device: e=0 its ink starts at clip0 (the
+        resting device's left edge), e=1 at x. Only columns left of the device's current left edge clip_x show."""
+        if e <= 0:
+            return
+        e = 1.0 if e >= 0.999 else e
+        xt = int(round(x + (1 - e) * (clip0 - x)))
+        for i, l in enumerate(self.lines):
+            behind_x(dst, l, xt - self.pad, y + i * self.lh, clip_x)
+        return xt
 
     def draw_behind(self, dst, cx, y, e, clip_y, clip0):
         """Slide out from behind the device: e=0 tucked fully above clip0 (the resting device's bottom edge), e=1 at
@@ -606,13 +633,21 @@ def plan(L, dev, B):
         """Captioned device scene. With `zoom`, the caption exits on that zoom's beat as the device moves in.
         cap_in is in beats; cap_in_s (seconds) overrides it."""
         cap_out = None
+        if not STYLE["trailing_period"]:
+            caption = caption.rstrip(".")
+        side = make_caption(L, dev, caption, title)[2]
+        if side is not None:
+            for sh_ in shots:
+                if sh_["cam"] is rest:
+                    sh_["cam"] = side
+                sh_["moves"] = [(m[0], side, *m[2:]) if m[1] is rest else m for m in sh_["moves"]]
+            if cap_in_s is None:
+                cap_in_s = STYLE["caption_in_s"]
         if zoom and Z.get(zoom):
             t = Z[zoom]["beat"] * B
             s = [sh_ for sh_ in shots if sh_["at"] <= t][-1]
             s["moves"].append((t - s["at"], dev.zoom(targets[zoom], Z[zoom]["factor"])))
             cap_out = Z[zoom]["beat"]
-        if not STYLE["trailing_period"]:
-            caption = caption.rstrip(".")
         return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
                     cap_in_s=cap_in_s)
 
@@ -652,6 +687,8 @@ def make_caption(L, dev, text, title):
     refuses layouts where the block would leave the frame or overlap the resting device."""
     lay = STYLE["layout"][L["key"]]
     size = lay["title_size"] if title else lay["caption_size"]
+    if lay["caption_anchor"] == "side":
+        return side_caption(L, dev, text, size, lay)
     cap = Caption(text, size, min(lay["caption_max_w"], L["W"] - 2 * lay["margin"]), lay["line_height"])
     dev_bottom = dev.out_box(dev.rest)[3]
     if lay["caption_anchor"] == "gap":
@@ -663,22 +700,40 @@ def make_caption(L, dev, text, title):
     if x0 < m or x1 > L["W"] - m or y1 > L["H"] - m + cap.pad or y + cap.pad < dev_bottom:
         raise ValueError(f"caption {text!r} {x0, y0, x1, y1} doesn't fit under the device (bottom {dev_bottom:.0f}) "
                          f"in {L['W']}x{L['H']} – adjust layout.{L['key']}")
-    return cap, (L["W"] // 2, y)
+    return cap, (L["W"] // 2, y), None
+
+
+def side_caption(L, dev, text, size, lay):
+    """Apple title-card layout: the block is left-aligned at text_x_frac of the width, vertically centred, at most
+    max_chars per line and inside block_w_frac of the width; the device sits device_gap px right of the block's
+    widest line, its right edge mirroring the left margin. Returns (caption, (ink left x, top y), device camera)."""
+    W, H = L["W"], L["H"]
+    x = int(round(lay["text_x_frac"] * W))
+    cap = Caption(text, size, lay["block_w_frac"] * W - x, lay["line_height"], lay.get("max_chars"), align="left")
+    y = int(round(H / 2 - cap.h / 2))
+    ink_right = x + cap.w - 2 * cap.pad
+    left, right = ink_right + lay["device_gap"], W - x
+    bx0, by0, bx1, by1 = dev.bbox
+    s = min((right - left) / (bx1 - bx0), lay["side_device_h_max"] / (by1 - by0), S_MAX)
+    cam = (s, bx1 - (right - W / 2) / s, (by0 + by1) / 2)
+    if y < lay["margin"] or y + cap.h > H - lay["margin"]:
+        raise ValueError(f"caption {text!r} is too tall for the side layout – adjust layout.{L['key']}")
+    return cap, (x, y), cam
 
 
 CAPTION_LOG = {"frames": 0, "rest": 0, "overlap": [], "offframe": []}
 
 
-def check_caption(L, cap, cx, y, clip_y, tau, at_rest):
+def check_caption(L, cap, cx, y, clip_y, tau, at_rest, behind=False):
     """Per frame with text on screen: the block (at its current position) stays inside the frame, and once it has
-    settled no part of its glyph box is hidden behind the device."""
+    settled no part of its glyph box is hidden behind the device (below it, or right of it with `behind`)."""
     CAPTION_LOG["frames"] += 1
     x0, y0, x1, y1 = cap.rect(cx, y)
-    if x0 < 0 or x1 > L["W"] or y1 > L["H"] or (at_rest and y0 < 0):
+    if x0 < 0 or y1 > L["H"] or (at_rest and (y0 < 0 or x1 > L["W"])):
         CAPTION_LOG["offframe"].append(round(tau, 2))
     if at_rest:
         CAPTION_LOG["rest"] += 1
-        if clip_y is not None and clip_y > y0 + cap.pad:
+        if behind or (clip_y is not None and clip_y > y0 + cap.pad):
             CAPTION_LOG["overlap"].append(round(tau, 2))
 
 
@@ -688,15 +743,26 @@ def blank(L):
     return f
 
 
+def entrance(sc, prev_sc):
+    """(kind, seconds) of the transition a scene enters with; it overlaps the previous scene's tail frames.
+    Kinds: None, "mask" (end card), "wipe_in" (panel covers the last scene), "wipe_out" (panel leaves), "push"."""
+    P = STYLE["panel"]
+    if prev_sc is None:
+        return None, 0.0
+    if sc["kind"] == "end" and STYLE["end"]["kind"] == "mask":
+        return "mask", STYLE["end"]["mask_s"]
+    if P["kind"] == "wipe" and sc["kind"] == "icon":
+        return "wipe_in", P["in_s"]
+    if P["kind"] == "wipe" and prev_sc["kind"] == "icon":
+        return "wipe_out", P["out_s"]
+    if STYLE["transition"]["kind"] == "push":
+        return "push", STYLE["transition"]["duration_s"]
+    return ("push", STYLE["push_s"]) if sc.get("enter") == "push" else (None, 0.0)
+
+
 def enter_s(sc):
     """How long this scene's entrance transition overlaps the previous scene."""
-    if sc.get("index", 0) == 0:
-        return 0.0
-    if sc["kind"] == "end" and STYLE["end"]["kind"] == "mask":
-        return STYLE["end"]["mask_s"]
-    if STYLE["transition"]["kind"] == "push":
-        return STYLE["transition"]["duration_s"]
-    return STYLE["push_s"] if sc.get("enter") == "push" else 0.0
+    return sc.get("enter_s", 0.0)
 
 
 def slide_text(dst, layer, x, y, t, clip_y):
@@ -712,20 +778,31 @@ def slide_text(dst, layer, x, y, t, clip_y):
 
 def render_icon(L, sc, B, n):
     """App intro: the theme icon pops in, its name comes out from under it."""
-    lay, ic = STYLE["layout"][L["key"]], STYLE["icon"]
+    lay, ic, P = STYLE["layout"][L["key"]], STYLE["icon"], STYLE["panel"]
     icon = load_icon(sc["icon"])
-    name = text_layer(sc["name"], lay["name_size"])
+    on_panel = P["kind"] == "wipe"
+    name = text_layer(sc["name"], lay["name_size"], tuple(P["ink"]) if on_panel else None)
+    pad = int(math.ceil(lay["name_size"] * STYLE["caption"]["pad_em"]))
     size = lay["icon"]
     gap = int(size * 0.12)
     top = (L["H"] - (size + gap + name.shape[0])) // 2
+    if on_panel and lay.get("icon_align") == "left":
+        # Align the icon's visible art (not its transparent margin) and the label's ink with the caption x.
+        x = int(round(lay["text_x_frac"] * L["W"]))
+        cols = np.where(icon[..., 3].max(axis=0) > 24)[0]
+        icx = x - cols[0] * size / icon.shape[1] + size / 2
+        name_x = x - pad
+    else:
+        icx, name_x = L["W"] / 2, (L["W"] - name.shape[1]) // 2
     base = blank(L)
-    t_icon = enter_s(sc) * 0.4
+    if on_panel:
+        base[:] = tuple(P["color"])[::-1]
+    t_icon = P["content_at_s"] if on_panel else enter_s(sc) * 0.4
     for i in range(n):
         tau = i / FPS
         f = base.copy()
-        pop(f, icon, L["W"] / 2, top + size / 2, size, (tau - t_icon) / ic["pop_s"])
-        slide_text(f, name, (L["W"] - name.shape[1]) // 2, top + size + gap, tau - t_icon - ic["name_delay_beats"] * B,
-                   top + size)
+        pop(f, icon, icx, top + size / 2, size, (tau - t_icon) / ic["pop_s"])
+        slide_text(f, name, name_x, top + size + gap, tau - t_icon - ic["name_delay_beats"] * B, top + size)
         yield f
 
 
@@ -740,9 +817,10 @@ def rounded_mask(H, W, cx, cy, side, radius_frac=0.2237):
     return np.clip(0.5 - d, 0, 1)
 
 
-def render_end(L, sc, B, n, prev=None):
+def render_end(L, sc, B, n, prev=None, focus=None):
     """End card. "mask": the last shot shrinks through an icon-shaped mask onto the ryOS icon (overshoots by
-    end.overshoot, springs back); otherwise the icon pops in. The URL then comes out from under the icon."""
+    end.overshoot, springs back), sliding so its device centre (`focus`) lands in the mask; otherwise the icon pops
+    in. The URL then comes out from under the icon."""
     lay, ic, E = STYLE["layout"][L["key"]], STYLE["icon"], STYLE["end"]
     icon = load_icon(sc["icon"])
     url = text_layer(sc["url"], lay["url_size"])
@@ -761,9 +839,14 @@ def render_end(L, sc, B, n, prev=None):
         if i < mask_n:
             u = (i + 1) / mask_n
             if u <= split:
-                side = cover + (size * (1 - E["overshoot"]) - cover) * ease_move(u / split)
+                g = ease_move(u / split)
+                side = cover + (size * (1 - E["overshoot"]) - cover) * g
                 m = rounded_mask(L["H"], L["W"], L["W"] / 2, cy, side)[..., None]
-                f = (prev[i].astype(np.float32) * m + f.astype(np.float32) * (1 - m)).astype(np.uint8)
+                src = prev[i]
+                if focus is not None:
+                    shift = np.float32([[1, 0, (L["W"] / 2 - focus[0]) * g], [0, 1, (cy - focus[1]) * g]])
+                    src = cv2.warpAffine(src, shift, (L["W"], L["H"]), borderMode=cv2.BORDER_REPLICATE)
+                f = (src.astype(np.float32) * m + f.astype(np.float32) * (1 - m)).astype(np.uint8)
             else:
                 v = (u - split) / (1 - split)
                 k = (1 - E["overshoot"]) + E["overshoot"] * (1 - (1 - v) ** 3)
@@ -778,14 +861,14 @@ def render_end(L, sc, B, n, prev=None):
 
 
 def render_device(L, dev, sc, B, n):
-    cap, (cx, cy) = make_caption(L, dev, sc["caption"], sc["title"])
+    cap, (cx, cy), side_cam = make_caption(L, dev, sc["caption"], sc["title"])
     T = STYLE["tap"]
     t_in = sc["cap_in_s"] if sc.get("cap_in_s") is not None else sc["cap_in"] * B
     in_s = sc.get("cap_dur_s") or STYLE["caption"]["in_s"]
     t_out = sc["cap_out"] * B if sc["cap_out"] is not None else None
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
     behind_mode = STYLE["caption_entrance"] == "behind"
-    clip0 = dev.out_box(dev.rest)[3]
+    clip0 = dev.out_box(side_cam)[0] if side_cam else dev.out_box(dev.rest)[3]
     tap_kind = T["phone" if L["device"] == "phone" else "mac"]
     shots = sc["shots"]
     bounds = [min(n, round(s["at"] * FPS)) for s in shots] + [n]
@@ -798,6 +881,7 @@ def render_device(L, dev, sc, B, n):
             tau_shot = j / FPS
             tau = bounds[k] / FPS + tau_shot
             cam = cam_at(s, tau_shot)
+            sc["last_cam"] = cam
             f = dev.render(fr, cam)
             if tap_kind == "ios":
                 draw_ios_taps(f, dev, cam, taps, tau_shot)
@@ -807,7 +891,16 @@ def render_device(L, dev, sc, B, n):
                 for (tt, px, py) in taps:
                     draw_tap(f, dev, cam, (px, py), tau_shot - tt)
             if tau >= t_in and (t_gone is None or tau < t_gone):
-                if behind_mode:
+                if side_cam:
+                    e = ease_cap_in((tau - t_in) / in_s)
+                    if t_out is not None and tau >= t_out:
+                        e *= 1 - ease_cap_out((tau - t_out) / STYLE["caption"]["out_s"])
+                    clip_x = dev.out_box(cam)[0]
+                    xt = cap.draw_side(f, cx, cy, e, clip_x, clip0)
+                    if xt is not None:
+                        check_caption(L, cap, xt, cy, None, tau + sc["t0"], e >= 0.999,
+                                      behind=xt - cap.pad + cap.w - cap.pad > clip_x)
+                elif behind_mode:
                     e = ease_cap_in((tau - t_in) / in_s)
                     if t_out is not None and tau >= t_out:
                         e *= 1 - ease_cap_out((tau - t_out) / STYLE["caption"]["out_s"])
@@ -831,6 +924,26 @@ def push(prev, cur, u):
     out[:, :W - x] = prev[:, x:]
     out[:, W - x:] = cur[:, :x]
     return out
+
+
+def wipe_in(prev, cur, u):
+    """The panel scene (cur) wipes in from the left over the last scene."""
+    x = int(round(ease_move(u) * cur.shape[1]))
+    out = prev.copy()
+    out[:, :x] = cur[:, :x]
+    return out
+
+
+def wipe_out(prev, cur, u):
+    """The panel (prev) slides off to the right, revealing the next scene underneath."""
+    W = cur.shape[1]
+    x = int(round(ease_move(u) * W))
+    out = cur.copy()
+    out[:, x:] = prev[:, :W - x]
+    return out
+
+
+TRANSITIONS = {"push": push, "wipe_in": wipe_in, "wipe_out": wipe_out}
 
 
 # ---------------------------------------------------------------- audio
@@ -860,6 +973,7 @@ def compose(L, B, out, music=None, music_start=0.0):
     scenes = plan(L, dev, B)
     for i, (_, _, sc) in enumerate(scenes):
         sc["index"] = i
+        sc["enter_kind"], sc["enter_s"] = entrance(sc, scenes[i - 1][2] if i else None)
     written, prev, tail = 0, None, []
     for i, (b0, b1, sc) in enumerate(scenes):
         f0 = round(b0 * B * FPS)
@@ -869,13 +983,16 @@ def compose(L, B, out, music=None, music_start=0.0):
         sc["t0"] = f0 / FPS
         # A scene keeps rendering past its end for as long as the next scene's entrance overlaps it.
         nxt = scenes[i + 1][2] if i + 1 < len(scenes) else None
-        if nxt is not None:
-            nxt["index"] = i + 1
         extra = round(enter_s(nxt) * FPS) if nxt is not None else 0
         enter_n = round(enter_s(sc) * FPS)
-        overlap = STYLE["transition"]["kind"] == "push" or (kind == "end" and STYLE["end"]["kind"] == "mask")
+        trans = TRANSITIONS.get(sc["enter_kind"])
+        focus = None
+        if kind == "end" and i and scenes[i - 1][2].get("last_cam"):
+            sx, sy, sw, sh = dev.screen
+            focus = dev.to_out(scenes[i - 1][2]["last_cam"], sx + sw / 2, sy + sh / 2)
         gen = (render_icon(L, sc, B, n + extra) if kind == "icon"
-               else render_end(L, sc, B, n + extra, prev=tail if kind == "end" and STYLE["end"]["kind"] == "mask" else None)
+               else render_end(L, sc, B, n + extra, focus=focus,
+                               prev=tail if kind == "end" and STYLE["end"]["kind"] == "mask" else None)
                if kind == "end" else render_device(L, dev, sc, B, n + extra))
         print(f"[{f0 / FPS:6.2f}s] beat {b0:>2} {kind:6s} {sc.get('caption') or sc.get('name') or sc.get('url')}", flush=True)
         hold, new_tail = prev, []
@@ -884,8 +1001,8 @@ def compose(L, B, out, music=None, music_start=0.0):
                 new_tail.append(f)
                 continue
             prev = f
-            if j < enter_n and hold is not None and not (kind == "end" and STYLE["end"]["kind"] == "mask"):
-                f = push(tail[j] if overlap and j < len(tail) else hold, f, (j + 1) / enter_n)
+            if j < enter_n and hold is not None and trans:
+                f = trans(tail[j] if j < len(tail) else hold, f, (j + 1) / enter_n)
             enc.stdin.write(f.tobytes())
             written += 1
         tail = new_tail
@@ -919,6 +1036,6 @@ if __name__ == "__main__":
     args = ap.parse_args()
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v5{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-30s-v6{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
