@@ -376,6 +376,13 @@
   white-space: nowrap;
   -webkit-font-smoothing: antialiased;
   font-smooth: auto;
+  /* Native iOS/WebKit button chrome (appearance: button) ignores author
+     borders and mis-paints ::before/::after on later buttons in a row —
+     a hairline along the top of the pill and a seam through the label.
+     Dropping the native appearance lets the Aqua gloss paint on its own. */
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Disabled Aqua buttons must keep their drop shadow. Element-level
@@ -601,6 +608,18 @@
   bottom: 0;
   filter: blur(1px);
   pointer-events: none;
+}
+
+/* iOS Safari duplicates a neighboring button's chrome when a button pseudo
+   uses filter() (the 0.5–1px gloss blur). That shows up as a heavy top edge
+   and a line through the label on the second button in a pair, e.g. the
+   Account debug "Desktop crash" control next to "App crash". Coarse pointers
+   don't need the subpixel blur; the gradient gloss stays. */
+@media (pointer: coarse) {
+  .aqua-button:before,
+  .aqua-button:after {
+    filter: none;
+  }
 }
 
 /* Aqua icon badge — circular POI chips in the Maps app (drawer, search,

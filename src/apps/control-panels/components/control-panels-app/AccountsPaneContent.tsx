@@ -573,6 +573,7 @@ export function AccountsPaneContent({
                       description={t("apps.control-panels.bootScreenDescription")}
                     >
                       <Button
+                        type="button"
                         variant="retro"
                         onClick={handleShowBootScreen}
                         className="w-fit"
@@ -582,6 +583,7 @@ export function AccountsPaneContent({
                     </ControlPanelsPrefFormRow>
                     <div className="flex gap-2">
                       <Button
+                        type="button"
                         variant="retro"
                         onClick={handleTriggerAppCrashTest}
                         className="flex-1"
@@ -589,6 +591,7 @@ export function AccountsPaneContent({
                         {t("apps.control-panels.crashApp")}
                       </Button>
                       <Button
+                        type="button"
                         variant="retro"
                         onClick={handleTriggerDesktopCrashTest}
                         className="flex-1"
