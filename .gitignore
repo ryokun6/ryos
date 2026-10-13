@@ -45,5 +45,12 @@ build/github-secrets-paste.txt
 
 core
 
-# Promo capture/render scratch (scripts/promo)
+# Promo capture/render scratch (scripts/promo): captures, renders, cached bezels, music
 /tmp/
+scripts/promo/out/
+scripts/promo/rec/
+scripts/promo/**/*.mp4
+scripts/promo/**/*.mp3
+scripts/promo/**/*.mkv
+__pycache__/
+*.pyc
