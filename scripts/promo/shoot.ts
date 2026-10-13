@@ -156,7 +156,6 @@ async function dictExtra(page: Page) {
   if (phone) await fillPhoneWindow(page);
   else await centerWindow(page, 700, 676);
   const input = page.getByPlaceholder("Look up a word");
-  const win = page.locator("[data-window-instance-id]").last();
   await retype(page, input, "serendipity", 20);
   await sleep(2500);
   // dictionaryapi.dev mirrors Wikimedia Commons recordings (…/en/serendipity-au.mp3 = File:En-au-serendipity.ogg).

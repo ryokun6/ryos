@@ -111,7 +111,9 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
         localStorage.setItem("ryos:language", lang);
         localStorage.setItem("ryos:language-initialized", "true");
       }
-    } catch {}
+    } catch {
+      // storage unavailable – the app falls back to its defaults
+    }
   }, opts.language ?? "en");
   await page.goto(`${BASE}/?_ryo=1`);
   await page.waitForTimeout(5000);
@@ -162,7 +164,6 @@ export async function store<T = unknown>(page: Page, fn: string, arg?: unknown):
         const hit = urls.reverse().find((u) => new URL(u).pathname === p);
         return hit ?? p;
       };
-      // eslint-disable-next-line no-new-func
       const f = new Function("arg", "__load", `return (async () => { ${fn.replace(/import\(\s*"(\/src\/[^"]+)"\s*\)/g, 'import(__load("$1"))')} })()`);
       return f(arg, loaded);
     },
