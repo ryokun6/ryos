@@ -1,0 +1,5 @@
+{
+  "_about": "v8 design re-timed for bgm2 (PROMO_MUSIC_START=182.640, PROMO_BPM=129.82). Cuts, zooms, caption hits and the word stagger are already in beats; this pins the two opening moves to the grid too.",
+  "extends": "apple-support.json",
+  "open": {"move_at_beats": 2, "push_at_beats": 3}
+}
