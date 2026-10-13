@@ -2,8 +2,8 @@
 """
 Compose the 30 s (or --length 60) Dictionary + Fitness promo from real ryOS captures.
 
-  python3 scripts/promo/build.py [--vertical] [--out path.mp4] [--style style.json] [--music track.mp3]
-                                 [--music-start 110.705] [--bpm 126.35] [--length 30|60]
+  python3 scripts/promo/build.py --music bgm2.mp3 [--length 30|60] [--vertical] [--out path.mp4]
+                                 [--style style.json] [--music-start s] [--bpm bpm]
 
 Horizontal = desktop takes in Apple's MacBook Air 13" bezel; --vertical = phone takes in the iPhone 18 Pro bezel.
 Bezels come from Apple Design Resources and are downloaded + cached by bezels.py (never committed). The captures
@@ -13,7 +13,8 @@ the framed device, never crop inside the screen, and stop at 1 output px per scr
 
 Apple Support layout: captions (Myriad Pro) sit centred under the resting device, or (layout "side", Apple's
 title card) left-aligned beside it, sliding out from behind the device's edge. On a zoom's beat the caption
-exits and the whole device eases in by a subtle factor. App intros are icon cards, optionally on a solid panel
+exits and the whole device eases in by a subtle factor (the Apple Support style allows one per cut). Within an
+app the first caption enters once and later steps roll it over in place (caption.change "roll"). App intros are icon cards, optionally on a solid panel
 that wipes in over the last scene and slides off into the app demo; the end card is centred.
 The phone gets an iOS home indicator (the bezel's screen is empty). Every size, duration, easing, zoom factor and
 zoom beat is in style.py and can be overridden with a JSON file (--style / $PROMO_STYLE). Each render reports
@@ -23,9 +24,9 @@ Inputs: $PROMO_WORK_DIR/rec/{desktop,phone}-{desktop,dictionary,fitness}/ (captu
 plus -{dict-extra,fitness-extra,exercises}/ for the 60 s cut;
 PROMO_WORK_DIR defaults to tmp/promo at the repo root. App icons are the repo's macOS X theme icons in public/icons.
 
-Music: --music or $PROMO_MUSIC (never committed). Every cut and text hit is placed on the track's beat
+Music: --music or $PROMO_MUSIC (bgm2.mp3, never committed). Every cut and text hit is placed on the track's beat
 grid: --music-start ($PROMO_MUSIC_START) is the downbeat the excerpt starts on and --bpm ($PROMO_BPM) its
-tempo – find both with music.py. The excerpt is faded out over the end card, normalized to -14 LUFS and
+tempo. Both default to bgm2's grid for the chosen length (BGM2_GRID); for another track find them with music.py. The excerpt is faded out over the end card, normalized to -14 LUFS and
 muxed as AAC 192k. In the 60 s cut the pronunciation clip the Listen button played (dict-extra/listen.*) is
 mixed in at the moment it plays on screen, with the music ducked under it (style "sfx").
 Without music the video is silent on the same grid.
@@ -54,6 +55,10 @@ REC = os.path.join(ROOT, "rec")
 ICONS = os.path.join(REPO, "public", "icons")
 FPS = 30
 DURATION = 30.0
+# bgm2.mp3's beat grid per cut length: (downbeat the excerpt starts on, BPM). 30 s = the climax after the
+# breakdown; 60 s = from the lighter break at 112.5 s up to the end of the climax at 172.5 s.
+BGM2_GRID = {30: (182.640, 129.82), 60: (112.501, 128.499)}
+BGM2_STYLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "styles", "apple-support-bgm2.json")
 S_MAX = 1.0        # never enlarge the footage past native
 
 # Fixed geometry per cut; everything tunable (sizes, placement, timing, easing, zoom) comes from style.py.
@@ -1303,15 +1308,19 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--vertical", action="store_true")
     ap.add_argument("--out")
-    ap.add_argument("--style", default=os.environ.get("PROMO_STYLE"), help="JSON overrides for style.py")
-    ap.add_argument("--music", default=os.environ.get("PROMO_MUSIC"))
-    ap.add_argument("--music-start", type=float, default=float(os.environ.get("PROMO_MUSIC_START", "110.705")))
-    ap.add_argument("--bpm", type=float, default=float(os.environ.get("PROMO_BPM", "126.35")))
+    ap.add_argument("--style", default=os.environ.get("PROMO_STYLE", BGM2_STYLE), help="JSON overrides for style.py")
+    ap.add_argument("--music", default=os.environ.get("PROMO_MUSIC"), help="bgm2.mp3 (never committed)")
+    ap.add_argument("--music-start", type=float, default=os.environ.get("PROMO_MUSIC_START"),
+                    help="downbeat the excerpt starts on (default: bgm2's offset for --length)")
+    ap.add_argument("--bpm", type=float, default=os.environ.get("PROMO_BPM"), help="default: bgm2's tempo for --length")
     ap.add_argument("--length", type=int, choices=(30, 60), default=int(os.environ.get("PROMO_LENGTH", "30")))
     args = ap.parse_args()
+    start, bpm = BGM2_GRID[args.length]
+    args.music_start = start if args.music_start is None else float(args.music_start)
+    args.bpm = bpm if args.bpm is None else float(args.bpm)
     DURATION = float(args.length)
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{'30s-v10' if args.length == 30 else '60s-v2'}{'-vertical' if args.vertical else ''}.mp4")
+    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{args.length}s{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
