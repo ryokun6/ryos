@@ -130,27 +130,35 @@ final class ShellWebHolderController: UIViewController {
     /// their bottom becomes that inset, the same way the status bar does.
     private func applyTopInset() {
         guard !applying, view.bounds.width > 0 else { return }
+        let already = additionalSafeAreaInsets.top
+        let systemTop = max(0, view.safeAreaInsets.top - already)
+        // The SwiftUI read of the status-bar height can be 0 on the first
+        // pass. Read it again here, on every layout, and only when the system
+        // itself reported no top inset (iPad full screen). A reported inset
+        // (iPhone) is left alone so it is not added twice.
+        let side = max(view.safeAreaInsets.left, view.safeAreaInsets.right)
+        let floor = (systemTop < 1 && side < 20)
+            ? max(minimumTopInset, ShellView.currentStatusBarHeight())
+            : minimumTopInset
         if view.bounds.size != lastSize {
             lastSize = view.bounds.size
             latchedControlBottom = 0
-            if abs(additionalSafeAreaInsets.top - minimumTopInset) > 0.5 {
+            if abs(already - floor) > 0.5 {
                 applying = true
-                additionalSafeAreaInsets.top = minimumTopInset
+                additionalSafeAreaInsets.top = floor
                 applying = false
                 return
             }
         }
         let guideTop = view.layoutGuide(for: .safeArea(cornerAdaptation: .horizontal)).layoutFrame.minY
-        let already = additionalSafeAreaInsets.top
-        let systemTop = max(0, view.safeAreaInsets.top - already)
         let extra = guideTop - view.safeAreaInsets.top
         // Only trust the guide while our inset is the bare minimum. Once we
         // have raised it, a guide that includes our own inset would grow.
-        if extra > 0.5, abs(already - minimumTopInset) < 0.5 {
-            latchedControlBottom = systemTop + minimumTopInset + extra
+        if extra > 0.5, abs(already - floor) < 0.5 {
+            latchedControlBottom = systemTop + floor + extra
         }
-        let clearance = max(systemTop + minimumTopInset, latchedControlBottom)
-        let needed = max(minimumTopInset, clearance - systemTop)
+        let clearance = max(systemTop + floor, latchedControlBottom)
+        let needed = max(floor, clearance - systemTop)
         guard abs(needed - already) > 0.5 else { return }
         applying = true
         additionalSafeAreaInsets.top = needed
