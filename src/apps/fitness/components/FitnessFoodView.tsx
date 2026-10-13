@@ -32,6 +32,7 @@ import {
   targetProgress,
 } from "../utils/nutrition";
 import { FoodSplitControl } from "./FoodSplitControl";
+import { isIosShell } from "@/utils/platform";
 import {
   EmptyNote,
   FITNESS_CHIP_CLASS,
@@ -468,7 +469,7 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
                       void handleFile(e.target.files?.[0]);
                       e.target.value = "";
                     }}
-                    className="absolute inset-0 z-10 cursor-pointer opacity-0"
+                    className={isIosShell() ? "absolute inset-0 z-10 cursor-pointer opacity-0" : "hidden"}
                   />
                   <Button
                     type="button"
