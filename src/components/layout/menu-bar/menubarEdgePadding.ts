@@ -76,8 +76,10 @@ export function shouldApplyFoldedStatusBarInset(input: {
   coarseTouch: boolean;
   viewportWidth: number;
   viewportHeight: number;
+  /** The shell's side status bar. A matching window size without it is an iPad window, not the Duo cover. */
+  hasSideStatusBar: boolean;
 }): boolean {
-  if (!input.iosShell || !input.coarseTouch) return false;
+  if (!input.iosShell || !input.coarseTouch || !input.hasSideStatusBar) return false;
   const portraitCover =
     input.viewportWidth >= 450 &&
     input.viewportWidth <= 520 &&

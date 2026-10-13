@@ -115,13 +115,13 @@
   }
 
   @media (hover: none) and (pointer: coarse) and (min-width: 450px) and (max-width: 520px) and (min-height: 600px) {
-    html[data-ios-shell] {
+    html[data-ios-shell][data-side-status-bar] {
       --desktop-content-right: max(env(safe-area-inset-right, 0px), 84px);
     }
   }
 
   @media (hover: none) and (pointer: coarse) and (min-width: 620px) and (max-width: 760px) and (min-height: 440px) and (max-height: 540px) {
-    html[data-ios-shell] {
+    html[data-ios-shell][data-side-status-bar] {
       --desktop-content-right: max(env(safe-area-inset-right, 0px), 84px);
     }
   }

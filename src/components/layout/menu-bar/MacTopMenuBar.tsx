@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { Menubar } from "@/components/ui/menubar";
 import { AppleMenu } from "../AppleMenu";
 import { AppMenu } from "../AppMenu";
@@ -7,7 +7,7 @@ import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useWallpaperMenubarText } from "@/hooks/useWallpaperMenubarText";
 import { useIsPhone } from "@/hooks/useIsPhone";
-import { hasDesktopWindowChrome, isDesktopWindows } from "@/utils/platform";
+import { hasDesktopWindowChrome, isDesktopWindows, isIosShell } from "@/utils/platform";
 import { getTranslatedAppName } from "@/utils/i18n";
 import { ScrollableMenuWrapper } from "./ScrollableMenuWrapper";
 import { FinderAppMenu } from "./FinderAppMenu";
@@ -49,8 +49,26 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
   const hasActiveApp = !!foregroundInstance;
 
   const { isMacOSTheme, isMacTheme, isAquaGlass } = useThemeFlags();
+  const iosShell = isIosShell();
   const { textColor: glassMenubarText, tone: glassMenubarTone } =
-    useWallpaperMenubarText(isAquaGlass);
+    useWallpaperMenubarText(isAquaGlass || iosShell);
+  // Status-bar glyphs sit on the wallpaper, so they follow its tone, not the
+  // system appearance. The menubar's own text keeps the theme colour except
+  // in Aqua, where the bar is transparent.
+  useEffect(() => {
+    if (!iosShell) return;
+    const bridge = window.ryosDesktop;
+    const setTone = bridge?.setStatusBarTone;
+    if (typeof setTone !== "function") return;
+    try {
+      const result: unknown = setTone.call(bridge, glassMenubarTone);
+      if (result && typeof (result as Promise<unknown>).catch === "function") {
+        (result as Promise<unknown>).catch(() => {});
+      }
+    } catch {
+      // An older shell has no such method.
+    }
+  }, [iosShell, glassMenubarTone]);
   const isPhone = useIsPhone();
   const hasWindowChrome = hasDesktopWindowChrome();
   const showDesktopDragDebugZone = shouldShowDesktopDragDebugZone({

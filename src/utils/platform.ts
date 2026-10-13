@@ -138,13 +138,25 @@ export const SIDE_STATUS_BAR_EXTENT_EVENT = "ryos-status-bar-extent";
 /** Root CSS variable that mirrors the iOS shell's `sideStatusBarExtent`. */
 export const SIDE_BAR_EXTENT_VAR = "--side-bar-extent";
 
+/**
+ * Set while the shell reports a side status bar. The folded-cover 84px floor
+ * is gated on it, so an iPad window that merely matches the cover's size
+ * does not grow a false gap.
+ */
+export const SIDE_STATUS_BAR_ATTRIBUTE = "data-side-status-bar";
+
+
 function applySideBarExtent(value: unknown): void {
   const px = Number(value);
-  document.documentElement.style.setProperty(
-    SIDE_BAR_EXTENT_VAR,
-    `${Number.isFinite(px) && px > 0 ? px : 0}px`
-  );
+  const resolved = Number.isFinite(px) && px > 0 ? px : 0;
+  document.documentElement.style.setProperty(SIDE_BAR_EXTENT_VAR, `${resolved}px`);
+  if (resolved > 0) {
+    document.documentElement.setAttribute(SIDE_STATUS_BAR_ATTRIBUTE, "");
+  } else {
+    document.documentElement.removeAttribute(SIDE_STATUS_BAR_ATTRIBUTE);
+  }
 }
+
 
 /**
  * Mark the document so CSS content insets apply, and mirror the side

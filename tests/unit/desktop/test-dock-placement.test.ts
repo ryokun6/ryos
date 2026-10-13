@@ -200,6 +200,7 @@ describe("iOS shell side status-bar extent", () => {
       value: {
         documentElement: {
           setAttribute() {},
+          removeAttribute() {},
           style: { setProperty: (name: string, value: string) => cssVars.set(name, value) },
         },
       },
