@@ -61,23 +61,17 @@ struct ShellView: View {
         return (sideStatusBarExtentOpenMeasured, false)
     }
 
-    /// Clearance follows the status bar's actual edge, read from the live
-    /// safe-area geometry (GeometryProxy.safeAreaInsets — Apple documents no
-    /// API that even names iPhone Duo, it reports as an iPhone). On iPhone Duo
-    /// the bar is VERTICAL on a side edge (the trailing safe-area inset, 84pt
-    /// on the closed outer display; one side on the inner display in
-    /// landscape), so there is no top bar to clear: the web runs to the very
-    /// top and the web client clears the bar zone itself via its
-    /// --desktop-content-left/right env(safe-area-inset-*) bindings (PR 1965).
-    /// Regular iPhones always have zero side insets, so they keep the top
-    /// clearance with the web menubar flush beneath the black strip.
+    /// The webview is full bleed on every device (iPhone, iPad, iPhone Duo)
+    /// and the page clears the system bars itself: inside the shell
+    /// (html[data-ios-shell]) the menubar, windows, icons and toasts start
+    /// below env(safe-area-inset-top), and the wallpaper fills the strip
+    /// behind the status bar. Insetting here would double the clearance.
+    /// Where the status bar is VERTICAL (iPhone Duo, read from the live
+    /// safe-area geometry; no API names the device) the real top inset is
+    /// 0 but the top ~20pt is still system-reserved, so the shell reports
+    /// that band as a virtual top inset.
     private func duoBody(topIsClearanceEdge: Bool, sideStatusBarExtent: CGFloat, sideStatusBarHasCamera: Bool) -> some View {
         ZStack(alignment: .top) {
-            // Solid black behind the status bar, per the design reference:
-            // the web menubar sits flush beneath it. Ignore every edge so the
-            // status-bar region stays black in any pose — on iPhone Duo's
-            // inner display in landscape the inset moves to a side edge, and
-            // leaving it un-painted shows the white window background there.
             Color.black
                 .ignoresSafeArea()
 
@@ -85,14 +79,7 @@ struct ShellView: View {
                          virtualTopInset: topIsClearanceEdge ? 0 : 20,
                          sideStatusBarExtent: sideStatusBarExtent,
                          sideStatusBarHasCamera: sideStatusBarHasCamera)
-                // Full bleed on the sides always (the web clears any vertical
-                // bar itself — insetting here would double it as black bars
-                // down the display edge), and the top too when the bar is a
-                // side bar (Duo, either pose). Top respect stays only where
-                // the status bar is horizontal at the top.
-                .ignoresSafeArea(edges: topIsClearanceEdge
-                    ? [.bottom, .leading, .trailing]
-                    : .all)
+                .ignoresSafeArea()
 
             if shell.splashVisible {
                 SplashView(bootPhase: shell.bootPhase, offline: shell.isOffline)
