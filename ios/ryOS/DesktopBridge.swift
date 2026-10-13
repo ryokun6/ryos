@@ -81,6 +81,9 @@ enum DesktopBridge {
         quitAndInstall: function () { return invoke('quitAndInstall'); },
         onUpdateStatus: function () { return function () {}; },
         playHaptic: function (pattern) { return invoke('playHaptic', { pattern: pattern }); },
+        setStatusBarTone: function (tone) {
+          return invoke('setStatusBarTone', { tone: tone === 'dark' ? 'dark' : 'light' });
+        },
         // Vertical status-bar cluster extent inside the trailing side bar, in
         // CSS px, and whether the camera dot is part of the cluster: 0/false
         // wherever a vertical bar doesn't exist; on the iPhone Duo poses the
@@ -91,8 +94,12 @@ enum DesktopBridge {
         // __ryosSetSideStatusBarExtent below, which also fires a
         // `ryos-status-bar-extent` CustomEvent (detail = {extent, hasCamera})
         // so listeners can react without polling.
-        sideStatusBarExtent: 0,
-        sideStatusBarHasCamera: false,
+        sideStatusBarExtent:
+          (window.__ryosInitialSideStatusBar &&
+            window.__ryosInitialSideStatusBar.extent) || 0,
+        sideStatusBarHasCamera:
+          !!(window.__ryosInitialSideStatusBar &&
+            window.__ryosInitialSideStatusBar.hasCamera),
       };
       window.__ryosSetSideStatusBarExtent = function (v, cam) {
         v = Number(v) || 0;
