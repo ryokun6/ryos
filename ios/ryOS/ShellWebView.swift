@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import ObjectiveC
 import Network
 import AuthenticationServices
 
@@ -32,6 +33,18 @@ struct ShellWebView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let config = WKWebViewConfiguration()
         let userContent = config.userContentController
+        // Seed the bridge before any page script, so the dock never sees a
+        // 0-to-measured jump. The injected script reads this; without it the
+        // values stay 0 (contract test, other shells).
+        let prelude = "window.__ryosInitialSideStatusBar="
+            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
+        userContent.addUserScript(
+            WKUserScript(
+                source: prelude,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
         userContent.addUserScript(
             WKUserScript(
                 source: DesktopBridge.injectedJavaScript,
@@ -57,7 +70,11 @@ struct ShellWebView: UIViewControllerRepresentable {
         // shift the page); env(safe-area-inset-*) still sees the insets.
         webView.scrollView.contentInsetAdjustmentBehavior = .never
 
-        let holder = UIViewController()
+        let holder = ShellWebHolderController()
+        holder.onLayout = { [weak holder] in
+            guard let root = holder?.view.window?.rootViewController else { return }
+            StatusBarStyleController.shared.installIfNeeded(on: root)
+        }
         holder.view.backgroundColor = .black
         webView.frame = holder.view.bounds
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -71,13 +88,81 @@ struct ShellWebView: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ holder: UIViewController, context: Context) {
-        // UIKit's native virtual-inset mechanism: adds to the propagated safe
-        // area, reaches the page only as env(safe-area-inset-top).
-        let inset = UIEdgeInsets(top: virtualTopInset, left: 0, bottom: 0, right: 0)
-        if holder.additionalSafeAreaInsets != inset {
-            holder.additionalSafeAreaInsets = inset
+        // Reaches the page only as env(safe-area-inset-top). The holder may
+        // raise it to the bottom of the iPad window controls.
+        if let holder = holder as? ShellWebHolderController {
+            holder.minimumTopInset = virtualTopInset
         }
         context.coordinator.reportSideStatusBarExtent(sideStatusBarExtent, hasCamera: sideStatusBarHasCamera)
+    }
+}
+
+/// Plain holder whose layout changes (rotation, iPad window resize, split
+/// view) re-measure the window controls. A stock UIViewController has no hook
+/// the representable can see.
+final class ShellWebHolderController: UIViewController {
+    var onLayout: (() -> Void)?
+    /// Geometry inset (the Duo band, or an iPad status bar the system did not
+    /// report). The window controls can only raise it.
+    var minimumTopInset: CGFloat = 0 {
+        didSet { if oldValue != minimumTopInset { applyTopInset() } }
+    }
+    private var lastSize: CGSize = .zero
+    /// Bottom of the window controls in the view, latched from a measurement
+    /// taken before our own inset was added, so it cannot feed back.
+    private var latchedControlBottom: CGFloat = 0
+    private var applying = false
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        applyTopInset()
+        onLayout?()
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        if !applying { applyTopInset() }
+        onLayout?()
+    }
+
+    /// One top inset for everything. The page already starts the menubar at
+    /// env(safe-area-inset-top), so the controls are not a separate layout:
+    /// their bottom becomes that inset, the same way the status bar does.
+    private func applyTopInset() {
+        guard !applying, view.bounds.width > 0 else { return }
+        let already = additionalSafeAreaInsets.top
+        let systemTop = max(0, view.safeAreaInsets.top - already)
+        // The SwiftUI read of the status-bar height can be 0 on the first
+        // pass. Read it again here, on every layout, and only when the system
+        // itself reported no top inset (iPad full screen). A reported inset
+        // (iPhone) is left alone so it is not added twice.
+        let side = max(view.safeAreaInsets.left, view.safeAreaInsets.right)
+        let floor = (systemTop < 1 && side < 20)
+            ? max(minimumTopInset, ShellView.currentStatusBarHeight())
+            : minimumTopInset
+        if view.bounds.size != lastSize {
+            lastSize = view.bounds.size
+            latchedControlBottom = 0
+            if abs(already - floor) > 0.5 {
+                applying = true
+                additionalSafeAreaInsets.top = floor
+                applying = false
+                return
+            }
+        }
+        let guideTop = view.layoutGuide(for: .safeArea(cornerAdaptation: .horizontal)).layoutFrame.minY
+        let extra = guideTop - view.safeAreaInsets.top
+        // Only trust the guide while our inset is the bare minimum. Once we
+        // have raised it, a guide that includes our own inset would grow.
+        if extra > 0.5, abs(already - floor) < 0.5 {
+            latchedControlBottom = systemTop + floor + extra
+        }
+        let clearance = max(systemTop + floor, latchedControlBottom)
+        let needed = max(floor, clearance - systemTop)
+        guard abs(needed - already) > 0.5 else { return }
+        applying = true
+        additionalSafeAreaInsets.top = needed
+        applying = false
     }
 }
 
@@ -359,6 +444,10 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
                 MediaHapticsController.shared.playHaptic(pattern)
             }
             reply(id, true)
+        case "setStatusBarTone":
+            let tone = (args as? [String: Any])?["tone"] as? String
+            StatusBarStyleController.shared.setDarkText(tone == "dark")
+            reply(id, true)
         case "getLocationPermissionStatus":
             reply(id, LocationPermissionController.shared.webStatus)
         default:
@@ -618,4 +707,63 @@ func bridgeJSON(_ object: [String: Any]) -> String? {
     guard let data = try? JSONSerialization.data(withJSONObject: object, options: []),
           let string = String(data: data, encoding: .utf8) else { return nil }
     return string
+}
+
+
+/// Status-bar glyph colour. The page decides it from the wallpaper and the
+/// shell applies it; the system appearance is not the surface under the
+/// glyphs. Starts light (white glyphs) over the black boot screen. Changes
+/// the style only, never the bar's visibility.
+@MainActor
+final class StatusBarStyleController {
+    static let shared = StatusBarStyleController()
+    private(set) var style: UIStatusBarStyle = .lightContent
+    private var installed = false
+
+    func setDarkText(_ dark: Bool) {
+        let next: UIStatusBarStyle = dark ? .darkContent : .lightContent
+        guard next != style else { return }
+        style = next
+        refresh()
+    }
+
+    /// SwiftUI's hosting controller owns the status bar and does not defer to
+    /// children, so the root's class gains the two overrides below. Done once.
+    func installIfNeeded(on root: UIViewController) {
+        guard !installed else { return }
+        let name = "ryOSStatusBarHost"
+        if let existing = NSClassFromString(name) {
+            object_setClass(root, existing)
+        } else if let sub = objc_allocateClassPair(type(of: root), name, 0) {
+            for sel in [
+                #selector(getter: UIViewController.preferredStatusBarStyle),
+                #selector(getter: UIViewController.childForStatusBarStyle),
+            ] {
+                guard let method = class_getInstanceMethod(StatusBarStyleHost.self, sel) else { continue }
+                class_addMethod(sub, sel, method_getImplementation(method), method_getTypeEncoding(method))
+            }
+            objc_registerClassPair(sub)
+            object_setClass(root, sub)
+        }
+        installed = true
+        refresh()
+    }
+
+    private func refresh() {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        for scene in scenes {
+            for window in scene.windows {
+                window.rootViewController?.setNeedsStatusBarAppearanceUpdate()
+            }
+        }
+    }
+}
+
+/// Source of the two methods copied onto the root controller's subclass.
+final class StatusBarStyleHost: UIViewController {
+    @objc override var preferredStatusBarStyle: UIStatusBarStyle {
+        StatusBarStyleController.shared.style
+    }
+
+    @objc override var childForStatusBarStyle: UIViewController? { nil }
 }
