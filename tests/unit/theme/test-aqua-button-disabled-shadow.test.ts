@@ -70,6 +70,16 @@ describe("aqua disabled button shadow", () => {
     expect(destructive).toContain("inset 0 1px 3px rgba(92, 0, 7, 0.3)");
   });
 
+  test("aqua buttons opt out of native iOS chrome that seams the later button in a row", () => {
+    const block = extractRuleBlock(aquaCss, ".aqua-button {");
+    expect(block).toContain("appearance: none");
+    expect(block).toContain("-webkit-appearance: none");
+    expect(aquaCss).toContain("@media (pointer: coarse)");
+    expect(aquaCss).toMatch(
+      /@media \(pointer: coarse\)\s*\{\s*\.aqua-button:before,\s*\.aqua-button:after\s*\{\s*filter:\s*none;/
+    );
+  });
+
   test("dark mode disabled labels stay dim without muffling shadows", () => {
     expect(darkAquaCss).toContain(".aqua-button.primary:disabled");
     expect(darkAquaCss).toContain(".aqua-button.secondary:disabled");
