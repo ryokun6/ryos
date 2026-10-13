@@ -456,18 +456,20 @@ export function FitnessFoodView({ l, isMobileLayout }: { l: FitnessLogic; isMobi
             <DraftEditor l={l} draft={draft} setDraft={setDraft} photo={photo} onSave={save} onCancel={reset} />
           ) : (
             <div className="flex flex-col gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  void handleFile(e.target.files?.[0]);
-                  e.target.value = "";
-                }}
-              />
               <div className="flex items-start gap-2">
                 <div className="relative size-20 shrink-0">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    disabled={busy}
+                    aria-label={t("apps.fitness.food.addPhoto")}
+                    onChange={(e) => {
+                      void handleFile(e.target.files?.[0]);
+                      e.target.value = "";
+                    }}
+                    className="absolute inset-0 z-10 cursor-pointer opacity-0"
+                  />
                   <Button
                     type="button"
                     variant="secondary"

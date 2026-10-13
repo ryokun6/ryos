@@ -201,6 +201,7 @@ describe("menubar edge padding", () => {
       /max\(env\(safe-area-inset-right, 0px\), 84px\)/g
     );
     expect(foldedRules?.length).toBe(2);
+    expect(css).toContain("html[data-ios-shell][data-side-status-bar]");
     expect(css).toContain("min-width: 450px) and (max-width: 520px) and (min-height: 600px)");
     expect(css).toContain(
       "min-width: 620px) and (max-width: 760px) and (min-height: 440px) and (max-height: 540px)"
@@ -209,6 +210,7 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: true,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 466,
         viewportHeight: 678,
@@ -217,6 +219,7 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: true,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 678,
         viewportHeight: 466,
@@ -225,6 +228,7 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: true,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 402,
         viewportHeight: 874,
@@ -233,6 +237,7 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: true,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 874,
         viewportHeight: 402,
@@ -241,6 +246,7 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: true,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 951,
         viewportHeight: 669,
@@ -249,11 +255,22 @@ describe("menubar edge padding", () => {
     expect(
       shouldApplyFoldedStatusBarInset({
         iosShell: false,
+        hasSideStatusBar: true,
         coarseTouch: true,
         viewportWidth: 466,
         viewportHeight: 678,
       })
     ).toBe(false);
+    expect(
+      shouldApplyFoldedStatusBarInset({
+        iosShell: true,
+        hasSideStatusBar: false,
+        coarseTouch: true,
+        viewportWidth: 466,
+        viewportHeight: 678,
+      })
+    ).toBe(false);
+
   });
 
   test("the shell marker is the iOS bridge platform, not a user-agent check", () => {

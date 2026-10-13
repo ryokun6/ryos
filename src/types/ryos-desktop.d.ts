@@ -218,6 +218,11 @@ export interface RyosDesktopApi {
   /** iOS shell: whether the camera is part of that cluster (folded iPhone Duo only). */
   sideStatusBarHasCamera?: boolean;
   /**
+   * iOS shell: paint status-bar glyphs dark or light to match the wallpaper
+   * behind them. "dark" means dark glyphs.
+   */
+  setStatusBarTone?: (tone: "light" | "dark") => Promise<void>;
+  /**
    * iOS shell: run a redirect-based sign-in in the system auth sheet
    * (ASWebAuthenticationSession). Resolves with the URL that reached
    * `callback`; rejects with "cancelled" when the user closes the sheet.
