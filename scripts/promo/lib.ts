@@ -134,7 +134,7 @@ async function emulateIosShell(page: Page) {
 
 export async function signIn(page: Page) {
   const username = `promo${Date.now().toString(36)}`;
-  const password = `Promo-${Math.random().toString(36).slice(2)}!9`;
+  const password = `Promo-${crypto.randomUUID()}!9`;
   const res = await page.evaluate(
     async ({ username, password }) => {
       const r = await fetch("/api/auth/register", {
