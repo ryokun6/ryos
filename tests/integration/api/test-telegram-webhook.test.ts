@@ -1,6 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as RateLimit from "../../../api/_utils/_rate-limit";
-import { parseAuthCookie } from "../../../api/_utils/_cookie";
 import { createRedis } from "../../../api/_utils/redis";
 import {
   appendTelegramConversationMessage,
@@ -13,6 +12,7 @@ import {
   BASE_URL,
   fetchWithOrigin,
   fetchWithAuth,
+  getTokenFromAuthCookie,
   makeRateLimitBypassHeaders,
 } from "../../helpers/test-utils";
 
@@ -32,7 +32,7 @@ const mockRequests: Array<{
 }> = [];
 
 function getAuthTokenFromResponse(response: Response): string | null {
-  return parseAuthCookie(response.headers.get("set-cookie"))?.token ?? null;
+  return getTokenFromAuthCookie(response);
 }
 
 beforeAll(async () => {

@@ -22,10 +22,22 @@ import {
 } from "../_utils/auth/_password.js";
 import { isProfaneUsername, assertValidUsername } from "../_utils/_validation.js";
 import { apiHandler } from "../_utils/api-handler.js";
-import { buildSetAuthCookie } from "../_utils/_cookie.js";
 // Use the shared trust-aware IP resolver so self-hosted deployments cannot
 // bypass per-IP rate limits via spoofed X-Forwarded-For headers.
-import { getClientIp, makeKey } from "../_utils/_rate-limit.js";
+import { getClientIp } from "../_utils/_rate-limit.js";
+import {
+  appendSetCookie,
+  prependSetCookie,
+  buildSetAuthCookie,
+  buildSetDeviceCookie,
+  createDeviceId,
+  parseDeviceCookie,
+} from "../_utils/_cookie.js";
+import {
+  consumeRegistrationAttempt,
+  consumeRegistrationCreate,
+  REGISTER_LIMIT_MESSAGE,
+} from "../_utils/auth/_register-quota.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import {
   getStoredUserRecord,
@@ -48,27 +60,16 @@ export default apiHandler(
     const body = ctx.body as RegisterRequest | null;
     const { username: rawUsername, password } = body || {};
 
-    // Rate limiting: 5/min per IP with 24h block on exceed
-    const ip = getClientIp(req);
-    const blockKey = makeKey(["rl", "block", "auth:register", "ip", ip]);
-    const blocked = await redis.get(blockKey);
-    if (blocked) {
-      res.status(429).json({
-        error: "Too many registration attempts. Please try again later.",
-      });
-      return;
-    }
+    // httpOnly device id. Browsers keep it; discarding it still hits the IP cap.
+    const existingDeviceId = parseDeviceCookie(getHeader(req, "cookie"));
+    const deviceId = existingDeviceId ?? createDeviceId();
+    appendSetCookie(res, buildSetDeviceCookie(deviceId));
 
-    const rlKey = makeKey(["rl", "auth:register", "ip", ip]);
-    const current = await redis.incr(rlKey);
-    if (current === 1) {
-      await redis.expire(rlKey, 60);
-    }
-    if (current > 5) {
-      await redis.set(blockKey, "1", { ex: 86400 });
-      res.status(429).json({
-        error: "Too many registration attempts. Please try again later.",
-      });
+    const ip = getClientIp(req);
+    const attempt = await consumeRegistrationAttempt(redis, ip);
+    if (!attempt.allowed) {
+      res.setHeader("Retry-After", String(attempt.retryAfter));
+      res.status(429).json({ error: REGISTER_LIMIT_MESSAGE });
       return;
     }
 
@@ -150,7 +151,7 @@ export default apiHandler(
             await syncKosyncAuthKeyFromPlainPassword(redis, username, password);
             const token = generateAuthToken();
             await storeToken(redis, username, token);
-            res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
+            prependSetCookie(res, buildSetAuthCookie(username, token));
             res.status(200).json({ user: { username } });
             return;
           }
@@ -162,6 +163,13 @@ export default apiHandler(
       }
       // Password doesn't match or no password set
       res.status(409).json({ error: "Username already taken" });
+      return;
+    }
+
+    const created = await consumeRegistrationCreate(redis, ip, deviceId);
+    if (!created.allowed) {
+      res.setHeader("Retry-After", String(created.retryAfter));
+      res.status(429).json({ error: REGISTER_LIMIT_MESSAGE });
       return;
     }
 
@@ -188,7 +196,7 @@ export default apiHandler(
     const token = generateAuthToken();
     await storeToken(redis, username, token);
 
-    res.setHeader("Set-Cookie", buildSetAuthCookie(username, token));
+    prependSetCookie(res, buildSetAuthCookie(username, token));
     res.status(201).json({ user: { username } });
   }
 );

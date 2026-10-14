@@ -35,7 +35,7 @@ import {
   getStoredUserTimeZone,
   updateStoredUserTimeZone,
 } from "./_utils/auth/_user-record.js";
-import { isAssistantGreetingRequest } from "../src/shared/assistantGreeting.js";
+import { shouldChargeAiChatTurn } from "../src/shared/aiChatQuota.js";
 import {
   AI_CONVERSATION_OPERATION_ID_MAX_LENGTH,
   type AIConversationRequestContext,
@@ -292,23 +292,15 @@ export default apiHandler<{
       ? [clientActionMessage]
       : clientConversationMessages;
 
-    // Charge every regeneration and every anonymous generation except the
-    // exact desktop-assistant greeting. Store-validated client-tool
-    // continuations retain their exemption.
-    const isAssistantGreeting =
-      conversationChannel === "assistant" &&
-      normalizedTrigger === "submit-message" &&
-      requestMessages.length === 1 &&
-      isAssistantGreetingRequest(
-        requestMessages,
-        { persona: "assistant" }
-      );
-    const isNewUserTurn =
-      normalizedTrigger === "submit-message" &&
-      requestMessages.at(-1)?.role === "user";
-    const shouldRateLimit =
-      normalizedTrigger === "regenerate-message" ||
-      (!isAssistantGreeting && (!isAuthenticated || isNewUserTurn));
+    // Charge regenerations, anonymous generations, nudges, and the
+    // desktop-assistant summon. Store-validated client-tool continuations
+    // for a signed-in user stay uncharged.
+    const shouldRateLimit = shouldChargeAiChatTurn({
+      trigger: normalizedTrigger,
+      isAuthenticated,
+      channel: conversationChannel,
+      messages: requestMessages,
+    });
     if (shouldRateLimit) {
       const rateLimitResult = await checkAndIncrementAIMessageCount(
         identifier,
