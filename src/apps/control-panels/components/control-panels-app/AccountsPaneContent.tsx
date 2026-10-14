@@ -436,6 +436,7 @@ export function AccountsPaneContent({
                         </SelectContent>
                       </Select>
                     </ControlPanelsPrefFormRow>
+                    {isAdmin && (
                     <ControlPanelsPrefFormRow
                       label={t("apps.control-panels.aiModel")}
                       description={t("apps.control-panels.aiModelDescription")}
@@ -468,6 +469,7 @@ export function AccountsPaneContent({
                         </SelectContent>
                       </Select>
                     </ControlPanelsPrefFormRow>
+                    )}
                     <ControlPanelsPrefFormRow
                       label={t("apps.control-panels.ttsModel")}
                       description={t("apps.control-panels.ttsModelDescription")}

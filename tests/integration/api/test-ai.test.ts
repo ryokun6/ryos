@@ -63,9 +63,15 @@ async function testChatInvalidModel(): Promise<void> {
       model: "invalid-model-name",
     }),
   });
-  // Rate limiting is checked before model validation, so may get 429 first
-  // Otherwise expect 400 for invalid model
-  expect([400, 429]).toContain(res.status);
+  // Unauthenticated callers ignore the model and use the default. A 400 is
+  // not the model rejection. Rate limits may still return 429.
+  expect(res.status).not.toBe(403);
+  if (res.status === 400) {
+    const text = await res.text();
+    expect(text).not.toContain("Unsupported model");
+  } else {
+    await res.body?.cancel();
+  }
 }
 
 async function testChatRestrictedOpusModel(): Promise<void> {
@@ -78,12 +84,13 @@ async function testChatRestrictedOpusModel(): Promise<void> {
       debugMode: true,
     }),
   });
-  // Rate limiting is checked before model access, so may get 429 first
-  expect([403, 429]).toContain(res.status);
-  if (res.status === 403) {
-    const data = (await res.json()) as { error?: string; model?: string };
-    expect(data.error).toBe("model_not_allowed");
-    expect(data.model).toBe("opus-5.5");
+  // Unauthenticated callers ignore opus and debugMode and use the default.
+  expect(res.status).not.toBe(403);
+  if (res.status === 400) {
+    const text = await res.text();
+    expect(text).not.toContain("model_not_allowed");
+  } else {
+    await res.body?.cancel();
   }
 }
 
@@ -358,8 +365,14 @@ async function testIeGenerateInvalidModel(): Promise<void> {
       model: "invalid-model-name",
     }),
   });
-  // Rate limiting may be checked before model validation, so 429 is also acceptable
-  expect([400, 429]).toContain(res.status);
+  // Unauthenticated callers ignore the model and use the default.
+  expect(res.status).not.toBe(403);
+  if (res.status === 400) {
+    const text = await res.text();
+    expect(text).not.toContain("Unsupported model");
+  } else {
+    await res.body?.cancel();
+  }
 }
 
 async function testIeGenerateRestrictedOpusModel(): Promise<void> {
@@ -374,11 +387,12 @@ async function testIeGenerateRestrictedOpusModel(): Promise<void> {
       debugMode: true,
     }),
   });
-  expect([403, 429]).toContain(res.status);
-  if (res.status === 403) {
-    const data = (await res.json()) as { error?: string; model?: string };
-    expect(data.error).toBe("model_not_allowed");
-    expect(data.model).toBe("opus-5.5");
+  expect(res.status).not.toBe(403);
+  if (res.status === 400) {
+    const text = await res.text();
+    expect(text).not.toContain("model_not_allowed");
+  } else {
+    await res.body?.cancel();
   }
 }
 
