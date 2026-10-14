@@ -12,11 +12,8 @@ import {
   getModelInstance,
   getModelReasoning,
   modelSupportsTemperature,
-  isRestrictedAiModel,
-  normalizeAiModelId,
   parseRequestDebugMode,
   resolveRequestedAiModel,
-  SUPPORTED_AI_MODELS,
   type SupportedModel,
 } from "./_utils/_aiModels.js";
 import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
@@ -275,15 +272,8 @@ export default apiHandler<IEGenerateRequestBody>(
     }
 
     const debugMode = parseRequestDebugMode(req, bodyData);
-    let username: string | null = null;
-    const previewId = normalizeAiModelId(String(requestedModel || DEFAULT_MODEL));
-    if (
-      SUPPORTED_AI_MODELS.includes(previewId as SupportedModel) &&
-      isRestrictedAiModel(previewId as SupportedModel)
-    ) {
-      const auth = await resolveRequestAuth(req, redis);
-      username = auth.user?.username ?? null;
-    }
+    const auth = await resolveRequestAuth(req, redis);
+    const username = auth.user?.username ?? null;
     const resolvedModel = resolveRequestedAiModel(requestedModel, {
       username,
       debugMode,

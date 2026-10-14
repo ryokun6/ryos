@@ -9,12 +9,14 @@ describe("model reasoning options", () => {
     expect(getModelReasoning("gpt-5.5")).toBe("none");
   });
 
-  test("uses low reasoning for gpt-6", () => {
-    expect(getModelReasoning("gpt-6")).toBe("low");
+  test("uses none for gpt-6 luna and low for gpt-6.1-sol", () => {
+    expect(getModelReasoning("gpt-6")).toBe("none");
+    expect(getModelReasoning("gpt-6.1-sol")).toBe("low");
   });
 
-  test("omits temperature for gpt-6 and opus-5.5", () => {
+  test("omits temperature for gpt-6, gpt-6.1-sol, and opus-5.5", () => {
     expect(modelSupportsTemperature("gpt-6")).toBe(false);
+    expect(modelSupportsTemperature("gpt-6.1-sol")).toBe(false);
     expect(modelSupportsTemperature("opus-5.5")).toBe(false);
     expect(modelSupportsTemperature("gpt-5.5")).toBe(true);
     expect(modelSupportsTemperature("sonnet-4.6")).toBe(true);
