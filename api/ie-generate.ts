@@ -4,10 +4,7 @@ import {
   convertToModelMessages,
   type UIMessage,
 } from "ai";
-import {
-  ryoUiStreamTransforms,
-  safeUiStreamErrorText,
-} from "./_utils/ui-message-stream.js";
+import { uiStreamErrorText } from "./_utils/provider-auth.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import {
@@ -362,7 +359,7 @@ export default apiHandler<IEGenerateRequestBody>(
         stepMs: 60_000,
         chunkMs: 30_000,
       },
-      experimental_transform: ryoUiStreamTransforms(smoothStream()),
+      experimental_transform: smoothStream(),
       ...(reasoning ? { reasoning } : {}),
       onEnd: async ({ text }) => {
         if (!cacheKey) {
@@ -412,7 +409,7 @@ export default apiHandler<IEGenerateRequestBody>(
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       onError: (error) => {
-        const errorText = safeUiStreamErrorText(error);
+        const errorText = uiStreamErrorText(error);
         logger.error("IE UI stream error", { errorText });
         return errorText;
       },

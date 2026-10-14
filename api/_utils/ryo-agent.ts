@@ -8,7 +8,6 @@ import {
   type TimeoutConfiguration,
 } from "ai";
 import { getModelReasoning, modelSupportsTemperature } from "./_aiModels.js";
-import { repairOrphanStreamParts } from "./ui-message-stream.js";
 import { addCacheControlToMessages } from "./ai-prompt-cache.js";
 import type {
   PreparedRyoConversation,
@@ -238,10 +237,6 @@ export function createRyoToolLoopAgent({
       ? { toolApproval: RYO_TOOL_APPROVAL }
       : {}),
     experimental_repairToolCall: repairRyoToolCall,
-    // Covers agent.generate() (telegram heartbeat). agent.stream() overwrites
-    // this when the caller passes `experimental_transform`, including with
-    // `undefined`, so every stream() call site must pass the repair itself.
-    experimental_transform: repairOrphanStreamParts(),
     ...(headers ? { headers } : {}),
   });
 }

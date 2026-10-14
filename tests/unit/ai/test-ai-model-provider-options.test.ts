@@ -13,8 +13,9 @@ describe("model reasoning options", () => {
     expect(getModelReasoning("gpt-6")).toBe("low");
   });
 
-  test("omits temperature for gpt-6", () => {
+  test("omits temperature for gpt-6 and opus-5.5", () => {
     expect(modelSupportsTemperature("gpt-6")).toBe(false);
+    expect(modelSupportsTemperature("opus-5.5")).toBe(false);
     expect(modelSupportsTemperature("gpt-5.5")).toBe(true);
     expect(modelSupportsTemperature("sonnet-4.6")).toBe(true);
   });
