@@ -1,5 +1,9 @@
 import { google } from "@ai-sdk/google";
 import { smoothStream, streamText } from "ai";
+import {
+  ryoUiStreamTransforms,
+  safeUiStreamErrorText,
+} from "../_utils/ui-message-stream.js";
 import { z } from "zod";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -101,9 +105,11 @@ async function streamDictionaryAiText({
     temperature,
     abortSignal: abort.signal,
     // Same word-sized chunks Chats uses, so CJK and Latin both paint smoothly.
-    experimental_transform: smoothStream({
-      chunking: /[\u4E00-\u9FFF]|\S+\s+/,
-    }),
+    experimental_transform: ryoUiStreamTransforms(
+      smoothStream({
+        chunking: /[\u4E00-\u9FFF]|\S+\s+/,
+      })
+    ),
     providerOptions: {
       google: {
         thinkingConfig: { thinkingLevel: "minimal", includeThoughts: false },
@@ -115,6 +121,11 @@ async function streamDictionaryAiText({
     await result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       headers: DICTIONARY_AI_STREAM_HEADERS,
+      onError: (error) => {
+        const errorText = safeUiStreamErrorText(error);
+        logger.warn("dictionary ai stream error", { errorText });
+        return errorText;
+      },
       onEnd: async ({ isAborted, isCancelled, responseMessage, finishReason }) => {
         if (isAborted || isCancelled || abort.signal.aborted || finishReason === "error") return;
         const notes = notesFromResponseMessage(responseMessage);

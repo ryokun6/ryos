@@ -31,6 +31,8 @@ import {
   sendAutomaticallyWhenApprovalsSettled,
 } from "../tools/toolApprovals";
 import { summarizeChatMessages } from "../tools/chatDebug";
+import { withoutContentlessFailedAssistant } from "../utils/failedAssistantMessage";
+import { describeErrorForLog } from "@/utils/errorLog";
 import { SERVER_EXECUTED_TOOL_NAME_SET } from "@/shared/tools/serverExecuted";
 import {
   buildAIConversationRequestBody,
@@ -345,7 +347,7 @@ export function useAiChat(onPromptSetUsername?: () => void) {
       // Ensure all messages have metadata with createdAt. Prefer the
       // timestamp pinned while the message was streaming so it doesn't jump
       // to the finish time.
-      const finalMessages: AIChatMessage[] = (messages as UIMessage[]).map(
+      const stampedMessages: AIChatMessage[] = (messages as UIMessage[]).map(
         (msg) =>
           ({
             ...msg,
@@ -357,6 +359,13 @@ export function useAiChat(onPromptSetUsername?: () => void) {
             },
           }) as AIChatMessage,
       );
+      const finalMessages = withoutContentlessFailedAssistant(
+        stampedMessages,
+        isError
+      );
+      if (finalMessages.length !== stampedMessages.length) {
+        setSdkMessages(finalMessages);
+      }
       log.debug("AI finished, syncing messages", {
         isError,
         ...summarizeChatMessages(finalMessages),
@@ -435,13 +444,23 @@ export function useAiChat(onPromptSetUsername?: () => void) {
         return; // Ignore this error - it's a known SDK issue
       }
 
-      console.error("AI Chat Error:", err);
+      const described = describeErrorForLog(err);
+      const causeSuffix = described.cause ? ` (cause: ${described.cause})` : "";
+      // The message is a string on purpose. The debug overlay used to keep
+      // only Error.stack, and Safari stacks omit the message.
+      console.error(
+        `AI Chat Error: ${described.name ?? "Error"}: ${described.message}${causeSuffix}`,
+        err
+      );
       // Structured context for the Debug console overlay: the failing message
       // states usually explain server-side 400s (e.g. invalid_messages).
-      log.error(
-        "AI chat request failed",
-        summarizeChatMessages(getSharedAiChat().messages)
-      );
+      log.error("AI chat request failed", {
+        failure: described.message,
+        ...(described.name ? { name: described.name } : {}),
+        ...(described.cause ? { cause: described.cause } : {}),
+        error: err,
+        ...summarizeChatMessages(getSharedAiChat().messages),
+      });
 
       // Helper function to handle authentication errors consistently
       const handleAuthError = (message?: string) => {

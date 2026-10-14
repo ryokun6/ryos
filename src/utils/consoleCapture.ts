@@ -144,10 +144,32 @@ function summarizeJson(serialized: string): string | null {
   }
 }
 
+function formatErrorForCapture(error: Error, seen = new WeakSet<Error>()): string {
+  if (seen.has(error)) return `${error.name}: [Circular]`;
+  seen.add(error);
+  const stack = error.stack ?? "";
+  const headline = error.message ? `${error.name}: ${error.message}` : error.name;
+  // Safari stacks omit the message. V8 stacks already start with "Name: message".
+  const body =
+    error.message && stack.includes(error.message)
+      ? stack
+      : stack
+        ? `${headline}\n${stack}`
+        : headline;
+  const cause = error.cause;
+  if (cause instanceof Error) {
+    return `${body}\nCaused by: ${formatErrorForCapture(cause, seen)}`;
+  }
+  if (typeof cause === "string" && cause.trim()) {
+    return `${body}\nCaused by: ${cause.trim()}`;
+  }
+  return body;
+}
+
 function formatArg(arg: unknown): FormattedConsoleArg {
   if (typeof arg === "string") return { text: arg };
   if (arg instanceof Error) {
-    return { text: arg.stack || `${arg.name}: ${arg.message}` };
+    return { text: formatErrorForCapture(arg) };
   }
   if (arg === null) return { text: "null" };
   if (arg === undefined) return { text: "undefined" };

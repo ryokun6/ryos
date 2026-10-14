@@ -4,6 +4,10 @@ import {
   validateUIMessages,
   type UIMessage,
 } from "ai";
+import {
+  ryoUiStreamTransforms,
+  safeUiStreamErrorText,
+} from "./_utils/ui-message-stream.js";
 import { waitUntil } from "./_utils/_background.js";
 import {
   DEFAULT_MODEL,
@@ -624,9 +628,11 @@ export default apiHandler<{
       // Must pass explicitly — call-time `timeout` overwrites constructor default.
       timeout: RYO_AGENT_TIMEOUTS.chat,
       abortSignal: generationAbortController.signal,
-      experimental_transform: smoothStream({
-        chunking: /[\u4E00-\u9FFF]|\S+\s+/,
-      }),
+      experimental_transform: ryoUiStreamTransforms(
+        smoothStream({
+          chunking: /[\u4E00-\u9FFF]|\S+\s+/,
+        })
+      ),
     });
 
     res.setHeader("Access-Control-Allow-Origin", validOrigin);
@@ -650,6 +656,11 @@ export default apiHandler<{
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       originalMessages,
+      onError: (error) => {
+        const errorText = safeUiStreamErrorText(error);
+        logError("Chat UI stream error", { errorText });
+        return errorText;
+      },
       generateMessageId: () => speechMessageId,
       consumeSseStream: consumeStream,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {

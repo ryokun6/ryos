@@ -43,6 +43,7 @@ import {
   RYO_AGENT_TIMEOUTS,
   textStreamFromFullStream,
 } from "../_utils/ryo-agent.js";
+import { repairOrphanStreamParts } from "../_utils/ui-message-stream.js";
 import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
@@ -742,6 +743,9 @@ export default async function handler(
       messages: finalMessages,
       // Must pass explicitly — call-time `timeout` overwrites constructor default.
       timeout: RYO_AGENT_TIMEOUTS.telegram,
+      // Same orphan reasoning-delta repair as /api/chat. Telegram reads text
+      // deltas and would otherwise drop the reasoning part as a stream error.
+      experimental_transform: repairOrphanStreamParts(),
       onStepEnd: async (stepResult) => {
         if (stepResult.toolResults.length > 0) {
           await statusReporter.markThinking();
