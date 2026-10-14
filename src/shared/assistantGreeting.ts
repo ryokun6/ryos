@@ -1,6 +1,6 @@
 /**
  * Shared desktop-assistant greeting trigger used by the client summon flow
- * and the `/api/chat` rate-limit exemption.
+ * and by `/api/chat`, which counts that summon against the AI message quota.
  */
 export const ASSISTANT_SUMMON_MESSAGE = "👋 *user summoned the assistant*";
 

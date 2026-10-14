@@ -124,12 +124,9 @@ describe("server AI chat lifecycle wiring", () => {
     expect(source).not.toContain("operationId: responseMessage.id");
   });
 
-  test("rate-limits regeneration and every anonymous non-greeting generation", () => {
-    expect(source).toMatch(
-      /const shouldRateLimit =\s*normalizedTrigger === "regenerate-message" \|\|/
-    );
-    expect(source).toContain("(!isAuthenticated || isNewUserTurn)");
-    expect(source).toContain("requestMessages.length === 1");
+  test("rate-limits regeneration, nudges, summons, and anonymous generations", () => {
+    expect(source).toContain("shouldChargeAiChatTurn");
+    expect(source).not.toContain("isAssistantGreeting");
     expect(source).toMatch(
       /if \(shouldRateLimit\) \{\s*const rateLimitResult = await checkAndIncrementAIMessageCount/
     );

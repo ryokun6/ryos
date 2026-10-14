@@ -15,6 +15,7 @@ import {
   fetchWithOrigin,
   fetchWithAuth,
   getTokenFromAuthCookie,
+  makeRateLimitBypassHeaders,
 } from "../../helpers/test-utils";
 import { redisKeys } from "../../../src/shared/redisKeys";
 
@@ -41,7 +42,7 @@ async function setupAdminToken(): Promise<string | null> {
 
   const createRes = await fetchWithOrigin(`${BASE_URL}/api/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: makeRateLimitBypassHeaders(),
     body: JSON.stringify({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD }),
   });
 

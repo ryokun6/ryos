@@ -65,8 +65,17 @@ export function uniqueTestUsername(prefix: string): string {
  * JSON body — they only set a `ryos_auth={username}:{token}` cookie.
  * Tests that previously relied on `data.token` must read the cookie.
  */
+function readSetCookieHeader(response: Response): string | null {
+  const headers = response.headers as Headers & { getSetCookie?: () => string[] };
+  if (typeof headers.getSetCookie === "function") {
+    const all = headers.getSetCookie();
+    if (all.length > 0) return all.join("; ");
+  }
+  return response.headers.get("set-cookie");
+}
+
 export function getTokenFromAuthCookie(response: Response): string | null {
-  const setCookie = response.headers.get("set-cookie");
+  const setCookie = readSetCookieHeader(response);
   if (!setCookie) {
     return null;
   }
@@ -79,7 +88,7 @@ export function getTokenFromAuthCookie(response: Response): string | null {
  * Extract the full `ryos_auth=...` cookie for fetch/WebSocket handshakes.
  */
 export function getAuthCookieHeader(response: Response): string | null {
-  const setCookie = response.headers.get("set-cookie");
+  const setCookie = readSetCookieHeader(response);
   if (!setCookie) return null;
   const match = setCookie.match(/(?:^|;\s*)(ryos_auth=[^;]+)/);
   return match?.[1] ?? null;
@@ -91,7 +100,7 @@ export function getAuthCookieHeader(response: Response): string | null {
 export function getAuthFromCookie(
   response: Response
 ): { username: string; token: string } | null {
-  const setCookie = response.headers.get("set-cookie");
+  const setCookie = readSetCookieHeader(response);
   if (!setCookie) return null;
 
   const match = setCookie.match(/(?:^|;\s*)ryos_auth=([^:;]+):([^;]+)/);

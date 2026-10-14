@@ -60,6 +60,87 @@ export function buildSetAuthCookie(
   return parts.join("; ");
 }
 
+export const DEVICE_COOKIE_NAME = "ryos_device";
+/** One year. Re-set on each registration attempt so the browser keeps it. */
+export const DEVICE_COOKIE_TTL_SECONDS = 365 * 24 * 60 * 60;
+const DEVICE_ID_PATTERN = /^[a-f0-9]{64}$/;
+
+export function createDeviceId(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  let hex = "";
+  for (const byte of bytes) {
+    hex += byte.toString(16).padStart(2, "0");
+  }
+  return hex;
+}
+
+export function buildSetDeviceCookie(deviceId: string): string {
+  const parts = [
+    `${DEVICE_COOKIE_NAME}=${deviceId}`,
+    "HttpOnly",
+    "Path=/api",
+    `Max-Age=${DEVICE_COOKIE_TTL_SECONDS}`,
+    "SameSite=Lax",
+  ];
+  if (isSecureContext()) {
+    parts.push("Secure");
+  }
+  return parts.join("; ");
+}
+
+export function parseDeviceCookie(
+  cookieHeader: string | string[] | undefined | null
+): string | null {
+  if (!cookieHeader) return null;
+  const raw = Array.isArray(cookieHeader) ? cookieHeader.join("; ") : cookieHeader;
+  for (const segment of raw.split(";")) {
+    const trimmed = segment.trim();
+    if (!trimmed.startsWith(`${DEVICE_COOKIE_NAME}=`)) continue;
+    const value = trimmed.slice(DEVICE_COOKIE_NAME.length + 1);
+    return DEVICE_ID_PATTERN.test(value) ? value : null;
+  }
+  return null;
+}
+
+type SetCookieResponse = {
+  getHeader(name: string): number | string | string[] | undefined;
+  setHeader(name: string, value: string | string[]): void;
+};
+
+function writeSetCookie(
+  res: SetCookieResponse,
+  cookie: string,
+  position: "append" | "prepend"
+): void {
+  const prev = res.getHeader("Set-Cookie");
+  if (Array.isArray(prev)) {
+    res.setHeader(
+      "Set-Cookie",
+      position === "prepend" ? [cookie, ...prev] : [...prev, cookie]
+    );
+    return;
+  }
+  if (typeof prev === "string") {
+    res.setHeader(
+      "Set-Cookie",
+      position === "prepend" ? [cookie, prev] : [prev, cookie]
+    );
+    return;
+  }
+  res.setHeader("Set-Cookie", cookie);
+}
+
+/** Add a Set-Cookie without dropping cookies already queued on the response. */
+export function appendSetCookie(res: SetCookieResponse, cookie: string): void {
+  writeSetCookie(res, cookie, "append");
+}
+
+/** Queue a cookie ahead of ones already set, so callers see it first. */
+export function prependSetCookie(res: SetCookieResponse, cookie: string): void {
+  writeSetCookie(res, cookie, "prepend");
+}
+
 export function buildClearAuthCookie(): string {
   const parts = [
     `${AUTH_COOKIE_NAME}=`,
