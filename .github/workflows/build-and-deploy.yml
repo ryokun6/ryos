@@ -121,7 +121,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       # Prefer a long-lived PAT (secrets.GHCR_PAT) when configured, falling
       # back to the auto-injected GITHUB_TOKEN otherwise. The PAT path is
