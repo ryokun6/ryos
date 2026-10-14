@@ -167,13 +167,13 @@ jobs:
       contents: write
     steps:
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: electron-mac
           path: release/mac
 
       - name: Download Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: electron-windows
           path: release/windows
