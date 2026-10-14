@@ -41,7 +41,7 @@ jobs:
           node-version: "24"
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.bun/install/cache
@@ -115,7 +115,7 @@ jobs:
           node-version: "24"
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.bun/install/cache
