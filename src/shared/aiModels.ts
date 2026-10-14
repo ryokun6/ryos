@@ -26,6 +26,11 @@ export const AI_MODELS = {
     provider: "OpenAI",
     access: "public",
   },
+  "gpt-6.1-sol": {
+    name: "gpt-6.1-sol",
+    provider: "OpenAI",
+    access: "public",
+  },
   "gpt-5.5": {
     name: "gpt-5.5",
     provider: "OpenAI",
@@ -70,15 +75,16 @@ export const DEFAULT_AI_MODEL: SupportedModel = "gpt-6";
 
 /**
  * Product / API aliases → registry ids.
- * The selectable id stays gpt-6; the OpenAI wire id is gpt-6.1-sol.
- * Older wire ids (gpt-6-astra) still resolve to the same registry entry.
+ * `gpt-6` is the default and uses the OpenAI id `gpt-6-luna`.
+ * `gpt-6.1-sol` is its own selectable model. Older wire ids still resolve.
  */
 export const AI_MODEL_ALIASES: Record<string, SupportedModel> = {
   "claude-sonnet": "sonnet-4.6",
   "claude-sonnet-4-6": "sonnet-4.6",
   "claude-opus-5-5": "opus-5.5",
   "gpt-6-astra": "gpt-6",
-  "gpt-6.1-sol": "gpt-6",
+  "gpt-6-luna": "gpt-6",
+  "gpt-6-sol": "gpt-6.1-sol",
 };
 
 export function isRyoAdminUsername(
@@ -100,19 +106,26 @@ export function isRestrictedAiModel(
   return AI_MODELS[model].access === "ryo-debug";
 }
 
+/**
+ * The default model is available to everyone. Any other model requires the
+ * authenticated username `ryo`. `opus-5.5` also requires debug mode.
+ */
 export function canAccessAiModel(
   model: string | null | undefined,
   options: { username?: string | null; debugMode?: boolean } = {}
 ): boolean {
   if (!isSupportedAiModel(model)) return false;
+  if (model === DEFAULT_AI_MODEL) return true;
+  if (!isRyoAdminUsername(options.username)) return false;
   if (!isRestrictedAiModel(model)) return true;
-  return isRyoAdminUsername(options.username) && options.debugMode === true;
+  return options.debugMode === true;
 }
 
 export function getSelectableAiModels(options: {
   username?: string | null;
   debugMode?: boolean;
 } = {}): AIModelInfo[] {
+  if (!isRyoAdminUsername(options.username)) return [];
   return AI_MODEL_METADATA.filter((model) =>
     canAccessAiModel(model.id, options)
   );
@@ -142,6 +155,11 @@ export function resolveRequestedAiModel(
   rawModel: string | null | undefined,
   options: { username?: string | null; debugMode?: boolean } = {}
 ): ResolveRequestedAiModelResult {
+  // Anyone other than ryo always gets the default, including when the body
+  // names another model, an unknown id, or a debug override.
+  if (!isRyoAdminUsername(options.username)) {
+    return { ok: true, model: DEFAULT_AI_MODEL };
+  }
   const requested = normalizeAiModelId(rawModel || DEFAULT_AI_MODEL);
   if (!SUPPORTED_AI_MODELS.includes(requested as SupportedModel)) {
     return { ok: false, error: "unsupported", requested };

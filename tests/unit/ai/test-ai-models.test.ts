@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   AI_MODELS,
   DEFAULT_AI_MODEL,
@@ -27,10 +28,13 @@ describe("AI model registry", () => {
 
   test("maps product names to provider API ids", () => {
     expect(normalizeAiModelId("gpt-6-astra")).toBe("gpt-6");
-    expect(normalizeAiModelId("gpt-6.1-sol")).toBe("gpt-6");
+    expect(normalizeAiModelId("gpt-6-luna")).toBe("gpt-6");
+    expect(normalizeAiModelId("gpt-6-sol")).toBe("gpt-6.1-sol");
+    expect(normalizeAiModelId("gpt-6.1-sol")).toBe("gpt-6.1-sol");
     expect(normalizeAiModelId("claude-opus-5-5")).toBe("opus-5.5");
     expect(normalizeAiModelId("claude-sonnet")).toBe("sonnet-4.6");
-    expect(getModelInstance("gpt-6").modelId).toBe("gpt-6.1-sol");
+    expect(getModelInstance("gpt-6").modelId).toBe("gpt-6-luna");
+    expect(getModelInstance("gpt-6.1-sol").modelId).toBe("gpt-6.1-sol");
     expect(getModelInstance("opus-5.5").modelId).toContain("opus");
   });
 
@@ -64,26 +68,35 @@ describe("opus-5.5 access control", () => {
     ).toBe(false);
     expect(canAccessAiModel("opus-5.5", { debugMode: true })).toBe(false);
     expect(canAccessAiModel("gpt-6", { username: "alice" })).toBe(true);
+    expect(
+      canAccessAiModel("gpt-6.1-sol", { username: "alice", debugMode: true })
+    ).toBe(false);
+    expect(canAccessAiModel("gpt-6.1-sol", { username: "ryo" })).toBe(true);
+    expect(
+      canAccessAiModel("sonnet-4.6", { username: "alice", debugMode: true })
+    ).toBe(false);
   });
 
-  test("hides opus-5.5 from the picker unless Ryo is in debug", () => {
+  test("shows the model picker only for ryo", () => {
     const ryoDebug = getSelectableAiModels({
       username: "ryo",
       debugMode: true,
     }).map((model) => model.id);
     expect(ryoDebug).toContain("opus-5.5");
     expect(ryoDebug).toContain("gpt-6");
+    expect(ryoDebug).toContain("gpt-6.1-sol");
+
+    const ryo = getSelectableAiModels({
+      username: "ryo",
+      debugMode: false,
+    }).map((model) => model.id);
+    expect(ryo).toContain("gpt-6.1-sol");
+    expect(ryo).not.toContain("opus-5.5");
 
     expect(
-      getSelectableAiModels({ username: "ryo", debugMode: false }).map(
-        (model) => model.id
-      )
-    ).not.toContain("opus-5.5");
-    expect(
-      getSelectableAiModels({ username: "alice", debugMode: true }).map(
-        (model) => model.id
-      )
-    ).not.toContain("opus-5.5");
+      getSelectableAiModels({ username: "alice", debugMode: true })
+    ).toEqual([]);
+    expect(getSelectableAiModels({ debugMode: true })).toEqual([]);
   });
 
   test("rejects restricted requests on the server resolver", () => {
@@ -106,12 +119,29 @@ describe("opus-5.5 access control", () => {
         username: "alice",
         debugMode: true,
       })
-    ).toEqual({
-      ok: false,
-      error: "not_allowed",
-      requested: "opus-5.5",
+    ).toEqual({ ok: true, model: "gpt-6" });
+    expect(
+      resolveRequestedAiModel("gpt-6.1-sol", {
+        username: "alice",
+        debugMode: true,
+      })
+    ).toEqual({ ok: true, model: "gpt-6" });
+    expect(
+      resolveRequestedAiModel("sonnet-4.6", { username: "alice" })
+    ).toEqual({ ok: true, model: "gpt-6" });
+    expect(resolveRequestedAiModel("gpt-6.1-sol", { username: "ryo" })).toEqual({
+      ok: true,
+      model: "gpt-6.1-sol",
+    });
+    expect(resolveRequestedAiModel("gpt-6-luna", { username: "ryo" })).toEqual({
+      ok: true,
+      model: "gpt-6",
     });
     expect(resolveRequestedAiModel("not-a-model")).toEqual({
+      ok: true,
+      model: "gpt-6",
+    });
+    expect(resolveRequestedAiModel("not-a-model", { username: "ryo" })).toEqual({
       ok: false,
       error: "unsupported",
       requested: "not-a-model",
@@ -130,6 +160,12 @@ describe("opus-5.5 access control", () => {
       resolveClientAiModel("opus-5.5", { username: "ryo", debugMode: false })
     ).toBeNull();
     expect(resolveClientAiModel(null, { username: "ryo", debugMode: true })).toBeNull();
+    expect(
+      resolveClientAiModel("gpt-6.1-sol", { username: "alice", debugMode: true })
+    ).toBeNull();
+    expect(resolveClientAiModel("gpt-6.1-sol", { username: "ryo" })).toBe(
+      "gpt-6.1-sol"
+    );
   });
 });
 
@@ -172,8 +208,34 @@ describe("telegram model selection", () => {
   });
 });
 
+describe("model picker wiring", () => {
+  test("shows the control panels picker and chat model label only for ryo", () => {
+    const accounts = readFileSync(
+      new URL(
+        "../../../src/apps/control-panels/components/control-panels-app/AccountsPaneContent.tsx",
+        import.meta.url
+      ),
+      "utf8"
+    );
+    const pickerAt = accounts.indexOf('t("apps.control-panels.aiModel")');
+    expect(pickerAt).toBeGreaterThan(0);
+    expect(accounts.slice(Math.max(0, pickerAt - 180), pickerAt)).toContain(
+      "isAdmin &&"
+    );
+    const chatInput = readFileSync(
+      new URL(
+        "../../../src/apps/chats/components/chat-input/useChatInput.ts",
+        import.meta.url
+      ),
+      "utf8"
+    );
+    expect(chatInput).toContain("isRyoAdminUsername(username)");
+  });
+});
+
 describe("model reasoning options", () => {
-  test("uses low reasoning for gpt-6 because none is unsupported", () => {
-    expect(getModelReasoning("gpt-6")).toBe("low");
+  test("uses none for gpt-6 luna and low for gpt-6.1-sol", () => {
+    expect(getModelReasoning("gpt-6")).toBe("none");
+    expect(getModelReasoning("gpt-6.1-sol")).toBe("low");
   });
 });

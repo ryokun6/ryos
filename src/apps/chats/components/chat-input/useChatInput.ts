@@ -6,6 +6,8 @@ import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore
 import { useSound, Sounds } from "@/hooks/useSound";
 import { CHAT_ANALYTICS, track } from "@/utils/analytics";
 import { AI_MODELS } from "@/types/aiModels";
+import { isRyoAdminUsername } from "@/shared/aiModels";
+import { useChatsStoreShallow } from "@/stores/useChatsStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { useTranslation } from "react-i18next";
 import { preprocessImage } from "@/utils/imagePreprocessing";
@@ -78,13 +80,15 @@ export function useChatInput({
     }));
   const debugMode = useDisplaySettingsStoreShallow((s) => s.debugMode);
   const aiModel = useAppStoreShallow((s) => s.aiModel);
+  const username = useChatsStoreShallow((s) => s.username);
   const {
     isMacOSTheme: isMacTheme,
     isWindowsTheme,
     isAquaGlass,
   } = useThemeFlags();
 
-  const modelDisplayName = aiModel ? AI_MODELS[aiModel]?.name : null;
+  const modelDisplayName =
+    isRyoAdminUsername(username) && aiModel ? AI_MODELS[aiModel]?.name : null;
 
   const isTypingRyoMention =
     isInChatRoom && (input.startsWith("@ryo ") || input === "@ryo");
