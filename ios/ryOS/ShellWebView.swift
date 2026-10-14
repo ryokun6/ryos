@@ -3,6 +3,8 @@ import WebKit
 import ObjectiveC
 import Network
 import AuthenticationServices
+import PhotosUI
+import UniformTypeIdentifiers
 
 /// WKWebView shell around https://os.ryo.lu. The web client detects the
 /// injected `window.ryosDesktop` bridge (the same contract the Electron
@@ -176,6 +178,9 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     /// evaluations land before the page's bridge exists.
     private var sideStatusBarExtent: CGFloat = 0
     private var sideStatusBarHasCamera = false
+    /// Held until the page's file picker finishes. WebKit waits on the
+    /// completion handler, so dropping this early cancels the pick.
+    private var fileOpenPanel: FileOpenPanel?
 
     init(shell: ShellViewModel) {
         self.shell = shell
@@ -366,6 +371,29 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         )
     }
 
+    /// `<input type="file">`. The page hides every upload control, and some
+    /// are not even in the document, so WebKit's own panel has no view to
+    /// anchor its popover to and UIKit aborts the app. Present from the web
+    /// view instead. The completion handler has to run exactly once.
+    func webView(
+        _ webView: WKWebView,
+        runOpenPanelWith parameters: WKOpenPanelParameters,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor ([URL]?) -> Void
+    ) {
+        fileOpenPanel?.cancel()
+        let panel = FileOpenPanel()
+        fileOpenPanel = panel
+        panel.present(from: webView, parameters: parameters) { [weak self] urls in
+            Task { @MainActor in
+                completionHandler(urls)
+                if self?.fileOpenPanel === panel {
+                    self?.fileOpenPanel = nil
+                }
+            }
+        }
+    }
+
     // MARK: WKNavigationDelegate
 
     /// Resources fully loaded but the web client never reports boot-finished
@@ -435,8 +463,13 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
                 self.shell?.notificationState.isAuthenticated = false
             }
             reply(id, true)
-        case "toggleMaximize", "quitAndInstall", "checkForUpdates", "openFile", "saveFile":
+        case "toggleMaximize", "quitAndInstall", "checkForUpdates":
             reply(id, NSNull())
+        // The page treats a missing dialog as "use the file input instead".
+        // Null is not that result: the page reads `.canceled` and throws,
+        // so the input never opens. A cancel lets it fall through.
+        case "openFile", "saveFile":
+            reply(id, ["canceled": true])
         case "openAuthSheet":
             runAuthSheet(id: id, args: args as? [String: Any])
         case "playHaptic":
@@ -766,4 +799,251 @@ final class StatusBarStyleHost: UIViewController {
     }
 
     @objc override var childForStatusBarStyle: UIViewController? { nil }
+}
+
+
+/// The page's file picker. WebKit would anchor a popover to the file input,
+/// and those inputs have no box, so UIKit aborts. Every sheet here is anchored
+/// to the web view, which always has one. `finish` runs the page's completion
+/// exactly once.
+final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewControllerDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIAdaptivePresentationControllerDelegate {
+    private var completion: (([URL]?) -> Void)?
+    private var finished = false
+    /// The action sheet is going away because the next picker is coming up,
+    /// not because the user cancelled.
+    private var handedOff = false
+    private weak var presented: UIViewController?
+
+    func present(
+        from webView: WKWebView,
+        parameters: WKOpenPanelParameters,
+        completion: @escaping ([URL]?) -> Void
+    ) {
+        self.completion = completion
+        guard let presenter = Self.frontmost(for: webView) else {
+            finish(nil)
+            return
+        }
+
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: String(localized: "Photo Library"), style: .default) { [weak self] _ in
+            self?.presentPhotoLibrary(from: webView, multiple: parameters.allowsMultipleSelection)
+        })
+        if UIImagePickerController.isSourceTypeAvailable(.camera) {
+            sheet.addAction(UIAlertAction(title: String(localized: "Take Photo or Video"), style: .default) { [weak self] _ in
+                self?.presentCamera(from: webView)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: String(localized: "Choose File"), style: .default) { [weak self] _ in
+            self?.presentDocuments(from: webView, parameters: parameters)
+        })
+        sheet.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel) { [weak self] _ in
+            self?.finish(nil)
+        })
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = webView
+            popover.sourceRect = CGRect(x: webView.bounds.midX, y: webView.bounds.midY, width: 1, height: 1)
+            popover.permittedArrowDirections = []
+        }
+        sheet.presentationController?.delegate = self
+        presented = sheet
+        presenter.present(sheet, animated: true)
+    }
+
+    func cancel() {
+        presented?.dismiss(animated: false)
+        finish(nil)
+    }
+
+    private func presentPhotoLibrary(from webView: WKWebView, multiple: Bool) {
+        var config = PHPickerConfiguration(photoLibrary: .shared())
+        config.selectionLimit = multiple ? 0 : 1
+        config.filter = .any(of: [.images, .videos])
+        let picker = PHPickerViewController(configuration: config)
+        picker.delegate = self
+        picker.presentationController?.delegate = self
+        handOff(picker, from: webView)
+    }
+
+    private func presentCamera(from webView: WKWebView) {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.mediaTypes = [UTType.image.identifier, UTType.movie.identifier]
+        picker.delegate = self
+        picker.presentationController?.delegate = self
+        handOff(picker, from: webView)
+    }
+
+    private func presentDocuments(from webView: WKWebView, parameters: WKOpenPanelParameters) {
+        var types: [UTType] = [.item]
+        if parameters.allowsDirectories {
+            types.insert(.folder, at: 0)
+        }
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        picker.allowsMultipleSelection = parameters.allowsMultipleSelection
+        picker.delegate = self
+        picker.modalPresentationStyle = .formSheet
+        picker.presentationController?.delegate = self
+        handOff(picker, from: webView)
+    }
+
+    /// The action sheet is already dismissing itself. Presenting on top of
+    /// that fails, so the next picker waits until the sheet is gone.
+    private func handOff(_ controller: UIViewController, from webView: WKWebView) {
+        handedOff = true
+        let show = { [weak self] in
+            guard let self else { return }
+            self.handedOff = false
+            self.present(controller, from: webView)
+        }
+        if let presented, presented.presentingViewController != nil {
+            presented.dismiss(animated: true, completion: show)
+        } else {
+            show()
+        }
+    }
+
+    private func present(_ controller: UIViewController, from webView: WKWebView) {
+        guard let presenter = Self.frontmost(for: webView) else {
+            finish(nil)
+            return
+        }
+        presented = controller
+        presenter.present(controller, animated: true)
+    }
+
+    private static func frontmost(for webView: WKWebView) -> UIViewController? {
+        var responder: UIResponder? = webView
+        var found: UIViewController?
+        while let next = responder?.next {
+            if let controller = next as? UIViewController {
+                found = controller
+                break
+            }
+            responder = next
+        }
+        if found == nil {
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+            found = (scene?.keyWindow ?? scene?.windows.first)?.rootViewController
+        }
+        while let presented = found?.presentedViewController, !presented.isBeingDismissed {
+            found = presented
+        }
+        return found
+    }
+
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        // The action sheet also dismisses on the way to the next picker.
+        if handedOff { return }
+        guard presentationController.presentedViewController === presented else { return }
+        finish(nil)
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        let copies = urls.compactMap { Self.copyImport($0, suggestedName: $0.lastPathComponent) }
+        controller.dismiss(animated: true)
+        finish(copies.isEmpty ? nil : copies)
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        finish(nil)
+    }
+
+    func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+        picker.dismiss(animated: true)
+        guard !results.isEmpty else {
+            finish(nil)
+            return
+        }
+        let bucket = ImportBucket()
+        let group = DispatchGroup()
+        for result in results {
+            let provider = result.itemProvider
+            let type = provider.registeredTypeIdentifiers.first ?? UTType.data.identifier
+            let suggested = provider.suggestedName
+            group.enter()
+            provider.loadFileRepresentation(forTypeIdentifier: type) { url, _ in
+                if let url, let copy = FileOpenPanel.copyImport(url, suggestedName: suggested) {
+                    bucket.add(copy)
+                }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) { [weak self] in
+            let urls = bucket.take()
+            self?.finish(urls.isEmpty ? nil : urls)
+        }
+    }
+
+    func imagePickerController(
+        _ picker: UIImagePickerController,
+        didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+    ) {
+        picker.dismiss(animated: true)
+        if let media = info[.mediaURL] as? URL, let copy = Self.copyImport(media, suggestedName: media.lastPathComponent) {
+            finish([copy])
+            return
+        }
+        if let image = info[.originalImage] as? UIImage, let data = image.jpegData(compressionQuality: 0.9) {
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("photo-\(UUID().uuidString).jpg")
+            if (try? data.write(to: url)) != nil {
+                finish([url])
+                return
+            }
+        }
+        finish(nil)
+    }
+
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+        finish(nil)
+    }
+
+    private func finish(_ urls: [URL]?) {
+        guard !finished else { return }
+        finished = true
+        let handler = completion
+        completion = nil
+        handler?(urls)
+    }
+
+    /// The provider's URL is deleted when its callback returns, and a
+    /// security-scoped document URL dies with the picker. Copy first.
+    private nonisolated static func copyImport(_ url: URL, suggestedName: String?) -> URL? {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        var name = suggestedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        name = name.replacingOccurrences(of: "/", with: "-")
+        if name.isEmpty { name = "file" }
+        let ext = url.pathExtension
+        if !ext.isEmpty, (name as NSString).pathExtension.isEmpty {
+            name += "." + ext
+        }
+        let dest = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString)-\(name)")
+        do {
+            try FileManager.default.copyItem(at: url, to: dest)
+            return dest
+        } catch {
+            return nil
+        }
+    }
+}
+
+/// Photos load off the main thread. The bucket is the only thing that crosses.
+private final class ImportBucket: @unchecked Sendable {
+    private let lock = NSLock()
+    private var urls: [URL] = []
+    func add(_ url: URL) {
+        lock.lock()
+        urls.append(url)
+        lock.unlock()
+    }
+    func take() -> [URL] {
+        lock.lock()
+        defer { lock.unlock() }
+        return urls
+    }
 }
