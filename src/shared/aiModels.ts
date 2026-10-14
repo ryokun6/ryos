@@ -70,14 +70,15 @@ export const DEFAULT_AI_MODEL: SupportedModel = "gpt-6";
 
 /**
  * Product / API aliases → registry ids.
- * Friendly labels stay gpt-6 / opus-5.5; providers use gpt-6-astra /
- * claude-opus-5-5.
+ * The selectable id stays gpt-6; the OpenAI wire id is gpt-6.1-sol.
+ * Older wire ids (gpt-6-astra) still resolve to the same registry entry.
  */
 export const AI_MODEL_ALIASES: Record<string, SupportedModel> = {
   "claude-sonnet": "sonnet-4.6",
   "claude-sonnet-4-6": "sonnet-4.6",
   "claude-opus-5-5": "opus-5.5",
   "gpt-6-astra": "gpt-6",
+  "gpt-6.1-sol": "gpt-6",
 };
 
 export function isRyoAdminUsername(

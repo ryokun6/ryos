@@ -47,6 +47,7 @@ import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
 } from "../_utils/voice.js";
+
 const TELEGRAM_STOP_COMMANDS = ["stop", "cancel"];
 const TELEGRAM_CLEAR_COMMANDS = [
   "clear",

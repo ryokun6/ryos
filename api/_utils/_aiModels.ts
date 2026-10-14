@@ -1,7 +1,12 @@
 import { openai } from "@ai-sdk/openai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
-import type { LanguageModel } from "ai";
+import { type LanguageModel, type LanguageModelV4 } from "ai";
+import {
+  pickAuthFallbackModel,
+  redactProviderError,
+  wrapWithProviderAuthFallback,
+} from "./provider-auth.js";
 import {
   AI_MODELS,
   SUPPORTED_AI_MODELS,
@@ -51,21 +56,18 @@ const MODEL_REASONING_BY_MODEL: Partial<
 > = {
   // gpt-5.5 defaults to extended reasoning; disable for chat latency/cost.
   "gpt-5.5": "none",
-  // GPT-6 Astra does not support `none`; use the lowest documented effort.
+  // gpt-6.1-sol does not support `none`; use the lowest documented effort.
   "gpt-6": "low",
 };
 
-// Factory that returns a LanguageModel instance for the requested model
-export const getModelInstance = (model: SupportedModel): LanguageModel => {
-  const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
-
-  switch (modelToUse) {
+function createModelInstance(model: SupportedModel): LanguageModel {
+  switch (model) {
     case "sonnet-4.6":
       return anthropic("claude-sonnet-4-6");
     case "opus-5.5":
       return anthropic("claude-opus-5-5");
     case "gpt-6":
-      return openai("gpt-6-astra");
+      return openai("gpt-6.1-sol");
     case "gpt-5.5":
       return openai("gpt-5.5");
     case "gemini-3-flash":
@@ -73,8 +75,37 @@ export const getModelInstance = (model: SupportedModel): LanguageModel => {
     case "gemini-3.1-pro-preview":
       return google("gemini-3.1-pro-preview");
     default:
-      return openai("gpt-6-astra");
+      return openai("gpt-6.1-sol");
   }
+}
+
+function isLanguageModelV4(model: LanguageModel): model is LanguageModelV4 {
+  return model.specificationVersion === "v4";
+}
+
+/**
+ * gpt-6 is the default. When OpenAI rejects the key (401/403), retry once
+ * on another provider whose API key is configured. The fallback runs inside
+ * doStream/doGenerate, before any UI chunk is sent.
+ */
+function withDefaultProviderAuthFallback(model: LanguageModel): LanguageModel {
+  const fallbackId = pickAuthFallbackModel();
+  if (!fallbackId) return model;
+  const fallback = createModelInstance(fallbackId);
+  if (!isLanguageModelV4(model) || !isLanguageModelV4(fallback)) return model;
+  return wrapWithProviderAuthFallback(model, fallback, (error) => {
+    console.warn(
+      `[ai] gpt-6 provider auth failed; retrying with ${fallbackId} (${fallback.modelId}): ${redactProviderError(error) || "auth rejected"}`
+    );
+  });
+}
+
+// Factory that returns a LanguageModel instance for the requested model
+export const getModelInstance = (model: SupportedModel): LanguageModel => {
+  const modelToUse: SupportedModel = model ?? DEFAULT_MODEL;
+  const instance = createModelInstance(modelToUse);
+  if (modelToUse !== "gpt-6") return instance;
+  return withDefaultProviderAuthFallback(instance);
 };
 
 /**
@@ -87,9 +118,9 @@ export function getModelReasoning(
   return MODEL_REASONING_BY_MODEL[model];
 }
 
-/** GPT-6 Astra rejects custom temperature / top_p. */
+/** gpt-6 (gpt-6.1-sol) and claude-opus-5-5 reject custom temperature. */
 export function modelSupportsTemperature(model: SupportedModel): boolean {
-  return model !== "gpt-6";
+  return model !== "gpt-6" && model !== "opus-5.5";
 }
 
 export function getTelegramModel(

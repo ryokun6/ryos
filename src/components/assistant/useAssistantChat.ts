@@ -23,6 +23,8 @@ import {
 import { summarizeChatMessages } from "@/apps/chats/tools/chatDebug";
 import type { DispatchToolCallResult } from "@/apps/chats/tools/toolOpenResult";
 import { getAssistantVisibleText } from "@/apps/chats/utils/aiMessageText";
+import { withoutContentlessFailedAssistant } from "@/apps/chats/utils/failedAssistantMessage";
+import { describeErrorForLog } from "@/utils/errorLog";
 import { getAppName } from "@/apps/chats/components/chat-messages/utils";
 import { formatToolName } from "@/lib/toolInvocationDisplay";
 import type { ToolInvocationPart } from "@/components/shared/tool-invocation-message/types";
@@ -426,7 +428,13 @@ export function useAssistantChat(): AssistantChatHandle {
     onToolCall: async (_options: {
       toolCall: { toolName: string; toolCallId: string; input: unknown };
     }): Promise<void> => {},
-    onFinish: ({ messages: finished }: { messages: AIChatMessage[] }) => {
+    onFinish: ({
+      messages: finished,
+      isError,
+    }: {
+      messages: AIChatMessage[];
+      isError: boolean;
+    }) => {
       const currentAuth = useChatsStore.getState();
       const currentOwner =
         currentAuth.username && currentAuth.isAuthenticated
@@ -451,7 +459,11 @@ export function useAssistantChat(): AssistantChatHandle {
             },
           }) as AIChatMessage
       );
-      useAssistantStore.getState().setMessages(stamped);
+      const visible = withoutContentlessFailedAssistant(stamped, isError);
+      if (visible.length !== stamped.length) {
+        setMessages(visible);
+      }
+      useAssistantStore.getState().setMessages(visible);
     },
     onError: (err: Error) => {
       // Known AI SDK v6 issue: finish-event validation error after tool calls.
@@ -509,7 +521,11 @@ export function useAssistantChat(): AssistantChatHandle {
       }
       // Always-printed context for bug reports: the failing message states
       // usually explain server-side 400s (e.g. invalid_messages).
+      const described = describeErrorForLog(err);
       log.error("Assistant chat request failed", {
+        failure: described.message,
+        ...(described.name ? { name: described.name } : {}),
+        ...(described.cause ? { cause: described.cause } : {}),
         error: err,
         ...summarizeChatMessages(chat.messages),
       });

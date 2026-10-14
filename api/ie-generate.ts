@@ -4,6 +4,7 @@ import {
   convertToModelMessages,
   type UIMessage,
 } from "ai";
+import { uiStreamErrorText } from "./_utils/provider-auth.js";
 import * as RateLimit from "./_utils/_rate-limit.js";
 import { getClientIp } from "./_utils/_rate-limit.js";
 import {
@@ -407,6 +408,11 @@ export default apiHandler<IEGenerateRequestBody>(
     // Use pipeUIMessageStreamToResponse for Node.js streaming
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
+      onError: (error) => {
+        const errorText = uiStreamErrorText(error);
+        logger.error("IE UI stream error", { errorText });
+        return errorText;
+      },
     });
   } catch (error) {
     logger.error("IE Generate API error", error);

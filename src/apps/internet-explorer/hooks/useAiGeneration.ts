@@ -19,6 +19,7 @@ import {
   track,
 } from "@/utils/analytics";
 import { internetExplorerLog as log } from "../logging";
+import { describeErrorForLog } from "@/utils/errorLog";
 
 interface UseAiGenerationProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -78,6 +79,7 @@ export function useAiGeneration({
     useState(false);
   const currentGenerationId = useRef<string | null>(null);
   const isGenerationComplete = useRef<boolean>(false);
+  const streamErrorRef = useRef<string | null>(null);
   const generatingUrlRef = useRef<string | null>(null); // Ref for current URL
   const generatingYearRef = useRef<string | null>(null); // Ref for current Year
 
@@ -138,10 +140,41 @@ export function useAiGeneration({
     return locationMap[loc] || i18n.t("apps.internet-explorer.autodetected");
   };
 
+  const handleAiError = (err: Error) => {
+    const described = describeErrorForLog(err);
+    const causeSuffix = described.cause ? ` (cause: ${described.cause})` : "";
+    streamErrorRef.current = `${described.message}${causeSuffix}`;
+    log.error("IE AI generation failed", {
+      failure: described.message,
+      ...(described.name ? { name: described.name } : {}),
+      ...(described.cause ? { cause: described.cause } : {}),
+      error: err,
+    });
+  };
+
   // Handler for when AI stream finishes
-  const handleAiFinish = ({ message }: { message: UIMessage }) => {
+  const handleAiFinish = ({
+    message,
+    isError,
+  }: {
+    message: UIMessage;
+    isError: boolean;
+  }) => {
     // Ensure this finish corresponds to the current generation request
     if (!currentGenerationId.current || isGenerationComplete.current) return;
+
+    if (isError) {
+      isGenerationComplete.current = true;
+      const url = generatingUrlRef.current;
+      const year = generatingYearRef.current;
+      const detail = streamErrorRef.current || "The model stream failed.";
+      loadError(
+        url && year
+          ? `Failed to generate website preview for ${url} in ${year}. ${detail}`
+          : detail
+      );
+      return;
+    }
 
     // Extract HTML content from the final message (use parts in v5)
     const textContent =
@@ -228,6 +261,7 @@ export function useAiGeneration({
   } = useChat({
     messages: [],
     onFinish: handleAiFinish,
+    onError: handleAiError,
     transport: ieGenerateTransport,
   });
 
@@ -293,6 +327,7 @@ export function useAiGeneration({
     const generationId = `${url}-${year}-${Date.now()}`;
     currentGenerationId.current = generationId;
     isGenerationComplete.current = false;
+    streamErrorRef.current = null;
 
     // Format URL properly *before* using it for cache check or storing in ref
     const normalizedTargetUrl = url.startsWith("http") ? url : `https://${url}`;

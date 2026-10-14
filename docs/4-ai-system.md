@@ -6,11 +6,11 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 
 | Provider | SDK | Models |
 |----------|-----|--------|
-| OpenAI | `@ai-sdk/openai` | `gpt-6` (API: `gpt-6-astra`), `gpt-5.5` |
+| OpenAI | `@ai-sdk/openai` | `gpt-6` (API: `gpt-6.1-sol`), `gpt-5.5` |
 | Anthropic | `@ai-sdk/anthropic` | `sonnet-4.6`, `opus-5.5` (API: `claude-opus-5-5`, Ryo + debug only) |
 | Google | `@ai-sdk/google` | `gemini-3-flash`, `gemini-3.1-pro-preview` |
 
-Default model: `gpt-6`
+Default model: `gpt-6` (OpenAI `gpt-6.1-sol`). A 401/403 from that provider retries once on `sonnet-4.6` or `gemini-3-flash` when that provider's key is configured.
 
 Specialized models used by specific flows:
 - `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)

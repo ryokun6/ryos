@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { smoothStream, streamText } from "ai";
+import { uiStreamErrorText } from "../_utils/provider-auth.js";
 import { z } from "zod";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -115,6 +116,11 @@ async function streamDictionaryAiText({
     await result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       headers: DICTIONARY_AI_STREAM_HEADERS,
+      onError: (error) => {
+        const errorText = uiStreamErrorText(error);
+        logger.warn("dictionary ai stream error", { errorText });
+        return errorText;
+      },
       onEnd: async ({ isAborted, isCancelled, responseMessage, finishReason }) => {
         if (isAborted || isCancelled || abort.signal.aborted || finishReason === "error") return;
         const notes = notesFromResponseMessage(responseMessage);

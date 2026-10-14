@@ -27,9 +27,10 @@ describe("AI model registry", () => {
 
   test("maps product names to provider API ids", () => {
     expect(normalizeAiModelId("gpt-6-astra")).toBe("gpt-6");
+    expect(normalizeAiModelId("gpt-6.1-sol")).toBe("gpt-6");
     expect(normalizeAiModelId("claude-opus-5-5")).toBe("opus-5.5");
     expect(normalizeAiModelId("claude-sonnet")).toBe("sonnet-4.6");
-    expect(getModelInstance("gpt-6").modelId).toContain("gpt-6");
+    expect(getModelInstance("gpt-6").modelId).toBe("gpt-6.1-sol");
     expect(getModelInstance("opus-5.5").modelId).toContain("opus");
   });
 

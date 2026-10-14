@@ -4,6 +4,7 @@ import {
   validateUIMessages,
   type UIMessage,
 } from "ai";
+import { uiStreamErrorText } from "./_utils/provider-auth.js";
 import { waitUntil } from "./_utils/_background.js";
 import {
   DEFAULT_MODEL,
@@ -650,6 +651,11 @@ export default apiHandler<{
     result.pipeUIMessageStreamToResponse(res, {
       status: 200,
       originalMessages,
+      onError: (error) => {
+        const errorText = uiStreamErrorText(error);
+        logError("Chat UI stream error", { errorText });
+        return errorText;
+      },
       generateMessageId: () => speechMessageId,
       consumeSseStream: consumeStream,
       onEnd: async ({ responseMessage, isAborted, finishReason }) => {
