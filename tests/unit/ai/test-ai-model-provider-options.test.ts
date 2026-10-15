@@ -14,16 +14,17 @@ describe("model reasoning options", () => {
     expect(getModelReasoning("gpt-6.1-sol")).toBe("low");
   });
 
-  test("omits temperature for gpt-6, gpt-6.1-sol, and opus-5.5", () => {
+  test("omits temperature for gpt-6, gpt-6.1-sol, opus-5.5, and sonnet-5.5", () => {
     expect(modelSupportsTemperature("gpt-6")).toBe(false);
     expect(modelSupportsTemperature("gpt-6.1-sol")).toBe(false);
     expect(modelSupportsTemperature("opus-5.5")).toBe(false);
+    expect(modelSupportsTemperature("sonnet-5.5")).toBe(false);
     expect(modelSupportsTemperature("gpt-5.5")).toBe(true);
-    expect(modelSupportsTemperature("sonnet-4.6")).toBe(true);
+    expect(modelSupportsTemperature("gemini-3-flash")).toBe(true);
   });
 
   test("leaves non-OpenAI models on provider default", () => {
-    expect(getModelReasoning("sonnet-4.6")).toBeUndefined();
+    expect(getModelReasoning("sonnet-5.5")).toBeUndefined();
     expect(getModelReasoning("gemini-3-flash")).toBeUndefined();
   });
 });

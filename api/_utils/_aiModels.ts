@@ -58,8 +58,8 @@ const MODEL_REASONING_BY_MODEL: Partial<
 
 function createModelInstance(model: SupportedModel): LanguageModel {
   switch (model) {
-    case "sonnet-4.6":
-      return anthropic("claude-sonnet-4-6");
+    case "sonnet-5.5":
+      return anthropic("claude-sonnet-5-5");
     case "opus-5.5":
       return anthropic("claude-opus-5-5");
     case "gpt-6":
@@ -93,9 +93,18 @@ export function getModelReasoning(
   return MODEL_REASONING_BY_MODEL[model];
 }
 
-/** gpt-6 (gpt-6-luna), gpt-6.1-sol, and claude-opus-5-5 reject custom temperature. */
+/**
+ * gpt-6 (gpt-6-luna), gpt-6.1-sol, claude-opus-5-5, and claude-sonnet-5-5
+ * reject custom temperature. The installed Anthropic provider treats any
+ * `claude-sonnet-5*` id as `rejectsSamplingParameters`.
+ */
 export function modelSupportsTemperature(model: SupportedModel): boolean {
-  return model !== "gpt-6" && model !== "gpt-6.1-sol" && model !== "opus-5.5";
+  return (
+    model !== "gpt-6" &&
+    model !== "gpt-6.1-sol" &&
+    model !== "opus-5.5" &&
+    model !== "sonnet-5.5"
+  );
 }
 
 export function getTelegramModel(

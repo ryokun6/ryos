@@ -11,8 +11,8 @@ export type AiModelAccess = "public" | "ryo-debug";
 export const RYO_ADMIN_USERNAME = "ryo";
 
 export const AI_MODELS = {
-  "sonnet-4.6": {
-    name: "sonnet-4.6",
+  "sonnet-5.5": {
+    name: "sonnet-5.5",
     provider: "Anthropic",
     access: "public",
   },
@@ -76,11 +76,15 @@ export const DEFAULT_AI_MODEL: SupportedModel = "gpt-6";
 /**
  * Product / API aliases → registry ids.
  * `gpt-6` is the default and uses the OpenAI id `gpt-6-luna`.
- * `gpt-6.1-sol` is its own selectable model. Older wire ids still resolve.
+ * `gpt-6.1-sol` and `sonnet-5.5` are their own selectable models.
+ * Older wire ids still resolve. `sonnet-5.5` uses Anthropic id `claude-sonnet-5-5`.
  */
 export const AI_MODEL_ALIASES: Record<string, SupportedModel> = {
-  "claude-sonnet": "sonnet-4.6",
-  "claude-sonnet-4-6": "sonnet-4.6",
+  "claude-sonnet": "sonnet-5.5",
+  "claude-sonnet-4-6": "sonnet-5.5",
+  "sonnet-4.6": "sonnet-5.5",
+  "claude-sonnet-5": "sonnet-5.5",
+  "claude-sonnet-5-5": "sonnet-5.5",
   "claude-opus-5-5": "opus-5.5",
   "gpt-6-astra": "gpt-6",
   "gpt-6-luna": "gpt-6",

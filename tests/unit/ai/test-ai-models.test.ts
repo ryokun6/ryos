@@ -32,9 +32,14 @@ describe("AI model registry", () => {
     expect(normalizeAiModelId("gpt-6-sol")).toBe("gpt-6.1-sol");
     expect(normalizeAiModelId("gpt-6.1-sol")).toBe("gpt-6.1-sol");
     expect(normalizeAiModelId("claude-opus-5-5")).toBe("opus-5.5");
-    expect(normalizeAiModelId("claude-sonnet")).toBe("sonnet-4.6");
+    expect(normalizeAiModelId("claude-sonnet")).toBe("sonnet-5.5");
+    expect(normalizeAiModelId("claude-sonnet-4-6")).toBe("sonnet-5.5");
+    expect(normalizeAiModelId("sonnet-4.6")).toBe("sonnet-5.5");
+    expect(normalizeAiModelId("claude-sonnet-5")).toBe("sonnet-5.5");
+    expect(normalizeAiModelId("claude-sonnet-5-5")).toBe("sonnet-5.5");
     expect(getModelInstance("gpt-6").modelId).toBe("gpt-6-luna");
     expect(getModelInstance("gpt-6.1-sol").modelId).toBe("gpt-6.1-sol");
+    expect(getModelInstance("sonnet-5.5").modelId).toBe("claude-sonnet-5-5");
     expect(getModelInstance("opus-5.5").modelId).toContain("opus");
   });
 
@@ -73,8 +78,9 @@ describe("opus-5.5 access control", () => {
     ).toBe(false);
     expect(canAccessAiModel("gpt-6.1-sol", { username: "ryo" })).toBe(true);
     expect(
-      canAccessAiModel("sonnet-4.6", { username: "alice", debugMode: true })
+      canAccessAiModel("sonnet-5.5", { username: "alice", debugMode: true })
     ).toBe(false);
+    expect(canAccessAiModel("sonnet-5.5", { username: "ryo" })).toBe(true);
   });
 
   test("shows the model picker only for ryo", () => {
@@ -85,12 +91,14 @@ describe("opus-5.5 access control", () => {
     expect(ryoDebug).toContain("opus-5.5");
     expect(ryoDebug).toContain("gpt-6");
     expect(ryoDebug).toContain("gpt-6.1-sol");
+    expect(ryoDebug).toContain("sonnet-5.5");
 
     const ryo = getSelectableAiModels({
       username: "ryo",
       debugMode: false,
     }).map((model) => model.id);
     expect(ryo).toContain("gpt-6.1-sol");
+    expect(ryo).toContain("sonnet-5.5");
     expect(ryo).not.toContain("opus-5.5");
 
     expect(
@@ -127,8 +135,14 @@ describe("opus-5.5 access control", () => {
       })
     ).toEqual({ ok: true, model: "gpt-6" });
     expect(
-      resolveRequestedAiModel("sonnet-4.6", { username: "alice" })
+      resolveRequestedAiModel("sonnet-5.5", { username: "alice" })
     ).toEqual({ ok: true, model: "gpt-6" });
+    expect(
+      resolveRequestedAiModel("claude-sonnet-5-5", { username: "ryo" })
+    ).toEqual({ ok: true, model: "sonnet-5.5" });
+    expect(
+      resolveRequestedAiModel("sonnet-4.6", { username: "ryo" })
+    ).toEqual({ ok: true, model: "sonnet-5.5" });
     expect(resolveRequestedAiModel("gpt-6.1-sol", { username: "ryo" })).toEqual({
       ok: true,
       model: "gpt-6.1-sol",
