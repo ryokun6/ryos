@@ -4,6 +4,7 @@ import ObjectiveC
 import Network
 import AuthenticationServices
 import PhotosUI
+import ImageIO
 import UniformTypeIdentifiers
 
 /// WKWebView shell around https://os.ryo.lu. The web client detects the
@@ -960,7 +961,7 @@ final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewContr
         let group = DispatchGroup()
         for result in results {
             let provider = result.itemProvider
-            let type = provider.registeredTypeIdentifiers.first ?? UTType.data.identifier
+            let type = Self.importTypeIdentifier(for: provider)
             let suggested = provider.suggestedName
             group.enter()
             provider.loadFileRepresentation(forTypeIdentifier: type) { url, _ in
@@ -1009,9 +1010,27 @@ final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewContr
         handler?(urls)
     }
 
+    /// A library photo lists a Live Photo package ahead of the still, and
+    /// that package is not an image file. Take a type the page can decode.
+    nonisolated static func importTypeIdentifier(for provider: NSItemProvider) -> String {
+        let identifiers = provider.registeredTypeIdentifiers
+        let preferred: [UTType] = [
+            .jpeg, .png, .gif, .webP, .heic, .heif, .image,
+            .movie, .mpeg4Movie, .quickTimeMovie, .video,
+        ]
+        for want in preferred {
+            if let match = identifiers.first(where: { UTType($0)?.conforms(to: want) == true }) {
+                return match
+            }
+        }
+        return identifiers.first ?? UTType.data.identifier
+    }
+
     /// The provider's URL is deleted when its callback returns, and a
     /// security-scoped document URL dies with the picker. Copy first.
-    private nonisolated static func copyImport(_ url: URL, suggestedName: String?) -> URL? {
+    /// A photo-library HEIF becomes JPEG here. Safari's own file input does
+    /// that before the page sees the photo; the page cannot decode HEIF.
+    nonisolated static func copyImport(_ url: URL, suggestedName: String?) -> URL? {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         var name = suggestedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -1025,10 +1044,48 @@ final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewContr
             .appendingPathComponent("\(UUID().uuidString)-\(name)")
         do {
             try FileManager.default.copyItem(at: url, to: dest)
-            return dest
         } catch {
             return nil
         }
+        guard isHEIF(dest) else { return dest }
+        guard let jpeg = transcodeHEIFToJPEG(dest) else { return dest }
+        try? FileManager.default.removeItem(at: dest)
+        return jpeg
+    }
+
+    private nonisolated static func isHEIF(_ url: URL) -> Bool {
+        if let type = UTType(filenameExtension: url.pathExtension) {
+            if type.conforms(to: .heic) || type.conforms(to: .heif) { return true }
+            if type.conforms(to: .jpeg) || type.conforms(to: .png) || type.conforms(to: .gif)
+                || type.conforms(to: .webP) || type.conforms(to: .movie) || type.conforms(to: .video)
+                || type.conforms(to: .pdf) || type.conforms(to: .text) {
+                return false
+            }
+        }
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let typeID = CGImageSourceGetType(source) else { return false }
+        let type = UTType(typeID as String)
+        return type?.conforms(to: .heic) == true || type?.conforms(to: .heif) == true
+    }
+
+    /// One still frame. Quality matches the camera path's JPEG.
+    private nonisolated static func transcodeHEIFToJPEG(_ url: URL) -> URL? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        let dest = FileManager.default.temporaryDirectory
+            .appendingPathComponent("\(UUID().uuidString).jpg")
+        guard let destination = CGImageDestinationCreateWithURL(
+            dest as CFURL,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else { return nil }
+        let options = [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary
+        CGImageDestinationAddImageFromSource(destination, source, 0, options)
+        guard CGImageDestinationFinalize(destination) else {
+            try? FileManager.default.removeItem(at: dest)
+            return nil
+        }
+        return dest
     }
 }
 
