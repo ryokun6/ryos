@@ -7,10 +7,10 @@ Multi-provider AI with streaming responses, tool-loop orchestration, and a two-t
 | Provider | SDK | Models |
 |----------|-----|--------|
 | OpenAI | `@ai-sdk/openai` | `gpt-6` (API: `gpt-6-luna`), `gpt-6.1-sol` (ryo only), `gpt-5.5` |
-| Anthropic | `@ai-sdk/anthropic` | `sonnet-4.6`, `opus-5.5` (API: `claude-opus-5-5`, Ryo + debug only) |
+| Anthropic | `@ai-sdk/anthropic` | `sonnet-5.5` (API: `claude-sonnet-5-5`, ryo only), `opus-5.5` (API: `claude-opus-5-5`, Ryo + debug only) |
 | Google | `@ai-sdk/google` | `gemini-3-flash`, `gemini-3.1-pro-preview` |
 
-Default model: `gpt-6` (OpenAI `gpt-6-luna`). Provider errors are returned to the client. There is no retry on another model. `gpt-6.1-sol` is selectable only by the authenticated user `ryo`.
+Default model: `gpt-6` (OpenAI `gpt-6-luna`). Provider errors are returned to the client. There is no retry on another model. `gpt-6.1-sol` and `sonnet-5.5` are selectable only by the authenticated user `ryo`.
 
 Specialized models used by specific flows:
 - `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)
@@ -21,7 +21,7 @@ graph TD
     A[User Message] --> B[Chat API]
     B --> C{Provider Selection}
     C -->|OpenAI| D[gpt-6 / gpt-5.5]
-    C -->|Anthropic| E[claude-sonnet-4-6 / claude-opus-5-5]
+    C -->|Anthropic| E[claude-sonnet-5-5 / claude-opus-5-5]
     C -->|Google| F[gemini-3-flash / gemini-3.1-pro-preview]
     D --> G[AI SDK Stream]
     E --> G
@@ -266,7 +266,7 @@ Common endpoint configurations in this AI stack:
 - **Telegram bot DM chat**: `/api/webhooks/telegram` enables private Telegram DM conversations with Ryo. Supports image attachments (downloaded and injected as multimodal content), web search, and server-side tool execution (memory, calendar, stickies, contacts, documents). Users link accounts via `/api/telegram/link/*` endpoints. Includes per-user burst and account-window rate limiting.
 - **Telegram heartbeat insights**: `/api/cron/telegram-heartbeat` runs on a 30-minute cron schedule. Analyzes today's daily notes, recent Telegram conversation, and heartbeat history to decide whether to proactively message the user. Processes daily notes and extracts memories from new chat messages before each decision. Uses gating logic to avoid redundant or stale nudges.
 - **Web search**: Authenticated users get a search tool based on the selected model: `web_search` (OpenAI) for `gpt-6` / `gpt-6.1-sol` / `gpt-5.5` with geolocation context, or `google_search` (Google) for `gemini-3-flash`. Anonymous users do not get search tools.
-- **Model selection**: only the authenticated username `ryo` may use a non-default model, including `gpt-6.1-sol`. `/api/chat` and `/api/ie-generate` ignore `model` (and any debug override) for every other caller and use `gpt-6` (`gpt-6-luna`). The Control Panels model picker is shown only for `ryo`. `opus-5.5` still requires `ryo` plus debug mode (`debugMode` / `dbg=1`); otherwise those requests are `403 model_not_allowed`.
+- **Model selection**: only the authenticated username `ryo` may use a non-default model, including `gpt-6.1-sol` and `sonnet-5.5`. `/api/chat` and `/api/ie-generate` ignore `model` (and any debug override) for every other caller and use `gpt-6` (`gpt-6-luna`). The Control Panels model picker is shown only for `ryo`. `opus-5.5` still requires `ryo` plus debug mode (`debugMode` / `dbg=1`); otherwise those requests are `403 model_not_allowed`.
 - **Chat-room auto replies**: `/api/ai/ryo-reply` generates room messages as `ryo` with dedicated rate limits.
 - **Applet multimodal AI**: `/api/applet-ai` supports text chat, image attachments in message history, and binary image generation responses.
 - **Infinite Mac visual loop**: `infiniteMacControl` can return screenshots for model-visible state inspection.

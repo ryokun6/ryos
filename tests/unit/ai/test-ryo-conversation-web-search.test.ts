@@ -22,7 +22,7 @@ const baseSystemState: RyoConversationSystemState = {
 
 async function prepareConversation(options: {
   channel: "chat" | "telegram";
-  model: "gpt-6" | "gpt-5.5" | "sonnet-4.6" | "gemini-3-flash";
+  model: "gpt-6" | "gpt-5.5" | "sonnet-5.5" | "gemini-3-flash";
   username?: string | null;
   systemState?: RyoConversationSystemState;
 }) {
@@ -86,7 +86,7 @@ describe("prepareRyoConversationModelInput web search gating", () => {
   test("does not add web_search for authenticated chat on non-openai models", async () => {
     const prepared = await prepareConversation({
       channel: "chat",
-      model: "sonnet-4.6",
+      model: "sonnet-5.5",
       username: "ryo",
       systemState: baseSystemState,
     });
