@@ -23,7 +23,9 @@ Object.defineProperty(globalThis, "localStorage", {
 const { readBookBlobContent } = await import(
   "../../../src/services/vfs/FileContentRepository"
 );
-const { useFilesStore } = await import("../../../src/stores/useFilesStore");
+const { useFilesStore, resetDefaultLibraryCacheForTests } = await import(
+  "../../../src/stores/useFilesStore"
+);
 const { dbOperations, STORES } = await import("../../../src/utils/indexedDB");
 const { ensureFileContentLoaded } = await import("../../../src/stores/useFilesStore");
 
@@ -46,8 +48,15 @@ async function deleteRyOsDatabase(): Promise<void> {
   });
 }
 
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
 beforeEach(async () => {
   bookAssetFetchCount = 0;
+  resetDefaultLibraryCacheForTests();
   await deleteRyOsDatabase();
   useFilesStore.setState({
     items: {},
@@ -57,14 +66,14 @@ beforeEach(async () => {
   Object.defineProperty(globalThis, "fetch", {
     configurable: true,
     value: async (input: RequestInfo | URL) => {
-      const url = input.toString();
-      if (url === "/data/filesystem.json") {
+      const url = requestUrl(input);
+      if (url.endsWith("/data/filesystem.json")) {
         return new Response(filesystemJson, {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url === BOOK_ASSET_PATH) {
+      if (url.endsWith(BOOK_ASSET_PATH)) {
         bookAssetFetchCount += 1;
         return new Response(meditationsEpub, {
           status: 200,
@@ -77,6 +86,7 @@ beforeEach(async () => {
 });
 
 afterAll(() => {
+  resetDefaultLibraryCacheForTests();
   Object.defineProperty(globalThis, "fetch", {
     configurable: true,
     value: originalFetch,

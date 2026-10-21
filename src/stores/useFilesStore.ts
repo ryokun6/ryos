@@ -120,6 +120,20 @@ let cachedFileSystemData: FileSystemData | null = null;
 let cachedAppletsData: { applets: FileSystemItemData[] } | null = null;
 let fileSystemDataPromise: Promise<FileSystemData> | null = null;
 let appletsDataPromise: Promise<{ applets: FileSystemItemData[] }> | null = null;
+let defaultLibraryLoadGeneration = 0;
+
+/**
+ * Drop cached default-library JSON. A shared-process test whose fetch stub
+ * returns `{ directories, files }` would otherwise be reused by later suites.
+ * In-flight loads from the previous generation cannot write the cache.
+ */
+export function resetDefaultLibraryCacheForTests(): void {
+  defaultLibraryLoadGeneration += 1;
+  cachedFileSystemData = null;
+  cachedAppletsData = null;
+  fileSystemDataPromise = null;
+  appletsDataPromise = null;
+}
 
 // Preload status tracking
 let preloadStarted = false;
@@ -180,7 +194,9 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
   }
   
   // Start new fetch
-  fileSystemDataPromise = (async () => {
+  const generation = defaultLibraryLoadGeneration;
+  let load!: Promise<FileSystemData>;
+  load = (async () => {
     try {
       const res = await abortableFetch("/data/filesystem.json", {
         timeout: 15000,
@@ -190,17 +206,21 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
       if (!isFileSystemData(data)) {
         throw new Error("filesystem.json has an unexpected shape");
       }
+      if (generation !== defaultLibraryLoadGeneration) return data;
       cachedFileSystemData = data;
       return cachedFileSystemData;
     } catch (err) {
       console.error("Failed to load filesystem.json", err);
       return { directories: [], files: [] };
     } finally {
-      fileSystemDataPromise = null;
+      if (generation === defaultLibraryLoadGeneration && fileSystemDataPromise === load) {
+        fileSystemDataPromise = null;
+      }
     }
   })();
-  
-  return fileSystemDataPromise;
+  fileSystemDataPromise = load;
+
+  return load;
 }
 
 // Function to load default applets from JSON (with caching)
@@ -218,24 +238,31 @@ async function loadDefaultApplets(): Promise<{
   }
   
   // Start new fetch
-  appletsDataPromise = (async () => {
+  const generation = defaultLibraryLoadGeneration;
+  let load!: Promise<{ applets: FileSystemItemData[] }>;
+  load = (async () => {
     try {
       const res = await abortableFetch("/data/applets.json", {
         timeout: 15000,
         retry: { maxAttempts: 2, initialDelayMs: 500 },
       });
       const data = await res.json();
-      cachedAppletsData = { applets: data.applets || [] };
+      const applets = { applets: data.applets || [] };
+      if (generation !== defaultLibraryLoadGeneration) return applets;
+      cachedAppletsData = applets;
       return cachedAppletsData;
     } catch (err) {
       console.error("Failed to load applets.json", err);
       return { applets: [] };
     } finally {
-      appletsDataPromise = null;
+      if (generation === defaultLibraryLoadGeneration && appletsDataPromise === load) {
+        appletsDataPromise = null;
+      }
     }
   })();
-  
-  return appletsDataPromise;
+  appletsDataPromise = load;
+
+  return load;
 }
 
 // Helper function to get parent path

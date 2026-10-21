@@ -31,6 +31,7 @@ const {
   ensureFileContentLoaded,
   warmPendingBookContent,
   clearWarmedBookPaths,
+  resetDefaultLibraryCacheForTests,
 } = await import("../../../src/stores/useFilesStore");
 const { dbOperations, STORES } = await import("../../../src/utils/indexedDB");
 
@@ -63,9 +64,16 @@ async function deleteRyOsDatabase(): Promise<void> {
   });
 }
 
+function requestUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
 beforeEach(async () => {
   bookAssetFetchCount = 0;
   networkAvailable = true;
+  resetDefaultLibraryCacheForTests();
   setNavigatorOnLine(true);
   clearWarmedBookPaths();
   await deleteRyOsDatabase();
@@ -77,14 +85,14 @@ beforeEach(async () => {
   Object.defineProperty(globalThis, "fetch", {
     configurable: true,
     value: async (input: RequestInfo | URL) => {
-      const url = input.toString();
-      if (url === "/data/filesystem.json") {
+      const url = requestUrl(input);
+      if (url.endsWith("/data/filesystem.json")) {
         return new Response(filesystemJson, {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
-      if (url === BOOK_ASSET_PATH) {
+      if (url.endsWith(BOOK_ASSET_PATH)) {
         bookAssetFetchCount += 1;
         if (!networkAvailable) {
           throw new TypeError("Failed to fetch");
@@ -100,6 +108,7 @@ beforeEach(async () => {
 });
 
 afterAll(() => {
+  resetDefaultLibraryCacheForTests();
   Object.defineProperty(globalThis, "fetch", {
     configurable: true,
     value: originalFetch,
