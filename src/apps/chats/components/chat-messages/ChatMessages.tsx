@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
+import { CHAT_MESSAGE_LIST_MIN_CLEARANCE_PX } from "./composerClearance";
 import { ChatMessagesContent } from "./ChatMessagesContent";
 import { ScrollToBottomButton } from "./ScrollToBottomButton";
 import type { ChatMessagesProps } from "./types";
@@ -51,6 +52,7 @@ export function ChatMessages({
   onMessageDeleted,
   fontSize,
   scrollToBottomTrigger,
+  bottomClearance = CHAT_MESSAGE_LIST_MIN_CLEARANCE_PX,
   onSendMessage,
   isLoadingGreeting,
   typingUsers,
@@ -68,32 +70,48 @@ export function ChatMessages({
       resize="instant"
       initial="instant"
     >
-      <StickToBottom.Content className="flex flex-col gap-1 p-3 pt-12 pb-14">
-        <ChatMessagesContent
-          messages={messages}
-          isLoading={isLoading}
-          error={error}
-          onRetry={onRetry}
-          onClear={onClear}
-          isRoomView={isRoomView}
-          roomId={roomId}
-          isAdmin={isAdmin}
-          username={username}
-          onMessageDeleted={onMessageDeleted}
-          fontSize={fontSize}
-          scrollToBottomTrigger={scrollToBottomTrigger}
-          onSendMessage={onSendMessage}
-          isLoadingGreeting={isLoadingGreeting}
-          typingUsers={typingUsers}
-          highlightSegment={highlightSegment}
-          isSpeaking={isSpeaking}
-          speakAssistantMessageManually={speakAssistantMessageManually}
-          stopSpeech={stopSpeech}
+      <StickToBottom.Content
+        className="flex flex-col p-3 pt-12"
+        style={{ paddingBottom: 0 }}
+      >
+        {/* Gap lives on the message stack so the clearance spacer does not
+            pick up an extra flex gap and change the no-label layout. */}
+        <div className="flex flex-col gap-1">
+          <ChatMessagesContent
+            messages={messages}
+            isLoading={isLoading}
+            error={error}
+            onRetry={onRetry}
+            onClear={onClear}
+            isRoomView={isRoomView}
+            roomId={roomId}
+            isAdmin={isAdmin}
+            username={username}
+            onMessageDeleted={onMessageDeleted}
+            fontSize={fontSize}
+            scrollToBottomTrigger={scrollToBottomTrigger}
+            onSendMessage={onSendMessage}
+            isLoadingGreeting={isLoadingGreeting}
+            typingUsers={typingUsers}
+            highlightSegment={highlightSegment}
+            isSpeaking={isSpeaking}
+            speakAssistantMessageManually={speakAssistantMessageManually}
+            stopSpeech={stopSpeech}
+          />
+        </div>
+        {/* In-flow spacer (not padding) so stick-to-bottom's content-box
+            ResizeObserver sees label / safe-area growth and keeps the tail
+            pinned when the user is already at the bottom. */}
+        <div
+          aria-hidden
+          data-chat-composer-clearance=""
+          className="shrink-0"
+          style={{ height: bottomClearance }}
         />
       </StickToBottom.Content>
 
       <TopScrollFade />
-      <ScrollToBottomButton />
+      <ScrollToBottomButton bottomClearance={bottomClearance} />
     </StickToBottom>
   );
 }

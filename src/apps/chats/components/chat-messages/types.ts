@@ -25,6 +25,8 @@ export interface ChatMessagesProps {
   onMessageDeleted?: (messageId: string) => void;
   fontSize: number;
   scrollToBottomTrigger: number;
+  /** Pixels the list must clear below the last bubble (composer + safe area). */
+  bottomClearance?: number;
   highlightSegment?: ChatHighlightSegment | null;
   isSpeaking?: boolean;
   speakAssistantMessageManually: (
