@@ -45,7 +45,7 @@ Whether you're exploring the retro aesthetics, building HTML applets, or chattin
 | API Runtime | Standalone Bun server (Node-style handlers) |
 | AI | OpenAI, Anthropic, Google via Vercel AI SDK |
 | Real-time | Pusher or local WebSocket (with Redis pub/sub fanout) |
-| Package Manager | Bun (`bun@1.3.9` in `package.json`) |
+| Package Manager | Bun (`bun@1.4.3` in `package.json`) |
 | Build | Vite, Bun |
 | Desktop | Electron + electron-builder (macOS and Windows release builds; Linux AppImage target configured) |
 | Deployment | Docker / Coolify (standalone Bun server), Electron releases |

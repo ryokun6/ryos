@@ -16,7 +16,8 @@ if (files.length === 0) {
 
 console.log(`Running ${files.length} ${group} test files`);
 
-const child = Bun.spawn(["bun", "test", ...files], {
+// Bun 1.4 ignores `[test].timeout` in bunfig.toml and defaults to 5s.
+const child = Bun.spawn(["bun", "test", "--timeout=30000", ...files], {
   stdout: "inherit",
   stderr: "inherit",
 });

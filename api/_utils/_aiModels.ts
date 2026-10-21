@@ -95,8 +95,10 @@ export function getModelReasoning(
 
 /**
  * gpt-6 (gpt-6-luna), gpt-6.1-sol, claude-opus-5-5, and claude-sonnet-5-5
- * reject custom temperature. The installed Anthropic provider treats any
- * `claude-sonnet-5*` id as `rejectsSamplingParameters`.
+ * are called without a custom temperature. The AI SDK forwards temperature
+ * for gpt-6-luna when reasoning effort is none; ryOS still omits it. The
+ * Anthropic provider treats any `claude-sonnet-5*` id as
+ * `rejectsSamplingParameters`.
  */
 export function modelSupportsTemperature(model: SupportedModel): boolean {
   return (

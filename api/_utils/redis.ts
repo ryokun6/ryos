@@ -527,7 +527,9 @@ class StandardRedisAdapter implements RedisLike {
   }
 
   async zrange(key: string, start: number, stop: number): Promise<string[]> {
-    return await this.client.zrange(key, start, stop);
+    // ioredis 6 types the index stop as a string. Redis still receives the
+    // integer index.
+    return await this.client.zrange(key, start, String(stop));
   }
 
   async zrangeWithScores(
@@ -535,7 +537,7 @@ class StandardRedisAdapter implements RedisLike {
     start: number,
     stop: number
   ): Promise<RedisSortedSetEntry[]> {
-    const raw = await this.client.zrange(key, start, stop, "WITHSCORES");
+    const raw = await this.client.zrange(key, start, String(stop), "WITHSCORES");
     const entries: RedisSortedSetEntry[] = [];
     for (let index = 0; index < raw.length; index += 2) {
       const member = raw[index];

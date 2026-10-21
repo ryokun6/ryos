@@ -12,6 +12,8 @@ concurrency:
 
 # actions/checkout@v4, cache, setup-node, upload/download-artifact run on Node 24
 # (Node 20 deprecated on GitHub-hosted runners — see GitHub changelog 2025-09-19).
+# setup-node below is pinned to 24.22.1, the October 21, 2026 security
+# release. A floating major ("24") can still select 24.22.0.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -33,12 +35,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.9"
+          bun-version: "1.4.3"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "24.22.1"
 
       - name: Cache Bun install
         uses: actions/cache@v4
@@ -107,12 +109,12 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: "1.3.9"
+          bun-version: "1.4.3"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "24"
+          node-version: "24.22.1"
 
       - name: Cache Bun install
         uses: actions/cache@v4

@@ -1,7 +1,7 @@
 # Dataset files change only when their URLs change, so this layer stays cached
 # across app rebuilds. A failed download fails the image build (an empty layer
 # would be cached). Runtime still lazy-loads if a file is missing.
-FROM --platform=linux/amd64 oven/bun:1.3.9 AS dictionary-data
+FROM --platform=linux/amd64 oven/bun:1.4.3 AS dictionary-data
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 RUN mkdir -p /app/data/dictionary && bun scripts/prefetch-dictionary-data.ts
 
-FROM --platform=linux/amd64 oven/bun:1.3.9 AS build
+FROM --platform=linux/amd64 oven/bun:1.4.3 AS build
 
 WORKDIR /app
 
@@ -32,9 +32,15 @@ ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 RUN bun scripts/build-dictionary-indexes.ts && bun run build
 
-FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
+FROM --platform=linux/amd64 oven/bun:1.4.3 AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# oven/bun:1.4.3 is Debian frozen when that tag was published.
+# Upgrade OS packages at image build so the runtime snapshot picks up
+# later security updates, then install curl.
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
