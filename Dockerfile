@@ -34,7 +34,13 @@ RUN bun scripts/build-dictionary-indexes.ts && bun run build
 
 FROM --platform=linux/amd64 oven/bun:1.3.9 AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# oven/bun:1.3.9 is Debian trixie frozen when that tag was published
+# (February 2026). Upgrade OS packages at image build so the runtime
+# snapshot picks up later trixie security updates, then install curl.
+RUN apt-get update \
+  && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

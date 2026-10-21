@@ -40,6 +40,7 @@ import {
   unsubscribeRealtimeSocket,
 } from "../api/_utils/realtime.js";
 import { getIrcBridge, isIrcBridgeEnabled } from "../api/_utils/irc/_bridge.js";
+import { installBunFetchBrotliGuard } from "../api/_utils/_bun-fetch-brotli-guard.js";
 import {
   discoverApiRouteManifest,
   type ApiRouteManifestEntry,
@@ -911,6 +912,8 @@ function validateEnv(): void {
 }
 
 async function bootstrap(): Promise<void> {
+  // Before any outbound fetch, including dictionary warmup below.
+  installBunFetchBrotliGuard();
   await loadEnv();
   validateEnv();
 
