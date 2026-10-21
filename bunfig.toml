@@ -1,3 +1,5 @@
 [test]
 preload = ["./tests/setup.ts"]
+# Bun 1.4 does not read this value. `scripts/run-test-group.ts` and the
+# package.json `bun test` scripts pass `--timeout=30000` instead.
 timeout = 30000

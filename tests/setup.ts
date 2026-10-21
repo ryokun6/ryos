@@ -5,6 +5,34 @@ import {
   resetDebouncedPersistWritesForTests,
 } from "../src/utils/debouncedPersistStorage";
 
+// fake-indexeddb schedules requests with setImmediate. On Bun 1.4 that waits
+// out the poll phase whenever any timer is pending, so each IndexedDB open
+// stalls until the next timer (often ~1s, longer when backoff timers stack).
+// setTimeout(0) stays on the timers phase. Browsers have no setImmediate, so
+// this matches the fallback fake-indexeddb already uses there.
+//
+// Suites that install fake timers replace setTimeout and expect setImmediate
+// to keep firing. Fall back to the native check-phase callback in that case.
+if (typeof globalThis.setImmediate === "function" && typeof globalThis.clearImmediate === "function") {
+  const nativeSetImmediate = globalThis.setImmediate.bind(globalThis);
+  const nativeClearImmediate = globalThis.clearImmediate.bind(globalThis);
+  const nativeSetTimeout = globalThis.setTimeout;
+  const nativeClearTimeout = globalThis.clearTimeout.bind(globalThis);
+  const timersAreMocked = () => globalThis.setTimeout !== nativeSetTimeout;
+
+  globalThis.setImmediate = ((callback: (...args: unknown[]) => void, ...args: unknown[]) => {
+    if (timersAreMocked()) return nativeSetImmediate(callback, ...args);
+    return nativeSetTimeout(callback, 0, ...args) as unknown as NodeJS.Immediate;
+  }) as typeof setImmediate;
+  globalThis.clearImmediate = ((handle: NodeJS.Immediate) => {
+    if (timersAreMocked()) {
+      nativeClearImmediate(handle);
+      return;
+    }
+    nativeClearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
+  }) as typeof clearImmediate;
+}
+
 /**
  * Global test setup — preloaded before every bun test run.
  */
