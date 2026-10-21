@@ -30,15 +30,26 @@ function createBookDocument(): Document {
 describe("Books vertical text layout", () => {
   test("sets the principal writing mode for epub.js pagination", () => {
     const bookDocument = createBookDocument();
+    const root = bookDocument.documentElement;
+    const setProperty = root.style.setProperty.bind(root.style);
+    const assigned: Array<[string, string, string]> = [];
+    root.style.setProperty = (property, value, priority) => {
+      assigned.push([String(property), String(value), priority ?? ""]);
+      setProperty(property, value, priority);
+    };
 
     applyEpubTextLayout(bookDocument, "vertical");
 
-    const rootStyle = bookDocument.documentElement.style;
+    const rootStyle = root.style;
     expect(rootStyle.getPropertyValue("writing-mode")).toBe("vertical-rl");
     expect(rootStyle.getPropertyPriority("writing-mode")).toBe("important");
-    expect(rootStyle.getPropertyValue("-webkit-writing-mode")).toBe(
-      "vertical-rl"
-    );
+    // happy-dom 21 drops unknown prefixed properties. Real WebKit still
+    // receives this assignment.
+    expect(assigned).toContainEqual([
+      "-webkit-writing-mode",
+      "vertical-rl",
+      "important",
+    ]);
     expect(rootStyle.getPropertyValue("text-orientation")).toBe("mixed");
     expect(rootStyle.getPropertyValue("direction")).toBe("ltr");
   });

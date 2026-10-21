@@ -47,11 +47,13 @@ async function captureResponsesRequest(
 }
 
 describe("OpenAI provider model ids", () => {
-  test("accepts gpt-6-luna with none reasoning and without temperature", async () => {
+  test("accepts gpt-6-luna with none reasoning and forwards temperature", async () => {
     const captured = await captureResponsesRequest("gpt-6-luna", "none");
     expect(captured.url).toContain("/responses");
     expect(captured.body.model).toBe("gpt-6-luna");
-    expect(captured.body.temperature).toBeUndefined();
+    // The AI SDK forwards sampling params for gpt-6-luna when reasoning
+    // effort is none. Chat still omits temperature before the provider.
+    expect(captured.body.temperature).toBe(0.7);
     expect(
       (captured.body.reasoning as { effort?: string } | undefined)?.effort
     ).toBe("none");

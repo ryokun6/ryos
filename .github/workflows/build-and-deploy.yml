@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        bun-version: ["1.3.9"]
+        bun-version: ["1.4.3"]
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
     steps:
@@ -72,7 +72,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        bun-version: ["1.3.9"]
+        bun-version: ["1.4.3"]
     env:
       NODE_OPTIONS: "--max-old-space-size=4096"
       GIT_COMMIT_SHA: ${{ github.sha }}

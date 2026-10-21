@@ -35,7 +35,6 @@ export interface RuntimeErrorReporter {
 declare global {
   interface Window {
     __RYOS_ERROR_REPORTER__?: RuntimeErrorReporter;
-    reportError?: (error: unknown) => void;
   }
 }
 
