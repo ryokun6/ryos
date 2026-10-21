@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties } from "react";
 import { CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -6,6 +6,7 @@ import { getPrivateRoomDisplayName } from "@/utils/chat";
 import { ChatRoomSidebar } from "../ChatRoomSidebar";
 import { ChatRoomDropdown } from "../ChatRoomDropdown";
 import { ChatInput } from "../ChatInput";
+import { useComposerOverlayClearance } from "../../hooks/useComposerOverlayClearance";
 import { ChatsMessagesPane } from "./ChatsMessagesPane";
 import type { ChatsAppController } from "./useChatsAppController";
 
@@ -16,6 +17,7 @@ type ChatsWindowContentProps = {
 
 export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps) {
   const { t } = useTranslation();
+  const composerRef = useRef<HTMLDivElement>(null);
 
   const {
     isWindowsTheme,
@@ -71,6 +73,11 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
     isOffline,
     handleTypingInCurrentRoom,
   } = c;
+
+  const bottomClearance = useComposerOverlayClearance(
+    composerRef,
+    messagesContainerRef
+  );
 
   // In Aqua Glass the toolbar is split into two floating frosted "islands"
   // (left = room title, right = actions). The right island is only rendered
@@ -285,6 +292,7 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
                 onMessageDeleted={handleMessageDeleted}
                 fontSize={fontSize}
                 scrollToBottomTrigger={scrollToBottomTrigger}
+                bottomClearance={bottomClearance}
                 highlightSegment={highlightSegment}
                 isSpeaking={isSpeaking}
                 speakAssistantMessageManually={speakAssistantMessageManually}
@@ -295,6 +303,8 @@ export function ChatsWindowContent({ c, isForeground }: ChatsWindowContentProps)
               />
             </div>
             <div
+              ref={composerRef}
+              data-chat-composer=""
               className="absolute bottom-0 left-0 z-10 p-2"
               style={{ width: "calc(100% - var(--sbw, 0px))" }}
             >

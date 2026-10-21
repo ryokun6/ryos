@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useStickToBottomContext } from "use-stick-to-bottom";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
-export function ScrollToBottomButton() {
+export function ScrollToBottomButton({
+  bottomClearance,
+}: {
+  bottomClearance: number;
+}) {
   const { t } = useTranslation();
   const { isMacOSTheme: isMacTheme, isDarkMode } = useThemeFlags();
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
@@ -17,12 +21,12 @@ export function ScrollToBottomButton() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.8, y: 10 }}
           transition={{ type: "spring", duration: 0.2 }}
-          className={`chat-scroll-to-bottom-btn absolute bottom-14 right-3 rounded-full z-20 flex items-center justify-center cursor-pointer select-none ${
+          className={`chat-scroll-to-bottom-btn absolute right-3 rounded-full z-20 flex items-center justify-center cursor-pointer select-none ${
             isMacTheme ? "relative overflow-hidden" : ""
           }`}
           style={{
             position: "absolute",
-            bottom: "56px",
+            bottom: bottomClearance,
             right: `calc(12px + var(--sbw, 0px))`,
             width: 28,
             height: 28,
