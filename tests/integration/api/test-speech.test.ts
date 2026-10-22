@@ -219,6 +219,25 @@ describe("speech", () => {
       expect([400, 429]).toContain(res.status);
     });
 
+    test("OpenAI text over the character cap is rejected before synthesis", async () => {
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/speech`,
+        speechUsername,
+        speechToken,
+        {
+          method: "POST",
+          headers: speechHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ text: "a".repeat(4097), model: "openai" }),
+        }
+      );
+      expect([413, 429]).toContain(res.status);
+      if (res.status === 413) {
+        const data = await res.json();
+        expect(data.error).toBe("text_too_long");
+        expect(data.maxLength).toBe(4096);
+      }
+    });
+
     test("Invalid JSON", async () => {
       const res = await fetchWithOrigin(`${BASE_URL}/api/speech`, {
         method: "POST",
