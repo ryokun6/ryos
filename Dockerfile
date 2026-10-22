@@ -32,15 +32,6 @@ ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 RUN bun scripts/build-dictionary-indexes.ts && bun run build
 
-# Runtime dependencies only: the server never imports devDependencies
-# (build tooling, test libraries), so they stay out of the final image.
-FROM --platform=linux/amd64 oven/bun:1.4.3 AS prod-deps
-
-WORKDIR /app
-
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile --production
-
 FROM --platform=linux/amd64 oven/bun:1.4.3 AS runtime
 
 # oven/bun:1.4.3 is Debian frozen when that tag was published.
@@ -58,23 +49,18 @@ ENV PORT=3000
 ENV API_HOST=0.0.0.0
 ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
-# App files stay root-owned (read-only for the server user). `src/` is still
-# required: API routes import shared modules from src/shared, src/utils, etc.
-COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/bun.lock ./bun.lock
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/api ./api
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src ./src
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/index.html ./index.html
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/tsconfig.node.json ./tsconfig.node.json
 COPY --from=build /app/tsconfig.app.json ./tsconfig.app.json
-# The dictionary cache is written at runtime (lazy dataset downloads and
-# index snapshots), so it is the one directory the server user owns.
-COPY --from=build --chown=bun:bun /app/data/dictionary ./data/dictionary
-
-USER bun
+COPY --from=build /app/data/dictionary ./data/dictionary
 
 EXPOSE 3000
 
