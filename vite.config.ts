@@ -317,7 +317,14 @@ export default defineConfig({
             referrerPolicy: mod.REFERRER_POLICY_VALUE,
           })
         );
-        server.middlewares.use((_req, res, next) => {
+        server.middlewares.use((req, res, next) => {
+          // The standalone API sets its own headers, including the IE proxy's
+          // sandbox CSP, which this blanket CSP would otherwise replace.
+          const pathPart = (req.url || '').split('?')[0];
+          if (pathPart === '/api' || pathPart.startsWith('/api/') || pathPart.startsWith('/ws')) {
+            next();
+            return;
+          }
           void headersPromise.then(
             ({ frameAncestors, referrerPolicy }) => {
               res.setHeader('X-Content-Type-Options', 'nosniff');
