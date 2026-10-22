@@ -26,14 +26,31 @@ const SHARE_APPLET_LIST_LIMIT = 100;
 const generateId = (): string => generateAuthToken().substring(0, 32);
 
 // Request schemas
+export const MAX_APPLET_CONTENT_CHARS = 2_000_000;
+const MAX_APPLET_TITLE_CHARS = 200;
+const MAX_APPLET_NAME_CHARS = 200;
+const MAX_APPLET_ICON_CHARS = 256;
+const MAX_APPLET_WINDOW_DIMENSION = 10_000;
+
+// Titles come from the applet's <title>, so overlong values are truncated
+// rather than rejected; anything wildly oversized is still a 400.
+const truncatedText = (max: number) =>
+  z
+    .string()
+    .max(max * 10)
+    .transform((value) => value.slice(0, max));
+
 const SaveAppletRequestSchema = z.object({
-  content: z.string().min(1),
-  title: z.string().optional(),
-  icon: z.string().optional(),
-  name: z.string().optional(),
-  windowWidth: z.number().optional(),
-  windowHeight: z.number().optional(),
-  shareId: z.string().optional(),
+  content: z.string().min(1).max(MAX_APPLET_CONTENT_CHARS),
+  title: truncatedText(MAX_APPLET_TITLE_CHARS).optional(),
+  icon: z.string().max(MAX_APPLET_ICON_CHARS).optional(),
+  name: truncatedText(MAX_APPLET_NAME_CHARS).optional(),
+  windowWidth: z.number().finite().min(0).max(MAX_APPLET_WINDOW_DIMENSION).optional(),
+  windowHeight: z.number().finite().min(0).max(MAX_APPLET_WINDOW_DIMENSION).optional(),
+  shareId: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{0,64}$/)
+    .optional(),
 });
 
 export default apiHandler<Record<string, unknown>>(

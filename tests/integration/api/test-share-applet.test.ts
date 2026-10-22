@@ -106,6 +106,45 @@ describe("share-applet", () => {
       expect(res.status).toBe(400);
     });
 
+    const postApplet = (body: Record<string, unknown>) =>
+      fetchWithAuth(`${BASE_URL}/api/share-applet`, testUsername, testToken, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+    test("POST - rejects oversized content", async () => {
+      const res = await postApplet({ content: "x".repeat(2_000_001) });
+      expect(res.status).toBe(400);
+    });
+
+    test("POST - rejects oversized icon and malformed shareId", async () => {
+      expect(
+        (await postApplet({ content: "<p>hi</p>", icon: "i".repeat(257) }))
+          .status
+      ).toBe(400);
+      expect(
+        (await postApplet({ content: "<p>hi</p>", shareId: "../../evil key" }))
+          .status
+      ).toBe(400);
+    });
+
+    test("POST - truncates long titles and names instead of rejecting", async () => {
+      const res = await postApplet({
+        content: "<p>long title</p>",
+        title: "T".repeat(500),
+        name: "N".repeat(500),
+      });
+      expect(res.status).toBe(200);
+      const { id } = await res.json();
+      const getRes = await fetchWithOrigin(
+        `${BASE_URL}/api/share-applet?id=${encodeURIComponent(id)}`
+      );
+      const data = await getRes.json();
+      expect(data.title).toHaveLength(200);
+      expect(data.name).toHaveLength(200);
+    });
+
     test("POST - success (create)", async () => {
       const res = await fetchWithAuth(
         `${BASE_URL}/api/share-applet`,
