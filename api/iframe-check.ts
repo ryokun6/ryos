@@ -476,6 +476,14 @@ export default apiHandler(
   if (isRawProxy) {
     mode = "proxy";
   }
+  // The isolated host exists only to render proxied pages; checks, AI pages
+  // and cache listings stay on the app origin.
+  if (onIsolatedProxyHost && mode !== "proxy") {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    logger.response(404, Date.now() - startTime);
+    return res.status(404).send("Not Found");
+  }
   // `render=headless` forces the (optional, env-gated) headless-browser
   // renderer even when a plain fetch would have succeeded — but only for
   // permitted (admin / debug) callers. Resolved below alongside sessions.

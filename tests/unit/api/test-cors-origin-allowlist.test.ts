@@ -92,4 +92,18 @@ describe("CORS hardening", () => {
     expect(isAllowedOrigin("https://ieproxy.example.com")).toBe(false);
     expect(isAllowedOrigin("https://dev.example.com")).toBe(true);
   });
+
+  test("production ryo.lu allowlist still rejects ieproxy.ryo.lu", () => {
+    setProd();
+    process.env.API_ALLOWED_ORIGINS = "*.ryo.lu,https://ryo.lu"; // pragma: allowlist secret
+    process.env.IE_PROXY_ORIGIN = "https://ieproxy.ryo.lu";
+    expect(isAllowedOrigin("https://ieproxy.ryo.lu")).toBe(false);
+    expect(isAllowedOrigin("https://IEPROXY.ryo.lu")).toBe(false);
+    expect(isAllowedOrigin("https://ieproxy.ryo.lu:443")).toBe(false);
+    expect(isAllowedOrigin("https://os.ryo.lu")).toBe(true);
+    expect(isAllowedOrigin("https://dev.ryo.lu")).toBe(true); // pragma: allowlist secret
+    expect(isAllowedOrigin("https://pr-1-preview.os.ryo.lu")).toBe(true);
+    expect(isAllowedOrigin("https://ryo.lu")).toBe(true);
+    expect(isAllowedOrigin("http://ieproxy.ryo.lu")).toBe(false);
+  });
 });
