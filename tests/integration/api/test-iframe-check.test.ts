@@ -5,7 +5,26 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "../../helpers/test-utils";
+import {
+  BASE_URL,
+  ensureUserAuth,
+  fetchWithAuth,
+  fetchWithOrigin,
+  getTokenFromAuthCookie,
+} from "../../helpers/test-utils";
+
+/** Admin session for the gated debug features; null when the env can't provide it. */
+async function getAdminToken(): Promise<string | null> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "ryo", password: "testtest" }),
+  });
+  if (!res.ok) return null;
+  return getTokenFromAuthCookie(res);
+}
+
+const adminToken = await getAdminToken();
 
 describe("iframe-check", () => {
   describe("Input Validation", () => {
@@ -309,7 +328,7 @@ describe("iframe-check", () => {
       expect(setCookie).not.toContain("ie_psid=");
     });
 
-    test("arms proxy sessions on a top-level GET when ieSessions=1&dbg=1 opts in", async () => {
+    test("dbg=1 no longer grants debug features to anonymous callers", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?ieSessions=1&dbg=1&url=${encodeURIComponent(
           "https://example.com"
@@ -317,14 +336,46 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const setCookie = res.headers.get("set-cookie") || "";
-      expect(setCookie).toContain("ie_psid=");
-      expect(setCookie).toContain("HttpOnly");
-      expect(setCookie).toContain("Path=/api");
+      expect(setCookie).not.toContain("ie_psid=");
     });
+
+    test("does not arm sessions for a signed-in non-admin user", async () => {
+      const username = `iesess_${Date.now()}`;
+      const token = await ensureUserAuth(username, "testpassword123");
+      expect(token).toBeTruthy();
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/iframe-check?ieSessions=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`,
+        username,
+        token as string
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).not.toContain("ie_psid=");
+    });
+
+    test.skipIf(!adminToken)(
+      "arms proxy sessions on a top-level GET when the ryo admin opts in",
+      async () => {
+        const res = await fetchWithAuth(
+          `${BASE_URL}/api/iframe-check?ieSessions=1&url=${encodeURIComponent(
+            "https://example.com"
+          )}`,
+          "ryo",
+          adminToken as string
+        );
+        expect(res.status).toBe(200);
+        const setCookie = res.headers.get("set-cookie") || "";
+        expect(setCookie).toContain("ie_psid=");
+        expect(setCookie).toContain("HttpOnly");
+        expect(setCookie).toContain("Path=/api");
+      }
+    );
 
     test("does not arm sessions for raw sub-resource requests even when opted in", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/iframe-check?raw=1&ieSessions=1&dbg=1&url=${encodeURIComponent(
+        `${BASE_URL}/api/iframe-check?raw=1&ieSessions=1&url=${encodeURIComponent(
           "https://example.com"
         )}`
       );

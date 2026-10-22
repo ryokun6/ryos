@@ -231,19 +231,17 @@ export function useInternetExplorerLogic({
   const showDebugMenu = debugMode;
 
   // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
-  // server opts the request into the gated features. `dbg=1` signals the server
-  // that this is an admin/debug-mode caller permitted to use them.
+  // server opts the request into the gated features. The server only honors
+  // them for the signed-in `ryo` admin.
   const appendIeDebugParams = useCallback(
     (proxyUrl: string): string => {
       if (!proxyUrl.startsWith("/api/iframe-check")) return proxyUrl;
       const extra: string[] = [];
-      if (debugForceHeadless) extra.push("render=headless", "dbg=1");
-      if (debugProxySessions) extra.push("ieSessions=1", "dbg=1");
+      if (debugForceHeadless) extra.push("render=headless");
+      if (debugProxySessions) extra.push("ieSessions=1");
       if (extra.length === 0) return proxyUrl;
-      // De-dupe the dbg flag.
-      const unique = Array.from(new Set(extra));
       const sep = proxyUrl.includes("?") ? "&" : "?";
-      const next = `${proxyUrl}${sep}${unique.join("&")}`;
+      const next = `${proxyUrl}${sep}${extra.join("&")}`;
       if (debugVerboseLogging) {
         log.info("[debug] proxy params", {
           headless: debugForceHeadless,

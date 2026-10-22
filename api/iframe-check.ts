@@ -60,12 +60,9 @@ const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * Whether the caller is permitted to opt into the IE Debug proxy features
- * (cookie/session passthrough, forced headless). This is the "gate under admin
- * ryo user, optional in debug mode" check:
- *   - `dbg=1` — the IE Debug menu (shown only to the admin user or in global
- *     debug mode) sends this to opt in, OR
- *   - the authenticated caller is the `ryo` admin (resolved from the
- *     first-party auth cookie that same-origin iframe navigations carry).
+ * (cookie/session passthrough, forced headless): only the authenticated `ryo`
+ * admin, resolved from the first-party auth cookie that same-origin iframe
+ * navigations carry. Client-supplied flags never grant access.
  *
  * Env flags (`IE_PROXY_SESSIONS`, headless provider) are checked separately by
  * each caller and make a feature always-on regardless of this gate.
@@ -78,7 +75,6 @@ async function isIeDebugCallerPermitted(
   req: ApiRequest,
   redis: Redis
 ): Promise<boolean> {
-  if (req.query.dbg === "1" || req.query.dbg === "true") return true;
   try {
     const auth = await resolveRequestAuth(req, redis);
     return auth.user?.username === "ryo";
