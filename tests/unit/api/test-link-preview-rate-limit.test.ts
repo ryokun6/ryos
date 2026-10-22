@@ -1,7 +1,23 @@
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, describe, expect, mock, spyOn, test } from "bun:test";
+import * as actualRedis from "../../../api/_utils/redis.js";
+import { FakeRedis } from "../../helpers/fake-redis";
 import * as RateLimit from "../../../api/_utils/_rate-limit.js";
 import handler from "../../../api/link-preview.js";
 import type { ApiRequest, ApiResponse } from "../../../api/_utils/api-types.js";
+
+// CI has no Redis: hand the handler an in-memory client. Bun module mocks are
+// global across files in a run and patch the imported namespace in place, so
+// restore from a copy taken before mocking.
+const realRedis = { ...actualRedis };
+mock.module("../../../api/_utils/redis.js", () => ({
+  ...realRedis,
+  getRedisBackend: () => "upstash-rest",
+  createRedis: () => new FakeRedis(),
+}));
+
+afterAll(() => {
+  mock.module("../../../api/_utils/redis.js", () => realRedis);
+});
 
 function makeReq(url: string): ApiRequest {
   return {

@@ -6,12 +6,28 @@
  * proxy response is sandboxed and framable by ryOS origins only, and without
  * IE_PROXY_ORIGIN nothing redirects.
  */
-import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
+import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from "bun:test";
+import * as actualRedis from "../../../api/_utils/redis.js";
+import { FakeRedis } from "../../helpers/fake-redis";
 import * as RateLimit from "../../../api/_utils/_rate-limit.js";
 import handler from "../../../api/iframe-check.js";
 import { buildSetAuthCookie } from "../../../api/_utils/_cookie.js";
 import { buildClientRuntimeConfig } from "../../../api/_utils/runtime-config.js";
 import type { ApiRequest, ApiResponse } from "../../../api/_utils/api-types.js";
+
+// CI has no Redis: hand the handler an in-memory client. Bun module mocks are
+// global across files in a run and patch the imported namespace in place, so
+// restore from a copy taken before mocking.
+const realRedis = { ...actualRedis };
+mock.module("../../../api/_utils/redis.js", () => ({
+  ...realRedis,
+  getRedisBackend: () => "upstash-rest",
+  createRedis: () => new FakeRedis(),
+}));
+
+afterAll(() => {
+  mock.module("../../../api/_utils/redis.js", () => realRedis);
+});
 
 const ENV_KEYS = [
   "API_RUNTIME_ENV",
