@@ -165,7 +165,6 @@ final class ShellViewModel: ObservableObject {
     private func registerWithRelay() {
         let state = notificationState
         RelayClient.shared.registerDevice(
-            username: state.username,
             isAuthenticated: state.isAuthenticated,
             rooms: (state.rooms ?? []).map(\.id)
         )

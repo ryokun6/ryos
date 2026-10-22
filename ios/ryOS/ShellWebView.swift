@@ -419,7 +419,12 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
+        // Subframes (Internet Explorer pages, applets) and popups share this
+        // content controller; only the shell's own top-level page may drive
+        // the native bridge.
         guard message.name == "ryosBridge",
+              message.frameInfo.isMainFrame,
+              Self.isShellOrigin(message.frameInfo.securityOrigin),
               let body = message.body as? [String: Any],
               let kind = body["kind"] as? String else { return }
 
@@ -436,6 +441,16 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         default:
             break
         }
+    }
+
+    static func isShellOrigin(_ origin: WKSecurityOrigin) -> Bool {
+        let expected = ShellViewModel.origin
+        guard origin.protocol == expected.scheme,
+              origin.host.caseInsensitiveCompare(expected.host ?? "") == .orderedSame
+        else { return false }
+        let defaultPort = expected.scheme == "https" ? 443 : 80
+        let expectedPort = expected.port ?? defaultPort
+        return origin.port == 0 || origin.port == expectedPort
     }
 
     private func handleInvoke(id: String, name: String, args: Any?) {
