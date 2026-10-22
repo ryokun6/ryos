@@ -40,7 +40,9 @@ const stripIpLiteralBrackets = (hostname: string): string => {
   return hostname;
 };
 
-const resolveAndValidateHostname = async (hostname: string): Promise<void> => {
+const resolveAndValidateHostname = async (
+  hostname: string
+): Promise<string[]> => {
   const records = await lookup(hostname, { all: true, verbatim: true });
   if (!records.length) {
     throw new SsrfBlockedError("DNS lookup failed for URL");
@@ -51,9 +53,25 @@ const resolveAndValidateHostname = async (hostname: string): Promise<void> => {
   if (blockedRecord) {
     throw new SsrfBlockedError("Private or reserved IPs are not allowed");
   }
+  // Prefer IPv4: many container networks have no IPv6 egress.
+  return [
+    ...records.filter((r) => r.family === 4),
+    ...records.filter((r) => r.family !== 4),
+  ].map((r) => r.address);
 };
 
-export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
+export interface ValidatedPublicTarget {
+  url: URL;
+  /**
+   * Validated addresses to connect to. Empty when the URL host is already an
+   * IP literal (the URL itself is the pinned target).
+   */
+  addresses: string[];
+}
+
+export const validatePublicTarget = async (
+  rawUrl: string
+): Promise<ValidatedPublicTarget> => {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
@@ -84,12 +102,56 @@ export const validatePublicUrl = async (rawUrl: string): Promise<URL> => {
     if (isPrivateOrReservedIp(ipLiteral)) {
       throw new SsrfBlockedError("Private or reserved IPs are not allowed");
     }
-    return parsed;
+    return { url: parsed, addresses: [] };
   }
 
-  await resolveAndValidateHostname(hostname);
+  const addresses = await resolveAndValidateHostname(hostname);
 
-  return parsed;
+  return { url: parsed, addresses };
+};
+
+export const validatePublicUrl = async (rawUrl: string): Promise<URL> =>
+  (await validatePublicTarget(rawUrl)).url;
+
+const MAX_PINNED_ADDRESS_ATTEMPTS = 3;
+
+/**
+ * Fetch `target.url` while connecting only to one of the addresses that were
+ * validated, so a DNS answer that changes between validation and connect
+ * (DNS rebinding) cannot redirect the request to an internal host. The
+ * original hostname is kept for the Host header and TLS SNI / certificate
+ * verification (Bun's `tls.serverName`).
+ */
+export const fetchPinned = async (
+  target: ValidatedPublicTarget,
+  init: RequestInit
+): Promise<Response> => {
+  if (target.addresses.length === 0) {
+    return fetch(target.url.toString(), init);
+  }
+
+  const headers = new Headers(init.headers);
+  headers.set("Host", target.url.host);
+  const serverName = target.url.hostname;
+
+  let lastError: unknown;
+  for (const address of target.addresses.slice(0, MAX_PINNED_ADDRESS_ATTEMPTS)) {
+    const pinnedUrl = new URL(target.url.toString());
+    pinnedUrl.hostname = isIP(address) === 6 ? `[${address}]` : address;
+    try {
+      return await fetch(pinnedUrl.toString(), {
+        ...init,
+        headers,
+        ...(target.url.protocol === "https:"
+          ? { tls: { serverName } }
+          : {}),
+      } as RequestInit);
+    } catch (error) {
+      if (init.signal?.aborted) throw error;
+      lastError = error;
+    }
+  }
+  throw lastError;
 };
 
 const readSetCookies = (headers: Headers): string[] => {
@@ -121,8 +183,9 @@ export const safeFetchWithRedirects = async (
   const setCookies: string[] = [];
 
   for (let attempt = 0; attempt <= maxRedirects; attempt += 1) {
-    const validatedUrl = await validatePublicUrl(currentUrl);
-    const response = await fetch(validatedUrl.toString(), {
+    const target = await validatePublicTarget(currentUrl);
+    const validatedUrl = target.url;
+    const response = await fetchPinned(target, {
       ...currentInit,
       redirect: "manual",
     });

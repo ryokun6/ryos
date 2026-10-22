@@ -112,7 +112,18 @@ const isIpv6Blocked = (ip: string): boolean => {
   const mappedIpv4 = getMappedIpv4FromIpv6(hextets);
   if (mappedIpv4) return isIpv4Blocked(mappedIpv4);
 
+  // IPv4-compatible (deprecated ::a.b.c.d) addresses embed an IPv4 target.
+  if (hextets.slice(0, 6).every((hextet) => hextet === 0)) return true;
+
   const first = hextets[0];
+  // NAT64 well-known prefix 64:ff9b::/96 and local-use 64:ff9b:1::/48 let a
+  // DNS64 resolver smuggle any IPv4 target (including private ranges).
+  if (first === 0x0064 && hextets[1] === 0xff9b) return true;
+  if (first === 0x2002) return true; // 6to4 2002::/16 embeds an IPv4 target
+  if (first === 0x2001 && hextets[1] === 0x0000) return true; // Teredo 2001::/32
+  if (first === 0x0100 && hextets.slice(1, 4).every((h) => h === 0)) {
+    return true; // discard-only 100::/64
+  }
   if ((first & 0xff00) === 0xff00) return true; // multicast ff00::/8
   if ((first & 0xfe00) === 0xfc00) return true; // unique local fc00::/7
   if ((first & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
