@@ -5,6 +5,7 @@
 現有 Karaoke 用 YouTube iframe 播放，網頁碰不到原始音訊，升降 key 和去人聲沒辦法加在這條路徑上
 點歌可以純網頁做：先做本機佇列，派對再接到 Listen Together 的遠端指令
 不建議在伺服器抓 YouTube 音檔；升降 key 和去人聲只處理使用者自己提供的音檔
+這次在 4 核上實測 htdemucs，30 秒合成音約 7.5 秒（RTF 0.25）；同一類資料中心 IP 連 YouTube 播放資訊就被擋住
 
 ## Verdict
 
@@ -15,6 +16,8 @@
 | 去人聲 (vocal reduction + level slider) | Same gate as pitch. A center-channel cancel is the only cheap slider, and it sounds poor. ML separation is a later, optional pass over a file the user already provided. Do not precompute stems from YouTube on the Coolify box. |
 
 Recommended MVP: a Karaoke-only queue (up next, reorder, remove, 插播) that plays through the existing YouTube iframe. Leave pitch and vocal removal out of that release.
+
+A later pass measured both vocal-removal paths. The numbers and the recommendation are in [Vocal-removal paths, measured](#vocal-removal-paths-measured). Short version: local separation only works on audio the page or a native player already decodes, and it is a prepare step, not a live effect. Server-side YouTube extraction is fast enough on CPU once you have the file, and a datacenter address failed YouTube’s bot check before any audio was fetched.
 
 This document is a plan. It does not change playback.
 
@@ -275,11 +278,139 @@ Small once phase 3 exists. Can ship in the same release as phase 4.
 
 ### Not scheduled
 
-- YouTube download, proxy, or stem cache on Coolify.
-- Demucs in the browser or on a GPU box.
-- An iOS `AVAudioEngine` player.
+- YouTube download, proxy, or stem cache on Coolify. CPU cost was measured afterward and is not the blocker. See [Path B](#path-b--server-extracts-separates-client-plays-the-stem).
+- Demucs in the browser or on a GPU box, until a user-file player exists. The native CPU timing below is an upper bound, not a phone timing.
+- An iOS `AVAudioEngine` player for WKWebView audio.
 - Apple Music Sing.
 - Writing processor latency into `lyricOffset`.
+
+## Vocal-removal paths, measured
+
+Two ways to get real vocal removal, looked at again after the first plan. Prototype code stayed on the VM. Nothing in this repo plays or separates audio.
+
+### Path A — local or on-device
+
+The samples have to already be in a process we control. Capturing the speakers is a different problem from decoding the file, and it does not line up with the lyric clock.
+
+#### Browser, user-supplied file
+
+This is the path the first plan already allows. The page decodes a file the user picked, then runs a separator in that tab.
+
+What was measured here is the native model, not the browser port. `demucs` 4.1.0 on PyTorch 2.14.1+cpu, `shifts=0`, `overlap=0.25`, `split=True`, `jobs=0` (so the only parallelism is Torch’s own threads):
+
+| Run | Threads | Wall | Audio | RTF (wall / audio) | Times realtime | CPU time / wall | Peak RSS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `htdemucs` warmup | 4 | 8.03 s | 30.00 s | 0.268 | 3.7× | 3.75 | 1196 MB |
+| `htdemucs` measured | 4 | 7.50 s | 30.00 s | 0.250 | 4.0× | 3.83 | 1203 MB |
+| `htdemucs` | 2 | 14.33 s | 30.00 s | 0.478 | 2.1× | 1.92 | 1188 MB |
+| `htdemucs_ft` (4-model bag) | 4 | 28.41 s | 30.00 s | 0.947 | 1.1× | 3.82 | 1800 MB |
+
+The clip is synthetic: 30.00 s, 44.1 kHz, stereo, two sines plus white noise from ffmpeg. It is not a song, and the run was not scored for vocal quality. RTF is the network’s cost. Each `htdemucs` checkpoint on disk is 84,025,440 bytes (about 80 MiB). The fine-tune bag is four of those.
+
+Scaling from 4 threads to 2 was almost linear on this CPU. A 4-minute file is eight times the clip, so about 60 s on 4 threads and about 115 s on 2 threads for plain `htdemucs`. The fine-tune bag is about 3.8× slower (about 3.8 minutes for a 4-minute file on 4 threads) for a quality bump that is not worth a first server or a phone.
+
+This host is not a phone and not a Hetzner VPS. It is a KVM guest with 4 vCPUs of an Intel Xeon (CPUID family 6, model 207, AVX-512). Treat 0.25 as a fast-desktop ceiling. Published browser ONNX notes put single-thread WASM at several seconds per 7.8 s chunk on a recent iPhone, and the model download for an `htdemucs` fp16-weights ONNX is on the order of 166 MB. A browser session should be planned as a gigabyte-class allocation: the native process peaked near 1.2 GB. That fits a desktop tab. It is a bad bet for a phone tab that is also showing lyrics and a video.
+
+MDX-Net was not timed. Those ONNX files are often smaller and faster than HTDemucs and worse on vocals. They have the same gate: the page still needs the file.
+
+The browser can keep up with a live stream only when RTF stays under 1 and you accept the model’s chunk delay. HTDemucs splits into segments of about 7.8 s with overlap. The algorithmic delay is seconds, not a buffer of a few tens of milliseconds. On a phone, where RTF is above 1, the separator falls behind a live stream. The honest UX is a “prepare instrumental” action with a progress bar, then a crossfade against the dry file. The center-channel slider remains the thing that can move during playback.
+
+`SharedArrayBuffer` for multi-thread WASM still wants COOP/COEP on the app origin, which breaks the YouTube iframe and MusicKit sign-in (`api/_utils/_security-headers.ts`). A desktop ONNX session should stay single-threaded, or run on a separate origin. Neither belongs in the queue MVP.
+
+#### iOS native
+
+`AVAudioEngine` and a Core ML Demucs only see audio the native player decodes. This VM has no Apple GPU or Neural Engine, so no Core ML timing was taken. A converted `htdemucs` is a plausible on-device model (the PyTorch file is 80 MiB; a Core ML package is the same order), and an iPhone will beat mobile WASM. It is still a prepare step over a file or a download the app owns, in chunks, with seconds of delay before the first separated audio. It does not attach to the WKWebView’s YouTube player. `AudioSessionController.swift` only reactivates the session WebKit already owns.
+
+There is no system API that returns Apple Music Sing stems to a third-party app.
+
+#### macOS capture, and Chrome tab audio
+
+ryOS already has an Electron shell (`electron/main.ts`). It does not call ScreenCaptureKit or `desktopCapturer`. A macOS-only addition could use ScreenCaptureKit to record another app’s audio after a Screen Recording prompt. That records the other app. Karaoke’s lyric clock is the YouTube iframe inside this app (`getCurrentTime()` in `useKaraokeLogic.ts`). Capturing Chrome while the lyrics live in ryOS does not give you one clock. Capturing the Electron process itself includes every sound that process plays, including a processed copy you send back to the speakers.
+
+`excludesCurrentProcessAudio` (the ScreenCaptureKit switch for “don’t record myself”) does not help when the YouTube iframe is in-process. Excluding the current process excludes the song.
+
+Chrome’s `getDisplayMedia` can include tab audio, and that mix does include a cross-origin iframe, because the capture is the tab’s audio output rather than a handle on the frame. Checked against the Screen Capture spec and Chrome’s own description of `suppressLocalAudioPlayback` (Chrome 109+):
+
+- The call always shows a permission prompt. `preferCurrentTab` is a hint. It is not a silent, persistent grant. There is no equivalent on iOS, and Firefox and Safari do not implement this constraint.
+- It is Chromium on desktop only.
+- Muting the iframe is not viable. `player.mute()` / `setVolume(0)` on the IFrame API turns the volume down inside YouTube, before the samples are mixed into the tab. The capture then records silence. You cannot mute the player and still harvest its audio from the tab mix.
+- `suppressLocalAudioPlayback: true` is the API that keeps the captured stream intact while stopping local speaker playback of the captured surface. It is the wrong shape for a same-tab karaoke page. The processed audio you play back is also in that tab, so it is either silenced with everything else or fed back into the capture.
+- A popup or second window that contains only the iframe, captured from the main window, avoids the feedback. The user must pick that surface, the video is no longer in the karaoke window, and the capture clock is not `getCurrentTime()`. Tab-capture buffering is commonly on the order of 100–300 ms and is not stable. HTDemucs then adds seconds. The iframe’s picture would lead the instrumental by the whole pipeline, and the lyric highlight, which follows the iframe clock, would lead the voice you hear.
+
+So Chrome tab capture is a real way to *hear* the iframe. It is not a way to replace that audio in sync with the lyrics. It should not be a product phase. A one-afternoon spike on desktop Chrome could confirm the same-tab echo, and that result would not change the architecture.
+
+### Path B — server extracts, separates, client plays the stem
+
+This is the path that would also unlock key shift, because the client would finally have a timeline it can put through an AudioWorklet. It is also the path that copies YouTube audio onto infrastructure we run.
+
+#### Extraction from a datacenter address
+
+Measured from this VM, which is AWS us-east-1 (AS14618), not a Hetzner address. `yt-dlp` 2026.10.21, metadata only (`--simulate`, no media file written), against a public watch URL:
+
+```text
+ERROR: [youtube] jNQXAC9IVRw: Sign in to confirm you’re not a bot.
+```
+
+That failed before a format URL existed, so a PO token was never in play. yt-dlp’s maintainers have said the same thing about datacenter addresses: a PO token can help a residential address avoid getting blocked, and it does not unblock an address YouTube has already classed as a bot (see yt-dlp issue 16773, May 2026, and the PO Token guide). Tokens are bound to the video id and to the client that minted them, they expire, and they have to be minted per video by a provider plugin. They are an ongoing breakage surface, not a config flag.
+
+The error text also suggests passing browser cookies. Doing that with a real YouTube account risks the account (yt-dlp’s own cookie warning). Cookies from a home browser do not transfer cleanly onto a server IP, and they rotate. This probe did not try cookies.
+
+Hetzner’s egress is the same class of address as this AWS guest: a datacenter IP with no browser reputation. The production Coolify host should be assumed to hit this wall until someone runs the same logged-out metadata request from that host and sees a format list. I did not have a Hetzner shell to do that.
+
+#### Separation cost
+
+Once a wav exists, separation is the cheap and predictable part.
+
+On the 4-vCPU Xeon above, plain `htdemucs` at `shifts=0` is RTF 0.25 (about one minute for a 4-minute song) and about 1.2 GB RSS. Two threads are RTF 0.48 (about two minutes for a 4-minute song). `htdemucs_ft` is RTF 0.95 and 1.8 GB, which is the wrong default for a batch worker. The default `shifts=1` in Demucs averages a second pass and would roughly double these times; a server should pin `shifts=0`.
+
+Do not run it inside the request process that serves `/api`. Peak RSS of 1.2 GB on a small VPS will stall the app. A worker, one song at a time, is the shape.
+
+This VM has no GPU, so no GPU timing was taken. Hetzner’s current entry GPU box, fetched from the public GEX44 page on 22 Oct 2026, is now the GEX45: NVIDIA RTX PRO 4000 Blackwell, 24 GB, €214 per month excluding VAT (€0.3429 per hour, €209 setup), Helsinki, provisioned as a dedicated Robot server rather than a Coolify cloud VM. It is a standing bill, not a per-song function. A GPU would turn a one-minute CPU job into a few seconds. It would not make YouTube answer a datacenter IP. Skip it unless a queue of already-legal files is waiting on CPU, which a single 4-core worker at RTF 0.25 will not see from karaoke traffic.
+
+#### Cache size and storage
+
+Store an encoded instrumental, not four PCM stems.
+
+A 4-minute stereo file at 44.1 kHz, 16-bit PCM is about 40 MB. Opus or AAC around 128 kbps is about 3.7 MB. Keeping the dry mix as well, so a slider can crossfade, is another 3.7 MB. Ten thousand songs at 4 MB are about 40 GB.
+
+Hetzner Object Storage’s published base price is €6.49 per month excluding VAT and includes 1 TB of storage and 1 TB of egress (page fetched 22 Oct 2026). Forty gigabytes and the occasional play sit inside that quota. Egress beyond it is €1 per TB. Storage is not the cost that matters. The GPU box and the legal exposure are.
+
+#### Playback and the lyric clock
+
+The iframe stays for the picture. Its audio is muted with the IFrame API, and a same-origin instrumental is what the user hears. That mute is safe here because nothing is trying to capture the iframe. It is the opposite of path A.
+
+The lyric clock must stay on one timeline. `currentTimeMs` is iframe `elapsedTime` plus `lyricOffset` (`KaraokeWindowLyricsOverlay.tsx`). The instrumental player seeks to the same `getCurrentTime()` the iframe reports, and user seeks move both. `lyricOffset` stays the per-track calibration already saved to Redis. Any constant decoder delay is subtracted in the player adapter only.
+
+Listen Together can keep broadcasting `positionMs` from that shared clock. The DJ is the one who fetched the stem. Other clients who still play the YouTube audio locally (anonymous listeners do) would hear the original vocal under a transposed or vocal-stripped DJ. Same rule as the first plan: a processed item forces everyone except the DJ into remote-only mode, or the session refuses the effect.
+
+First-play delay is the sum of a successful download and the separation of whatever prefix you refuse to start without. A full-file wait on this CPU is about a minute for four minutes of audio, plus whatever yt-dlp spent, and that is only after YouTube agreed to give you the file. Overlap-add means you could start after the first ~8 s segment (about 2 s of compute here) if the downloader streams, which the normal yt-dlp temp-file flow does not. Building a streaming pipeline is extra work on top of an extractor that already failed the bot check. Plan the UX as “preparing this song”, not as a gapless next-track.
+
+Key shift then uses the same file and the same worklet as path A. Tempo stays 1. Lyrics do not move.
+
+#### Legal risk and the mitigations that do not remove it
+
+Downloading the audio breaks YouTube’s terms. Keeping an instrumental is a derivative copy of the recording and the composition. Doing it for every logged-in user of os.ryo.lu is a library of those copies. The embed we already ship is the path YouTube actually offers.
+
+| Mitigation | What it changes | What it does not change |
+| --- | --- | --- |
+| Ryo’s account only | One person’s requests, easiest to turn off | The download is still against YouTube’s terms |
+| Any logged-in user | Stops anonymous scraping of the stem URL | The user base is still the public, and each play is still a copy you made |
+| No public cache, auth on the URL | Stops a random visitor hotlinking a stem | The browser still receives the bytes |
+| On-demand, TTL of a few hours | Limits how long the copy sits on disk | You still create it, and a short TTL means popular songs are re-fetched, which is how an IP gets blocked faster |
+| PO token provider, or cookies | Sometimes restores formats on a residential IP | Maintainers say it does not clear a datacenter IP that is already failing the bot check. Cookies put an account at risk of a ban |
+
+Recommendation: do not build path B. The CPU math is fine. The extractor is not, on the kind of address Coolify uses, and the license is not there even if a future probe from Hetzner succeeds. Restricting the feature to Ryo is a way to run a private experiment he would be personally responsible for. It is not a way to ship 去人聲 on os.ryo.lu.
+
+#### Phased plan, if the recommendation is overridden
+
+1. From the production host, logged out, run a metadata-only extractor request. If it returns the bot wall, stop. Do not add cookies to get past it.
+2. A worker beside the API, not in it. One song at a time, `htdemucs`, `shifts=0`, delete the source wav after the encode. Auth required. Object key scoped to the user. TTL of hours. No list endpoint, no share URL.
+3. Client: mute the iframe, play the instrumental on the iframe clock, keep `lyricOffset` untouched. First play shows a preparing state. YouTube items with no ready stem keep today’s player.
+4. A GPU server only after that worker has a backlog of files we are allowed to process. Karaoke traffic will not create that backlog. The GEX45 is the wrong purchase for this feature.
+
+### What to do instead
+
+Ship the queue. When vocal removal comes back, do it as a prepare step on a file the user supplied, on desktop first, with the center slider as the live control. Use the native RTF above as a ceiling: a browser or a phone will be slower than 4.0× realtime, and a 4-minute song should be presented as a wait, not as an effect knob.
 
 ## Open questions
 
@@ -292,6 +423,7 @@ Small once phase 3 exists. Can ship in the same release as phase 4.
 7. May pitch and vocal be used during Listen Together? Recommendation: only on the DJ, and only if every other client is remote-only for that item. Otherwise disable the controls while a session is active.
 8. Rubber Band’s GPL and the App Store. Confirm with counsel before any native link. The web-only WASM path is the one that matches AGPL. A commercial Rubber Band license is the alternative if the iOS binary ever vendors it.
 9. Is a “reduce center” slider worth the support cost if people expect Apple Music Sing? Recommendation: ship it only together with a one-line description of what it actually does, and do not market it as vocal removal.
+10. Path B is not recommended. The remaining decision is whether a private, Ryo-only experiment is worth a metadata probe from the production Hetzner egress. If that probe hits the bot wall, the experiment is over.
 
 ## Risks
 
@@ -315,4 +447,6 @@ Small once phase 3 exists. Can ship in the same release as phase 4.
 
 ## What was checked
 
-Code as in this tree: Karaoke and iPod stores, `YouTubePlayer`, `AppleMusicPlayerBridge`, listen-session contracts and the remote-command route, lyrics types and the karaoke lyric clock, cloud-sync `songs` codec, song Redis layout, the iOS WKWebView and `AudioSessionController`, and security headers. Tone’s `PitchShift` was read from the installed `tone` package. No library was added, no audio was processed, and no bundle was built. Model sizes and Demucs browser timings are from public ONNX / browser-port notes (demucs-onnx, Hugging Face browser exports) and should be remeasured before any phase 5+ spike. Apple Music Sing was checked against Apple’s support page and the public MusicKit / Apple Music API surface: playback and catalog only, no vocal or pitch control.
+Code as in this tree: Karaoke and iPod stores, `YouTubePlayer`, `AppleMusicPlayerBridge`, listen-session contracts and the remote-command route, lyrics types and the karaoke lyric clock, cloud-sync `songs` codec, song Redis layout, the iOS WKWebView and `AudioSessionController`, `electron/main.ts`, and security headers. Tone’s `PitchShift` was read from the installed `tone` package.
+
+The follow-up measured `demucs` 4.1.0 / PyTorch 2.14.1+cpu on a 30 s synthetic clip (ffmpeg sines plus noise), `htdemucs` at 4 and 2 threads and `htdemucs_ft` at 4 threads. No GPU was available. A logged-out `yt-dlp` 2026.10.21 metadata request was made from this VM’s AWS us-east-1 address and was rejected as a bot; no media file was saved and no cookies were supplied. That address is not Hetzner. Hetzner GEX45 and Object Storage prices were read from Hetzner’s public pages on 22 Oct 2026. Browser ONNX sizes were not re-downloaded. No separation library was added to the app.
