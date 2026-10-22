@@ -4,7 +4,11 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "../../helpers/test-utils";
+import {
+  BASE_URL,
+  fetchWithOrigin,
+  makeRateLimitBypassHeaders,
+} from "../../helpers/test-utils";
 
 // Test song ID (a known YouTube video)
 const TEST_SONG_ID = "dQw4w9WgXcQ"; // Rick Astley - Never Gonna Give You Up
@@ -301,7 +305,7 @@ describe("POST /api/songs/{id} action: translate", () => {
           language: "Spanish",
         }),
       });
-      expect(res.status === 200 || res.status === 404).toBe(true);
+      expect([200, 401, 404]).toContain(res.status);
       return;
     }
 
@@ -322,7 +326,8 @@ describe("POST /api/songs/{id} action: translate", () => {
         language: "Spanish",
       }),
     });
-    expect(res.status === 200 || res.status === 404).toBe(true);
+    // 401 = not cached yet and anonymous callers cannot trigger generation.
+    expect([200, 401, 404]).toContain(res.status);
     if (res.status === 200) {
       const data = await res.json();
       expect(data.translation).toBeTruthy();
@@ -354,6 +359,62 @@ describe("POST /api/songs/{id} action: translate", () => {
       const data = await res2.json();
       expect(data.cached).toBe(true);
     }
+  }, 30_000);
+});
+
+describe("POST /api/songs/{id} AI generation gate", () => {
+  // A language code that is never cached, so every call is a cache miss.
+  const uncachedLanguage = `x-${Math.random().toString(36).slice(2, 7)}`;
+
+  const ensureLyrics = async () => {
+    if (!cachedLyricsSource) return false;
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "fetch-lyrics",
+        lyricsSource: cachedLyricsSource,
+      }),
+    });
+    return res.status === 200;
+  };
+
+  for (const action of ["translate", "translate-stream"] as const) {
+    test(`anonymous ${action} cache miss requires sign-in`, async () => {
+      if (!(await ensureLyrics())) return;
+      const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeRateLimitBypassHeaders(),
+        },
+        body: JSON.stringify({ action, language: uncachedLanguage }),
+      });
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.code).toBe("lyrics_generation_requires_auth");
+    }, 30_000);
+  }
+
+  test("anonymous soramimi-stream cache miss requires sign-in", async () => {
+    if (!(await ensureLyrics())) return;
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...makeRateLimitBypassHeaders(),
+      },
+      body: JSON.stringify({ action: "soramimi-stream", targetLanguage: "en" }),
+    });
+    // Cached English soramimi is still served (200 SSE); a miss is gated.
+    if (res.status === 200) {
+      expect(res.headers.get("content-type")).toContain("text/event-stream");
+      expect(await res.text()).toContain('"type":"cached"');
+      return;
+    }
+    expect(res.status).toBe(401);
+    const data = await res.json();
+    expect(data.code).toBe("lyrics_generation_requires_auth");
   }, 30_000);
 });
 

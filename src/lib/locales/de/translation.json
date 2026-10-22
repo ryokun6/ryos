@@ -2014,6 +2014,8 @@
         "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
         "invalidEmail": "Gib eine gültige E-Mail-Adresse ein",
         "notConfigured": "E-Mail-Wiederherstellung ist auf diesem Server nicht verfügbar. Du kannst dein Konto weiterhin über ein verknüpftes Telegram-Konto wiederherstellen.",
+        "passwordLabel": "Aktuelles Passwort",
+        "passwordRequired": "Geben Sie Ihr aktuelles Passwort ein",
         "remove": "Entfernen",
         "removedToast": "Wiederherstellungs-E-Mail entfernt",
         "removing": "Entfernen …",
@@ -2438,6 +2440,10 @@
         "rateLimited": "KI-Limit erreicht. Melde dich an oder versuche es später erneut.",
         "thinking": "Überlegen …"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "{{character}} nachschlagen",
+        "replayStrokes": "{{character}} erneut abspielen"
+      },
       "description": "Wörter auf Englisch, Chinesisch, Japanisch und Koreanisch nachschlagen",
       "empty": {
         "noFavorites": "Noch keine Favoriten",
@@ -2504,22 +2510,18 @@
       },
       "labels": {
         "antonymsShort": "Ant.",
+        "characters": "Zeichen",
         "kanji": "Kanji",
         "kunyomi": "Kun",
         "onyomi": "On",
         "phrases": "Wörter & Wendungen",
-        "characters": "Zeichen",
-        "simplifiedShort": "einf.",
-        "traditionalShort": "trad.",
         "similar": "Ähnliche Wörter",
+        "simplifiedShort": "einf.",
         "strokes_one": "{{count}} Strich",
         "strokes_other": "{{count}} Striche",
         "synonyms": "Synonyme",
-        "synonymsShort": "Syn."
-      },
-      "ariaLabels": {
-        "replayStrokes": "{{character}} erneut abspielen",
-        "lookUpCharacter": "{{character}} nachschlagen"
+        "synonymsShort": "Syn.",
+        "traditionalShort": "trad."
       },
       "language": "Sprache",
       "languages": {
@@ -3029,16 +3031,17 @@
       },
       "schedule": {
         "addToDay": "Zum Training hinzufügen",
-        "removeFromDay": "Aus dem Training entfernen",
         "applyTemplate": "Vorlage anwenden",
         "cardioHint": "Strebe 20–40 Minuten gleichmäßiges Cardio oder Intervalle an.",
         "dayFocus": "Fokus: {{day}}",
         "done": "Fertig",
         "missed": "Verpasst",
+        "moreMonths": "Weitere Monate",
         "noStreak": "Noch keine Serie",
         "plannedDays_one": "{{count}} Trainingstag geplant",
         "plannedDays_other": "{{count}} Trainingstage geplant",
         "recommendedFor": "Empfohlen für {{focus}}",
+        "removeFromDay": "Aus dem Training entfernen",
         "restDay": "Ruhetag. Erholen, dehnen oder spazieren gehen.",
         "startWorkout": "Training starten",
         "streak_one": "{{count}}-Wochen-Serie",
@@ -3047,7 +3050,6 @@
         "template": "Vorlage",
         "thisWeek": "Diese Woche",
         "upcomingWeeks": "Kommende Wochen",
-        "moreMonths": "Weitere Monate",
         "viewExercise": "Übung ansehen",
         "weeklyGoal": "Wochenziel",
         "workoutsThisWeek": "{{current}} von {{target}} Trainings diese Woche"
@@ -5687,7 +5689,9 @@
     "errors": {
       "failedToAccessCamera": "Fehler beim Zugriff auf die Kamera",
       "failedToFetchFurigana": "Abrufen von Furigana fehlgeschlagen",
-      "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen"
+      "failedToFetchSoramimi": "Abrufen von Soramimi fehlgeschlagen",
+      "lyricsGenerationRateLimited": "Tageslimit für das Erstellen von Songtext-Übersetzungen und -Lesungen erreicht. Versuche es morgen erneut.",
+      "lyricsGenerationSignInRequired": "Melde dich an, um Songtext-Übersetzungen und -Lesungen zu erstellen."
     },
     "expose": {
       "noWindows": "Keine geöffneten Fenster"

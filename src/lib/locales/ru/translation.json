@@ -2021,6 +2021,8 @@
         "genericError": "Что-то пошло не так. Пожалуйста, попробуйте еще раз.",
         "invalidEmail": "Введите корректный адрес электронной почты",
         "notConfigured": "Восстановление через почту недоступно на этом сервере. Вы все еще можете восстановить доступ через привязанную учетную запись Telegram.",
+        "passwordLabel": "Текущий пароль",
+        "passwordRequired": "Введите текущий пароль",
         "remove": "Удалить",
         "removedToast": "Резервный адрес электронной почты удален",
         "removing": "Удаление…",
@@ -2445,6 +2447,10 @@
         "rateLimited": "Лимит ИИ исчерпан. Войдите или повторите попытку позже.",
         "thinking": "Думает…"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "найти {{character}}",
+        "replayStrokes": "повторить {{character}}"
+      },
       "description": "Поиск слов на английском, китайском, японском и корейском языках",
       "empty": {
         "noFavorites": "Избранного пока нет",
@@ -2513,24 +2519,20 @@
       },
       "labels": {
         "antonymsShort": "ант.",
+        "characters": "иероглифы",
         "kanji": "Кандзи",
         "kunyomi": "Кун",
         "onyomi": "Он",
         "phrases": "Слова и фразы",
-        "characters": "иероглифы",
-        "simplifiedShort": "упр.",
-        "traditionalShort": "трад.",
         "similar": "Похожие слова",
+        "simplifiedShort": "упр.",
         "strokes_few": "{{count}} черты",
         "strokes_many": "{{count}} черт",
         "strokes_one": "{{count}} черта",
         "strokes_other": "{{count}} черты",
         "synonyms": "Синонимы",
-        "synonymsShort": "син."
-      },
-      "ariaLabels": {
-        "replayStrokes": "повторить {{character}}",
-        "lookUpCharacter": "найти {{character}}"
+        "synonymsShort": "син.",
+        "traditionalShort": "трад."
       },
       "language": "Язык",
       "languages": {
@@ -2829,6 +2831,8 @@
         "addToToday": "Добавить на сегодня",
         "back": "Упражнения",
         "bestSet": "Лучший: {{reps}} × {{weight}}",
+        "count_few": "{{count}} упражнения",
+        "count_many": "{{count}} упражнений",
         "count_one": "{{count}} упражнение",
         "count_other": "{{count}} упражнений",
         "e1rmChart": "Расчетный 1ПМ",
@@ -2842,17 +2846,15 @@
         "noResults": "Нет упражнений, соответствующих этим фильтрам.",
         "primaryMuscles": "Основные мышцы",
         "progress": "Ваш прогресс",
+        "refine_few": "Еще {{count}} — уточните запрос",
+        "refine_many": "Еще {{count}} — уточните запрос",
         "refine_one": "Еще {{count}} — уточните запрос",
         "refine_other": "Еще {{count}} — уточните запрос",
         "repsHint": "Макс. количество повторений за занятие.",
         "retry": "Повторить",
         "search": "Поиск упражнений",
         "secondaryMuscles": "Вспомогательные мышцы",
-        "select": "Выберите упражнение, чтобы узнать, как его выполнять.",
-        "count_few": "{{count}} упражнения",
-        "count_many": "{{count}} упражнений",
-        "refine_few": "Еще {{count}} — уточните запрос",
-        "refine_many": "Еще {{count}} — уточните запрос"
+        "select": "Выберите упражнение, чтобы узнать, как его выполнять."
       },
       "filters": {
         "all": "Все",
@@ -2917,9 +2919,9 @@
         "splitPromptInvalid": "введите 1–20",
         "splitPromptTitle": "Сколько человек?",
         "splitShare": "твоя доля",
-        "splitWays_one": "на {{count}} человека",
         "splitWays_few": "на {{count}} человека",
         "splitWays_many": "на {{count}} человек",
+        "splitWays_one": "на {{count}} человека",
         "splitWays_other": "на {{count}} человек",
         "targetsDefault": "Используются цели по умолчанию.",
         "targetsFromProfile": "Цели основаны на вашем профиле и целях.",
@@ -2933,15 +2935,15 @@
       },
       "goals": {
         "logWeightFirst": "Запишите свой вес, чтобы отслеживать прогресс на пути к цели.",
+        "perWeek_few": "{{count}} в неделю",
+        "perWeek_many": "{{count}} в неделю",
         "perWeek_one": "{{count}} в неделю",
         "perWeek_other": "{{count}} в неделю",
         "reached": "Цель достигнута!",
         "targetWeight": "Целевой вес",
         "title": "Цели",
         "toGo": "Осталось: {{value}}",
-        "weeklyTarget": "Тренировки в неделю",
-        "perWeek_few": "{{count}} в неделю",
-        "perWeek_many": "{{count}} в неделю"
+        "weeklyTarget": "Тренировки в неделю"
       },
       "help": {
         "body": {
@@ -3048,32 +3050,32 @@
       },
       "schedule": {
         "addToDay": "Добавить в тренировку",
-        "removeFromDay": "Удалить из тренировки",
         "applyTemplate": "Применить шаблон",
         "cardioHint": "Старайтесь уделять 20–40 минут спокойному кардио или интервалам.",
         "dayFocus": "Фокус: {{day}}",
         "done": "Готово",
         "missed": "Пропущено",
+        "moreMonths": "Ещё месяцы",
         "noStreak": "Серии пока нет",
+        "plannedDays_few": "Запланировано {{count}} тренировочных дня",
+        "plannedDays_many": "Запланировано {{count}} тренировочных дней",
         "plannedDays_one": "Запланирован {{count}} тренировочный день",
         "plannedDays_other": "Запланировано тренировочных дней: {{count}}",
         "recommendedFor": "Рекомендовано для: {{focus}}",
+        "removeFromDay": "Удалить из тренировки",
         "restDay": "День отдыха. Восстановитесь, сделайте растяжку или прогуляйтесь.",
         "startWorkout": "Начать тренировку",
+        "streak_few": "Серия: {{count}} недели",
+        "streak_many": "Серия: {{count}} недель",
         "streak_one": "Серия: {{count}} неделя",
         "streak_other": "Серия: {{count}} нед.",
         "targets": "Цели: {{muscles}}",
         "template": "Шаблон",
         "thisWeek": "На этой неделе",
         "upcomingWeeks": "Ближайшие недели",
-        "moreMonths": "Ещё месяцы",
         "viewExercise": "Просмотреть упражнение",
         "weeklyGoal": "Цель на неделю",
-        "workoutsThisWeek": "Тренировок на этой неделе: {{current}} из {{target}}",
-        "streak_few": "Серия: {{count}} недели",
-        "streak_many": "Серия: {{count}} недель",
-        "plannedDays_few": "Запланировано {{count}} тренировочных дня",
-        "plannedDays_many": "Запланировано {{count}} тренировочных дней"
+        "workoutsThisWeek": "Тренировок на этой неделе: {{current}} из {{target}}"
       },
       "sidebar": "Боковое меню",
       "templates": {
@@ -3107,6 +3109,8 @@
         "deleteWorkout": "Удалить тренировку",
         "e1rm": "Расч. 1ПМ",
         "empty": "На этот день упражнения еще не записаны.",
+        "exerciseCount_few": "{{count}} упражнения",
+        "exerciseCount_many": "{{count}} упражнений",
         "exerciseCount_one": "{{count}} упражнение",
         "exerciseCount_other": "{{count}} упражнений",
         "focus": "Цель",
@@ -3120,9 +3124,7 @@
         "reps": "Повторения",
         "set": "Подход",
         "suggested": "Рекомендовано для цели «{{focus}}»",
-        "weight": "Вес ({{unit}})",
-        "exerciseCount_few": "{{count}} упражнения",
-        "exerciseCount_many": "{{count}} упражнений"
+        "weight": "Вес ({{unit}})"
       }
     },
     "infinite-mac": {
@@ -5716,7 +5718,9 @@
     "errors": {
       "failedToAccessCamera": "Не удалось получить доступ к камере",
       "failedToFetchFurigana": "Не удалось получить фуригану",
-      "failedToFetchSoramimi": "Не удалось получить сорамими"
+      "failedToFetchSoramimi": "Не удалось получить сорамими",
+      "lyricsGenerationRateLimited": "Достигнут дневной лимит на создание переводов и чтений текстов песен. Повторите попытку завтра.",
+      "lyricsGenerationSignInRequired": "Войдите, чтобы создавать переводы и чтения текстов песен"
     },
     "expose": {
       "noWindows": "Нет открытых окон"

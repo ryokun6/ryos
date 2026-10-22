@@ -28,6 +28,8 @@ interface RecoveryEmailDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Prefill the email field (e.g. an address entered during sign-up). */
   initialEmail?: string;
+  /** Account password just entered during sign-up (enables `autoSubmit`). */
+  initialPassword?: string;
   /**
    * When true, automatically send a verification code to `initialEmail` on open
    * (used by the post-sign-up flow so the user lands directly on code entry).
@@ -48,6 +50,7 @@ export function RecoveryEmailDialog({
   isOpen,
   onOpenChange,
   initialEmail,
+  initialPassword,
   autoSubmit = false,
   title: titleOverride,
   description: descriptionOverride,
@@ -59,6 +62,7 @@ export function RecoveryEmailDialog({
   const [status, setStatus] = useState<EmailStatusResponse | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
   const [codeInput, setCodeInput] = useState("");
   const [pendingVerify, setPendingVerify] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -96,22 +100,28 @@ export function RecoveryEmailDialog({
 
   const handleSendVerification = async (
     e?: React.FormEvent,
-    emailOverride?: string
+    overrides?: { email?: string; password?: string }
   ) => {
     e?.preventDefault();
     if (busy) return;
-    const email = (emailOverride ?? emailInput).trim();
+    const email = (overrides?.email ?? emailInput).trim();
+    const currentPassword = overrides?.password ?? passwordInput;
     if (!EMAIL_REGEX.test(email)) {
       setError(t("apps.control-panels.recoveryEmail.invalidEmail"));
+      return;
+    }
+    if (!currentPassword) {
+      setError(t("apps.control-panels.recoveryEmail.passwordRequired"));
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await setRecoveryEmail({ email });
+      await setRecoveryEmail({ email, currentPassword });
       toast.success(t("apps.control-panels.recoveryEmail.codeSentTitle"), {
         description: t("apps.control-panels.recoveryEmail.codeSentDescription"),
       });
+      setPasswordInput("");
       setCodeInput("");
       await refreshStatus();
       setPendingVerify(true);
@@ -177,6 +187,7 @@ export function RecoveryEmailDialog({
     if (!isOpen) return;
     const prefill = initialEmail?.trim() ?? "";
     setEmailInput(prefill);
+    setPasswordInput("");
     setCodeInput("");
     setError(null);
     setBusy(false);
@@ -188,11 +199,15 @@ export function RecoveryEmailDialog({
       if (
         autoSubmit &&
         prefill &&
+        initialPassword &&
         EMAIL_REGEX.test(prefill) &&
         data?.emailConfigured &&
         !data.hasEmail
       ) {
-        await handleSendVerification(undefined, prefill);
+        await handleSendVerification(undefined, {
+          email: prefill,
+          password: initialPassword,
+        });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -282,6 +297,24 @@ export function RecoveryEmailDialog({
             style={themeFontStyle}
             disabled={busy || !!notConfigured || loadingStatus}
           />
+          <Label
+            className={cn("text-neutral-700", themeFont)}
+            style={themeFontStyle}
+          >
+            {t("apps.control-panels.recoveryEmail.passwordLabel")}
+          </Label>
+          <Input
+            type="password"
+            autoComplete="current-password"
+            value={passwordInput}
+            onChange={(e) => {
+              setPasswordInput(e.target.value);
+              setError(null);
+            }}
+            className={cn("shadow-none h-8", themeFont)}
+            style={themeFontStyle}
+            disabled={busy || !!notConfigured || loadingStatus}
+          />
         </form>
       )}
 
@@ -337,7 +370,11 @@ export function RecoveryEmailDialog({
             disabled={
               pendingVerify
                 ? busy || !codeInput.trim()
-                : busy || !!notConfigured || loadingStatus || !emailInput.trim()
+                : busy ||
+                  !!notConfigured ||
+                  loadingStatus ||
+                  !emailInput.trim() ||
+                  !passwordInput
             }
             className={cn("h-7 w-full sm:w-auto", themeFont)}
             style={themeFontStyle}

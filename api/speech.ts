@@ -23,6 +23,9 @@ import {
   type ElevenLabsVoiceSettings,
 } from "./_utils/voice.js";
 
+/** OpenAI `tts-1` rejects longer input; enforce it before spending a call. */
+export const OPENAI_TTS_MAX_CHARS = 4096;
+
 interface SpeechRequest {
   text?: string;
   voice?: string | null;
@@ -272,6 +275,17 @@ export default apiHandler<SpeechRequest>(
           voice_id: elevenlabsVoiceId,
         });
       } else {
+        if (synthesisText.length > OPENAI_TTS_MAX_CHARS) {
+          logger.warn("Rejected OpenAI speech request over the character cap", {
+            length: synthesisText.length,
+          });
+          logger.response(413, Date.now() - startTime);
+          res.status(413).json({
+            error: "text_too_long",
+            maxLength: OPENAI_TTS_MAX_CHARS,
+          });
+          return;
+        }
         const openaiVoice = voice || DEFAULT_OPENAI_TTS_VOICE;
         const { audio } = await generateSpeech({
           model: openai.speech("tts-1"),

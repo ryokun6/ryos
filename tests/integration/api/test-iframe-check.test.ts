@@ -5,7 +5,26 @@
  */
 
 import { describe, test, expect } from "bun:test";
-import { BASE_URL, fetchWithOrigin } from "../../helpers/test-utils";
+import {
+  BASE_URL,
+  ensureUserAuth,
+  fetchWithAuth,
+  fetchWithOrigin,
+  getTokenFromAuthCookie,
+} from "../../helpers/test-utils";
+
+/** Admin session for the gated debug features; null when the env can't provide it. */
+async function getAdminToken(): Promise<string | null> {
+  const res = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: "ryo", password: "testtest" }),
+  });
+  if (!res.ok) return null;
+  return getTokenFromAuthCookie(res);
+}
+
+const adminToken = await getAdminToken();
 
 describe("iframe-check", () => {
   describe("Input Validation", () => {
@@ -105,6 +124,54 @@ describe("iframe-check", () => {
       // Default mode is proxy, which streams the rewritten HTML document.
       expect(contentType).toContain("text/html");
     });
+
+    test("Proxy mode - document is sandboxed and never same-origin", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=https://example.com&ieFrame=abcdefghijklmnopqrst.1761140000000`
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(res.headers.get("access-control-allow-origin")).not.toBe("*");
+      const csp = res.headers.get("content-security-policy") || "";
+      expect(csp).toMatch(/(^|;\s*)sandbox [^;]*allow-scripts/);
+      expect(csp).not.toContain("allow-same-origin");
+      expect(csp).toMatch(/script-src 'nonce-[A-Za-z0-9_-]+'/);
+      expect(csp).toContain("frame-ancestors 'self' https://ryo.lu https://*.ryo.lu"); // pragma: allowlist secret
+      const html = await res.text();
+      const nonce = csp.match(/'nonce-([A-Za-z0-9_-]+)'/)?.[1];
+      expect(html).toContain(`<script nonce="${nonce}">`);
+      expect(html).toContain('"abcdefghijklmnopqrst.1761140000000"');
+    });
+
+    test("Proxy mode - strips upstream scripts and inline handlers", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=${encodeURIComponent("https://httpbin.org/")}`
+      );
+      expect(res.status).toBe(200);
+      const csp = res.headers.get("content-security-policy") || "";
+      const nonce = csp.match(/'nonce-([A-Za-z0-9_-]+)'/)?.[1];
+      expect(nonce).toBeTruthy();
+      const html = await res.text();
+      const scriptTags = html.match(/<script\b[^>]*>/gi) || [];
+      expect(scriptTags.length).toBeGreaterThan(0);
+      for (const tag of scriptTags) {
+        expect(tag).toContain(`nonce="${nonce}"`);
+      }
+      expect(html).not.toMatch(/\son[a-z]+\s*=/i);
+      expect(res.headers.get("x-ie-proxy") || "").toContain("scriptsStripped=1");
+    });
+
+    test("Proxy mode - iframe navigation errors are an HTML page that reports to the parent", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?url=https://this-domain-does-not-exist-xyz123.com&ieFrame=abcdefghijklmnopqrst.1`,
+        { headers: { "Sec-Fetch-Dest": "iframe" } }
+      );
+      expect(res.status).toBeGreaterThanOrEqual(400);
+      expect(res.headers.get("content-type") || "").toContain("text/html");
+      const html = await res.text();
+      expect(html).toContain('"type":"iframeProxyError"');
+      expect(html).toContain('"ieFrame":"abcdefghijklmnopqrst.1"');
+    });
   });
 
   describe("AI Cache Mode", () => {
@@ -159,6 +226,20 @@ describe("iframe-check", () => {
       expect(html).toContain("Example Domain");
       expect(html).not.toContain("<base href=");
       expect(html).not.toContain("Save real parent reference");
+    });
+
+    test("raw=1 never reflects active upstream content types", async () => {
+      const res = await fetchWithOrigin(
+        `${BASE_URL}/api/iframe-check?raw=1&url=https://example.com`
+      );
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe("text/plain; charset=utf-8");
+      expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      const csp = res.headers.get("content-security-policy") || "";
+      expect(csp).toContain("sandbox");
+      expect(csp).not.toContain("allow-same-origin");
+      expect(res.headers.get("access-control-allow-origin")).not.toBe("*");
+      await res.text();
     });
 
     test("raw proxy forwards POST body to upstream", async () => {
@@ -219,8 +300,9 @@ describe("iframe-check", () => {
       expect(diag).toContain("status=");
       expect(diag).toContain("scriptsStripped=");
       expect(diag).toContain("lite=");
-      // example.com is small — scripts should not be stripped / lite mode off.
-      expect(diag).toContain("scriptsStripped=0");
+      // example.com is small, so lite mode stays off. Scripts are stripped
+      // whenever the page has any (same-origin proxy mode).
+      expect(diag).toMatch(/scriptsStripped=[01]/);
       expect(diag).toContain("lite=0");
     });
 
@@ -246,7 +328,7 @@ describe("iframe-check", () => {
       expect(setCookie).not.toContain("ie_psid=");
     });
 
-    test("arms proxy sessions on a top-level GET when ieSessions=1&dbg=1 opts in", async () => {
+    test("dbg=1 no longer grants debug features to anonymous callers", async () => {
       const res = await fetchWithOrigin(
         `${BASE_URL}/api/iframe-check?ieSessions=1&dbg=1&url=${encodeURIComponent(
           "https://example.com"
@@ -254,14 +336,46 @@ describe("iframe-check", () => {
       );
       expect(res.status).toBe(200);
       const setCookie = res.headers.get("set-cookie") || "";
-      expect(setCookie).toContain("ie_psid=");
-      expect(setCookie).toContain("HttpOnly");
-      expect(setCookie).toContain("Path=/api");
+      expect(setCookie).not.toContain("ie_psid=");
     });
+
+    test("does not arm sessions for a signed-in non-admin user", async () => {
+      const username = `iesess_${Date.now()}`;
+      const token = await ensureUserAuth(username, "testpassword123");
+      expect(token).toBeTruthy();
+      const res = await fetchWithAuth(
+        `${BASE_URL}/api/iframe-check?ieSessions=1&url=${encodeURIComponent(
+          "https://example.com"
+        )}`,
+        username,
+        token as string
+      );
+      expect(res.status).toBe(200);
+      const setCookie = res.headers.get("set-cookie") || "";
+      expect(setCookie).not.toContain("ie_psid=");
+    });
+
+    test.skipIf(!adminToken)(
+      "arms proxy sessions on a top-level GET when the ryo admin opts in",
+      async () => {
+        const res = await fetchWithAuth(
+          `${BASE_URL}/api/iframe-check?ieSessions=1&url=${encodeURIComponent(
+            "https://example.com"
+          )}`,
+          "ryo",
+          adminToken as string
+        );
+        expect(res.status).toBe(200);
+        const setCookie = res.headers.get("set-cookie") || "";
+        expect(setCookie).toContain("ie_psid=");
+        expect(setCookie).toContain("HttpOnly");
+        expect(setCookie).toContain("Path=/api");
+      }
+    );
 
     test("does not arm sessions for raw sub-resource requests even when opted in", async () => {
       const res = await fetchWithOrigin(
-        `${BASE_URL}/api/iframe-check?raw=1&ieSessions=1&dbg=1&url=${encodeURIComponent(
+        `${BASE_URL}/api/iframe-check?raw=1&ieSessions=1&url=${encodeURIComponent(
           "https://example.com"
         )}`
       );

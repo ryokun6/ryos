@@ -46,7 +46,12 @@ import {
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
 import { getStaticCacheHeaders } from "./static-cache-policy";
+import {
+  isIeProxyIsolatedHostHeader,
+  isIeProxyIsolatedPathAllowed,
+} from "../api/_utils/_ie-proxy.js";
 import { AI_ATTACHMENT_MAX_BYTES } from "../src/shared/contracts/aiAttachment";
+import { applySecurityHeaders } from "../api/_utils/_security-headers.js";
 
 type QueryValue = string | string[];
 type QueryMap = Record<string, QueryValue>;
@@ -840,6 +845,22 @@ async function handleStaticRequest(pathname: string): Promise<Response | null> {
   return null;
 }
 
+/**
+ * Wrap the Bun fetch handler so every HTTP response (app shell, static assets
+ * and API) gets the baseline security headers. WebSocket upgrades return
+ * `undefined` and are passed through untouched.
+ */
+function withSecurityHeaders<S>(
+  handler: (request: Request, server: S) => Promise<Response | undefined>,
+): (request: Request, server: S) => Promise<Response> {
+  return async (request, server) => {
+    const response = await handler(request, server);
+    return response
+      ? applySecurityHeaders(response, request)
+      : (response as unknown as Response);
+  };
+}
+
 function validateEnv(): void {
   const redisBackend = getRedisBackend();
   const realtimeProvider = getRealtimeProvider();
@@ -951,9 +972,24 @@ async function bootstrap(): Promise<void> {
     hostname: API_HOST,
     idleTimeout: 30,
     maxRequestBodySize: MAX_STANDALONE_BODY_BYTES,
-    fetch: async (request, server) => {
+    fetch: withSecurityHeaders(async (request, server) => {
       const url = new URL(request.url);
       const pathname = url.pathname;
+
+      // The isolated IE proxy host (IE_PROXY_ORIGIN) shares this server but
+      // must only ever serve proxied pages, never the app or other APIs.
+      if (
+        isIeProxyIsolatedHostHeader(request.headers.get("host")) &&
+        !isIeProxyIsolatedPathAllowed(pathname)
+      ) {
+        return new Response("Not Found", {
+          status: 404,
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
+      }
 
       if (pathname === "/health") {
         return jsonResponse(
@@ -1034,6 +1070,11 @@ async function bootstrap(): Promise<void> {
 
         const staticResponse = await handleStaticRequest(pathname);
         if (staticResponse) {
+          // Proxied IE pages run in an opaque origin and load the ryOS
+          // fonts cross-origin.
+          if (pathname.startsWith("/fonts/")) {
+            staticResponse.headers.set("Access-Control-Allow-Origin", "*");
+          }
           return staticResponse;
         }
 
@@ -1165,7 +1206,7 @@ async function bootstrap(): Promise<void> {
       }
 
       return resShim.toResponse();
-    },
+    }),
     error: (error) => {
       console.error("[api-standalone] Unhandled server error", error);
       return jsonResponse({ error: "Internal server error" }, 500);

@@ -66,12 +66,12 @@ final class ShellRouter {
     }
 }
 
-/// Forwards the APNs token and the signed-in session to the notification
-/// relay so it can watch the user's chat channels and push while the app
-/// is closed. Primary target is the web origin itself (`api/push/register`:
-/// `{ deviceToken, appVersion?, rooms? }`, authenticated by the `ryos_auth`
-/// cookie and an allowed `Origin`). The standalone AirBuild worker is only
-/// tried when the primary rejects or cannot be reached.
+/// Forwards the APNs token to the notification relay so it can watch the
+/// user's chat channels and push while the app is closed. The relay is the
+/// web origin itself (`api/push/register`: `{ deviceToken, appVersion?,
+/// rooms? }`, authenticated by the `ryos_auth` cookie and an allowed
+/// `Origin`). The session cookie is never sent to any other host; a failed
+/// registration is retried on the next state report.
 @MainActor
 final class RelayClient {
     static let shared = RelayClient()
@@ -80,7 +80,6 @@ final class RelayClient {
     private var primaryEndpoint: URL {
         ShellViewModel.origin.appending(path: "api/push/register")
     }
-    private let fallbackEndpoint = URL(string: "https://ryos-notifications.apps.air.build/api/register")!
     var apnsToken: String?
     /// Token + session + rooms of the last registration the primary accepted;
     /// the web client reports state on every room switch, and the route is
@@ -104,9 +103,7 @@ final class RelayClient {
         if let reason { pushLog("Device registration waiting: \(reason)") }
     }
 
-    func registerDevice(
-        username: String?, isAuthenticated: Bool, rooms: [String]
-    ) {
+    func registerDevice(isAuthenticated: Bool, rooms: [String]) {
         guard isAuthenticated else { return logSkip("signed out") }
         guard let token = apnsToken, !token.isEmpty else { return logSkip("no APNs token") }
         let roomIds = Array(Array(Set(rooms)).sorted().prefix(Self.maxRooms))
@@ -125,10 +122,6 @@ final class RelayClient {
                 if self.inFlightKey == key { self.inFlightKey = nil }
                 if accepted {
                     self.registeredKey = key
-                } else {
-                    self.postFallback(
-                        token: token, username: username, rooms: roomIds, cookieHeader: cookieHeader
-                    )
                 }
             }
         }
@@ -166,37 +159,6 @@ final class RelayClient {
             DispatchQueue.main.async { completion(accepted) }
         }.resume()
     }
-
-    /// Legacy worker contract: the worker cannot see our cookies, so the
-    /// session travels in the body and `X-Ryos-Auth`.
-    private func postFallback(
-        token: String, username: String?, rooms: [String], cookieHeader: String
-    ) {
-        let payload: [String: Any] = [
-            "deviceToken": token,
-            "username": username.map { $0 as Any } ?? NSNull(),
-            "isAuthenticated": true,
-            "rooms": rooms,
-            "authCookie": cookieHeader,
-            "appVersion": appVersion,
-        ]
-        guard let body = try? JSONSerialization.data(withJSONObject: payload) else { return }
-        var request = URLRequest(url: fallbackEndpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 15
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(cookieHeader, forHTTPHeaderField: "X-Ryos-Auth")
-        request.httpBody = body
-        pushLog("Primary register failed; trying AirBuild fallback for \(redactedPushToken(token))")
-        URLSession.shared.dataTask(with: request) { _, response, error in
-            let status = (response as? HTTPURLResponse)?.statusCode
-            pushLog(
-                "AirBuild fallback register \(redactedPushToken(token)) -> "
-                    + (status.map { String($0) } ?? "no response")
-                    + (error.map { " (\($0.localizedDescription))" } ?? "")
-            )
-        }.resume()
-    }
 }
 
 /// Reads the ryOS session cookie (`ryos_auth`, HttpOnly) out of the shared
@@ -207,8 +169,13 @@ final class SessionCookieReader {
     /// Fresh `ryos_auth=…` header from the default web view store (the shell's
     /// `websiteDataStore`), or nil when signed out.
     func readAuthCookieHeader(_ completion: @escaping @MainActor (String?) -> Void) {
+        // Embedded pages share this store, so only accept the app host's cookie.
+        let appHost = (ShellViewModel.origin.host ?? "").lowercased()
         WKWebsiteDataStore.default().httpCookieStore.getAllCookies { cookies in
-            let header = cookies.first { $0.name == "ryos_auth" }
+            let header = cookies.first {
+                $0.name == "ryos_auth"
+                    && $0.domain.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".")) == appHost
+            }
                 .map { "\($0.name)=\($0.value)" }
             DispatchQueue.main.async { completion(header) }
         }

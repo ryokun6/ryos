@@ -12,6 +12,8 @@ export interface ClientRuntimeConfig {
     forceTLS?: boolean;
   } | null;
   ieLiveBrowserAvailable?: boolean;
+  /** Isolated Internet Explorer proxy origin (`IE_PROXY_ORIGIN`), if any. */
+  ieProxyOrigin?: string | null;
 }
 
 declare global {
@@ -120,6 +122,10 @@ export function getRealtimeProvider(): RealtimeProvider {
  */
 export function isIeLiveBrowserAvailable(): boolean {
   return getClientRuntimeConfig().ieLiveBrowserAvailable === true;
+}
+
+export function getIeProxyOrigin(): string | null {
+  return normalizeOrigin(getClientRuntimeConfig().ieProxyOrigin);
 }
 
 export function getRealtimeWebSocketPath(): string {

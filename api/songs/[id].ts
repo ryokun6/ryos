@@ -134,6 +134,9 @@ const RATE_LIMITS = {
   soramimiStream: { windowSeconds: 60, limit: 10 }, // 10/min for soramimi-stream
 };
 
+// Shared across translate/furigana/soramimi cache misses that reach the model.
+const LYRICS_GENERATION_DAILY_IP_LIMIT = { windowSeconds: 24 * 60 * 60, limit: 100 };
+
 function withChineseLyricsVariants(
   lyrics: LyricsContent,
   title?: string,
@@ -384,6 +387,45 @@ export default apiHandler<Record<string, unknown>>(
       const username = user?.username || null;
       const requestIp = getClientIp(req);
       const rateLimitUser = username?.toLowerCase() || requestIp;
+
+      // Cache misses call a paid model, so generation needs a signed-in user
+      // plus a daily per-IP budget (accounts are free to create). Returns a
+      // response when generation is not allowed, otherwise null.
+      const gateLyricsGeneration = async (
+        kind: "translation" | "furigana" | "soramimi"
+      ) => {
+        if (!username) {
+          logger.info(`Blocked anonymous ${kind} generation`);
+          return jsonResponse(
+            {
+              error: "authentication_required",
+              code: "lyrics_generation_requires_auth",
+              message: "Sign in to generate lyrics annotations",
+            },
+            401
+          );
+        }
+        if (username.toLowerCase() === "ryo") return null;
+        const dailyResult = await RateLimit.checkCounterLimit({
+          key: RateLimit.makeKey(["rl", "song", "ai-generate", "ip", requestIp]),
+          windowSeconds: LYRICS_GENERATION_DAILY_IP_LIMIT.windowSeconds,
+          limit: LYRICS_GENERATION_DAILY_IP_LIMIT.limit,
+        });
+        if (!dailyResult.allowed) {
+          logger.warn("Daily lyrics generation cap exceeded", { kind });
+          return jsonResponse(
+            {
+              error: "rate_limit_exceeded",
+              code: "lyrics_generation_daily_limit",
+              limit: dailyResult.limit,
+              retryAfter: dailyResult.resetSeconds,
+            },
+            429,
+            { "Retry-After": String(dailyResult.resetSeconds) }
+          );
+        }
+        return null;
+      };
 
       // Handle search-lyrics action (no auth required)
       if (action === "search-lyrics") {
@@ -1023,6 +1065,9 @@ export default apiHandler<Record<string, unknown>>(
           }
         }
 
+        const translateGate = await gateLyricsGeneration("translation");
+        if (translateGate) return translateGate;
+
         const { translations, success } = await streamTranslation(
           parsedLines,
           language,
@@ -1199,6 +1244,9 @@ export default apiHandler<Record<string, unknown>>(
         }
 
         const totalLines = parsedLines.length;
+
+        const translationGate = await gateLyricsGeneration("translation");
+        if (translationGate) return translationGate;
 
         logger.info(`Starting translate SSE stream`, { totalLines, language });
 
@@ -1406,6 +1454,11 @@ export default apiHandler<Record<string, unknown>>(
           needsFurigana: lineNeedsFuriganaGeneration(line.words),
         }));
         const linesNeedingFurigana = lineInfo.filter((info) => info.needsFurigana);
+
+        if (linesNeedingFurigana.length > 0) {
+          const furiganaGate = await gateLyricsGeneration("furigana");
+          if (furiganaGate) return furiganaGate;
+        }
 
         // Build numbered text input for AI
         const textsToProcess = linesNeedingFurigana.map((info, i) => `${i + 1}: ${info.line.words}`).join("\n");
@@ -1663,6 +1716,9 @@ export default apiHandler<Record<string, unknown>>(
           }
         }
         
+        const soramimiGate = await gateLyricsGeneration("soramimi");
+        if (soramimiGate) return soramimiGate;
+
         // Build prompt text - if furigana is available, use annotated text format
         let textsToProcess: string;
         let systemPrompt: string;

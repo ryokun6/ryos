@@ -47,6 +47,7 @@ import {
   generateElevenLabsSpeech,
   transcribeAudioBuffer,
 } from "../_utils/voice.js";
+import { secretsEqual } from "../_utils/_secret-compare.js";
 
 const TELEGRAM_STOP_COMMANDS = ["stop", "cancel"];
 const TELEGRAM_CLEAR_COMMANDS = [
@@ -367,7 +368,7 @@ export default async function handler(
     return;
   }
 
-  if (getTelegramWebhookSecret(req) !== expectedSecret) {
+  if (!secretsEqual(getTelegramWebhookSecret(req), expectedSecret)) {
     logger.warn("Rejected Telegram webhook due to invalid secret");
     logger.response(401, Date.now() - startTime);
     sendJson(res, 401, { error: "Unauthorized" });

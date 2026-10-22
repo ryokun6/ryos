@@ -38,6 +38,17 @@ describe("IP utility", () => {
       expect(isPrivateOrReservedIp("::ffff:0808:0808")).toBe(false);
     });
 
+    test("flags IPv6 transition prefixes that embed IPv4 targets", () => {
+      expect(isPrivateOrReservedIp("64:ff9b::7f00:1")).toBe(true);
+      expect(isPrivateOrReservedIp("64:ff9b::a9fe:a9fe")).toBe(true);
+      expect(isPrivateOrReservedIp("64:ff9b::8.8.8.8")).toBe(true);
+      expect(isPrivateOrReservedIp("64:ff9b:1::a00:1")).toBe(true);
+      expect(isPrivateOrReservedIp("::127.0.0.1")).toBe(true);
+      expect(isPrivateOrReservedIp("2002:7f00:1::1")).toBe(true);
+      expect(isPrivateOrReservedIp("2001:0:4136:e378::1")).toBe(true);
+      expect(isPrivateOrReservedIp("100::1")).toBe(true);
+    });
+
     test("allows public IPs", () => {
       expect(isPrivateOrReservedIp("8.8.8.8")).toBe(false);
       expect(isPrivateOrReservedIp("1.1.1.1")).toBe(false);

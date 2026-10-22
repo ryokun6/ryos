@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +76,10 @@ export function LoginDialog({
   // Post-sign-up email verification flow.
   const [isVerifyEmailOpen, setIsVerifyEmailOpen] = useState(false);
   const [verifyEmail, setVerifyEmail] = useState("");
+  // Setting the recovery email requires the account password; reuse the one
+  // just entered on the sign-up tab so the user isn't asked again.
+  const signupPasswordRef = useRef("");
+  const [verifyEmailPassword, setVerifyEmailPassword] = useState("");
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
   const { t } = useTranslation();
   const dialogTitle = t("common.auth.dialogTitle");
@@ -97,6 +101,7 @@ export function LoginDialog({
       }
     } else {
       if (!isSignUpLoading) {
+        signupPasswordRef.current = newPassword;
         await onSignUpSubmit();
       }
     }
@@ -245,7 +250,11 @@ export function LoginDialog({
     // the parent flips the login dialog closed as soon as sign-up succeeds.
     if (signUpFinishedSuccessfully && signupEmail.trim()) {
       setVerifyEmail(signupEmail.trim());
+      setVerifyEmailPassword(signupPasswordRef.current);
       setIsVerifyEmailOpen(true);
+    }
+    if (signUpFinishedSuccessfully || loginFinishedSuccessfully) {
+      signupPasswordRef.current = "";
     }
 
     if (isOpen && (loginFinishedSuccessfully || signUpFinishedSuccessfully)) {
@@ -385,8 +394,12 @@ export function LoginDialog({
       />
       <RecoveryEmailDialog
         isOpen={isVerifyEmailOpen}
-        onOpenChange={setIsVerifyEmailOpen}
+        onOpenChange={(open) => {
+          setIsVerifyEmailOpen(open);
+          if (!open) setVerifyEmailPassword("");
+        }}
         initialEmail={verifyEmail}
+        initialPassword={verifyEmailPassword}
         autoSubmit
         hideRemove
         title={t("common.auth.verifyEmailTitle")}

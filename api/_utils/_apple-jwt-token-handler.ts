@@ -2,8 +2,8 @@ import { apiHandler } from "./api-handler.js";
 import type { MapKitSignedJwt } from "./_mapkit-jwt.js";
 
 /**
- * Subset of the `.p8` parse diagnostics surfaced in the 500 response body when
- * the private key env var is set but cannot be parsed.
+ * Subset of the `.p8` parse diagnostics logged (never returned) when the
+ * private key env var is set but cannot be parsed.
  */
 interface AppleJwtKeyDiagnostics {
   reason?: string;
@@ -52,7 +52,7 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
       const missing = config.listMissingEnv();
       if (missing.length > 0) {
         // When the only "missing" thing is the private key but the env var is
-        // actually set, surface why parsing failed so the operator can fix the
+        // actually set, log why parsing failed so the operator can fix the
         // env value without redeploying with extra logs.
         const keyDiagnostics =
           missing.includes(config.privateKeyEnvKey) && config.hasPrivateKeyEnv()
@@ -63,22 +63,9 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
           keyDiagnostics,
         });
         logger.response(500, Date.now() - startTime);
-        res.status(500).json({
-          error: config.notConfiguredError,
-          missing,
-          ...(keyDiagnostics
-            ? {
-                privateKey: {
-                  reason: keyDiagnostics.reason,
-                  rawLength: keyDiagnostics.rawLength,
-                  bodyLength: keyDiagnostics.bodyLength,
-                  hasBeginMarker: keyDiagnostics.hasBeginMarker,
-                  hasEndMarker: keyDiagnostics.hasEndMarker,
-                  invalidCharSample: keyDiagnostics.invalidCharSample,
-                },
-              }
-            : {}),
-        });
+        // Diagnostics stay in the server log; the unauthenticated response
+        // must not reveal which env vars are set or how the key failed.
+        res.status(500).json({ error: config.notConfiguredError });
         return;
       }
 
@@ -106,10 +93,7 @@ export function createAppleJwtTokenHandler(config: AppleJwtTokenHandlerConfig) {
       } catch (error) {
         logger.error(`Failed to sign ${config.label} token`, error);
         logger.response(500, Date.now() - startTime);
-        res.status(500).json({
-          error: `Failed to sign ${config.label} token`,
-          detail: error instanceof Error ? error.message : String(error),
-        });
+        res.status(500).json({ error: `Failed to sign ${config.label} token` });
       }
     }
   );

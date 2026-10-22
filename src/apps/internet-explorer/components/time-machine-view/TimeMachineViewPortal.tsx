@@ -16,6 +16,7 @@ import TimeNavigationControls from "../TimeNavigationControls";
 import type { ShaderOption } from "./types";
 import type { useTimeMachineView } from "./useTimeMachineView";
 import { timeMachineLog as log } from "../../logging";
+import { IE_PROXY_IFRAME_SANDBOX } from "../../utils/ieFrameMessaging";
 
 const GalaxyBackground = lazy(
   () => import("@/components/shared/GalaxyBackground")
@@ -211,9 +212,9 @@ export function TimeMachineViewPortal({ vm, isOpen }: { vm: TimeMachineViewVm; i
                                               )}
                                             </AnimatePresence>
                                             <iframe
+                                              sandbox={IE_PROXY_IFRAME_SANDBOX}
                                               src={vm.previewContent}
                                               className="size-full border-none bg-white"
-                                              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
                                               title={`Preview for ${vm.previewYear}`}
                                               onLoad={() => {
                                                 log.debug("Preview iframe loaded", {

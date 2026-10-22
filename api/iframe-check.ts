@@ -27,6 +27,19 @@ import {
   readResponseTextWithLimit,
   sanitizeProxiedHtml,
 } from "./_utils/_ie-html.js";
+import {
+  buildIeNavigationInterceptorScript,
+  buildIeProxyCsp,
+  buildIeProxyErrorDocument,
+  classifyProxiedContentType,
+  createCspNonce,
+  getIeProxyIsolatedOrigin,
+  isIeProxyIsolatedRequest,
+  sanitizeFrameToken,
+  type IeProxyErrorPayload,
+} from "./_utils/_ie-proxy.js";
+import { isAllowedOrigin } from "./_utils/_cors.js";
+import { getHeader } from "./_utils/request-helpers.js";
 import { resolveRequestAuth } from "./_utils/request-auth.js";
 import type { Redis } from "./_utils/redis.js";
 import type { ApiRequest } from "./_utils/api-types.js";
@@ -47,12 +60,9 @@ const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 /**
  * Whether the caller is permitted to opt into the IE Debug proxy features
- * (cookie/session passthrough, forced headless). This is the "gate under admin
- * ryo user, optional in debug mode" check:
- *   - `dbg=1` — the IE Debug menu (shown only to the admin user or in global
- *     debug mode) sends this to opt in, OR
- *   - the authenticated caller is the `ryo` admin (resolved from the
- *     first-party auth cookie that same-origin iframe navigations carry).
+ * (cookie/session passthrough, forced headless): only the authenticated `ryo`
+ * admin, resolved from the first-party auth cookie that same-origin iframe
+ * navigations carry. Client-supplied flags never grant access.
  *
  * Env flags (`IE_PROXY_SESSIONS`, headless provider) are checked separately by
  * each caller and make a feature always-on regardless of this gate.
@@ -65,7 +75,6 @@ async function isIeDebugCallerPermitted(
   req: ApiRequest,
   redis: Redis
 ): Promise<boolean> {
-  if (req.query.dbg === "1" || req.query.dbg === "true") return true;
   try {
     const auth = await resolveRequestAuth(req, redis);
     return auth.user?.username === "ryo";
@@ -342,15 +351,59 @@ async function getIeCacheKey(normalizedUrlForKey: string, year: string): Promise
   );
 }
 
+/**
+ * Wayback cache entries hold the upstream HTML (not the rewritten document)
+ * so every hit goes through the current sanitizer. The `v2` segment retires
+ * entries written before that change, which stored rewritten HTML with
+ * upstream scripts intact.
+ */
 async function getWaybackCacheKey(
   normalizedUrlForKey: string,
   yearMonth: string
 ): Promise<string> {
-  return redisKeys.cache.wayback(
+  return `${redisKeys.cache.wayback(
     await sha256RedisIdentifier(normalizedUrlForKey),
     yearMonth
-  );
+  )}:v2`;
 }
+
+interface WaybackCacheEntry {
+  v: 2;
+  finalUrl: string;
+  html: string;
+}
+
+function parseWaybackCacheEntry(value: unknown): WaybackCacheEntry | null {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    (parsed as WaybackCacheEntry).v === 2 &&
+    typeof (parsed as WaybackCacheEntry).html === "string" &&
+    typeof (parsed as WaybackCacheEntry).finalUrl === "string"
+  ) {
+    return parsed as WaybackCacheEntry;
+  }
+  return null;
+}
+
+/** Pixel-font overrides injected into proxied pages (all themes but macosx). */
+const IE_FONT_OVERRIDE_CSS = `img{image-rendering:pixelated!important}body,div,span,p,h1,h2,h3,h4,h5,h6,button,input,select,textarea,[style*="font-family"],[style*="sans-serif"],[style*="SF Pro Text"],[style*="-apple-system"],[style*="BlinkMacSystemFont"],[style*="Segoe UI"],[style*="Roboto"],[style*="Oxygen"],[style*="Ubuntu"],[style*="Cantarell"],[style*="Fira Sans"],[style*="Droid Sans"],[style*="Helvetica Neue"],[style*="Helvetica"],[style*="Arial"],[style*="Verdana"],[style*="Geneva"],[style*="Inter"],[style*="Hiragino Sans"],[style*="Hiragino Kaku Gothic"],[style*="Yu Gothic"],[style*="Meiryo"],[style*="MS PGothic"],[style*="MS Gothic"],[style*="Microsoft YaHei"],[style*="PingFang"],[style*="Noto Sans"],[style*="Source Han Sans"],[style*="WenQuanYi"]{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif!important}[style*="serif"],[style*="Georgia"],[style*="Times New Roman"],[style*="Times"],[style*="Palatino"],[style*="Bookman"],[style*="Garamond"],[style*="Cambria"],[style*="Constantia"],[style*="Hiragino Mincho"],[style*="Yu Mincho"],[style*="MS Mincho"],[style*="SimSun"],[style*="NSimSun"],[style*="Source Han Serif"],[style*="Noto Serif CJK"]{font-family:"Mondwest","Yu Mincho","Hiragino Mincho Pro","Songii TC","Georgia","Palatino","SerenityOS-Emoji",serif!important}code,pre,[style*="monospace"],[style*="Courier New"],[style*="Courier"],[style*="Lucida Console"],[style*="Monaco"],[style*="Consolas"],[style*="Inconsolata"],[style*="Source Code Pro"],[style*="Menlo"],[style*="Andale Mono"],[style*="Ubuntu Mono"]{font-family:"Monaco","ArkPixel","SerenityOS-Emoji",monospace!important}*{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif}`;
+
+const IE_PROXY_CORS_HEADERS = [
+  "Content-Type",
+  "Authorization",
+  "X-Username",
+  "X-Requested-With",
+  "Accept",
+];
 
 /**
  * Edge function that checks if a remote website allows itself to be embedded in an iframe.
@@ -374,6 +427,16 @@ export default apiHandler(
   {
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     contentType: null,
+    corsHeaders: IE_PROXY_CORS_HEADERS,
+    // Sandboxed proxy documents have an opaque origin, so sub-resource
+    // requests they make to the isolated proxy host carry `Origin: null`.
+    acceptOrigin: (requestOrigin, request) => {
+      if (!isIeProxyIsolatedRequest(request)) return false;
+      return (
+        requestOrigin === "null" ||
+        requestOrigin === getIeProxyIsolatedOrigin()
+      );
+    },
   },
   async ({ req, res, redis, logger, startTime, origin }) => {
   const urlParam = req.query.url as string | undefined;
@@ -382,6 +445,26 @@ export default apiHandler(
   const month = req.query.month as string | undefined;
   const effectiveOrigin = origin;
   const httpMethod = (req.method || "GET").toUpperCase();
+
+  // Proxied content never runs with the app origin: every response from this
+  // route is sandboxed (opaque origin), non-sniffable and framable only by
+  // ryOS. HTML documents tighten script-src further below.
+  const onIsolatedProxyHost = isIeProxyIsolatedRequest(req);
+  const isolatedProxyOrigin = getIeProxyIsolatedOrigin();
+  const frameToken = sanitizeFrameToken(req.query.ieFrame);
+  const parentOrigin =
+    effectiveOrigin && isAllowedOrigin(effectiveOrigin)
+      ? new URL(effectiveOrigin).origin
+      : getAppPublicOrigin(null);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Referrer-Policy", "strict-origin");
+  res.setHeader("Content-Security-Policy", buildIeProxyCsp());
+  const secFetchDest = (getHeader(req, "sec-fetch-dest") || "").toLowerCase();
+  const isFrameNavigation =
+    secFetchDest === "iframe" ||
+    secFetchDest === "frame" ||
+    secFetchDest === "document" ||
+    (!!frameToken && secFetchDest === "");
 
   // `raw=1` marks a re-proxied sub-resource request (fetch/XHR/asset) emitted
   // by the injected interceptor. Raw responses are streamed back untouched
@@ -392,6 +475,14 @@ export default apiHandler(
     req.query.raw === "1" || req.query.raw === "true" || httpMethod !== "GET";
   if (isRawProxy) {
     mode = "proxy";
+  }
+  // The isolated host exists only to render proxied pages; checks, AI pages
+  // and cache listings stay on the app origin.
+  if (onIsolatedProxyHost && mode !== "proxy") {
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    logger.response(404, Date.now() - startTime);
+    return res.status(404).send("Not Found");
   }
   // `render=headless` forces the (optional, env-gated) headless-browser
   // renderer even when a plain fetch would have succeeded — but only for
@@ -439,14 +530,28 @@ export default apiHandler(
     }
   };
 
-  // Helper for consistent error responses with CORS
+  // Helper for consistent error responses (CORS headers come from apiHandler)
   const errorResponseWithCors = (message: string, status: number = 400) => {
-    if (effectiveOrigin) {
-      res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-    }
     res.setHeader("Content-Type", "application/json");
     logger.response(status, Date.now() - startTime);
     return res.status(status).json({ error: message });
+  };
+
+  // Proxy errors. Iframe navigations get a tiny HTML page that reports the
+  // error to the parent over postMessage (the parent cannot read the
+  // sandboxed document); fetch callers keep the JSON body.
+  const sendProxyError = (status: number, payload: IeProxyErrorPayload) => {
+    logger.response(status, Date.now() - startTime);
+    if (isFrameNavigation && !isRawProxy) {
+      const nonce = createCspNonce();
+      res.setHeader("Content-Security-Policy", buildIeProxyCsp({ scriptNonce: nonce }));
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      return res.status(status).send(
+        buildIeProxyErrorDocument(payload, { nonce, frameToken, parentOrigin })
+      );
+    }
+    res.setHeader("Content-Type", "application/json");
+    return res.status(status).json(payload);
   };
 
   if (!urlParam) {
@@ -468,7 +573,34 @@ export default apiHandler(
     const message =
       error instanceof SsrfBlockedError ? error.message : "Invalid URL format";
     logger.warn("Blocked URL for iframe check", { normalizedUrl, message, mode });
+    if (mode === "proxy" && isFrameNavigation) {
+      return sendProxyError(400, {
+        error: true,
+        type: error instanceof SsrfBlockedError ? "ssrf_blocked" : "connection_error",
+        status: 400,
+        message:
+          error instanceof SsrfBlockedError
+            ? message
+            : "The page cannot be displayed. Internet Explorer cannot access this website.",
+        details: message,
+      });
+    }
     return errorResponseWithCors(message, 400);
+  }
+
+  // With a dedicated proxy origin configured, documents are only ever served
+  // from that host; the app origin just bounces the navigation there.
+  if (
+    isolatedProxyOrigin &&
+    !onIsolatedProxyHost &&
+    mode === "proxy" &&
+    httpMethod === "GET"
+  ) {
+    const location = `${isolatedProxyOrigin}${req.url || ""}`;
+    res.setHeader("Location", location);
+    res.setHeader("Cache-Control", "no-store");
+    logger.response(302, Date.now() - startTime);
+    return res.status(302).end();
   }
 
   // ---------------------------
@@ -491,9 +623,6 @@ export default apiHandler(
         logger.warn("Rate limit exceeded (global)", { ip, mode });
         res.setHeader("Retry-After", String(global.resetSeconds ?? BURST_WINDOW));
         res.setHeader("Content-Type", "application/json");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
         logger.response(429, Date.now() - startTime);
         return res.status(429).json({
           error: "rate_limit_exceeded",
@@ -525,9 +654,6 @@ export default apiHandler(
           logger.warn("Rate limit exceeded (host)", { ip, hostname, mode });
           res.setHeader("Retry-After", String(host.resetSeconds ?? BURST_WINDOW));
           res.setHeader("Content-Type", "application/json");
-          if (effectiveOrigin) {
-            res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-          }
           logger.response(429, Date.now() - startTime);
           return res.status(429).json({
             error: "rate_limit_exceeded",
@@ -551,9 +677,6 @@ export default apiHandler(
         logger.warn("Rate limit exceeded", { ip, mode });
         res.setHeader("Retry-After", String(rateRes.resetSeconds ?? BURST_WINDOW));
         res.setHeader("Content-Type", "application/json");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
         logger.response(429, Date.now() - startTime);
         return res.status(429).json({ error: "rate_limit_exceeded", scope: mode });
       }
@@ -598,14 +721,12 @@ export default apiHandler(
       if (html) {
         logger.info(`AI Cache HIT for key: ${key}`);
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("X-AI-Cache", "HIT");
         logger.response(200, Date.now() - startTime);
         return res.status(200).send(html);
       }
       logger.info(`AI Cache MISS for key: ${key}`);
       res.setHeader("Content-Type", "application/json");
-      res.setHeader("Access-Control-Allow-Origin", "*");
       logger.response(404, Date.now() - startTime);
       return res.status(404).json({ aiCache: false });
     } catch (e) {
@@ -692,7 +813,6 @@ export default apiHandler(
       logger.info(`Found ${sortedYears.length} unique cached years for URL: ${listUrl}`);
 
       res.setHeader("Content-Type", "application/json");
-      res.setHeader("Access-Control-Allow-Origin", "*");
       logger.response(200, Date.now() - startTime);
       return res.status(200).json({ years: sortedYears });
     } catch (e) {
@@ -725,6 +845,85 @@ export default apiHandler(
   // Read theme to drive conditional font override injection
   const theme = ((req.query.theme as string) || "").toLowerCase();
   const shouldInjectFontOverrides = theme !== "macosx";
+
+  /**
+   * Rewrite an upstream HTML document for display inside the IE iframe and
+   * send it. On the app origin all upstream scripts, handlers and
+   * `javascript:` URLs are removed and only the nonce'd interceptor may run;
+   * on the isolated proxy host upstream scripts are kept.
+   */
+  const sendProxiedHtml = async (
+    rawHtml: string,
+    pageFinalUrl: string,
+    status: number
+  ) => {
+    const sanitized = await sanitizeProxiedHtml(rawHtml, {
+      pageUrl: pageFinalUrl,
+      keepScripts: onIsolatedProxyHost,
+    });
+    let html = sanitized.html;
+    if (sanitized.strippedScripts) {
+      proxyDebug.scriptsStripped = true;
+    }
+    if (sanitized.liteMode) {
+      logger.info(
+        `Serving lite view for oversized HTML (${sanitized.byteLength} bytes) at ${pageFinalUrl}`
+      );
+      proxyDebug.lite = true;
+    }
+    writeProxyDebugHeader();
+
+    // Strip existing <base> tags to prevent conflicts with our injected base tag
+    html = html.replace(/<base\s[^>]*>/gi, "");
+    // Strip meta CSP / X-Frame-Options / refresh tags (also removed by the
+    // parser-based sanitizer when scripts are stripped)
+    html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, "");
+    html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?X-Frame-Options["']?[^>]*>/gi, "");
+    html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, "");
+    html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, "");
+
+    let pageTitle: string | undefined;
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+      pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
+    }
+
+    const baseTag = `<base href="${pageFinalUrl.replace(/"/g, "%22")}">`;
+    const titleMetaTag = pageTitle
+      ? `<meta name="page-title" content="${encodeURIComponent(pageTitle)}">`
+      : "";
+
+    const appPublicOrigin = getAppPublicOrigin(parentOrigin);
+    const fontOverrideStyles = shouldInjectFontOverrides
+      ? `
+<link rel="stylesheet" href="${appPublicOrigin}/fonts/fonts.css">
+<style>${IE_FONT_OVERRIDE_CSS}</style>`
+      : "";
+
+    const nonce = onIsolatedProxyHost ? null : createCspNonce();
+    const navigationInterceptorScript = buildIeNavigationInterceptorScript({
+      nonce,
+      frameToken,
+      parentOrigin,
+    });
+
+    const headMatch = html.match(/<head[^>]*>/i);
+    const injected = baseTag + titleMetaTag + navigationInterceptorScript + fontOverrideStyles;
+    if (headMatch && headMatch.index !== undefined) {
+      const insertPos = headMatch.index + headMatch[0].length;
+      html = html.slice(0, insertPos) + injected + html.slice(insertPos);
+    } else {
+      html = "<head>" + injected + "</head>" + html;
+    }
+
+    if (pageTitle) {
+      res.setHeader("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
+    }
+    res.setHeader("Content-Security-Policy", buildIeProxyCsp({ scriptNonce: nonce }));
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    logger.response(status, Date.now() - startTime);
+    return res.status(status).send(html);
+  };
 
   // Determine target URL (Wayback or original)
   let targetUrl = normalizedUrl;
@@ -762,14 +961,11 @@ export default apiHandler(
           `${waybackYear}${waybackMonth}`
         );
         logger.info(`Generated Wayback cache key: ${cacheKey}`);
-        const cachedContent = (await redis.get(cacheKey)) as string | null;
-        if (cachedContent) {
-          logger.info(`Wayback Cache HIT for ${cacheKey} (content length: ${cachedContent.length})`);
-          res.setHeader("Content-Type", "text/html; charset=utf-8");
-          res.setHeader("Access-Control-Allow-Origin", "*");
+        const cachedEntry = parseWaybackCacheEntry(await redis.get(cacheKey));
+        if (cachedEntry) {
+          logger.info(`Wayback Cache HIT for ${cacheKey} (content length: ${cachedEntry.html.length})`);
           res.setHeader("X-Wayback-Cache", "HIT");
-          logger.response(200, Date.now() - startTime);
-          return res.status(200).send(cachedContent);
+          return await sendProxiedHtml(cachedEntry.html, cachedEntry.finalUrl, 200);
         }
         logger.info(`Wayback Cache MISS for ${cacheKey}, proceeding with Wayback Machine request`);
       } else {
@@ -1136,6 +1332,11 @@ export default apiHandler(
         );
         proxyDebug.blocked = isAccessBlocked;
         writeProxyDebugHeader();
+        try {
+          upstreamRes.body?.cancel();
+        } catch {
+          /* ignore */
+        }
         const blockedMessage = `This website blocked the request (HTTP ${
           upstreamRes.status
         } - ${
@@ -1144,10 +1345,7 @@ export default apiHandler(
         const notFoundMessage = `The page cannot be found. HTTP ${
           upstreamRes.status
         } - ${upstreamRes.statusText || "File not found"}`;
-        res.setHeader("Content-Type", "application/json");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        logger.response(upstreamRes.status, Date.now() - startTime);
-        return res.status(upstreamRes.status).json({
+        return sendProxyError(upstreamRes.status, {
           error: true,
           status: upstreamRes.status,
           statusText: upstreamRes.statusText || "File not found",
@@ -1158,20 +1356,22 @@ export default apiHandler(
 
       const contentType = upstreamRes.headers.get("content-type") || "";
       logger.info(`Proxying content type: ${contentType}`);
-      let pageTitle: string | undefined = undefined; // Initialize title for proxy mode
 
-      // Set response headers shared by all proxy responses. The X-IE-Proxy
-      // diagnostics header is written later once we know whether scripts were
-      // stripped (HTML) or immediately for raw / non-HTML streams.
-      res.setHeader("content-security-policy", "frame-ancestors *");
-      res.setHeader("access-control-allow-origin", "*");
-
-      // Raw sub-resource forward: return the upstream payload untouched (no
-      // HTML rewriting / interceptor injection) so JSON, scripts, assets and
-      // HTML fragments fetched via the re-proxied fetch/XHR are not corrupted.
-      if (isRawProxy) {
+      // Raw / non-HTML bodies are streamed. On the app origin, script-capable
+      // upstream types are never reflected (text/plain or a forced download
+      // instead); the isolated proxy host may reflect them because nothing
+      // there carries a session and every response is CSP-sandboxed.
+      const streamPassthrough = async (label: string) => {
         writeProxyDebugHeader();
-        if (contentType) res.setHeader("Content-Type", contentType);
+        if (onIsolatedProxyHost) {
+          if (contentType) res.setHeader("Content-Type", contentType);
+        } else {
+          const decision = classifyProxiedContentType(contentType);
+          res.setHeader("Content-Type", decision.contentType);
+          if (decision.contentDisposition) {
+            res.setHeader("Content-Disposition", decision.contentDisposition);
+          }
+        }
         const cacheControl = upstreamRes.headers.get("cache-control");
         if (cacheControl) res.setHeader("Cache-Control", cacheControl);
         res.status(upstreamRes.status);
@@ -1180,13 +1380,19 @@ export default apiHandler(
           res
         );
         if (!streamed) {
-          logger.warn(`Raw proxy stream interrupted for ${targetUrl}`);
+          logger.warn(`${label} proxy stream interrupted for ${targetUrl}`);
         }
         logger.response(upstreamRes.status, Date.now() - startTime);
+      };
+
+      // Raw sub-resource forward: no HTML rewriting / interceptor injection so
+      // JSON and other payloads fetched via the re-proxied fetch/XHR are not
+      // corrupted.
+      if (isRawProxy) {
+        await streamPassthrough("Raw");
         return;
       }
 
-      // If it's HTML, inject the <base> tag and click interceptor script
       if (contentType.includes("text/html")) {
         let html: string;
         try {
@@ -1198,10 +1404,7 @@ export default apiHandler(
             );
             proxyDebug.blocked = true;
             writeProxyDebugHeader();
-            res.setHeader("Content-Type", "application/json");
-            res.setHeader("Access-Control-Allow-Origin", "*");
-            logger.response(413, Date.now() - startTime);
-            return res.status(413).json({
+            return sendProxyError(413, {
               error: true,
               type: "page_too_large",
               status: 413,
@@ -1213,451 +1416,44 @@ export default apiHandler(
           throw sizeError;
         }
 
-        // Cap + convert oversized documents to a lite/reader view so
-        // same-origin iframe JS/CSS cannot freeze the shared desktop tab.
-        const sanitized = await sanitizeProxiedHtml(html, {
-          pageUrl: finalUrl || targetUrl,
-        });
-        html = sanitized.html;
-        if (sanitized.strippedScripts) {
-          proxyDebug.scriptsStripped = true;
-        }
-        if (sanitized.liteMode) {
-          logger.info(
-            `Serving lite view for oversized HTML (${sanitized.byteLength} bytes) at ${targetUrl}`
-          );
-          proxyDebug.lite = true;
-        }
+        const pageFinalUrl = finalUrl || targetUrl;
 
-        writeProxyDebugHeader();
-
-        // --- Sanitize HTML for proxy embedding ---
-        // Strip existing <base> tags to prevent conflicts with our injected base tag
-        html = html.replace(/<base\s[^>]*>/gi, '');
-        // Strip meta CSP tags that block resource loading in proxied context
-        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
-        // Strip meta X-Frame-Options tags
-        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?X-Frame-Options["']?[^>]*>/gi, '');
-        // Strip meta refresh redirects (they bypass the proxy and cause broken navigation)
-        html = html.replace(/<meta[^>]*http-equiv\s*=\s*["']?refresh["']?[^>]*>/gi, '');
-        // Strip Content-Security-Policy headers embedded via <meta> with reversed attribute order
-        html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, '');
-
-        // Extract title before modifying HTML
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        if (titleMatch && titleMatch[1]) {
-          pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
-        }
-
-        // Inject <base> tag right after <head> (case‑insensitive)
-        const baseTag = `<base href="${finalUrl}">`;
-        // Inject title meta tag if title was extracted
-        const titleMetaTag = pageTitle
-          ? `<meta name="page-title" content="${encodeURIComponent(
-              pageTitle
-            )}">`
-          : "";
-
-        // Add font override styles (conditionally injected based on theme)
-        const appPublicOrigin = getAppPublicOrigin(origin);
-        const fontOverrideStyles = shouldInjectFontOverrides
-          ? `
-<link rel="stylesheet" href="${appPublicOrigin}/fonts/fonts.css">
-<style>img{image-rendering:pixelated!important}body,div,span,p,h1,h2,h3,h4,h5,h6,button,input,select,textarea,[style*="font-family"],[style*="sans-serif"],[style*="SF Pro Text"],[style*="-apple-system"],[style*="BlinkMacSystemFont"],[style*="Segoe UI"],[style*="Roboto"],[style*="Oxygen"],[style*="Ubuntu"],[style*="Cantarell"],[style*="Fira Sans"],[style*="Droid Sans"],[style*="Helvetica Neue"],[style*="Helvetica"],[style*="Arial"],[style*="Verdana"],[style*="Geneva"],[style*="Inter"],[style*="Hiragino Sans"],[style*="Hiragino Kaku Gothic"],[style*="Yu Gothic"],[style*="Meiryo"],[style*="MS PGothic"],[style*="MS Gothic"],[style*="Microsoft YaHei"],[style*="PingFang"],[style*="Noto Sans"],[style*="Source Han Sans"],[style*="WenQuanYi"]{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif!important}[style*="serif"],[style*="Georgia"],[style*="Times New Roman"],[style*="Times"],[style*="Palatino"],[style*="Bookman"],[style*="Garamond"],[style*="Cambria"],[style*="Constantia"],[style*="Hiragino Mincho"],[style*="Yu Mincho"],[style*="MS Mincho"],[style*="SimSun"],[style*="NSimSun"],[style*="Source Han Serif"],[style*="Noto Serif CJK"]{font-family:"Mondwest","Yu Mincho","Hiragino Mincho Pro","Songii TC","Georgia","Palatino","SerenityOS-Emoji",serif!important}code,pre,[style*="monospace"],[style*="Courier New"],[style*="Courier"],[style*="Lucida Console"],[style*="Monaco"],[style*="Consolas"],[style*="Inconsolata"],[style*="Source Code Pro"],[style*="Menlo"],[style*="Andale Mono"],[style*="Ubuntu Mono"]{font-family:"Monaco","ArkPixel","SerenityOS-Emoji",monospace!important}*{font-family:"Geneva-12","ArkPixel","SerenityOS-Emoji",sans-serif}</style>`
-          : "";
-
-        // Comprehensive navigation interceptor script - injected in head for early execution
-        const navigationInterceptorScript = `
-<script>
-(function() {
-  'use strict';
-
-  // Save real parent reference BEFORE any overrides
-  var realParent = window.parent;
-
-  // Helper to resolve and post navigation URL to real parent
-  function postNavigation(url, source, openInNewWindow) {
-    try {
-      var absoluteUrl = new URL(url, document.baseURI || window.location.href).href;
-      if (absoluteUrl.startsWith('javascript:') ||
-          absoluteUrl.startsWith('blob:') ||
-          absoluteUrl.startsWith('data:') ||
-          (absoluteUrl.indexOf('#') !== -1 && absoluteUrl.split('#')[0] === window.location.href.split('#')[0])) {
-        return false;
-      }
-      realParent.postMessage({
-        type: openInNewWindow ? 'iframeOpenWindow' : 'iframeNavigation',
-        url: absoluteUrl,
-        source: source
-      }, '*');
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  // --- Frame-busting neutralization ---
-  // Make the page think it is the top-level window so that
-  // "if (top !== self) top.location = ..." guards become no-ops.
-  try {
-    Object.defineProperty(window, 'top', {
-      get: function() { return window.self; },
-      configurable: true
-    });
-  } catch(e) {}
-
-  try {
-    Object.defineProperty(window, 'parent', {
-      get: function() { return window.self; },
-      configurable: true
-    });
-  } catch(e) {}
-
-  try {
-    Object.defineProperty(window, 'frameElement', {
-      get: function() { return null; },
-      configurable: true
-    });
-  } catch(e) {}
-
-  // --- Block Service Worker registration (prevents SW interference in proxied context) ---
-  try {
-    var fakeReg = {
-      installing: null, waiting: null, active: null, scope: '',
-      unregister: function() { return Promise.resolve(true); },
-      update: function() { return Promise.resolve(); },
-      addEventListener: function() {}, removeEventListener: function() {}
-    };
-    Object.defineProperty(navigator, 'serviceWorker', {
-      get: function() {
-        return {
-          register: function() { return Promise.resolve(fakeReg); },
-          getRegistration: function() { return Promise.resolve(undefined); },
-          getRegistrations: function() { return Promise.resolve([]); },
-          ready: Promise.resolve(fakeReg),
-          controller: null,
-          addEventListener: function() {}, removeEventListener: function() {}
-        };
-      },
-      configurable: true
-    });
-  } catch(e) {}
-
-  // --- Suppress Notification / Push permission requests ---
-  try {
-    if (window.Notification) {
-      window.Notification.requestPermission = function() { return Promise.resolve('denied'); };
-    }
-  } catch(e) {}
-
-  // --- Click interceptor (capture phase for highest priority) ---
-  function handleClick(event) {
-    if (event.ctrlKey || event.metaKey || event.shiftKey) return;
-    if (event.button !== 0) return;
-
-    var target = event.target;
-    var anchor = null;
-
-    while (target && target !== document.documentElement) {
-      if (target.tagName === 'A' && target.href) {
-        anchor = target;
-        break;
-      }
-      target = target.parentElement;
-    }
-
-    if (anchor && anchor.href) {
-      var href = anchor.getAttribute('href');
-      var openInNewWindow =
-        (anchor.getAttribute('target') || '').toLowerCase() === '_blank';
-      if (postNavigation(href, 'click', openInNewWindow)) {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-      }
-    }
-  }
-
-  // --- Form submission interceptor ---
-  function handleSubmit(event) {
-    var form = event.target;
-    if (form && form.tagName === 'FORM') {
-      var action = form.getAttribute('action') || window.location.href;
-      var method = (form.getAttribute('method') || 'GET').toUpperCase();
-
-      if (method === 'GET') {
-        var formData = new FormData(form);
-        var params = new URLSearchParams();
-        formData.forEach(function(value, key) {
-          params.append(key, value);
-        });
-        var url = action + (action.indexOf('?') === -1 ? '?' : '&') + params.toString();
-        if (postNavigation(url, 'form-get')) {
-          event.preventDefault();
-          event.stopPropagation();
-          event.stopImmediatePropagation();
-        }
-      }
-    }
-  }
-
-  // --- Mousedown interceptor for middle-click ---
-  function handleMouseDown(event) {
-    if (event.button === 1) {
-      var target = event.target;
-      while (target && target !== document.documentElement) {
-        if (target.tagName === 'A' && target.href) {
-          var href = target.getAttribute('href');
-          if (postNavigation(href, 'middle-click')) {
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
-          }
-          break;
-        }
-        target = target.parentElement;
-      }
-    }
-  }
-
-  document.addEventListener('click', handleClick, true);
-  document.addEventListener('submit', handleSubmit, true);
-  document.addEventListener('mousedown', handleMouseDown, true);
-  window.addEventListener('click', handleClick, true);
-
-  setInterval(function() {
-    document.removeEventListener('click', handleClick, true);
-    document.addEventListener('click', handleClick, true);
-  }, 2000);
-
-  // --- Patch window.location assignments ---
-  var locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
-  if (locationDescriptor && locationDescriptor.configurable !== false) {
-    try {
-      var originalLocation = window.location;
-      Object.defineProperty(window, 'location', {
-        get: function() { return originalLocation; },
-        set: function(url) {
-          if (postNavigation(url, 'location-set')) return;
-          originalLocation.href = url;
-        },
-        configurable: true
-      });
-    } catch (e) {}
-  }
-
-  try {
-    var loc = window.location;
-    var originalAssign = loc.assign;
-    var originalReplace = loc.replace;
-
-    if (originalAssign) {
-      loc.assign = function(url) {
-        if (!postNavigation(url, 'location-assign')) {
-          originalAssign.call(loc, url);
-        }
-      };
-    }
-
-    if (originalReplace) {
-      loc.replace = function(url) {
-        if (!postNavigation(url, 'location-replace')) {
-          originalReplace.call(loc, url);
-        }
-      };
-    }
-
-    var hrefDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(loc), 'href');
-    if (hrefDescriptor && hrefDescriptor.set) {
-      var originalHrefSetter = hrefDescriptor.set;
-      Object.defineProperty(loc, 'href', {
-        get: function() { return loc.href; },
-        set: function(url) {
-          if (!postNavigation(url, 'location-href')) {
-            originalHrefSetter.call(loc, url);
-          }
-        },
-        configurable: true
-      });
-    }
-  } catch (e) {}
-
-  // --- Patch history API to avoid cross-origin SecurityError ---
-  var makeRelative = function(url) {
-    try {
-      if (!url) return url;
-      var parsed = new URL(url, document.baseURI);
-      if (parsed.origin !== window.location.origin) {
-        return parsed.pathname + parsed.search + parsed.hash;
-      }
-    } catch (e) {}
-    return url;
-  };
-
-  ['pushState', 'replaceState'].forEach(function(fn) {
-    var original = history[fn];
-    if (typeof original === 'function') {
-      history[fn] = function(state, title, url) {
-        try {
-          return original.call(this, state, title, makeRelative(url));
-        } catch (err) {
-          return original.call(this, state, title, null);
-        }
-      };
-    }
-  });
-
-  // --- Intercept window.open ---
-  var originalOpen = window.open;
-  window.open = function(url, target, features) {
-    var openInNewWindow =
-      !target ||
-      String(target).toLowerCase() === '_blank' ||
-      String(target).toLowerCase() === '_new';
-    if (url && postNavigation(url, 'window-open', openInNewWindow)) return null;
-    return originalOpen ? originalOpen.call(window, url, target, features) : null;
-  };
-
-  // --- Sub-resource proxy: route ALL cross-origin fetch/XHR (any method)
-  // through the proxy so CORS, mixed-content, and same-site-different-origin
-  // API calls all succeed. Requests already pointing at the proxy origin are
-  // left untouched to avoid loops. The 'raw=1' flag tells the proxy to stream
-  // the payload back verbatim (no HTML rewriting).
-  var proxyOrigin = window.location.origin;
-  function buildRawProxyUrl(href) {
-    return proxyOrigin + '/api/iframe-check?raw=1&url=' + encodeURIComponent(href);
-  }
-  function shouldProxyUrl(resolved) {
-    // Only proxy http(s) cross-origin requests; leave blob:/data:/ws: and
-    // same-(proxy)-origin requests alone.
-    if (resolved.protocol !== 'http:' && resolved.protocol !== 'https:') return false;
-    return resolved.origin !== proxyOrigin;
-  }
-
-  var origFetch = window.fetch;
-  window.fetch = function(input, init) {
-    try {
-      var url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
-      var resolved = new URL(url, document.baseURI);
-      if (shouldProxyUrl(resolved)) {
-        var proxyUrl = buildRawProxyUrl(resolved.href);
-        if (typeof input === 'string' || input instanceof URL) {
-          return origFetch.call(window, proxyUrl, init);
-        }
-        if (input instanceof Request) {
-          // Preserve method/headers/body by cloning the Request onto the proxy URL.
-          return origFetch.call(window, new Request(proxyUrl, input), init);
-        }
-        return origFetch.call(window, proxyUrl, init);
-      }
-    } catch(e) {}
-    return origFetch.call(window, input, init);
-  };
-
-  var origXHROpen = XMLHttpRequest.prototype.open;
-  XMLHttpRequest.prototype.open = function() {
-    try {
-      var url = arguments[1];
-      if (typeof url === 'string') {
-        var resolved = new URL(url, document.baseURI);
-        if (shouldProxyUrl(resolved)) {
-          arguments[1] = buildRawProxyUrl(resolved.href);
-        }
-      }
-    } catch(e) {}
-    return origXHROpen.apply(this, arguments);
-  };
-})();
-</script>
-`;
-        const headIndex = html.search(/<head[^>]*>/i);
-        if (headIndex !== -1) {
-          const insertPos = headIndex + html.match(/<head[^>]*>/i)![0].length;
-          // Inject navigation interceptor as early as possible in head
-          html =
-            html.slice(0, insertPos) +
-            baseTag +
-            titleMetaTag +
-            navigationInterceptorScript +
-            fontOverrideStyles +
-            html.slice(insertPos);
-        } else {
-          // Fallback: Prepend if no <head> - wrap in head tag
-          html =
-            '<head>' +
-            baseTag +
-            titleMetaTag +
-            navigationInterceptorScript +
-            fontOverrideStyles +
-            '</head>' +
-            html;
-        }
-
-        // Add the extracted title to a custom header (URL-encoded)
-        if (pageTitle) {
-          res.setHeader("X-Proxied-Page-Title", encodeURIComponent(pageTitle));
-        }
-
-        // Cache Wayback content *after* successful fetch and modification
-        if (
-          isWaybackRequest &&
-          waybackYear &&
-          waybackMonth &&
-          contentType.includes("text/html")
-        ) {
+        // Cache the upstream HTML (not the rewritten document) so cache hits
+        // are sanitized with the current rules.
+        if (isWaybackRequest && waybackYear && waybackMonth) {
           try {
-            logger.info(`Attempting to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`);
             const normalizedUrlForKey = normalizeUrlForCacheKey(normalizedUrl);
             if (normalizedUrlForKey) {
               const cacheKey = await getWaybackCacheKey(
                 normalizedUrlForKey,
                 `${waybackYear}${waybackMonth}`
               );
-              logger.info(`Writing to Wayback cache key: ${cacheKey} (content length: ${html.length})`);
-              // Use SET with expiration for Wayback cache (e.g., 30 days)
-              await redis.set(cacheKey, html, { ex: 60 * 60 * 24 * 30 });
-              logger.info(`Successfully cached Wayback content for ${cacheKey}`);
-            } else {
-              logger.info(`Skipped Wayback caching - URL normalization failed: ${normalizedUrl}`);
+              const entry: WaybackCacheEntry = { v: 2, finalUrl: pageFinalUrl, html };
+              await redis.set(cacheKey, JSON.stringify(entry), {
+                ex: 60 * 60 * 24 * 30,
+              });
+              logger.info(`Cached Wayback content for ${cacheKey}`);
             }
           } catch (cacheErr) {
-            logger.error(`Failed to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`, cacheErr);
+            logger.error(
+              `Failed to cache Wayback content for ${normalizedUrl} (${waybackYear}/${waybackMonth})`,
+              cacheErr
+            );
           }
         }
 
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        logger.response(upstreamRes.status, Date.now() - startTime);
-        return res.status(upstreamRes.status).send(html);
-      } else {
-        logger.info("Proxying non-HTML content directly (streamed)");
-        writeProxyDebugHeader();
-        // For non‑HTML content, stream the body straight through without
-        // buffering the whole payload in memory.
-        if (contentType) res.setHeader("Content-Type", contentType);
-        const cacheControl = upstreamRes.headers.get("cache-control");
-        if (cacheControl) res.setHeader("Cache-Control", cacheControl);
-        res.status(upstreamRes.status);
-        const streamed = await streamBodyToResponse(
-          upstreamRes.body as ReadableStream<Uint8Array> | null,
-          res
-        );
-        if (!streamed) {
-          logger.warn(`Non-HTML proxy stream interrupted for ${targetUrl}`);
-        }
-        logger.response(upstreamRes.status, Date.now() - startTime);
-        return;
+        return await sendProxiedHtml(html, pageFinalUrl, upstreamRes.status);
       }
+
+      logger.info("Proxying non-HTML content directly (streamed)");
+      await streamPassthrough("Non-HTML");
+      return;
     } catch (fetchError) {
       clearTimeout(timeout);
 
       if (fetchError instanceof SsrfBlockedError) {
         logger.warn(`Proxy blocked SSRF target for ${targetUrl}`, fetchError);
-        res.setHeader("Content-Type", "application/json");
-        if (effectiveOrigin) {
-          res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-        }
-        logger.response(400, Date.now() - startTime);
-        return res.status(400).json({
+        return sendProxyError(400, {
           error: true,
           type: "ssrf_blocked",
           status: 400,
@@ -1668,13 +1464,7 @@ export default apiHandler(
       // Special handling for timeout or network errors
       logger.error(`Proxy fetch error for ${targetUrl}`, fetchError);
 
-      // Return JSON with error information instead of HTML
-      res.setHeader("Content-Type", "application/json");
-      if (effectiveOrigin) {
-        res.setHeader("Access-Control-Allow-Origin", effectiveOrigin);
-      }
-      logger.response(503, Date.now() - startTime);
-      return res.status(503).json({
+      return sendProxyError(503, {
         error: true,
         type: "connection_error",
         status: 503,

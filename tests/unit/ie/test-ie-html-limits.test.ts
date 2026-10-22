@@ -87,11 +87,26 @@ describe("buildLiteHtml", () => {
 });
 
 describe("sanitizeProxiedHtml", () => {
-  test("leaves small pages intact", async () => {
-    const html = "<html><body><script>ok</script>hi</body></html>";
+  test("keeps small pages as full documents but strips active content", async () => {
+    const html = "<html><body><script>ok</script><p>hi</p></body></html>";
+    const result = await sanitizeProxiedHtml(html);
+    expect(result.strippedScripts).toBe(true);
+    expect(result.liteMode).toBe(false);
+    expect(result.html).not.toContain("<script");
+    expect(result.html).toContain("<p>hi</p>");
+  });
+
+  test("reports nothing stripped for script-free pages", async () => {
+    const html = "<html><body><p>hi</p></body></html>";
     const result = await sanitizeProxiedHtml(html);
     expect(result.strippedScripts).toBe(false);
-    expect(result.liteMode).toBe(false);
+    expect(result.html).toContain("<p>hi</p>");
+  });
+
+  test("keeps scripts only when explicitly allowed (isolated proxy origin)", async () => {
+    const html = "<html><body><script>ok</script>hi</body></html>";
+    const result = await sanitizeProxiedHtml(html, { keepScripts: true });
+    expect(result.strippedScripts).toBe(false);
     expect(result.html).toContain("<script>ok</script>");
   });
 

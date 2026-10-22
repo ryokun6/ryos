@@ -2014,6 +2014,8 @@
         "genericError": "問題が発生しました。もう一度お試しください。",
         "invalidEmail": "有効なメールアドレスを入力してください",
         "notConfigured": "このサーバーではメールによる復旧は利用できません。連携済みのTelegramアカウントから復旧できます。",
+        "passwordLabel": "現在のパスワード",
+        "passwordRequired": "現在のパスワードを入力してください",
         "remove": "削除",
         "removedToast": "復旧用メールアドレスを削除しました",
         "removing": "削除中…",
@@ -2438,6 +2440,10 @@
         "rateLimited": "AIの制限に達しました。サインインするか、後でもう一度お試しください。",
         "thinking": "考え中…"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "{{character}}を調べる",
+        "replayStrokes": "{{character}}の筆順を再生"
+      },
       "description": "英語、中国語、日本語、韓国語の単語を調べます",
       "empty": {
         "noFavorites": "お気に入りはまだありません",
@@ -2504,22 +2510,18 @@
       },
       "labels": {
         "antonymsShort": "対",
+        "characters": "漢字",
         "kanji": "漢字",
         "kunyomi": "訓",
         "onyomi": "音",
         "phrases": "語句",
-        "characters": "漢字",
-        "simplifiedShort": "簡",
-        "traditionalShort": "繁",
         "similar": "類語",
+        "simplifiedShort": "簡",
         "strokes_one": "{{count}} 画",
         "strokes_other": "{{count}} 画",
         "synonyms": "同義語",
-        "synonymsShort": "同義語"
-      },
-      "ariaLabels": {
-        "replayStrokes": "{{character}}の筆順を再生",
-        "lookUpCharacter": "{{character}}を調べる"
+        "synonymsShort": "同義語",
+        "traditionalShort": "繁"
       },
       "language": "言語",
       "languages": {
@@ -3029,16 +3031,17 @@
       },
       "schedule": {
         "addToDay": "ワークアウトに追加",
-        "removeFromDay": "ワークアウトから削除",
         "applyTemplate": "テンプレートを適用",
         "cardioHint": "20〜40分の一定ペースの有酸素運動またはインターバルトレーニングを目指しましょう。",
         "dayFocus": "{{day}}のフォーカス",
         "done": "完了",
         "missed": "未達成",
+        "moreMonths": "さらに先の月",
         "noStreak": "継続記録なし",
         "plannedDays_one": "{{count}}日のトレーニングを計画済み",
         "plannedDays_other": "{{count}}日のトレーニングを計画済み",
         "recommendedFor": "{{focus}}におすすめ",
+        "removeFromDay": "ワークアウトから削除",
         "restDay": "休養日。リカバリー、ストレッチ、または散歩をしましょう。",
         "startWorkout": "ワークアウトを開始",
         "streak_one": "{{count}}週間連続",
@@ -3047,7 +3050,6 @@
         "template": "テンプレート",
         "thisWeek": "今週",
         "upcomingWeeks": "今後の週",
-        "moreMonths": "さらに先の月",
         "viewExercise": "エクササイズを表示",
         "weeklyGoal": "週間の目標",
         "workoutsThisWeek": "今週のワークアウト: {{target}}回中{{current}}回"
@@ -5687,7 +5689,9 @@
     "errors": {
       "failedToAccessCamera": "カメラにアクセスできませんでした",
       "failedToFetchFurigana": "フリガナの取得に失敗しました",
-      "failedToFetchSoramimi": "ソラミミの取得に失敗しました"
+      "failedToFetchSoramimi": "ソラミミの取得に失敗しました",
+      "lyricsGenerationRateLimited": "歌詞の翻訳と読み方の生成が1日の制限に達しました。明日もう一度お試しください。",
+      "lyricsGenerationSignInRequired": "歌詞の翻訳と読み方を生成するにはサインインしてください。"
     },
     "expose": {
       "noWindows": "開いているウインドウはありません"

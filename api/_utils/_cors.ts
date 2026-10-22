@@ -6,7 +6,7 @@ import { getHeader } from "./request-helpers.js";
 type RuntimeEnv = "production" | "development";
 
 const PROD_ALLOWED_ORIGIN = "https://os.ryo.lu";
-const TAILSCALE_ALLOWED_SUFFIX = ".tailb4fa61.ts.net";
+const DEFAULT_TAILNET_ORIGIN_SUFFIX = ".tailb4fa61.ts.net";
 const LOCALHOST_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1"]);
 const LOCALHOST_PORTS = new Set(["80", "443", "3000", "3001", "5173"]);
 
@@ -54,10 +54,38 @@ function isLocalhostOrigin(origin: string): boolean {
   return LOCALHOST_PORTS.has(port);
 }
 
-function isTailscaleOrigin(origin: string): boolean {
+/**
+ * Tailnet origins (local-network access to a dev box) are allowed by default
+ * in development only. Production needs `API_TAILNET_ORIGIN_SUFFIX` (e.g.
+ * `.tailxxxx.ts.net`) so the public deploy never trusts a private tailnet.
+ */
+function getTailnetOriginSuffix(env: RuntimeEnv): string | null {
+  const raw = process.env.API_TAILNET_ORIGIN_SUFFIX?.trim().toLowerCase();
+  if (raw === "0" || raw === "false" || raw === "off") return null;
+  if (raw) {
+    const suffix = raw.startsWith(".") ? raw : `.${raw}`;
+    return suffix.endsWith(".ts.net") ? suffix : null;
+  }
+  return env === "development" ? DEFAULT_TAILNET_ORIGIN_SUFFIX : null;
+}
+
+function isTailscaleOrigin(origin: string, env: RuntimeEnv): boolean {
+  const suffix = getTailnetOriginSuffix(env);
+  if (!suffix) return false;
   const parsed = parseOrigin(origin);
   if (!parsed) return false;
-  return parsed.hostname.endsWith(TAILSCALE_ALLOWED_SUFFIX);
+  return parsed.hostname.toLowerCase().endsWith(suffix);
+}
+
+/**
+ * The isolated Internet Explorer proxy origin runs arbitrary upstream
+ * scripts. It is same-site with the app, so the auth cookie would ride along
+ * on credentialed requests; it must never pass CORS, even via a wildcard.
+ */
+function isIeProxyOrigin(normalizedOrigin: string): boolean {
+  const raw = process.env.IE_PROXY_ORIGIN?.trim();
+  if (!raw) return false;
+  return normalizeOrigin(raw) === normalizedOrigin;
 }
 
 function normalizeOrigin(origin: string): string | null {
@@ -83,7 +111,9 @@ function getConfiguredAllowedOrigins(): ConfiguredAllowedOrigins {
     .map((token) => token.trim())
     .filter(Boolean);
 
-  if (tokens.includes("*")) {
+  // `*` with credentialed CORS would let any site act as the signed-in
+  // user, so it is honored only in development.
+  if (tokens.includes("*") && getRuntimeEnv() === "development") {
     return { allowAll: true, origins: new Set(), subdomainSuffixes: [] };
   }
 
@@ -91,6 +121,7 @@ function getConfiguredAllowedOrigins(): ConfiguredAllowedOrigins {
   const subdomainSuffixes: string[] = [];
 
   for (const token of tokens) {
+    if (token === "*") continue;
     const wildcard = token.match(/^\*\.(.+)$/);
     if (wildcard) {
       subdomainSuffixes.push(`.${wildcard[1].toLowerCase()}`);
@@ -119,14 +150,14 @@ export function getEffectiveOrigin(req: ApiRequest): string | null {
 
 export function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
-  
-  // Always allow tailscale origins (for local network access)
-  if (isTailscaleOrigin(origin)) return true;
-  
+
   const normalizedOrigin = normalizeOrigin(origin);
   if (!normalizedOrigin) return false;
+  if (isIeProxyOrigin(normalizedOrigin)) return false;
 
   const env = getRuntimeEnv();
+  if (isTailscaleOrigin(normalizedOrigin, env)) return true;
+
   const configuredOrigins = getConfiguredAllowedOrigins();
 
   if (configuredOrigins.allowAll) {
@@ -143,7 +174,8 @@ export function isAllowedOrigin(origin: string | null): boolean {
 
     if (configuredOrigins.subdomainSuffixes.length > 0) {
       const parsed = parseOrigin(normalizedOrigin);
-      if (parsed) {
+      // Wildcard entries only cover https origins outside development.
+      if (parsed && (parsed.protocol === "https:" || env === "development")) {
         const hostname = parsed.hostname.toLowerCase();
         if (
           configuredOrigins.subdomainSuffixes.some((suffix) =>

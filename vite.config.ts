@@ -302,6 +302,41 @@ export default defineConfig({
           },
         ]
       : []),
+    // Mirror the standalone server's baseline security headers in dev
+    // (proxied /api responses keep whatever the API server sends).
+    {
+      name: 'ryos-security-headers',
+      configureServer(server) {
+        const headersPromise = import('./api/_utils/_security-headers.ts').then(
+          (mod) => ({
+            frameAncestors: mod.buildFrameAncestorsDirective([
+              ...mod.getDocumentFrameAncestors(),
+              'http://localhost:*',
+              'http://127.0.0.1:*',
+            ]),
+            referrerPolicy: mod.REFERRER_POLICY_VALUE,
+          })
+        );
+        server.middlewares.use((req, res, next) => {
+          // The standalone API sets its own headers, including the IE proxy's
+          // sandbox CSP, which this blanket CSP would otherwise replace.
+          const pathPart = (req.url || '').split('?')[0];
+          if (pathPart === '/api' || pathPart.startsWith('/api/') || pathPart.startsWith('/ws')) {
+            next();
+            return;
+          }
+          void headersPromise.then(
+            ({ frameAncestors, referrerPolicy }) => {
+              res.setHeader('X-Content-Type-Options', 'nosniff');
+              res.setHeader('Referrer-Policy', referrerPolicy);
+              res.setHeader('Content-Security-Policy', frameAncestors);
+              next();
+            },
+            (error: unknown) => next(error)
+          );
+        });
+      },
+    },
     // Serve static docs HTML files (before SPA fallback kicks in)
     {
       name: 'block-removed-legacy-routes',

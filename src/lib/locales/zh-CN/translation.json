@@ -2014,6 +2014,8 @@
         "genericError": "发生错误。请再试一次。",
         "invalidEmail": "请输入有效的电子邮件地址",
         "notConfigured": "此服务器不支持电子邮件恢复。您仍可通过关联的 Telegram 账户恢复。",
+        "passwordLabel": "当前密码",
+        "passwordRequired": "输入您当前的密码",
         "remove": "移除",
         "removedToast": "已移除恢复邮箱",
         "removing": "正在移除…",
@@ -2438,6 +2440,10 @@
         "rateLimited": "已达到 AI 限制。登录或稍后再试。",
         "thinking": "正在思考…"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "查询{{character}}",
+        "replayStrokes": "重播{{character}}的笔顺"
+      },
       "description": "查询英语、中文、日语和韩语单词",
       "empty": {
         "noFavorites": "尚无个人收藏",
@@ -2504,22 +2510,18 @@
       },
       "labels": {
         "antonymsShort": "反义词",
+        "characters": "汉字",
         "kanji": "日文汉字",
         "kunyomi": "训",
         "onyomi": "音",
         "phrases": "词组与短语",
-        "characters": "汉字",
-        "simplifiedShort": "简",
-        "traditionalShort": "繁",
         "similar": "近似词",
+        "simplifiedShort": "简",
         "strokes_one": "{{count}} 画",
         "strokes_other": "{{count}} 画",
         "synonyms": "同义词",
-        "synonymsShort": "同义词"
-      },
-      "ariaLabels": {
-        "replayStrokes": "重播{{character}}的笔顺",
-        "lookUpCharacter": "查询{{character}}"
+        "synonymsShort": "同义词",
+        "traditionalShort": "繁"
       },
       "language": "语言",
       "languages": {
@@ -3029,16 +3031,17 @@
       },
       "schedule": {
         "addToDay": "添加到体能训练",
-        "removeFromDay": "从体能训练移除",
         "applyTemplate": "应用模板",
         "cardioHint": "目标为 20–40 分钟的稳态有氧运动或间歇训练。",
         "dayFocus": "{{day}}重点",
         "done": "完成",
         "missed": "已错过",
+        "moreMonths": "更多月份",
         "noStreak": "尚无连续记录",
         "plannedDays_one": "已计划 {{count}} 天训练",
         "plannedDays_other": "已计划 {{count}} 天训练",
         "recommendedFor": "推荐用于{{focus}}",
+        "removeFromDay": "从体能训练移除",
         "restDay": "休息日。恢复、拉伸或散散步。",
         "startWorkout": "开始体能训练",
         "streak_one": "连续 {{count}} 周",
@@ -3047,7 +3050,6 @@
         "template": "模板",
         "thisWeek": "本周",
         "upcomingWeeks": "接下来的周",
-        "moreMonths": "更多月份",
         "viewExercise": "查看练习",
         "weeklyGoal": "每周目标",
         "workoutsThisWeek": "本周已完成 {{current}}/{{target}} 次体能训练"
@@ -5687,7 +5689,9 @@
     "errors": {
       "failedToAccessCamera": "无法访问相机",
       "failedToFetchFurigana": "无法获取假名",
-      "failedToFetchSoramimi": "无法获取空耳"
+      "failedToFetchSoramimi": "无法获取空耳",
+      "lyricsGenerationRateLimited": "生成歌词翻译和读音已达到每日上限。请明天再试。",
+      "lyricsGenerationSignInRequired": "登录以生成歌词翻译和读音"
     },
     "expose": {
       "noWindows": "没有打开的窗口"

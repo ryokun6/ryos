@@ -323,10 +323,7 @@ describe("notifications", () => {
     const route = readFileSync(join(ROOT, "api/push/register.ts"), "utf8");
     expect(route).toContain('auth: "required"');
     expect(relaySwift).toContain('appending(path: "api/push/register")');
-    const primary = relaySwift.slice(
-      relaySwift.indexOf("private func postPrimary"),
-      relaySwift.indexOf("private func postFallback")
-    );
+    const primary = swiftFunctionBody(relaySwift, "private func postPrimary");
     // Body keys the route reads — no credentials in the body.
     const bodyKeys = [...primary.matchAll(/^\s*"(\w+)": /gm)].map((match) => match[1]);
     expect(bodyKeys.sort()).toEqual(["appVersion", "deviceToken", "rooms"]);
@@ -336,6 +333,24 @@ describe("notifications", () => {
     expect(primary).toContain('forHTTPHeaderField: "Cookie"');
     expect(relaySwift).toContain('$0.name == "ryos_auth"');
     expect(relaySwift).toContain("private static let maxRooms = 200");
+    // The session cookie only ever goes to the app origin.
+    expect(relaySwift).not.toMatch(/https?:\/\/(?!os\.ryo\.lu)[a-z0-9.-]+\//i);
+    expect(relaySwift).not.toContain("X-Ryos-Auth");
+    expect(relaySwift).not.toContain("authCookie");
+  });
+
+  test("the native bridge only accepts the shell's own top-level page", () => {
+    const handler = swiftFunctionBody(
+      shellWebViewSwift,
+      "func userContentController("
+    );
+    expect(handler).toContain("message.frameInfo.isMainFrame");
+    expect(handler).toContain("Self.isShellOrigin(message.frameInfo.securityOrigin)");
+    const guardIndex = handler.indexOf("message.frameInfo.isMainFrame");
+    expect(guardIndex).toBeLessThan(handler.indexOf("switch kind"));
+    const originCheck = swiftFunctionBody(shellWebViewSwift, "static func isShellOrigin(");
+    expect(originCheck).toContain("ShellViewModel.origin");
+    expect(originCheck).toContain("origin.protocol == expected.scheme");
     expect(
       readFileSync(join(ROOT, "api/_utils/push-relay.ts"), "utf8")
     ).toContain("export const MAX_ROOMS_PER_DEVICE = 200;");

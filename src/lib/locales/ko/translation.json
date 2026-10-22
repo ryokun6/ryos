@@ -2014,6 +2014,8 @@
         "genericError": "문제가 발생했습니다. 다시 시도해 주세요.",
         "invalidEmail": "유효한 이메일 주소를 입력하세요",
         "notConfigured": "이 서버에서는 이메일 복구를 사용할 수 없습니다. 연결된 Telegram 계정을 통해 복구할 수 있습니다.",
+        "passwordLabel": "현재 암호",
+        "passwordRequired": "현재 암호를 입력하세요",
         "remove": "제거",
         "removedToast": "복구 이메일 제거됨",
         "removing": "제거 중…",
@@ -2438,6 +2440,10 @@
         "rateLimited": "AI 제한에 도달했습니다. 로그인하거나 나중에 다시 시도하십시오.",
         "thinking": "생각 중..."
       },
+      "ariaLabels": {
+        "lookUpCharacter": "{{character}} 찾아보기",
+        "replayStrokes": "{{character}} 필순 다시 보기"
+      },
       "description": "영어, 중국어, 일본어 및 한국어 단어 찾아보기",
       "empty": {
         "noFavorites": "즐겨찾기 없음",
@@ -2504,22 +2510,18 @@
       },
       "labels": {
         "antonymsShort": "반의어",
+        "characters": "한자",
         "kanji": "칸지",
         "kunyomi": "훈독",
         "onyomi": "음독",
         "phrases": "단어 및 구문",
-        "characters": "한자",
-        "simplifiedShort": "간체",
-        "traditionalShort": "번체",
         "similar": "유사어",
+        "simplifiedShort": "간체",
         "strokes_one": "{{count}}획",
         "strokes_other": "{{count}}획",
         "synonyms": "유의어",
-        "synonymsShort": "유의어"
-      },
-      "ariaLabels": {
-        "replayStrokes": "{{character}} 필순 다시 보기",
-        "lookUpCharacter": "{{character}} 찾아보기"
+        "synonymsShort": "유의어",
+        "traditionalShort": "번체"
       },
       "language": "언어",
       "languages": {
@@ -3029,16 +3031,17 @@
       },
       "schedule": {
         "addToDay": "운동에 추가",
-        "removeFromDay": "운동에서 제거",
         "applyTemplate": "템플릿 적용",
         "cardioHint": "20~40분 동안 꾸준한 유산소 운동 또는 인터벌 운동을 목표로 하십시오.",
         "dayFocus": "{{day}} 집중",
         "done": "완료",
         "missed": "미완료",
+        "moreMonths": "이후 달",
         "noStreak": "아직 연속 기록 없음",
         "plannedDays_one": "{{count}}일의 훈련 계획됨",
         "plannedDays_other": "{{count}}일의 훈련 계획됨",
         "recommendedFor": "{{focus}}에 권장됨",
+        "removeFromDay": "운동에서 제거",
         "restDay": "휴식일입니다. 회복하거나 스트레칭을 하거나 산책을 하십시오.",
         "startWorkout": "운동 시작",
         "streak_one": "{{count}}주 연속",
@@ -3047,7 +3050,6 @@
         "template": "템플릿",
         "thisWeek": "이번 주",
         "upcomingWeeks": "다가오는 주",
-        "moreMonths": "이후 달",
         "viewExercise": "운동 보기",
         "weeklyGoal": "주간 목표",
         "workoutsThisWeek": "이번 주 운동 {{target}}회 중 {{current}}회"
@@ -5687,7 +5689,9 @@
     "errors": {
       "failedToAccessCamera": "카메라 접근에 실패했습니다",
       "failedToFetchFurigana": "후리가나 가져오기 실패",
-      "failedToFetchSoramimi": "소라미미 가져오기 실패"
+      "failedToFetchSoramimi": "소라미미 가져오기 실패",
+      "lyricsGenerationRateLimited": "가사 번역 및 독음 생성의 일일 한도에 도달했습니다. 내일 다시 시도해 주세요.",
+      "lyricsGenerationSignInRequired": "가사 번역 및 독음을 생성하려면 로그인하십시오."
     },
     "expose": {
       "noWindows": "열려 있는 윈도우 없음"

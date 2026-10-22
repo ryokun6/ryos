@@ -10,6 +10,10 @@ concurrency:
   group: build-electron-${{ github.ref }}
   cancel-in-progress: false
 
+# Build jobs only read the repo; the release job adds contents: write.
+permissions:
+  contents: read
+
 # actions/checkout@v4, cache, setup-node, upload/download-artifact run on Node 24
 # (Node 20 deprecated on GitHub-hosted runners — see GitHub changelog 2025-09-19).
 # setup-node below is pinned to 24.22.1, the October 21, 2026 security

@@ -154,6 +154,7 @@ export async function getEmailStatus(): Promise<EmailStatusResponse> {
 
 export async function setRecoveryEmail(params: {
   email: string;
+  currentPassword: string;
 }): Promise<EmailMutationResponse> {
   return apiRequest<EmailMutationResponse, typeof params>({
     path: "/api/auth/email/set",

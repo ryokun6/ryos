@@ -40,6 +40,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 
 const i18n = i18next.createInstance();
 
+const { MotionGlobalConfig } = await import("motion/react");
+const previousSkipAnimations = MotionGlobalConfig.skipAnimations;
+
 
 const { BooksCustomizePanel } = await import(
   "../../../src/apps/books/components/BooksCustomizePanel"
@@ -56,6 +59,9 @@ let container: HTMLDivElement | null = null;
 let root: Root | null = null;
 
 beforeAll(async () => {
+  // happy-dom rejects a cancelled Web Animation's `finished` promise and
+  // motion leaves it unhandled; under Bun 1.4 that blanks later renders.
+  MotionGlobalConfig.skipAnimations = true;
   await i18n.use(initReactI18next).init({
     lng: "en",
     fallbackLng: "en",
@@ -83,6 +89,7 @@ afterEach(async () => {
 });
 
 afterAll(() => {
+  MotionGlobalConfig.skipAnimations = previousSkipAnimations;
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   // Only tear down the DOM this suite created: unregistering a DOM another
   // suite registered (and still relies on) crashes React work later in the

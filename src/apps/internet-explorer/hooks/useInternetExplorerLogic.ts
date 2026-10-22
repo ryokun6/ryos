@@ -37,11 +37,17 @@ import {
   getLanguageDisplayName,
   getLocationDisplayName,
 } from "../utils/displayNames";
+import { IE_IFRAME_NAVIGATION_TIMEOUT_MS } from "../utils/iframeProxyError";
 import {
-  IE_IFRAME_NAVIGATION_TIMEOUT_MS,
-  isBlankClientSpaDocument,
-  readIframeProxyError,
-} from "../utils/iframeProxyError";
+  buildIeFrameId,
+  createIeFrameInstanceToken,
+  getDefaultIeTrustContext,
+  getIeIframeSandbox,
+  parseIeFrameMessage,
+  withIeFrameId,
+  type IeFrameReport,
+} from "../utils/ieFrameMessaging";
+import { classifyIeTarget, withIeDefaultScheme } from "../utils/ieFirstParty";
 import {
   getHostnameFromUrl,
   formatTitle,
@@ -227,19 +233,17 @@ export function useInternetExplorerLogic({
   const showDebugMenu = debugMode;
 
   // Append the active debug toggles to a proxy (`/api/iframe-check`) URL so the
-  // server opts the request into the gated features. `dbg=1` signals the server
-  // that this is an admin/debug-mode caller permitted to use them.
+  // server opts the request into the gated features. The server only honors
+  // them for the signed-in `ryo` admin.
   const appendIeDebugParams = useCallback(
     (proxyUrl: string): string => {
       if (!proxyUrl.startsWith("/api/iframe-check")) return proxyUrl;
       const extra: string[] = [];
-      if (debugForceHeadless) extra.push("render=headless", "dbg=1");
-      if (debugProxySessions) extra.push("ieSessions=1", "dbg=1");
+      if (debugForceHeadless) extra.push("render=headless");
+      if (debugProxySessions) extra.push("ieSessions=1");
       if (extra.length === 0) return proxyUrl;
-      // De-dupe the dbg flag.
-      const unique = Array.from(new Set(extra));
       const sep = proxyUrl.includes("?") ? "&" : "?";
-      const next = `${proxyUrl}${sep}${unique.join("&")}`;
+      const next = `${proxyUrl}${sep}${extra.join("&")}`;
       if (debugVerboseLogging) {
         log.info("[debug] proxy params", {
           headless: debugForceHeadless,
@@ -570,20 +574,88 @@ export function useInternetExplorerLogic({
   // Ref to keep the most recent navigation token in sync without waiting for a render
   const navTokenRef = useRef<number>(0);
 
+  // Proxied pages run in an opaque origin, so the parent cannot read their
+  // DOM. They report load state / errors over postMessage, tagged with this
+  // window's token plus the navigation token.
+  const frameInstanceTokenRef = useRef<string | null>(null);
+  if (frameInstanceTokenRef.current === null) {
+    frameInstanceTokenRef.current = createIeFrameInstanceToken();
+  }
+  const frameReportRef = useRef<{ navToken: number; report: IeFrameReport } | null>(
+    null
+  );
+  const frameReportWaiterRef = useRef<{
+    navToken: number;
+    resolve: (report: IeFrameReport | null) => void;
+  } | null>(null);
+
+  const waitForFrameReport = useCallback(
+    (navToken: number, timeoutMs: number): Promise<IeFrameReport | null> => {
+      const existing = frameReportRef.current;
+      if (existing && existing.navToken === navToken) {
+        frameReportRef.current = null;
+        return Promise.resolve(existing.report);
+      }
+      return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          if (frameReportWaiterRef.current?.resolve === finish) {
+            frameReportWaiterRef.current = null;
+          }
+          resolve(null);
+        }, timeoutMs);
+        const finish = (report: IeFrameReport | null) => {
+          clearTimeout(timer);
+          resolve(report);
+        };
+        frameReportWaiterRef.current?.resolve(null);
+        frameReportWaiterRef.current = { navToken, resolve: finish };
+      });
+    },
+    []
+  );
+
+  const deliverFrameReport = useCallback(
+    (navToken: number, report: IeFrameReport) => {
+      const waiter = frameReportWaiterRef.current;
+      if (waiter && waiter.navToken === navToken) {
+        frameReportWaiterRef.current = null;
+        waiter.resolve(report);
+        return;
+      }
+      frameReportRef.current = { navToken, report };
+    },
+    []
+  );
+
+  const setIframeSource = useCallback((src: string) => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    // Sandbox flags are captured when a navigation starts, so they must be
+    // updated before `src`.
+    iframe.setAttribute("sandbox", getIeIframeSandbox(src));
+    iframe.src = src;
+  }, []);
+
   const handleIframeLoad = async () => {
     if (
       iframeRef.current &&
       iframeRef.current.dataset.navToken === navTokenRef.current.toString()
     ) {
+      const loadNavToken = navTokenRef.current;
       const iframeSrc = iframeRef.current.src;
-      if (
-        iframeSrc.includes("/api/iframe-check") &&
-        iframeRef.current.contentDocument
-      ) {
+      let frameReport: IeFrameReport | null = null;
+      if (iframeSrc.includes("/api/iframe-check")) {
+        frameReport = await waitForFrameReport(loadNavToken, 1000);
+        if (
+          navTokenRef.current !== loadNavToken ||
+          !iframeRef.current ||
+          iframeRef.current.dataset.navToken !== loadNavToken.toString()
+        ) {
+          return;
+        }
         try {
-          const potentialErrorData = readIframeProxyError(
-            iframeRef.current.contentDocument
-          );
+          const potentialErrorData =
+            frameReport?.kind === "error" ? frameReport.error : null;
           if (potentialErrorData) {
             log.debug("Detected JSON error response in iframe", {
               type: potentialErrorData.type,
@@ -599,14 +671,11 @@ export function useInternetExplorerLogic({
             return;
           }
 
-          // BrowserRouter SPAs proxied through /api/iframe-check hydrate
-          // against pathname `/api/iframe-check` and render an empty root
-          // (ryo.lu: PeekUnder chrome, no Home). If the site allows
-          // framing, retry on the real origin; otherwise show an error
-          // instead of a silent blank.
-          if (
-            isBlankClientSpaDocument(iframeRef.current.contentDocument)
-          ) {
+          // Client-rendered SPAs show an empty root under the proxy (scripts
+          // are stripped, or a BrowserRouter hydrates against
+          // `/api/iframe-check`). If the site allows framing, retry on the
+          // real origin; otherwise show an error instead of a silent blank.
+          if (frameReport?.kind === "loaded" && frameReport.blankSpa) {
             const alreadyRetried =
               blankSpaFallbackTokenRef.current === navTokenRef.current;
             const directUrl = url.startsWith("http")
@@ -618,7 +687,7 @@ export function useInternetExplorerLogic({
               });
               blankSpaFallbackTokenRef.current = navTokenRef.current;
               setFinalUrl(directUrl);
-              iframeRef.current.src = directUrl;
+              setIframeSource(directUrl);
               return;
             }
             clearIframeLoadTimeout();
@@ -666,28 +735,19 @@ export function useInternetExplorerLogic({
               ).hostname
             : "Internet Explorer";
 
-          try {
-            loadedTitle = iframeRef.current?.contentDocument?.title || null;
-            if (loadedTitle) {
-              loadedTitle = decodeHtmlEntities(loadedTitle).trim();
-            }
-          } catch (error) {
-            console.warn(
-              "[IE] Failed to read iframe document title directly:",
-              error
-            );
+          if (frameReport?.kind === "loaded" && frameReport.title) {
+            loadedTitle = decodeHtmlEntities(frameReport.title).trim() || null;
           }
 
-          if (!loadedTitle && finalUrl?.startsWith("/api/iframe-check")) {
+          if (!loadedTitle) {
+            // Only same-origin direct embeds expose their document.
             try {
-              const metaTitle = iframeRef.current?.contentDocument
-                ?.querySelector('meta[name="page-title"]')
-                ?.getAttribute("content");
-              if (metaTitle) {
-                loadedTitle = decodeURIComponent(metaTitle);
+              loadedTitle = iframeRef.current?.contentDocument?.title || null;
+              if (loadedTitle) {
+                loadedTitle = decodeHtmlEntities(loadedTitle).trim();
               }
-            } catch (error) {
-              console.warn("[IE] Failed to read page-title meta tag:", error);
+            } catch {
+              loadedTitle = null;
             }
           }
 
@@ -843,7 +903,7 @@ export function useInternetExplorerLogic({
 
       const normalizedTargetUrl = urlToNavigate.startsWith("http")
         ? urlToNavigate
-        : `https://${urlToNavigate}`;
+        : withIeDefaultScheme(urlToNavigate, window.location.origin);
 
       try {
         if (
@@ -997,8 +1057,14 @@ export function useInternetExplorerLogic({
               return;
             }
           } else if (newMode === "now") {
-            // Check if domain should bypass proxy
-            const isDirectBypass = isDirectPassthrough(normalizedTargetUrl);
+            // ryOS's own sites load directly with scripts; a few allowlisted
+            // third-party hosts also skip the proxy.
+            const trust = classifyIeTarget(
+              normalizedTargetUrl,
+              getDefaultIeTrustContext()
+            );
+            const isDirectBypass =
+              trust !== "external" || isDirectPassthrough(normalizedTargetUrl);
 
             if (isDirectBypass) {
               logDirectPassthrough(normalizedTargetUrl);
@@ -1014,31 +1080,41 @@ export function useInternetExplorerLogic({
               lastEmbedAllowedRef.current = null;
             }
 
-            try {
-              const checkRes = await abortableFetch(
-                `/api/iframe-check?mode=check&url=${encodeURIComponent(
-                  normalizedTargetUrl
-                )}&theme=${encodeURIComponent(currentTheme)}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
-              );
-              if (abortController.signal.aborted) return;
+            // The app's own origin is read same-origin after load (and may be
+            // a local address the server-side check refuses to fetch).
+            if (trust !== "app") {
+              try {
+                const checkRes = await abortableFetch(
+                  `/api/iframe-check?mode=check&url=${encodeURIComponent(
+                    normalizedTargetUrl
+                  )}&theme=${encodeURIComponent(currentTheme)}`,
+                  {
+                    signal: abortController.signal,
+                    timeout: 15000,
+                    retry: { maxAttempts: 1, initialDelayMs: 250 },
+                  }
+                );
+                if (abortController.signal.aborted) return;
 
-              const checkData = await checkRes.json();
-              if (typeof checkData.allowed === "boolean") {
-                lastEmbedAllowedRef.current = checkData.allowed;
+                const checkData = await checkRes.json();
+                if (typeof checkData.allowed === "boolean") {
+                  lastEmbedAllowedRef.current = checkData.allowed;
+                }
+                if (checkData.title) {
+                  setPrefetchedTitle(checkData.title);
+                }
+              } catch (error) {
+                if (error instanceof Error && error.name === "AbortError") return;
+                console.warn(`[IE] iframe-check fetch failed:`, error);
               }
-              if (checkData.title) {
-                setPrefetchedTitle(checkData.title);
-              }
-            } catch (error) {
-              if (error instanceof Error && error.name === "AbortError") return;
-              console.warn(`[IE] iframe-check fetch failed:`, error);
             }
           }
+
+          urlToLoad = withIeFrameId(
+            urlToLoad,
+            frameInstanceTokenRef.current ?? "",
+            newToken
+          );
 
           if (urlToLoad === finalUrl) {
             urlToLoad = `${urlToLoad}${
@@ -1046,11 +1122,12 @@ export function useInternetExplorerLogic({
             }_t=${Date.now()}`;
           }
 
+          frameReportRef.current = null;
           setFinalUrl(urlToLoad);
 
           if (iframeRef.current) {
             iframeRef.current.dataset.navToken = newToken.toString();
-            iframeRef.current.src = urlToLoad;
+            setIframeSource(urlToLoad);
             // Arm a navigation timeout so a hung proxy/page cannot leave the
             // desktop stuck in "loading" (or freeze the tab forever).
             clearIframeLoadTimeout();
@@ -1123,6 +1200,7 @@ export function useInternetExplorerLogic({
       playElevatorMusic,
       terminalSoundsEnabled,
       appendIeDebugParams,
+      setIframeSource,
       debugVerboseLogging,
       debugForceHeadless,
       debugProxySessions,
@@ -1769,59 +1847,65 @@ export function useInternetExplorerLogic({
         return;
       }
 
-      // Only accept messages from the current window origin.
-      // This blocks untrusted cross-origin frames from driving navigation.
-      if (event.origin !== window.location.origin) {
-        return;
-      }
+      if (messageData.type !== "aiHtmlNavigation") {
+        // Proxied pages have an opaque (or isolated-proxy) origin, so the
+        // sender is identified by window identity plus the frame id we put
+        // in its URL for the current navigation.
+        const navToken = navTokenRef.current;
+        const frameMessage = parseIeFrameMessage(
+          event,
+          iframeRef.current?.contentWindow,
+          buildIeFrameId(frameInstanceTokenRef.current ?? "", navToken)
+        );
+        if (!frameMessage) return;
 
-      // For iframe-driven controls, ensure the sender is our active iframe.
-      // aiHtmlNavigation is emitted by HtmlPreview's internal iframe(s), so it
-      // is validated by same-origin only.
-      const sourceWindow = event.source as Window | null;
-      const currentIframeWindow = iframeRef.current?.contentWindow ?? null;
-      const isFromActiveIframe =
-        !!sourceWindow &&
-        !!currentIframeWindow &&
-        sourceWindow === currentIframeWindow;
-
-      if (
-        messageData.type !== "aiHtmlNavigation" &&
-        !isFromActiveIframe
-      ) {
-        return;
-      }
-
-      if (
-        messageData.type === "iframeNavigation" &&
-        typeof messageData.url === "string"
-      ) {
+        if (frameMessage.type === "iframeLoaded") {
+          deliverFrameReport(navToken, {
+            kind: "loaded",
+            title: frameMessage.title,
+            blankSpa: frameMessage.blankSpa,
+          });
+          return;
+        }
+        if (frameMessage.type === "iframeProxyError") {
+          deliverFrameReport(navToken, {
+            kind: "error",
+            error: frameMessage.error,
+          });
+          return;
+        }
+        if (frameMessage.type === "goBack") {
+          log.debug("Received back button request from iframe");
+          latestGoBackRef.current();
+          return;
+        }
+        if (frameMessage.type === "iframeOpenWindow") {
+          // target=_blank / window.open from the proxied iframe — open outside
+          // IE (e.g. Reader Mode "Open original") instead of navigating in-place.
+          log.debug("Received open-window request from iframe", {
+            url: frameMessage.url,
+          });
+          window.open(frameMessage.url, "_blank", "noopener,noreferrer");
+          return;
+        }
         log.debug("Received navigation request from iframe", {
-          url: messageData.url,
+          url: frameMessage.url,
         });
         // A link click inside the page is a brand-new navigation, not a
         // back/forward traversal. Clear the history-navigation flag so the
         // destination is recorded in history (and any forward stack is
         // truncated) by loadSuccess.
         useInternetExplorerStore.getState().setNavigatingHistory(false);
-        latestNavigateRef.current(messageData.url, latestYearRef.current);
-      } else if (
-        messageData.type === "iframeOpenWindow" &&
-        typeof messageData.url === "string"
-      ) {
-        // target=_blank / window.open from the proxied iframe — open outside
-        // IE (e.g. Reader Mode "Open original") instead of navigating in-place.
-        log.debug("Received open-window request from iframe", {
-          url: messageData.url,
-        });
-        window.open(messageData.url, "_blank", "noopener,noreferrer");
-      } else if (messageData.type === "goBack") {
-        log.debug("Received back button request from iframe");
-        latestGoBackRef.current();
-      } else if (
-        messageData.type === "aiHtmlNavigation" &&
-        typeof messageData.url === "string"
-      ) {
+        latestNavigateRef.current(frameMessage.url, latestYearRef.current);
+        return;
+      }
+
+      // aiHtmlNavigation is emitted by HtmlPreview's same-origin iframe(s).
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (typeof messageData.url === "string") {
         log.debug("Received navigation request from AI HTML preview", {
           url: messageData.url,
         });
@@ -1844,7 +1928,7 @@ export function useInternetExplorerLogic({
     return () => {
       window.removeEventListener("message", handleMessage);
     };
-  }, []);
+  }, [deliverFrameReport]);
 
   useEffect(() => {
     if (!isWindowOpen) {

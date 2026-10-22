@@ -77,32 +77,44 @@ export default apiHandler(
         return;
       }
 
+      let hostname: string | null = null;
       if (url) {
         try {
-          const hostname = new URL(url).hostname.toLowerCase();
-          const hostKey = RateLimit.makeKey(["rl", "preview", "ip", ip, "host", hostname]);
-          const host = await RateLimit.checkCounterLimit({
-            key: hostKey,
-            windowSeconds: BURST_WINDOW,
-            limit: 5,
-          });
-          if (!host.allowed) {
-            logger.warn("Rate limit exceeded (host)", { ip, hostname });
-            logger.response(429, Date.now() - startTime);
-            res.status(429).json({
-              error: "rate_limit_exceeded",
-              scope: "host",
-              limit: 5,
-              retryAfter: host.resetSeconds ?? BURST_WINDOW,
-            });
-            return;
-          }
-        } catch (e) {
-          void e;
+          hostname = new URL(url).hostname.toLowerCase();
+        } catch {
+          hostname = null;
         }
       }
-    } catch (e) {
-      logger.error("Rate limit check failed", e);
+
+      if (hostname) {
+        const hostKey = RateLimit.makeKey(["rl", "preview", "ip", ip, "host", hostname]);
+        const host = await RateLimit.checkCounterLimit({
+          key: hostKey,
+          windowSeconds: BURST_WINDOW,
+          limit: 5,
+        });
+        if (!host.allowed) {
+          logger.warn("Rate limit exceeded (host)", { ip, hostname });
+          logger.response(429, Date.now() - startTime);
+          res.status(429).json({
+            error: "rate_limit_exceeded",
+            scope: "host",
+            limit: 5,
+            retryAfter: host.resetSeconds ?? BURST_WINDOW,
+          });
+          return;
+        }
+      }
+    } catch (rlErr) {
+      // Fail closed: a Redis/limiter outage must not turn the preview fetcher
+      // into an unlimited outbound proxy.
+      logger.error("Rate limit check failed", rlErr);
+      logger.response(503, Date.now() - startTime);
+      res.status(503).json({
+        error: "rate_limit_unavailable",
+        message: "Rate limiting is temporarily unavailable. Please try again shortly.",
+      });
+      return;
     }
 
     const url = req.query.url as string | undefined;
