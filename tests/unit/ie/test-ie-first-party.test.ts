@@ -9,6 +9,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildIeTrustContext,
   classifyIeTarget,
+  withIeDefaultScheme,
 } from "../../../src/apps/internet-explorer/utils/ieFirstParty.ts";
 import {
   IE_PROXY_IFRAME_SANDBOX,
@@ -141,5 +142,25 @@ describe("passthrough list no longer covers ryo.lu hosts", () => {
     expect(isDirectPassthrough("https://coolify.ryo.lu")).toBe(false);
     expect(isDirectPassthrough("https://os.ryo.lu")).toBe(false);
     expect(isDirectPassthrough("https://hcsimulator.com")).toBe(true);
+  });
+});
+
+describe("typed addresses without a scheme", () => {
+  const local = buildIeTrustContext({ windowOrigin: "http://localhost:3001" });
+
+  test("the exact http window host keeps http and counts as the app", () => {
+    expect(withIeDefaultScheme("localhost:3001", "http://localhost:3001")).toBe("http://localhost:3001");
+    expect(withIeDefaultScheme("localhost:3001/?a=1", "http://localhost:3001")).toBe("http://localhost:3001/?a=1");
+    expect(classifyIeTarget("localhost:3001", local)).toBe("app");
+  });
+
+  test("everything else defaults to https", () => {
+    expect(withIeDefaultScheme("localhost:3000", "http://localhost:3001")).toBe("https://localhost:3000");
+    expect(withIeDefaultScheme("localhost", "http://localhost:3001")).toBe("https://localhost");
+    expect(withIeDefaultScheme("os.ryo.lu", "https://os.ryo.lu")).toBe("https://os.ryo.lu");
+    expect(withIeDefaultScheme("evil@localhost:3001", "http://localhost:3001")).toBe("https://evil@localhost:3001");
+    expect(withIeDefaultScheme("http://example.com", "http://localhost:3001")).toBe("http://example.com");
+    expect(classifyIeTarget("localhost:3000", local)).toBe("external");
+    expect(classifyIeTarget("localhost:3001/api/iframe-check?url=x", local)).toBe("external");
   });
 });

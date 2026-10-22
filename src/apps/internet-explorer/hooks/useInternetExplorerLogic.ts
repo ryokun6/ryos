@@ -47,7 +47,7 @@ import {
   withIeFrameId,
   type IeFrameReport,
 } from "../utils/ieFrameMessaging";
-import { classifyIeTarget } from "../utils/ieFirstParty";
+import { classifyIeTarget, withIeDefaultScheme } from "../utils/ieFirstParty";
 import {
   getHostnameFromUrl,
   formatTitle,
@@ -903,7 +903,7 @@ export function useInternetExplorerLogic({
 
       const normalizedTargetUrl = urlToNavigate.startsWith("http")
         ? urlToNavigate
-        : `https://${urlToNavigate}`;
+        : withIeDefaultScheme(urlToNavigate, window.location.origin);
 
       try {
         if (

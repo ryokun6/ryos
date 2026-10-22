@@ -61,18 +61,45 @@ export function buildIeTrustContext(options: {
   return { windowOrigin, appOrigins: [...appOrigins], proxyOrigin };
 }
 
-function parseTarget(url: string): URL | null {
+const HAS_SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
+/** `host:port...`, which URL parsing would otherwise read as a scheme. */
+const HOST_PORT = /^[^/:?#]+:\d+(?:[/?#]|$)/;
+
+/**
+ * Adds a scheme to a typed address: https, except that an address whose host
+ * is exactly the current (http) window host keeps http, so the local dev app
+ * at http://localhost:PORT can be opened by typing `localhost:PORT`.
+ */
+export function withIeDefaultScheme(url: string, windowOrigin?: string | null): string {
+  const trimmed = url.trim();
+  if (!trimmed || HAS_SCHEME.test(trimmed)) return trimmed;
+  const current = toOrigin(windowOrigin);
+  if (current?.startsWith("http://")) {
+    try {
+      const candidate = new URL(`http://${trimmed}`);
+      if (candidate.origin === current && !candidate.username && !candidate.password) {
+        return `http://${trimmed}`;
+      }
+    } catch {
+      // not a parseable host; fall through to https
+    }
+  }
+  return `https://${trimmed}`;
+}
+
+function parseTarget(url: string, windowOrigin?: string): URL | null {
   const trimmed = url.trim();
   if (!trimmed) return null;
   try {
-    return new URL(/^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !HOST_PORT.test(trimmed);
+    return new URL(hasScheme ? trimmed : withIeDefaultScheme(trimmed, windowOrigin));
   } catch {
     return null;
   }
 }
 
 export function classifyIeTarget(url: string, ctx: IeTrustContext): IeTargetTrust {
-  const parsed = parseTarget(url);
+  const parsed = parseTarget(url, ctx.windowOrigin);
   if (!parsed) return "external";
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return "external";
   if (parsed.username || parsed.password) return "external";
