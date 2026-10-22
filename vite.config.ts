@@ -302,6 +302,34 @@ export default defineConfig({
           },
         ]
       : []),
+    // Mirror the standalone server's baseline security headers in dev
+    // (proxied /api responses keep whatever the API server sends).
+    {
+      name: 'ryos-security-headers',
+      configureServer(server) {
+        const headersPromise = import('./api/_utils/_security-headers.ts').then(
+          (mod) => ({
+            frameAncestors: mod.buildFrameAncestorsDirective([
+              ...mod.getDocumentFrameAncestors(),
+              'http://localhost:*',
+              'http://127.0.0.1:*',
+            ]),
+            referrerPolicy: mod.REFERRER_POLICY_VALUE,
+          })
+        );
+        server.middlewares.use((_req, res, next) => {
+          void headersPromise.then(
+            ({ frameAncestors, referrerPolicy }) => {
+              res.setHeader('X-Content-Type-Options', 'nosniff');
+              res.setHeader('Referrer-Policy', referrerPolicy);
+              res.setHeader('Content-Security-Policy', frameAncestors);
+              next();
+            },
+            (error: unknown) => next(error)
+          );
+        });
+      },
+    },
     // Serve static docs HTML files (before SPA fallback kicks in)
     {
       name: 'block-removed-legacy-routes',
