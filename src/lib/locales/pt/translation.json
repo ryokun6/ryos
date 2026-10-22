@@ -2013,11 +2013,11 @@
         "currentLabel": "E-mail de recuperação atual",
         "description": "Adicione um e-mail para poder redefinir sua senha caso a esqueça.",
         "emailLabel": "Endereço de e‑mail",
-        "passwordLabel": "Senha atual",
-        "passwordRequired": "Digite sua senha atual",
         "genericError": "Algo deu errado. Tente novamente.",
         "invalidEmail": "Insira um endereço de e-mail válido",
         "notConfigured": "A recuperação por e-mail não está disponível neste servidor. Você ainda pode recuperar através de uma conta do Telegram vinculada.",
+        "passwordLabel": "Senha atual",
+        "passwordRequired": "Digite sua senha atual",
         "remove": "Remover",
         "removedToast": "E-mail de recuperação removido",
         "removing": "Removendo…",
@@ -2442,6 +2442,10 @@
         "rateLimited": "Limite da IA atingido. Inicie sessão ou tente novamente mais tarde.",
         "thinking": "Pensando…"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "pesquisar {{character}}",
+        "replayStrokes": "repetir {{character}}"
+      },
       "description": "Pesquise palavras em inglês, chinês, japonês e coreano",
       "empty": {
         "noFavorites": "Nenhum favorito ainda",
@@ -2509,23 +2513,19 @@
       },
       "labels": {
         "antonymsShort": "ant.",
+        "characters": "caracteres",
         "kanji": "Kanji",
         "kunyomi": "Kun",
         "onyomi": "On",
         "phrases": "Palavras e Frases",
-        "characters": "caracteres",
-        "simplifiedShort": "simp.",
-        "traditionalShort": "trad.",
         "similar": "Palavras Similares",
+        "simplifiedShort": "simp.",
         "strokes_many": "{{count}} traços",
         "strokes_one": "{{count}} traço",
         "strokes_other": "{{count}} traços",
         "synonyms": "Sinônimos",
-        "synonymsShort": "sin."
-      },
-      "ariaLabels": {
-        "replayStrokes": "repetir {{character}}",
-        "lookUpCharacter": "pesquisar {{character}}"
+        "synonymsShort": "sin.",
+        "traditionalShort": "trad."
       },
       "language": "Idioma",
       "languages": {
@@ -2824,6 +2824,7 @@
         "addToToday": "Adicionar a Hoje",
         "back": "Exercícios",
         "bestSet": "Melhor: {{reps}} × {{weight}}",
+        "count_many": "{{count}} exercícios",
         "count_one": "{{count}} exercício",
         "count_other": "{{count}} exercícios",
         "e1rmChart": "Estimativa de repetição máxima",
@@ -2837,15 +2838,14 @@
         "noResults": "Nenhum exercício corresponde a estes filtros.",
         "primaryMuscles": "Músculos Primários",
         "progress": "Seu Progresso",
+        "refine_many": "Mais {{count}} — refine sua busca",
         "refine_one": "Mais {{count}} — refine sua busca",
         "refine_other": "Mais {{count}} — refine sua busca",
         "repsHint": "Mais repetições por sessão.",
         "retry": "Tentar Novamente",
         "search": "Buscar exercícios",
         "secondaryMuscles": "Músculos Secundários",
-        "select": "Selecione um exercício para ver como é feito.",
-        "count_many": "{{count}} exercícios",
-        "refine_many": "Mais {{count}} — refine sua busca"
+        "select": "Selecione um exercício para ver como é feito."
       },
       "filters": {
         "all": "Tudo",
@@ -2910,8 +2910,8 @@
         "splitPromptInvalid": "introduza 1–20",
         "splitPromptTitle": "Quantas pessoas?",
         "splitShare": "sua parte",
-        "splitWays_one": "dividido por {{count}}",
         "splitWays_many": "dividido por {{count}}",
+        "splitWays_one": "dividido por {{count}}",
         "splitWays_other": "dividido por {{count}}",
         "targetsDefault": "Usando metas padrão.",
         "targetsFromProfile": "As metas são baseadas no seu perfil e objetivos.",
@@ -2925,14 +2925,14 @@
       },
       "goals": {
         "logWeightFirst": "Registre seu peso para acompanhar o progresso em direção à sua meta.",
+        "perWeek_many": "{{count}} por semana",
         "perWeek_one": "{{count}} por semana",
         "perWeek_other": "{{count}} por semana",
         "reached": "Objetivo alcançado!",
         "targetWeight": "Meta de Peso",
         "title": "Objetivos",
         "toGo": "Faltam {{value}}",
-        "weeklyTarget": "Treinos Semanais",
-        "perWeek_many": "{{count}} por semana"
+        "weeklyTarget": "Treinos Semanais"
       },
       "help": {
         "body": {
@@ -3039,30 +3039,30 @@
       },
       "schedule": {
         "addToDay": "Adicionar ao Treino",
-        "removeFromDay": "Remover do Treino",
         "applyTemplate": "Aplicar Modelo",
         "cardioHint": "Tente fazer de 20 a 40 minutos de cardio constante ou intervalos.",
         "dayFocus": "Foco de {{day}}",
         "done": "Concluído",
         "missed": "Perdido",
+        "moreMonths": "Mais meses",
         "noStreak": "Ainda sem sequência",
+        "plannedDays_many": "{{count}} dias de treino planejados",
         "plannedDays_one": "{{count}} dia de treino planejado",
         "plannedDays_other": "{{count}} dias de treino planejados",
         "recommendedFor": "Recomendado para {{focus}}",
+        "removeFromDay": "Remover do Treino",
         "restDay": "Dia de descanso. Recupere-se, alongue-se ou faça uma caminhada.",
         "startWorkout": "Iniciar Treino",
+        "streak_many": "Sequência de {{count}} semanas",
         "streak_one": "Sequência de {{count}} semana",
         "streak_other": "Sequência de {{count}} semanas",
         "targets": "Metas: {{muscles}}",
         "template": "Modelo",
         "thisWeek": "Esta Semana",
         "upcomingWeeks": "Próximas semanas",
-        "moreMonths": "Mais meses",
         "viewExercise": "Visualizar Exercício",
         "weeklyGoal": "Meta Semanal",
-        "workoutsThisWeek": "{{current}} de {{target}} treinos nesta semana",
-        "streak_many": "Sequência de {{count}} semanas",
-        "plannedDays_many": "{{count}} dias de treino planejados"
+        "workoutsThisWeek": "{{current}} de {{target}} treinos nesta semana"
       },
       "sidebar": "Barra Lateral",
       "templates": {
@@ -3096,6 +3096,7 @@
         "deleteWorkout": "Apagar Treino",
         "e1rm": "1RM Est.",
         "empty": "Nenhum exercício registrado para este dia ainda.",
+        "exerciseCount_many": "{{count}} exercícios",
         "exerciseCount_one": "{{count}} exercício",
         "exerciseCount_other": "{{count}} exercícios",
         "focus": "Foco",
@@ -3109,8 +3110,7 @@
         "reps": "Reps",
         "set": "Série",
         "suggested": "Sugerido para {{focus}}",
-        "weight": "Peso ({{unit}})",
-        "exerciseCount_many": "{{count}} exercícios"
+        "weight": "Peso ({{unit}})"
       }
     },
     "infinite-mac": {
@@ -5702,7 +5702,9 @@
     "errors": {
       "failedToAccessCamera": "Falha ao acessar a câmera",
       "failedToFetchFurigana": "Falha ao buscar furigana",
-      "failedToFetchSoramimi": "Falha ao buscar soramimi"
+      "failedToFetchSoramimi": "Falha ao buscar soramimi",
+      "lyricsGenerationRateLimited": "Limite diário atingido para gerar traduções e leituras de letras. Tente novamente amanhã.",
+      "lyricsGenerationSignInRequired": "Inicie a sessão para gerar traduções e leituras de letras"
     },
     "expose": {
       "noWindows": "Nenhuma janela aberta"

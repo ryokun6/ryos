@@ -11,6 +11,7 @@ import {
   normalizeLyricsFetchError,
 } from "@/utils/lyricsError";
 import {
+  notifyLyricsGenerationBlocked,
   processTranslationSSE,
   parseLrcToTranslations,
   type TranslationStreamInfo,
@@ -974,6 +975,11 @@ function handleTranslationError(
   setError: (e: string | undefined) => void,
   setTranslatedLines: (lines: LyricLine[] | null) => void
 ) {
+  if (notifyLyricsGenerationBlocked(err)) {
+    lyricsLog.debug("Lyrics translation unavailable", { error: err, context });
+    setTranslatedLines(null);
+    return;
+  }
   lyricsLog.error("Lyrics translation failed", { error: err, context });
   if (err instanceof DOMException && err.name === "AbortError") {
     setError("Translation timed out.");

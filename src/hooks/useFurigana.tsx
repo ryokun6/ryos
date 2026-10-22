@@ -9,6 +9,7 @@ import { lyricsHaveJapanese } from "@/utils/languageDetection";
 import type { FuriganaSegment } from "@/utils/romanization";
 import { normalizeFuriganaSegments } from "@/utils/furigana";
 import {
+  notifyLyricsGenerationBlocked,
   processFuriganaSSE, 
   processSoramimiSSE, 
   type FuriganaStreamInfo, 
@@ -489,6 +490,8 @@ export function useFurigana({
           return;
         }
 
+        if (notifyLyricsGenerationBlocked(err)) return;
+
         furiganaLog.error("Annotation generation failed", {
           error: err,
           songId: effectSongId,
@@ -767,6 +770,8 @@ export function useFurigana({
         if (err instanceof Error && err.name === "AbortError") {
           return;
         }
+
+        if (notifyLyricsGenerationBlocked(err)) return;
 
         soramimiLog.error("Reading generation failed", {
           error: err,

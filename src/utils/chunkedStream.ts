@@ -7,6 +7,8 @@ import { getApiUrl } from "@/utils/platform";
 import { abortableFetch } from "@/utils/abortableFetch";
 import { createClientLogger } from "@/utils/logger";
 import { shouldSkipLyricCreditLine } from "@/shared/media/lyricCreditSkip";
+import i18n from "@/lib/i18n";
+import { toast } from "@/hooks/useToast";
 
 // =============================================================================
 // Constants
@@ -18,6 +20,56 @@ const INITIAL_DELAY_MS = 1000;
 const streamLog = createClientLogger("LyricsStream");
 
 type LyricsStreamKind = "translation" | "furigana" | "soramimi";
+
+/** Server refused to run AI generation (sign-in required or daily cap); never retried. */
+export class LyricsGenerationBlockedError extends Error {
+  readonly reason: "auth_required" | "rate_limited";
+  constructor(reason: "auth_required" | "rate_limited") {
+    super(
+      reason === "auth_required"
+        ? i18n.t("common.errors.lyricsGenerationSignInRequired")
+        : i18n.t("common.errors.lyricsGenerationRateLimited")
+    );
+    this.name = "LyricsGenerationBlockedError";
+    this.reason = reason;
+  }
+}
+
+const GENERATION_BLOCKED_NOTICE_INTERVAL_MS = 10 * 60 * 1000;
+const lastGenerationBlockedNoticeAt = new Map<string, number>();
+
+/**
+ * Show (at most every few minutes per reason) why translation / furigana /
+ * soramimi could not be generated. Returns true when `err` was a blocked
+ * generation error, so callers can keep showing the original lyrics instead
+ * of an error state.
+ */
+export function notifyLyricsGenerationBlocked(err: unknown): boolean {
+  if (!(err instanceof LyricsGenerationBlockedError)) return false;
+  const now = Date.now();
+  const last = lastGenerationBlockedNoticeAt.get(err.reason) ?? 0;
+  if (now - last >= GENERATION_BLOCKED_NOTICE_INTERVAL_MS) {
+    lastGenerationBlockedNoticeAt.set(err.reason, now);
+    toast(err.message, { id: `lyrics-generation-${err.reason}` });
+  }
+  return true;
+}
+
+function throwIfGenerationBlocked(response: Response): void {
+  if (response.status === 401) {
+    throw new LyricsGenerationBlockedError("auth_required");
+  }
+  if (response.status === 429) {
+    throw new LyricsGenerationBlockedError("rate_limited");
+  }
+}
+
+function isNonRetryableStreamError(err: unknown): boolean {
+  return (
+    err instanceof LyricsGenerationBlockedError ||
+    (err instanceof Error && err.name === "AbortError")
+  );
+}
 
 function logCallbackError(
   stream: LyricsStreamKind,
@@ -169,6 +221,7 @@ export async function processTranslationSSE(
       });
 
       if (!response.ok) {
+        throwIfGenerationBlocked(response);
         throw new Error(`SSE request failed: ${response.status}`);
       }
 
@@ -333,8 +386,8 @@ export async function processTranslationSSE(
     } catch (err) {
       buffer = ""; // Clear buffer on error
       
-      if (err instanceof Error && err.name === "AbortError") {
-        throw err; // Don't retry on abort
+      if (isNonRetryableStreamError(err)) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Translation stream failed", {
@@ -447,6 +500,7 @@ export async function processFuriganaSSE(
       });
 
       if (!response.ok) {
+        throwIfGenerationBlocked(response);
         throw new Error(`SSE request failed: ${response.status}`);
       }
 
@@ -602,8 +656,8 @@ export async function processFuriganaSSE(
     } catch (err) {
       buffer = ""; // Clear buffer on error
       
-      if (err instanceof Error && err.name === "AbortError") {
-        throw err; // Don't retry on abort
+      if (isNonRetryableStreamError(err)) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Furigana stream failed", {
@@ -766,6 +820,7 @@ export async function processSoramimiSSE(
       });
 
       if (!response.ok) {
+        throwIfGenerationBlocked(response);
         throw new Error(`SSE request failed: ${response.status}`);
       }
 
@@ -934,8 +989,8 @@ export async function processSoramimiSSE(
     } catch (err) {
       buffer = ""; // Clear buffer on error
       
-      if (err instanceof Error && err.name === "AbortError") {
-        throw err; // Don't retry on abort
+      if (isNonRetryableStreamError(err)) {
+        throw err;
       }
       if (attempt === MAX_RETRIES) {
         streamLog.error("Soramimi stream failed", {

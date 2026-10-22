@@ -2011,11 +2011,11 @@
         "currentLabel": "目前的備援電子郵件",
         "description": "新增電子郵件，以便在忘記密碼時重設。",
         "emailLabel": "電子郵件地址",
-        "passwordLabel": "目前密碼",
-        "passwordRequired": "輸入您目前的密碼",
         "genericError": "發生錯誤。請再試一次。",
         "invalidEmail": "請輸入有效的電子郵件地址",
         "notConfigured": "此伺服器不支援電子郵件復原。您仍可透過已連結的 Telegram 帳號進行復原。",
+        "passwordLabel": "目前密碼",
+        "passwordRequired": "輸入您目前的密碼",
         "remove": "移除",
         "removedToast": "已移除復原電子郵件",
         "removing": "正在移除⋯",
@@ -2440,6 +2440,10 @@
         "rateLimited": "已達 AI 限制。請登入或稍後再試。",
         "thinking": "思考中⋯"
       },
+      "ariaLabels": {
+        "lookUpCharacter": "查詢{{character}}",
+        "replayStrokes": "重播{{character}}的筆順"
+      },
       "description": "查詢英文、中文、日文和韓文單字",
       "empty": {
         "noFavorites": "尚無常用項目",
@@ -2506,22 +2510,18 @@
       },
       "labels": {
         "antonymsShort": "反義",
+        "characters": "漢字",
         "kanji": "漢字",
         "kunyomi": "訓",
         "onyomi": "音",
         "phrases": "字詞與短語",
-        "characters": "漢字",
-        "simplifiedShort": "簡",
-        "traditionalShort": "繁",
         "similar": "相似字詞",
+        "simplifiedShort": "簡",
         "strokes_one": "{{count}} 畫",
         "strokes_other": "{{count}} 畫",
         "synonyms": "同義詞",
-        "synonymsShort": "同義"
-      },
-      "ariaLabels": {
-        "replayStrokes": "重播{{character}}的筆順",
-        "lookUpCharacter": "查詢{{character}}"
+        "synonymsShort": "同義",
+        "traditionalShort": "繁"
       },
       "language": "語言",
       "languages": {
@@ -3031,16 +3031,17 @@
       },
       "schedule": {
         "addToDay": "加入體能訓練",
-        "removeFromDay": "從體能訓練移除",
         "applyTemplate": "套用樣板",
         "cardioHint": "目標為 20–40 分鐘的穩定心肺訓練或間歇訓練。",
         "dayFocus": "{{day}} 重點",
         "done": "完成",
         "missed": "已錯過",
+        "moreMonths": "更多月份",
         "noStreak": "尚無連續紀錄",
         "plannedDays_one": "已規劃 {{count}} 天訓練",
         "plannedDays_other": "已規劃 {{count}} 天訓練",
         "recommendedFor": "建議用於{{focus}}",
+        "removeFromDay": "從體能訓練移除",
         "restDay": "休息日。修復、伸展或散散步。",
         "startWorkout": "開始體能訓練",
         "streak_one": "連續 {{count}} 週",
@@ -3049,7 +3050,6 @@
         "template": "樣板",
         "thisWeek": "本週",
         "upcomingWeeks": "接下來的週",
-        "moreMonths": "更多月份",
         "viewExercise": "檢視運動",
         "weeklyGoal": "每週目標",
         "workoutsThisWeek": "本週已完成 {{target}} 次體能訓練中的 {{current}} 次"
@@ -5689,7 +5689,9 @@
     "errors": {
       "failedToAccessCamera": "無法存取相機",
       "failedToFetchFurigana": "無法取得假名",
-      "failedToFetchSoramimi": "無法取得空耳"
+      "failedToFetchSoramimi": "無法取得空耳",
+      "lyricsGenerationRateLimited": "已達到產生歌詞翻譯和讀音的每日限制。請明天再試。",
+      "lyricsGenerationSignInRequired": "登入以產生歌詞翻譯和讀音"
     },
     "expose": {
       "noWindows": "沒有開啟的視窗"

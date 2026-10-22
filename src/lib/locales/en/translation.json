@@ -128,7 +128,9 @@
     "errors": {
       "failedToAccessCamera": "Failed to access camera",
       "failedToFetchFurigana": "Failed to fetch furigana",
-      "failedToFetchSoramimi": "Failed to fetch soramimi"
+      "failedToFetchSoramimi": "Failed to fetch soramimi",
+      "lyricsGenerationSignInRequired": "Sign in to generate lyric translations and readings",
+      "lyricsGenerationRateLimited": "Daily limit reached for generating lyric translations and readings. Try again tomorrow."
     },
     "system": {
       "systemRestoring": "System Restoring…",
