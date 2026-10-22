@@ -41,11 +41,13 @@ import { IE_IFRAME_NAVIGATION_TIMEOUT_MS } from "../utils/iframeProxyError";
 import {
   buildIeFrameId,
   createIeFrameInstanceToken,
+  getDefaultIeTrustContext,
   getIeIframeSandbox,
   parseIeFrameMessage,
   withIeFrameId,
   type IeFrameReport,
 } from "../utils/ieFrameMessaging";
+import { classifyIeTarget } from "../utils/ieFirstParty";
 import {
   getHostnameFromUrl,
   formatTitle,
@@ -1055,8 +1057,14 @@ export function useInternetExplorerLogic({
               return;
             }
           } else if (newMode === "now") {
-            // Check if domain should bypass proxy
-            const isDirectBypass = isDirectPassthrough(normalizedTargetUrl);
+            // ryOS's own sites load directly with scripts; a few allowlisted
+            // third-party hosts also skip the proxy.
+            const trust = classifyIeTarget(
+              normalizedTargetUrl,
+              getDefaultIeTrustContext()
+            );
+            const isDirectBypass =
+              trust !== "external" || isDirectPassthrough(normalizedTargetUrl);
 
             if (isDirectBypass) {
               logDirectPassthrough(normalizedTargetUrl);
@@ -1072,29 +1080,33 @@ export function useInternetExplorerLogic({
               lastEmbedAllowedRef.current = null;
             }
 
-            try {
-              const checkRes = await abortableFetch(
-                `/api/iframe-check?mode=check&url=${encodeURIComponent(
-                  normalizedTargetUrl
-                )}&theme=${encodeURIComponent(currentTheme)}`,
-                {
-                  signal: abortController.signal,
-                  timeout: 15000,
-                  retry: { maxAttempts: 1, initialDelayMs: 250 },
-                }
-              );
-              if (abortController.signal.aborted) return;
+            // The app's own origin is read same-origin after load (and may be
+            // a local address the server-side check refuses to fetch).
+            if (trust !== "app") {
+              try {
+                const checkRes = await abortableFetch(
+                  `/api/iframe-check?mode=check&url=${encodeURIComponent(
+                    normalizedTargetUrl
+                  )}&theme=${encodeURIComponent(currentTheme)}`,
+                  {
+                    signal: abortController.signal,
+                    timeout: 15000,
+                    retry: { maxAttempts: 1, initialDelayMs: 250 },
+                  }
+                );
+                if (abortController.signal.aborted) return;
 
-              const checkData = await checkRes.json();
-              if (typeof checkData.allowed === "boolean") {
-                lastEmbedAllowedRef.current = checkData.allowed;
+                const checkData = await checkRes.json();
+                if (typeof checkData.allowed === "boolean") {
+                  lastEmbedAllowedRef.current = checkData.allowed;
+                }
+                if (checkData.title) {
+                  setPrefetchedTitle(checkData.title);
+                }
+              } catch (error) {
+                if (error instanceof Error && error.name === "AbortError") return;
+                console.warn(`[IE] iframe-check fetch failed:`, error);
               }
-              if (checkData.title) {
-                setPrefetchedTitle(checkData.title);
-              }
-            } catch (error) {
-              if (error instanceof Error && error.name === "AbortError") return;
-              console.warn(`[IE] iframe-check fetch failed:`, error);
             }
           }
 

@@ -24,24 +24,15 @@ import {
   buildFrameAncestorsDirective,
   getIeProxyFrameAncestors,
 } from "./_security-headers.js";
+import { getIeProxyIsolatedOrigin } from "./runtime-config.js";
+
+export { getIeProxyIsolatedOrigin };
 
 /** Sandbox tokens for proxied documents; never includes `allow-same-origin`. */
 export const IE_PROXY_SANDBOX_TOKENS =
   "allow-scripts allow-forms allow-popups allow-pointer-lock";
 
 const FRAME_TOKEN_RE = /^[A-Za-z0-9_-]{16,64}\.\d{1,16}$/;
-
-export function getIeProxyIsolatedOrigin(): string | null {
-  const raw = process.env.IE_PROXY_ORIGIN?.trim();
-  if (!raw) return null;
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
-    return parsed.origin;
-  } catch {
-    return null;
-  }
-}
 
 export function isIeProxyIsolatedHostHeader(
   hostHeader: string | null | undefined

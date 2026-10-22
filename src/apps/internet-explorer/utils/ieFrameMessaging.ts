@@ -1,4 +1,11 @@
 import type { ErrorResponse } from "@/stores/useInternetExplorerStore";
+import { getAppPublicOrigin, getIeProxyOrigin } from "@/utils/runtimeConfig";
+import {
+  buildIeTrustContext,
+  classifyIeTarget,
+  isRyoSiteHost,
+  type IeTrustContext,
+} from "./ieFirstParty";
 
 /**
  * Sandbox for IE iframes that render proxied (`/api/iframe-check`) content.
@@ -10,32 +17,68 @@ export const IE_PROXY_IFRAME_SANDBOX =
 
 const IE_DIRECT_IFRAME_SANDBOX = `${IE_PROXY_IFRAME_SANDBOX} allow-same-origin`;
 
+export function getDefaultIeTrustContext(): IeTrustContext {
+  const windowOrigin =
+    typeof window !== "undefined" ? window.location.origin : "http://localhost";
+  return buildIeTrustContext({
+    windowOrigin,
+    appPublicOrigin: getAppPublicOrigin(),
+    proxyOrigin: getIeProxyOrigin(),
+  });
+}
+
 /**
- * Pick the sandbox for an IE iframe `src`. Direct embeds of other sites keep
- * `allow-same-origin` (it only grants them their own origin, which they have
- * in any normal iframe). Anything served from this app's `/api/` — the proxy
- * in particular — stays opaque.
+ * Pick the sandbox for an IE iframe `src`.
+ * - ryOS app origins and ryo.lu (see `ieFirstParty`) get `allow-same-origin`.
+ * - Other ryo.lu hosts, the isolated proxy host and anything under an app
+ *   origin's `/api/` stay opaque: they are same-site with ryOS or serve
+ *   proxied content.
+ * - Direct embeds of unrelated sites keep `allow-same-origin`; it only grants
+ *   them their own cross-site origin, as in any normal iframe.
  */
 export function getIeIframeSandbox(
   src: string | null | undefined,
-  appOrigin: string = typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost"
+  context: IeTrustContext | string = getDefaultIeTrustContext()
 ): string {
+  const ctx =
+    typeof context === "string"
+      ? buildIeTrustContext({ windowOrigin: context })
+      : context;
   if (!src) return IE_PROXY_IFRAME_SANDBOX;
   let parsed: URL;
   try {
-    parsed = new URL(src, appOrigin);
+    parsed = new URL(src, ctx.windowOrigin);
   } catch {
     return IE_PROXY_IFRAME_SANDBOX;
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     return IE_PROXY_IFRAME_SANDBOX;
   }
-  if (parsed.origin === appOrigin && parsed.pathname.startsWith("/api/")) {
+  switch (classifyIeTarget(parsed.href, ctx)) {
+    case "app":
+    case "ryo":
+      return IE_DIRECT_IFRAME_SANDBOX;
+    case "ryo-subdomain":
+      return IE_PROXY_IFRAME_SANDBOX;
+    case "external":
+      break;
+  }
+  if (
+    ctx.appOrigins.includes(parsed.origin) ||
+    parsed.origin === ctx.proxyOrigin ||
+    isRyoSiteHost(parsed.href)
+  ) {
     return IE_PROXY_IFRAME_SANDBOX;
   }
   return IE_DIRECT_IFRAME_SANDBOX;
+}
+
+/** Whether `url` is a ryOS first-party site that loads without the proxy. */
+export function isIeFirstPartyDirectTarget(
+  url: string,
+  ctx: IeTrustContext = getDefaultIeTrustContext()
+): boolean {
+  return classifyIeTarget(url, ctx) !== "external";
 }
 
 /** Random per-IE-window token; the proxy echoes it back in postMessages. */

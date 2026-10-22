@@ -18,9 +18,9 @@ export interface Favorite {
 // (no X-Frame-Options / frame-ancestors *) and cannot run correctly when
 // proxied — typically BrowserRouter SPAs, which read window.location.pathname
 // (`/api/iframe-check` under the proxy) and render a blank root.
+// ryOS's own ryo.lu sites are handled by `ieFirstParty` instead, which matches
+// hosts exactly and keeps the isolated proxy host out.
 export const DIRECT_PASSTHROUGH_DOMAINS = [
-  "os.ryo.lu",
-  "ryo.lu",
   "hcsimulator.com",
   "os.rocorgi.wang",
   "iso-city.com",
@@ -919,7 +919,8 @@ export const useInternetExplorerStore = create<InternetExplorerStore>()(
 export const isDirectPassthrough = (url: string): boolean => {
   try {
     const hostname = new URL(url.startsWith("http") ? url : `https://${url}`)
-      .hostname;
+      .hostname.toLowerCase();
+    if (hostname === "ryo.lu" || hostname.endsWith(".ryo.lu")) return false;
     return DIRECT_PASSTHROUGH_DOMAINS.some(
       (domain) => hostname === domain || hostname.endsWith(`.${domain}`)
     );

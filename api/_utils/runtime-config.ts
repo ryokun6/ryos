@@ -28,6 +28,12 @@ export interface ClientRuntimeConfig {
    * the live-view affordance only when it will actually work.
    */
   ieLiveBrowserAvailable: boolean;
+  /**
+   * Isolated Internet Explorer proxy origin (`IE_PROXY_ORIGIN`). The client
+   * uses it to make sure that host is never treated as a ryOS first-party
+   * site.
+   */
+  ieProxyOrigin: string | null;
 }
 
 function trimTrailingSlash(value: string): string {
@@ -67,6 +73,19 @@ export function getConfiguredPublicOrigin(): string | null {
   return normalizeOrigin(
     process.env.APP_PUBLIC_ORIGIN || process.env.PUBLIC_APP_ORIGIN
   );
+}
+
+/** The isolated Internet Explorer proxy origin (`IE_PROXY_ORIGIN`), if set. */
+export function getIeProxyIsolatedOrigin(): string | null {
+  const raw = process.env.IE_PROXY_ORIGIN?.trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    return parsed.origin;
+  } catch {
+    return null;
+  }
 }
 
 export function getAppPublicOrigin(fallbackOrigin?: string | null): string {
@@ -135,6 +154,7 @@ export function buildClientRuntimeConfig(
         : null,
     pusher: realtimeProvider === "pusher" ? getPusherClientConfig() : null,
     ieLiveBrowserAvailable: isIeLiveBrowserConfigured(),
+    ieProxyOrigin: getIeProxyIsolatedOrigin(),
   };
 }
 
