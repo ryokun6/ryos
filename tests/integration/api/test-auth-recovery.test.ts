@@ -287,7 +287,10 @@ describe("Account Recovery API", () => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: `${username}@example.com` }),
+          body: JSON.stringify({
+            email: `${username}@example.com`,
+            currentPassword: "testpassword123",
+          }),
         }
       );
       if (status.emailConfigured) {
@@ -296,6 +299,43 @@ describe("Account Recovery API", () => {
       } else {
         expect(res.status).toBe(503);
       }
+    });
+
+    test("email/set requires the current password", async () => {
+      const username = uniqueTestUsername("emailpw");
+      const { token } = await registerUser(username, "testpassword123");
+
+      const statusRes = await fetchWithAuth(
+        `${BASE_URL}/api/auth/email/status`,
+        username,
+        token as string,
+        { method: "GET" }
+      );
+      const status = await statusRes.json();
+
+      const post = (body: Record<string, unknown>) =>
+        fetchWithAuth(`${BASE_URL}/api/auth/email/set`, username, token as string, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+
+      const missing = await post({ email: `${username}@example.com` });
+      const wrong = await post({
+        email: `${username}@example.com`,
+        currentPassword: "not-the-password",
+      });
+      if (!status.emailConfigured) {
+        expect(missing.status).toBe(503);
+        expect(wrong.status).toBe(503);
+        return;
+      }
+      expect(missing.status).toBe(400);
+      expect((await missing.json()).error).toContain("Current password");
+      expect(wrong.status).toBe(401);
+
+      const record = await getStoredUserRecord(redis, username);
+      expect(record?.email).toBeUndefined();
     });
 
     test("email/verify with seeded code verifies + indexes, enabling email reset", async () => {

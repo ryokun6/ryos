@@ -2013,6 +2013,8 @@
         "currentLabel": "Correo de recuperación actual",
         "description": "Añade un correo electrónico para poder restablecer tu contraseña si la olvidas.",
         "emailLabel": "Dirección de correo electrónico",
+        "passwordLabel": "Contraseña actual",
+        "passwordRequired": "Introduce tu contraseña actual",
         "genericError": "Algo salió mal. Por favor, inténtalo de nuevo.",
         "invalidEmail": "Introduce una dirección de correo electrónico válida",
         "notConfigured": "La recuperación por correo electrónico no está disponible en este servidor. Aún puedes realizar la recuperación a través de una cuenta de Telegram vinculada.",

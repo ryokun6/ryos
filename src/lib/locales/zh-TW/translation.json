@@ -2011,6 +2011,8 @@
         "currentLabel": "目前的備援電子郵件",
         "description": "新增電子郵件，以便在忘記密碼時重設。",
         "emailLabel": "電子郵件地址",
+        "passwordLabel": "目前密碼",
+        "passwordRequired": "輸入您目前的密碼",
         "genericError": "發生錯誤。請再試一次。",
         "invalidEmail": "請輸入有效的電子郵件地址",
         "notConfigured": "此伺服器不支援電子郵件復原。您仍可透過已連結的 Telegram 帳號進行復原。",

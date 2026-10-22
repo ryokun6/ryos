@@ -2013,6 +2013,8 @@
         "currentLabel": "E-mail de récupération actuel",
         "description": "Ajoutez une adresse e-mail pour pouvoir réinitialiser votre mot de passe si vous l’oubliez.",
         "emailLabel": "Adresse e-mail",
+        "passwordLabel": "Mot de passe actuel",
+        "passwordRequired": "Saisissez votre mot de passe actuel",
         "genericError": "Une erreur est survenue. Veuillez réessayer.",
         "invalidEmail": "Saisissez une adresse e-mail valide",
         "notConfigured": "La récupération par e-mail n’est pas disponible sur ce serveur. Vous pouvez toujours effectuer une récupération via un compte Telegram lié.",

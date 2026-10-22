@@ -2011,6 +2011,8 @@
         "currentLabel": "Aktuelle E-Mail zur Wiederherstellung",
         "description": "Füge eine E-Mail-Adresse hinzu, damit du dein Passwort zurücksetzen kannst, falls du es vergisst.",
         "emailLabel": "E-Mail-Adresse",
+        "passwordLabel": "Aktuelles Passwort",
+        "passwordRequired": "Geben Sie Ihr aktuelles Passwort ein",
         "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
         "invalidEmail": "Gib eine gültige E-Mail-Adresse ein",
         "notConfigured": "E-Mail-Wiederherstellung ist auf diesem Server nicht verfügbar. Du kannst dein Konto weiterhin über ein verknüpftes Telegram-Konto wiederherstellen.",

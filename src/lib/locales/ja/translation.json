@@ -2011,6 +2011,8 @@
         "currentLabel": "現在のリカバリメール",
         "description": "パスワードを忘れた場合にリセットできるよう、メールアドレスを追加してください。",
         "emailLabel": "メールアドレス",
+        "passwordLabel": "現在のパスワード",
+        "passwordRequired": "現在のパスワードを入力してください",
         "genericError": "問題が発生しました。もう一度お試しください。",
         "invalidEmail": "有効なメールアドレスを入力してください",
         "notConfigured": "このサーバーではメールによる復旧は利用できません。連携済みのTelegramアカウントから復旧できます。",

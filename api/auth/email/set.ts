@@ -5,8 +5,9 @@
  * verification code to the new address. The email is stored unverified until
  * the user confirms it via /api/auth/email/verify.
  *
- * Requires a fresh (non-grace) token: changing recovery contacts is a
- * sensitive operation, mirroring /api/auth/password/set.
+ * Requires a fresh (non-grace) token and `currentPassword`: the recovery
+ * email can reset the password, so a hijacked session alone must not be able
+ * to point it at an attacker's inbox. Mirrors /api/auth/password/set.
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
@@ -22,9 +23,11 @@ import { redisKeys } from "../../../src/shared/redisKeys.js";
 import { issueRecoveryCode } from "../../_utils/auth/_recovery.js";
 import { isEmailConfigured, sendEmail } from "../../_utils/email.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
+import { verifyPassword, getUserPasswordHash } from "../../_utils/auth/_password.js";
 
 interface SetEmailRequest {
   email: string;
+  currentPassword: string;
 }
 
 const SET_EMAIL_RL_LIMIT = 5;
@@ -85,6 +88,26 @@ export default apiHandler<SetEmailRequest>(
       }
     } catch (rateLimitError) {
       logger.warn("Email set rate limit check failed", rateLimitError);
+    }
+
+    const currentPassword =
+      typeof body?.currentPassword === "string" ? body.currentPassword : "";
+    if (!currentPassword) {
+      logger.response(400, Date.now() - startTime);
+      res.status(400).json({ error: "Current password is required" });
+      return;
+    }
+    const existingHash = await getUserPasswordHash(redis, username);
+    const passwordValid = existingHash
+      ? await verifyPassword(currentPassword, existingHash)
+      : false;
+    if (!passwordValid) {
+      logger.warn("Invalid current password during recovery email change", {
+        username,
+      });
+      logger.response(401, Date.now() - startTime);
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
     }
 
     // Prevent claiming an email already verified by a different account.

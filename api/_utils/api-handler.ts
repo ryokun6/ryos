@@ -47,6 +47,12 @@ export interface ApiHandlerOptions<TBody = unknown> {
   /** Extra CORS request headers beyond the defaults (Authorization, etc.). */
   corsHeaders?: string[];
   /**
+   * Extra origin acceptance on top of the CORS allowlist, for routes that
+   * never use the session (the isolated IE proxy host accepts opaque
+   * `Origin: null` sub-resource requests from its sandboxed documents).
+   */
+  acceptOrigin?: (origin: string | null, req: ApiRequest) => boolean;
+  /**
    * Optional schema validating the parsed JSON request body. When provided,
    * the body is read and validated at the handler boundary: on failure the
    * request is rejected with `400 { error: "validation_error", issues }`
@@ -121,6 +127,7 @@ export function apiHandler<TBody = unknown>(
     allowMissingOrigin = false,
     corsHeaders,
     bodySchema,
+    acceptOrigin,
   } = options;
   const shouldReadBody = parseJsonBody || !!bodySchema;
   const corsHeaderList = corsHeaders;
@@ -153,8 +160,17 @@ export function apiHandler<TBody = unknown>(
       ...(corsHeaderList ? { headers: corsHeaderList } : {}),
     };
 
-    if (method === "OPTIONS") {
+    // Origins accepted only through `acceptOrigin` get uncredentialed CORS.
+    const applyCors = () => {
       setCorsHeaders(res, origin, corsOptions);
+      if (!isAllowedOrigin(origin) && acceptOrigin?.(origin, req)) {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.removeHeader("Access-Control-Allow-Credentials");
+      }
+    };
+
+    if (method === "OPTIONS") {
+      applyCors();
       if (contentType) {
         res.setHeader("Content-Type", contentType);
       }
@@ -164,14 +180,16 @@ export function apiHandler<TBody = unknown>(
       return;
     }
 
-    setCorsHeaders(res, origin, corsOptions);
+    applyCors();
     if (contentType) {
       res.setHeader("Content-Type", contentType);
     }
 
     const originMissing = !origin;
     const originOk =
-      (originMissing && allowMissingOrigin) || isAllowedOrigin(origin);
+      (originMissing && allowMissingOrigin) ||
+      isAllowedOrigin(origin) ||
+      (!!acceptOrigin && acceptOrigin(origin, req));
     if (!originOk) {
       logger.debug("Rejected API request origin", { path, hasOrigin: !!origin });
       logger.response(403, Date.now() - startTime);

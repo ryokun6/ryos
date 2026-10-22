@@ -2013,6 +2013,8 @@
         "currentLabel": "E-mail de recuperação atual",
         "description": "Adicione um e-mail para poder redefinir sua senha caso a esqueça.",
         "emailLabel": "Endereço de e‑mail",
+        "passwordLabel": "Senha atual",
+        "passwordRequired": "Digite sua senha atual",
         "genericError": "Algo deu errado. Tente novamente.",
         "invalidEmail": "Insira um endereço de e-mail válido",
         "notConfigured": "A recuperação por e-mail não está disponível neste servidor. Você ainda pode recuperar através de uma conta do Telegram vinculada.",

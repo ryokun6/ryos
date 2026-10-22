@@ -10,6 +10,7 @@ import { ErrorPage } from "./ErrorPage";
 import { isIeLiveBrowserAvailable } from "@/utils/runtimeConfig";
 import { useOffline } from "@/hooks/useOffline";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { getIeIframeSandbox } from "../../utils/ieFrameMessaging";
 
 export interface InternetExplorerContentPaneProps {
   errorDetails: ErrorResponse | null;
@@ -180,13 +181,13 @@ export function InternetExplorerContentPane({
         ) : (
           <iframe
             ref={iframeRef}
+            sandbox={getIeIframeSandbox(finalUrl)}
             src={finalUrl || undefined}
             className="border-0 block"
             style={{
               width: "calc(100% + 1px)",
               height: "calc(100% + 1px)",
             }}
-            sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-pointer-lock"
             onLoad={handleIframeLoad}
             onError={handleIframeError}
           />

@@ -2011,6 +2011,8 @@
         "currentLabel": "当前恢复邮箱",
         "description": "添加电子邮件地址，以便在忘记密码时重置密码。",
         "emailLabel": "电子邮件地址",
+        "passwordLabel": "当前密码",
+        "passwordRequired": "输入您当前的密码",
         "genericError": "发生错误。请再试一次。",
         "invalidEmail": "请输入有效的电子邮件地址",
         "notConfigured": "此服务器不支持电子邮件恢复。您仍可通过关联的 Telegram 账户恢复。",

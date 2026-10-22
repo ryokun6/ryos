@@ -2013,6 +2013,8 @@
         "currentLabel": "Email di recupero attuale",
         "description": "Aggiungi un'email per poter reimpostare la password se la dimentichi.",
         "emailLabel": "Indirizzo email",
+        "passwordLabel": "Password attuale",
+        "passwordRequired": "Inserisci la tua password attuale",
         "genericError": "Qualcosa è andato storto. Riprova.",
         "invalidEmail": "Inserisci un indirizzo email valido",
         "notConfigured": "Il recupero tramite email non è disponibile su questo server. Puoi ancora effettuare il recupero tramite un account Telegram collegato.",

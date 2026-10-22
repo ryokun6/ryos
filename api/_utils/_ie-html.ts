@@ -2,9 +2,12 @@
  * Helpers for keeping Internet Explorer proxied HTML bounded so a single
  * oversized modern page cannot freeze the shared browser tab (ryOS desktop).
  *
- * Proxied pages are same-origin to the shell, so their scripts share the main
- * thread. Cap body size and, for oversized documents, serve a lite/reader
- * view instead of the full interactive page.
+ * Proxied pages share the shell's main thread. Cap body size and, for
+ * oversized documents, serve a lite/reader view instead of the full page.
+ *
+ * Unless the proxy runs on an isolated origin (`IE_PROXY_ORIGIN`), upstream
+ * scripts, event handlers and `javascript:` URLs are stripped from every
+ * proxied document (`stripActiveHtml`).
  */
 
 import { decodeHtmlEntitiesOnce } from "./html-entities.js";
@@ -221,6 +224,160 @@ export async function stripHtmlScripts(html: string): Promise<string> {
       },
     })
   );
+}
+
+/** Elements that can run script or embed active content. */
+const ACTIVE_CONTENT_TAGS = new Set([
+  "script",
+  "object",
+  "embed",
+  "applet",
+  "base",
+  "portal",
+]);
+
+/** `<meta http-equiv>` values the proxy must not let through. */
+const BLOCKED_META_HTTP_EQUIV = new Set([
+  "refresh",
+  "set-cookie",
+  "content-security-policy",
+  "content-security-policy-report-only",
+  "x-frame-options",
+]);
+
+/** Attributes whose value is a URL that the browser may navigate to or run. */
+const URL_ATTRIBUTES = new Set([
+  "href",
+  "src",
+  "action",
+  "formaction",
+  "xlink:href",
+  "data",
+  "poster",
+  "background",
+  "lowsrc",
+  "dynsrc",
+  "ping",
+  "codebase",
+  "cite",
+  "longdesc",
+  "manifest",
+  "icon",
+]);
+
+/** Elements or attributes where a `data:` document would be rendered. */
+const DOCUMENT_URL_ATTRIBUTES = new Set(["href", "action", "formaction", "xlink:href"]);
+const DOCUMENT_FRAME_TAGS = new Set(["iframe", "frame"]);
+const ACTIVE_DATA_TYPE_RE =
+  /^data:(text\/html|application\/xhtml\+xml|image\/svg\+xml|text\/xml|application\/xml|text\/javascript|application\/javascript)/;
+
+function normalizeUrlForSchemeCheck(raw: string): string {
+  return raw
+    .replace(/&colon;?/gi, ":")
+    .replace(/&(?:tab|newline);?/gi, "")
+    .replace(/&#x([0-9a-f]+);?/gi, (_m, hex: string) =>
+      String.fromCodePoint(Math.min(parseInt(hex, 16), 0x10ffff))
+    )
+    .replace(/&#(\d+);?/g, (_m, dec: string) =>
+      String.fromCodePoint(Math.min(parseInt(dec, 10), 0x10ffff))
+    )
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0020\u007f-\u009f]/g, "")
+    .toLowerCase();
+}
+
+export function isDangerousUrlAttribute(
+  tagName: string,
+  attributeName: string,
+  value: string
+): boolean {
+  const normalized = normalizeUrlForSchemeCheck(decodeHtmlEntitiesOnce(value));
+  const scheme = normalized.match(/^([a-z][a-z0-9+.-]*):/)?.[1];
+  if (!scheme) return false;
+  if (scheme.includes("script")) return true;
+  if (scheme === "data") {
+    return (
+      (DOCUMENT_URL_ATTRIBUTES.has(attributeName) ||
+        DOCUMENT_FRAME_TAGS.has(tagName)) &&
+      ACTIVE_DATA_TYPE_RE.test(normalized)
+    );
+  }
+  return false;
+}
+
+export interface StripActiveHtmlResult {
+  html: string;
+  /** Number of elements / attributes removed. */
+  removed: number;
+}
+
+/**
+ * Remove everything in a proxied document that could execute script:
+ * `<script>` and plugin elements, inline `on*` handlers, `javascript:` /
+ * `vbscript:` URLs, `data:` documents in navigable attributes, `srcdoc`,
+ * SVG href animations, and blocking `<meta http-equiv>` tags.
+ *
+ * `<noscript>` is unwrapped first (its content is raw text to the parser
+ * until then) so fallback markup shows and is sanitized like the rest.
+ */
+export function stripActiveHtml(html: string): StripActiveHtmlResult {
+  let removed = 0;
+  const unwrapped = rewriteHtml(html, (rewriter) =>
+    rewriter.on("noscript", {
+      element(el) {
+        el.removeAndKeepContent();
+      },
+    })
+  );
+
+  const sanitized = rewriteHtml(unwrapped, (rewriter) =>
+    rewriter.on("*", {
+      element(el) {
+        const tag = el.tagName.toLowerCase();
+        if (ACTIVE_CONTENT_TAGS.has(tag)) {
+          el.remove();
+          removed += 1;
+          return;
+        }
+        if (tag === "meta") {
+          const httpEquiv = (el.getAttribute("http-equiv") || "").trim().toLowerCase();
+          if (BLOCKED_META_HTTP_EQUIV.has(httpEquiv)) {
+            el.remove();
+            removed += 1;
+            return;
+          }
+        }
+        if (tag === "animate" || tag === "set" || tag === "animatetransform") {
+          const target = (el.getAttribute("attributeName") || "").toLowerCase();
+          if (target.includes("href")) {
+            el.remove();
+            removed += 1;
+            return;
+          }
+        }
+
+        const attributes: Array<[string, string]> = [];
+        for (const [name, value] of el.attributes) {
+          attributes.push([name, value]);
+        }
+        for (const [name, value] of attributes) {
+          const lower = name.toLowerCase();
+          if (
+            lower.startsWith("on") ||
+            lower === "srcdoc" ||
+            (URL_ATTRIBUTES.has(lower) && isDangerousUrlAttribute(tag, lower, value)) ||
+            ((lower === "values" || lower === "to" || lower === "from") &&
+              /script:/i.test(normalizeUrlForSchemeCheck(value)))
+          ) {
+            el.removeAttribute(name);
+            removed += 1;
+          }
+        }
+      },
+    })
+  );
+
+  return { html: sanitized, removed };
 }
 
 function escapeHtml(text: string): string {
@@ -744,7 +901,10 @@ export interface SanitizeProxiedHtmlResult {
 
 /**
  * Cap + convert oversized HTML into a lite/reader view so the shared tab stays
- * responsive. Throws IeHtmlTooLargeError when over the hard ceiling.
+ * responsive, and strip all active content (scripts, inline handlers,
+ * `javascript:` URLs) unless the caller serves the document from an isolated
+ * proxy origin (`keepScripts`). Throws IeHtmlTooLargeError when over the hard
+ * ceiling.
  */
 export async function sanitizeProxiedHtml(
   html: string,
@@ -753,6 +913,7 @@ export async function sanitizeProxiedHtml(
     liteThresholdBytes?: number;
     scriptStripThresholdBytes?: number;
     pageUrl?: string;
+    keepScripts?: boolean;
   }
 ): Promise<SanitizeProxiedHtmlResult> {
   const maxBytes = options?.maxBytes ?? IE_MAX_HTML_BYTES;
@@ -770,12 +931,22 @@ export async function sanitizeProxiedHtml(
 
   if (byteLength > liteThreshold) {
     return {
-      html: await buildLiteHtml(html, pageUrl),
+      html: stripActiveHtml(await buildLiteHtml(html, pageUrl)).html,
       strippedScripts: true,
       liteMode: true,
       byteLength,
     };
   }
 
-  return { html, strippedScripts: false, liteMode: false, byteLength };
+  if (options?.keepScripts) {
+    return { html, strippedScripts: false, liteMode: false, byteLength };
+  }
+
+  const stripped = stripActiveHtml(html);
+  return {
+    html: stripped.html,
+    strippedScripts: stripped.removed > 0,
+    liteMode: false,
+    byteLength,
+  };
 }

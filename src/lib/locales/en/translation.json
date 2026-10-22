@@ -3228,6 +3228,8 @@
         "description": "Add an email so you can reset your password if you forget it.",
         "notConfigured": "Email recovery is not available on this server. You can still recover via a linked Telegram account.",
         "emailLabel": "Email address",
+        "passwordLabel": "Current password",
+        "passwordRequired": "Enter your current password",
         "currentLabel": "Current recovery email",
         "verified": "Verified",
         "unverified": "Not verified",

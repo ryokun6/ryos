@@ -90,6 +90,7 @@ The following environment variables are required for full functionality:
 These knobs apply to Coolify / Docker / plain-Bun deployments.
 
 - `TRUSTED_PROXY_COUNT` - Number of trusted reverse-proxy hops in front of the API. **Defaults to `0`**, meaning client-supplied `X-Forwarded-For` / `X-Real-IP` are NOT trusted (the standalone Bun server's socket peer IP is used instead). Set to `1` if you have one trusted reverse proxy (nginx, Caddy, Render's edge, Fly.io's edge, etc.) injecting the client IP into the right-most XFF entry; set to `2`+ for chained proxies. Tests (`bun run dev:api`) export `TRUSTED_PROXY_COUNT=1` because integration tests use spoofed XFF to exercise per-IP rate limits. `bun run dev:api` also defaults `TELEGRAM_BOT_API_BASE_URL` to the local Telegram mock used by the webhook integration suite.
+- `IE_PROXY_ORIGIN` - Optional isolated origin for Internet Explorer proxied pages (e.g. `https://ieproxy.ryo.lu`, pointed at the same server). Unset (default) serves proxied pages from the app origin inside a CSP sandbox with upstream scripts stripped; set, the app redirects proxy navigations to that host and keeps scripts. See `docs/1.3-self-hosting-vps.md`.
 - `AUTH_COOKIE_SECURE` - Force the `Secure` flag on/off for the auth cookie. Set to `1`/`true` on any HTTPS-fronted self-hosted deployment if auto-detection is wrong. Auto-detection enables `Secure` whenever `APP_PUBLIC_ORIGIN` starts with `https://` or the runtime env is `production`.
 
 ### Localization / Scripts

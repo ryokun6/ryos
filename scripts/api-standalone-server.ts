@@ -46,6 +46,10 @@ import {
   type ApiRouteManifestEntry,
 } from "./api-route-manifest";
 import { getStaticCacheHeaders } from "./static-cache-policy";
+import {
+  isIeProxyIsolatedHostHeader,
+  isIeProxyIsolatedPathAllowed,
+} from "../api/_utils/_ie-proxy.js";
 import { AI_ATTACHMENT_MAX_BYTES } from "../src/shared/contracts/aiAttachment";
 
 type QueryValue = string | string[];
@@ -955,6 +959,21 @@ async function bootstrap(): Promise<void> {
       const url = new URL(request.url);
       const pathname = url.pathname;
 
+      // The isolated IE proxy host (IE_PROXY_ORIGIN) shares this server but
+      // must only ever serve proxied pages, never the app or other APIs.
+      if (
+        isIeProxyIsolatedHostHeader(request.headers.get("host")) &&
+        !isIeProxyIsolatedPathAllowed(pathname)
+      ) {
+        return new Response("Not Found", {
+          status: 404,
+          headers: {
+            "content-type": "text/plain; charset=utf-8",
+            "cache-control": "no-store",
+          },
+        });
+      }
+
       if (pathname === "/health") {
         return jsonResponse(
           {
@@ -1034,6 +1053,11 @@ async function bootstrap(): Promise<void> {
 
         const staticResponse = await handleStaticRequest(pathname);
         if (staticResponse) {
+          // Proxied IE pages run in an opaque origin and load the ryOS
+          // fonts cross-origin.
+          if (pathname.startsWith("/fonts/")) {
+            staticResponse.headers.set("Access-Control-Allow-Origin", "*");
+          }
           return staticResponse;
         }
 
