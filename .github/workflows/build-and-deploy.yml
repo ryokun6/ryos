@@ -20,6 +20,11 @@ concurrency:
   group: build-and-deploy-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default (PR jobs included); the image job adds
+# packages: write for GHCR.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Unit tests (Bun ${{ matrix.bun-version }})
@@ -293,10 +298,20 @@ jobs:
               "${url}") || http_code="000"
 
             echo "Coolify responded with HTTP ${http_code} (attempt ${attempt}/${max_attempts})"
+            # Never echo the raw body (it can reflect deploy URLs or tokens);
+            # surface only Coolify's short `message` field.
             if [ -s /tmp/coolify_response.json ]; then
-              echo "Response body:"
-              cat /tmp/coolify_response.json
-              echo
+              python3 - <<'PY' || true
+          import json
+          try:
+              with open("/tmp/coolify_response.json") as f:
+                  data = json.load(f)
+          except Exception:
+              raise SystemExit(0)
+          message = data.get("message") if isinstance(data, dict) else None
+          if isinstance(message, str) and message:
+              print("Coolify message: " + message[:200])
+          PY
             fi
 
             if [ "${http_code}" -ge 200 ] && [ "${http_code}" -lt 300 ]; then
