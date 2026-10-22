@@ -3,6 +3,7 @@ import { initLogger } from "../_utils/_logging.js";
 import createRedis from "../_utils/redis.js";
 import { getHeader } from "../_utils/request-helpers.js";
 import { runSyncMaintenance } from "../sync/v2/_maintenance.js";
+import { secretsEqual } from "../_utils/_secret-compare.js";
 
 /**
  * Cloud Sync v2 maintenance cron (trigger via an external scheduler, e.g. a
@@ -43,7 +44,7 @@ export default async function handler(
     return;
   }
 
-  if (getHeader(req, "authorization") !== `Bearer ${cronSecret}`) {
+  if (!secretsEqual(getHeader(req, "authorization"), `Bearer ${cronSecret}`)) {
     logger.warn("Rejected sync maintenance cron due to invalid secret");
     logger.response(401, Date.now() - startTime);
     res.status(401).json({ error: "Unauthorized" });

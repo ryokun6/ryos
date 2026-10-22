@@ -47,6 +47,7 @@ import {
   RYO_AGENT_TIMEOUTS,
 } from "../_utils/ryo-agent.js";
 import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
+import { secretsEqual } from "../_utils/_secret-compare.js";
 
 function setResponseHeaders(res: ApiResponse): void {
   res.setHeader("Content-Type", "application/json");
@@ -131,7 +132,7 @@ export default async function handler(
     return;
   }
 
-  if (getHeader(req, "authorization") !== `Bearer ${authSecret}`) {
+  if (!secretsEqual(getHeader(req, "authorization"), `Bearer ${authSecret}`)) {
     logger.warn("Rejected telegram heartbeat cron due to invalid secret");
     logger.response(401, Date.now() - startTime);
     sendJson(res, 401, { error: "Unauthorized" });
