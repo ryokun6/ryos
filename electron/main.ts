@@ -250,6 +250,25 @@ function sanitizeDefaultPath(defaultPath: unknown): string | undefined {
   return filename || undefined;
 }
 
+// Electron 43 points file dialogs at Downloads when `defaultPath` is omitted,
+// and stops restoring the last folder the OS used to remember. Keep that
+// folder in the main process (never trust a directory from the renderer).
+let lastDialogDirectory: string | undefined;
+
+function rememberDialogDirectory(filePath: string): void {
+  const directory = path.dirname(filePath);
+  if (directory && directory !== ".") {
+    lastDialogDirectory = directory;
+  }
+}
+
+function dialogStartPath(filename?: string): string | undefined {
+  if (lastDialogDirectory && filename) {
+    return path.join(lastDialogDirectory, filename);
+  }
+  return lastDialogDirectory ?? filename;
+}
+
 function bufferFromIpcData(data: unknown): Buffer {
   if (data instanceof ArrayBuffer) {
     return Buffer.from(data);
@@ -343,7 +362,12 @@ function createMainWindow(): BrowserWindow {
           titleBarStyle: "hiddenInset" as const,
           trafficLightPosition: { x: 12, y: 10 },
         }
-      : { frame: false }),
+      : {
+          frame: false,
+          // Electron 43 rounds frameless Linux windows when the desktop draws
+          // client-side decorations. The custom chrome is rectangular.
+          ...(process.platform === "linux" ? { roundedCorners: false } : {}),
+        }),
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -455,8 +479,10 @@ function registerIpcHandlers(): void {
       }
 
       const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+      const openStartPath = dialogStartPath();
       const openOptions = {
         title: typeof options.title === "string" ? options.title : undefined,
+        ...(openStartPath ? { defaultPath: openStartPath } : {}),
         filters: sanitizeDialogFilters(options.filters),
         properties: options.multiSelections
           ? ["openFile", "multiSelections"]
@@ -468,6 +494,11 @@ function registerIpcHandlers(): void {
 
       if (result.canceled || result.filePaths.length === 0) {
         return { canceled: true };
+      }
+
+      const firstPath = result.filePaths[0];
+      if (firstPath) {
+        rememberDialogDirectory(firstPath);
       }
 
       const files = await Promise.all(
@@ -505,9 +536,12 @@ function registerIpcHandlers(): void {
 
       const data = bufferFromIpcData(options?.data);
       const win = BrowserWindow.fromWebContents(event.sender) ?? mainWindow;
+      const saveStartPath = dialogStartPath(
+        sanitizeDefaultPath(options?.defaultPath)
+      );
       const saveOptions = {
         title: typeof options.title === "string" ? options.title : undefined,
-        defaultPath: sanitizeDefaultPath(options?.defaultPath),
+        ...(saveStartPath ? { defaultPath: saveStartPath } : {}),
         filters: sanitizeDialogFilters(options?.filters),
       } satisfies Electron.SaveDialogOptions;
       const result = win
@@ -518,6 +552,7 @@ function registerIpcHandlers(): void {
         return { canceled: true };
       }
 
+      rememberDialogDirectory(result.filePath);
       await fs.writeFile(result.filePath, data);
       return { canceled: false, filePath: result.filePath };
     }
@@ -554,7 +589,10 @@ function configureAppMetadata(): void {
 
 async function ensureWidevineCdmReady(): Promise<void> {
   try {
-    await components.whenReady();
+    // Only the browser Widevine CDM. The Media Foundation CDM is experimental
+    // and disabled in castlabs release builds; requiring every component would
+    // wait on it. Persistent Widevine licenses are not available on ECS 43+.
+    await components.whenReady([components.WIDEVINE_CDM_ID]);
     console.log("[electron] Widevine CDM ready:", components.status());
   } catch (err) {
     console.error(
