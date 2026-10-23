@@ -361,7 +361,11 @@ export function WordTimingHighlight({
             <span
               ref={(el) => { overlayRefs.current[idx] = el; }}
               style={{ 
-                display: "block",
+                // Must be its own formatting context like the base layer (a grid
+                // item). As a plain nested block, Chromium 152+ lays out a leading
+                // overflowing <ruby> line differently and the fill drops by this
+                // span's padding-top below the base text.
+                display: "flow-root",
                 color: highlightColor || (isOldSchoolKaraoke ? OLD_SCHOOL_HIGHLIGHT_COLOR : "rgba(255, 255, 255, 1)"),
                 opacity: isOldSchoolKaraoke ? undefined : 1,
                 textShadow: isOldSchoolKaraoke ? "none" : BASE_SHADOW,
