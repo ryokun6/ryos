@@ -265,5 +265,5 @@
     "undici": "6.29.1",
     "uuid": "14.0.1"
   },
-  "packageManager": "bun@1.4.3"
+  "packageManager": "bun@1.4.4"
 }

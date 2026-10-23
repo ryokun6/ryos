@@ -1,7 +1,7 @@
 # Dataset files change only when their URLs change, so this layer stays cached
 # across app rebuilds. A failed download fails the image build (an empty layer
 # would be cached). Runtime still lazy-loads if a file is missing.
-FROM --platform=linux/amd64 oven/bun:1.4.3 AS dictionary-data
+FROM --platform=linux/amd64 oven/bun:1.4.4 AS dictionary-data
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ ENV DICTIONARY_DATA_DIR=/app/data/dictionary
 
 RUN mkdir -p /app/data/dictionary && bun scripts/prefetch-dictionary-data.ts
 
-FROM --platform=linux/amd64 oven/bun:1.4.3 AS build
+FROM --platform=linux/amd64 oven/bun:1.4.4 AS build
 
 WORKDIR /app
 
@@ -34,16 +34,16 @@ RUN bun scripts/build-dictionary-indexes.ts && bun run build
 
 # Runtime dependencies only: the server never imports devDependencies
 # (build tooling, test libraries), so they stay out of the final image.
-FROM --platform=linux/amd64 oven/bun:1.4.3 AS prod-deps
+FROM --platform=linux/amd64 oven/bun:1.4.4 AS prod-deps
 
 WORKDIR /app
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
-FROM --platform=linux/amd64 oven/bun:1.4.3 AS runtime
+FROM --platform=linux/amd64 oven/bun:1.4.4 AS runtime
 
-# oven/bun:1.4.3 is Debian frozen when that tag was published.
+# oven/bun:1.4.4 is Debian frozen when that tag was published.
 # Upgrade OS packages at image build so the runtime snapshot picks up
 # later security updates, then install curl.
 RUN apt-get update \
