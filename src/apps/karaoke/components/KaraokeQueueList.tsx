@@ -2,10 +2,10 @@ import { useTranslation } from "react-i18next";
 import { ArrowUp, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import type { ListenQueueItem } from "@/shared/listen/queue";
+import type { DisplayQueueItem } from "../queuePending";
 
 interface KaraokeQueueListProps {
-  items: ListenQueueItem[];
+  items: ReadonlyArray<DisplayQueueItem>;
   canEdit: boolean;
   onBump: (entryId: string) => void;
   onRemove: (entryId: string) => void;
@@ -77,6 +77,8 @@ export function KaraokeQueueList({
           items.map((item, index) => (
             <li
               key={item.entryId}
+              data-karaoke-queue-pending={item.pending ? "" : undefined}
+              aria-busy={item.pending || undefined}
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5 text-black/90",
                 rowFont,
@@ -96,7 +98,7 @@ export function KaraokeQueueList({
                   {t("apps.karaoke.queue.from", { name: item.requestedBy })}
                 </div>
               </div>
-              {canEdit ? (
+              {canEdit && !item.pending ? (
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"

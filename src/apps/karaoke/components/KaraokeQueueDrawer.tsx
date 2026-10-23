@@ -2,12 +2,12 @@ import { memo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { AppDrawer } from "@/components/shared/AppDrawer";
 import { useSound, Sounds } from "@/hooks/useSound";
-import type { ListenQueueItem } from "@/shared/listen/queue";
+import type { DisplayQueueItem } from "../queuePending";
 import { KaraokeQueueList } from "./KaraokeQueueList";
 
 interface KaraokeQueueDrawerProps {
   isOpen: boolean;
-  items: ListenQueueItem[];
+  items: ReadonlyArray<DisplayQueueItem>;
   canEdit: boolean;
   /** When set, the drawer header shows a close button. Karaoke closes from the toolbar toggle. */
   onClose?: () => void;

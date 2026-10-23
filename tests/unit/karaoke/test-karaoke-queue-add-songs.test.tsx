@@ -205,6 +205,32 @@ describe("Karaoke queue add songs", () => {
     expect(opened).toBe(1);
   });
 
+  test("a pending add shows the original title instead of an empty queue", async () => {
+    const host = await render(
+      React.createElement(KaraokeQueueList, {
+        items: [
+          {
+            ...queueItem("pending-1", "Original Title"),
+            pending: true,
+            artist: "Original Channel",
+          },
+        ],
+        canEdit: true,
+        onBump: () => {},
+        onRemove: () => {},
+        onAddSongs: () => {},
+      })
+    );
+
+    expect(host.textContent).toContain("Original Title");
+    expect(host.textContent).toContain("Original Channel");
+    expect(host.textContent).not.toContain("Nothing queued");
+    const pending = host.querySelector("li[data-karaoke-queue-pending]");
+    expect(pending?.getAttribute("aria-busy")).toBe("true");
+    expect(pending?.querySelector("button")).toBeNull();
+    expect(addButtons(host)).toHaveLength(1);
+  });
+
   test("read-only viewers do not get an add songs button", async () => {
     const host = await render(
       React.createElement(KaraokeQueueList, {

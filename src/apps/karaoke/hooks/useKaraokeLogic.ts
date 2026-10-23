@@ -34,6 +34,12 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { readRememberedListenSession } from "@/lib/listenSessionMemory";
 import type { ListenQueueItem } from "@/shared/contracts/listen";
+import {
+  isPendingQueueEntry,
+  mergeQueueWithPending,
+  nextPendingQueueId,
+  type PendingQueueItem,
+} from "../queuePending";
 import { registerKaraokeSessionNext } from "../listenQueueBridge";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/cover-flow/types";
@@ -231,6 +237,19 @@ export function useKaraokeLogic({
   );
 
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
+  const [pendingQueue, setPendingQueue] = useState<PendingQueueItem[]>([]);
+  const pendingSerialRef = useRef(0);
+  const listenSessionId = listenSession?.id ?? null;
+  const previousListenSessionIdRef = useRef(listenSessionId);
+  useEffect(() => {
+    if (previousListenSessionIdRef.current === listenSessionId) return;
+    previousListenSessionIdRef.current = listenSessionId;
+    setPendingQueue([]);
+  }, [listenSessionId]);
+  const queueItems = useMemo(
+    () => mergeQueueWithPending(listenSession?.queue ?? [], pendingQueue),
+    [listenSession?.queue, pendingQueue]
+  );
   const [songSearchPurpose, setSongSearchPurpose] = useState<"library" | "queue">("library");
   const queueAdvanceInFlightRef = useRef(false);
   const endedTrackReportedRef = useRef<string | null>(null);
@@ -692,10 +711,10 @@ export function useKaraokeLogic({
     async (
       track: { id: string; title: string; artist?: string },
       placement: "end" | "next"
-    ) => {
+    ): Promise<boolean> => {
       if (!canQueueSongs) {
         toast.error(t("apps.karaoke.queue.signIn"));
-        return;
+        return false;
       }
       const result = await updateListenQueue({
         op: placement === "next" ? "addNext" : "add",
@@ -705,15 +724,99 @@ export function useKaraokeLogic({
       });
       if (!result.ok) {
         toast.error(describeQueueError(result.error));
-        return;
+        return false;
       }
       showStatus(
         placement === "next"
           ? t("apps.karaoke.queue.playingNext")
           : t("apps.karaoke.queue.queued")
       );
+      return true;
     },
     [canQueueSongs, describeQueueError, showStatus, t, updateListenQueue]
+  );
+
+  const beginPendingQueueItem = useCallback(
+    (seed: {
+      trackId: string;
+      title: string;
+      artist?: string;
+      placement: "end" | "next";
+    }) => {
+      pendingSerialRef.current += 1;
+      const localId = nextPendingQueueId(pendingSerialRef.current);
+      const item: PendingQueueItem = {
+        localId,
+        trackId: seed.trackId,
+        title: seed.title,
+        artist: seed.artist,
+        requestedBy: username || "",
+        placement: seed.placement,
+      };
+      setPendingQueue((current) => [...current, item]);
+      return localId;
+    },
+    [username]
+  );
+
+  const patchPendingQueueItem = useCallback(
+    (
+      localId: string,
+      patch: { trackId: string; title: string; artist?: string }
+    ) => {
+      setPendingQueue((current) =>
+        current.map((item) =>
+          item.localId === localId
+            ? {
+                ...item,
+                trackId: patch.trackId,
+                title: patch.title,
+                artist: patch.artist,
+              }
+            : item
+        )
+      );
+    },
+    []
+  );
+
+  const endPendingQueueItem = useCallback((localId: string) => {
+    setPendingQueue((current) =>
+      current.some((item) => item.localId === localId)
+        ? current.filter((item) => item.localId !== localId)
+        : current
+    );
+  }, []);
+
+  const addResolvedTrackToQueue = useCallback(
+    async (
+      placement: "end" | "next",
+      seed: { trackId: string; title: string; artist?: string },
+      resolve: () => Promise<{ id: string; title: string; artist?: string } | null>
+    ): Promise<"ok" | "metadata-failed" | "queue-failed" | "left"> => {
+      const sessionId = useListenSessionStore.getState().currentSession?.id ?? null;
+      const localId = beginPendingQueueItem({ ...seed, placement });
+      try {
+        const resolved = await resolve();
+        if (!resolved) return "metadata-failed";
+        if (useListenSessionStore.getState().currentSession?.id !== sessionId) {
+          return "left";
+        }
+        patchPendingQueueItem(localId, {
+          trackId: resolved.id,
+          title: resolved.title,
+          artist: resolved.artist,
+        });
+        const queued = await queueTrack(
+          { id: resolved.id, title: resolved.title, artist: resolved.artist },
+          placement
+        );
+        return queued ? "ok" : "queue-failed";
+      } finally {
+        endPendingQueueItem(localId);
+      }
+    },
+    [beginPendingQueueItem, endPendingQueueItem, patchPendingQueueItem, queueTrack]
   );
 
   const playQueuedItem = useCallback(
@@ -2126,38 +2229,42 @@ export function useKaraokeLogic({
     (index: number, placement: "end" | "next") => {
       const track = tracks[index];
       if (!track) return;
-      void queueTrack(
-        { id: track.id, title: track.title, artist: track.artist },
-        placement
+      void addResolvedTrackToQueue(
+        placement,
+        { trackId: track.id, title: track.title, artist: track.artist },
+        async () => ({ id: track.id, title: track.title, artist: track.artist })
       );
     },
-    [queueTrack, tracks]
+    [addResolvedTrackToQueue, tracks]
   );
 
   const handleQueueSearchResult = useCallback(
     (result: SongSearchResult, placement: "end" | "next") => {
       setIsSongSearchDialogOpen(false);
-      void (async () => {
-        try {
+      void addResolvedTrackToQueue(
+        placement,
+        {
+          trackId: result.videoId,
+          title: result.title,
+          artist: result.channelTitle,
+        },
+        async () => {
           const added = await useMediaLibraryStore
             .getState()
             .addTrackFromVideoId(result.videoId, false, { keepPlayback: true });
-          await queueTrack(
-            {
-              id: added?.id ?? result.videoId,
-              title: added?.title || result.title,
-              artist: added?.artist || result.channelTitle,
-            },
-            placement
-          );
-        } catch (error) {
-          toast.error(
-            error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
-          );
+          return {
+            id: added?.id ?? result.videoId,
+            title: added?.title || result.title,
+            artist: added?.artist || result.channelTitle,
+          };
         }
-      })();
+      ).catch((error: unknown) => {
+        toast.error(
+          error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
+        );
+      });
     },
-    [queueTrack, t]
+    [addResolvedTrackToQueue, t]
   );
 
   const handleQueueUrl = useCallback(
@@ -2167,17 +2274,23 @@ export function useKaraokeLogic({
         if (!id) {
           throw new Error(t("apps.karaoke.queue.invalidTrack"));
         }
-        const added = await useMediaLibraryStore
-          .getState()
-          .addTrackFromVideoId(url, false, { keepPlayback: true });
-        if (!added) {
+        const outcome = await addResolvedTrackToQueue(
+          placement,
+          { trackId: id, title: id },
+          async () => {
+            const added = await useMediaLibraryStore
+              .getState()
+              .addTrackFromVideoId(url, false, { keepPlayback: true });
+            if (!added) return null;
+            return { id: added.id, title: added.title, artist: added.artist };
+          }
+        );
+        if (outcome === "metadata-failed") {
           throw new Error(t("apps.karaoke.queue.updateFailed"));
         }
-        await queueTrack(
-          { id: added.id, title: added.title, artist: added.artist },
-          placement
-        );
-        setIsSongSearchDialogOpen(false);
+        if (outcome === "ok") {
+          setIsSongSearchDialogOpen(false);
+        }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
@@ -2185,11 +2298,12 @@ export function useKaraokeLogic({
         throw error;
       }
     },
-    [queueTrack, t]
+    [addResolvedTrackToQueue, t]
   );
 
   const handleBumpQueueItem = useCallback(
     (entryId: string) => {
+      if (isPendingQueueEntry(entryId)) return;
       void updateListenQueue({ op: "bump", entryId }).then((result) => {
         if (!result.ok) toast.error(describeQueueError(result.error));
       });
@@ -2199,6 +2313,7 @@ export function useKaraokeLogic({
 
   const handleRemoveQueueItem = useCallback(
     (entryId: string) => {
+      if (isPendingQueueEntry(entryId)) return;
       void updateListenQueue({ op: "remove", entryId }).then((result) => {
         if (!result.ok) toast.error(describeQueueError(result.error));
       });
@@ -2329,6 +2444,7 @@ export function useKaraokeLogic({
     handleSongSearchOpenChange,
     queueDrawerOpen,
     setQueueDrawerOpen,
+    queueItems,
     handleQueueLibraryTrack,
     handleQueueSearchResult,
     handleQueueUrl,

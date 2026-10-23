@@ -35,7 +35,7 @@ export function KaraokeListenChrome({
         onTransferHost={c.handleTransferSessionHost}
         onSendReaction={c.handleSendReaction}
         onToggleQueue={() => c.setQueueDrawerOpen((open) => !open)}
-        queueCount={c.listenSession.queue?.length ?? 0}
+        queueCount={c.queueItems.length}
         onInteraction={c.restartAutoHideTimer}
       />
     </div>

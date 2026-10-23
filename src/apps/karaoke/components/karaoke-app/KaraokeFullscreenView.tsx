@@ -37,7 +37,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     showEmptyLibrary, handleAddSong, listenSession,     showLyrics, isOffline, seekToTime,
     handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
-    queueDrawerOpen, canQueueSongs,
+    queueDrawerOpen, queueItems, canQueueSongs,
     handleBumpQueueItem, handleRemoveQueueItem, handleOpenQueueSongSearch,
   } = c;
 
@@ -123,7 +123,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
           <div className="absolute inset-0 z-[80] pointer-events-none">
             <KaraokeQueueDrawer
               isOpen={queueDrawerOpen}
-              items={listenSession.queue ?? []}
+              items={queueItems}
               canEdit={canQueueSongs}
               onBump={handleBumpQueueItem}
               onRemove={handleRemoveQueueItem}

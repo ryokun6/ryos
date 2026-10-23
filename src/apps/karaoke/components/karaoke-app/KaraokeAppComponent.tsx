@@ -62,7 +62,7 @@ export function KaraokeAppComponent({
           c.listenSession && !c.isFullScreen ? (
             <KaraokeQueueDrawer
               isOpen={c.queueDrawerOpen}
-              items={c.listenSession.queue ?? []}
+              items={c.queueItems}
               canEdit={c.canQueueSongs}
               onBump={c.handleBumpQueueItem}
               onRemove={c.handleRemoveQueueItem}
