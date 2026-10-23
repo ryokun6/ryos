@@ -198,7 +198,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/youtube": "^0.3.0",
     "@vitejs/plugin-react-swc": "^4.3.3",
-    "electron": "github:castlabs/electron-releases#v42.5.2+wvcus",
+    "electron": "github:castlabs/electron-releases#v44.9.3+wvcus",
     "electron-builder": "^26.18.0",
     "electron-builder-squirrel-windows": "26.18.0",
     "esbuild": "0.28.2",

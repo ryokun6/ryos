@@ -30,7 +30,9 @@ mac:
     - zip
   icon: build/icon.icns
   artifactName: ryOS_${version}_aarch64.${ext}
-  minimumSystemVersion: "10.13"
+  # Electron 44 / Chromium 152 require macOS 13 (Ventura). 10.13 was already
+  # below what Electron 42 could run; declare the version the binary supports.
+  minimumSystemVersion: "13.0"
   hardenedRuntime: true
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist

@@ -158,6 +158,18 @@ function isChatMessage(value: unknown): value is ChatMessage {
   );
 }
 
+const NOTIFICATION_ID_MAX_LENGTH = 64;
+
+function notificationIdForChannel(channelName: string): string {
+  const prefix = "chat-";
+  const id = `${prefix}${channelName}`;
+  if (id.length <= NOTIFICATION_ID_MAX_LENGTH) {
+    return id;
+  }
+  // Keep the room id at the end. Windows rejects ids over 64 UTF-16 units.
+  return `${prefix}${channelName.slice(-(NOTIFICATION_ID_MAX_LENGTH - prefix.length))}`;
+}
+
 function toNotificationPreview(content: unknown): string {
   const decoded = decodeHtmlEntities(String(content || ""));
   return decoded.replace(/\s+/g, " ").trim().slice(0, MAX_NOTIFICATION_PREVIEW_LENGTH);
@@ -983,7 +995,10 @@ export class ElectronChatNotificationService {
       {
         title: `@${message.username}`,
         body,
-        tag: `chat-${channelName}`,
+        // Electron 44 identifies a notification with `id` (Windows toast Tag).
+        // The same room replaces its previous toast instead of stacking.
+        // Windows rejects ids longer than 64 UTF-16 code units.
+        id: notificationIdForChannel(channelName),
       },
       () => this.openChatRoom(message.roomId)
     );

@@ -36,6 +36,8 @@ function vmpSignPkg(appOutDir) {
 
   const python = pythonCommand();
   // --no-ask is a top-level vmp flag (-n), not a sign-pkg argument.
+  // Omit --persistent. ECS dropped persistent Widevine licenses in v42, and
+  // the EVS default (streaming) is the signature kind current CDMs accept.
   const cmd = `${python} -m castlabs_evs.vmp -n sign-pkg "${appOutDir}"`;
   console.log("[electron] VMP signing package:", appOutDir);
   execSync(cmd, {
