@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Trash } from "@phosphor-icons/react";
+import { ArrowUp, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import type { ListenQueueItem } from "@/shared/listen/queue";
@@ -41,10 +41,10 @@ export function KaraokeQueueList({
       className={cn(
         "focus:outline-none",
         rowFont,
-        isMacOSTheme && "metal-inset-btn px-2 py-0.5 text-[11px]",
-        isSystem7 && "border border-black bg-white px-2 py-0.5 hover:bg-black hover:text-white",
-        isWindowsTheme && !isWin98 && "rounded-sm border border-[#7f9db9] bg-white px-2 py-0.5 text-black hover:bg-[#316AC5] hover:text-white",
-        isWin98 && "border border-[#808080] bg-[#c0c0c0] px-2 py-0.5 text-black"
+        isMacOSTheme && "aqua-button primary text-[11px]",
+        isSystem7 &&
+          "inline-flex items-center justify-center rounded-md bg-primary px-3 text-primary-foreground hover:bg-primary/90 h-8 text-xs",
+        isWindowsTheme && "button"
       )}
       onClick={(event) => {
         event.stopPropagation();
@@ -93,16 +93,15 @@ export function KaraokeQueueList({
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
-                    className={cn(
-                      "px-1.5 py-0.5 hover:underline focus:outline-none",
-                      isWin98 && "border border-[#808080] bg-[#c0c0c0] text-black hover:no-underline"
-                    )}
+                    aria-label={t("apps.karaoke.queue.playNext")}
+                    title={t("apps.karaoke.queue.playNext")}
+                    className="p-1 focus:outline-none"
                     onClick={(event) => {
                       event.stopPropagation();
                       onBump(item.entryId);
                     }}
                   >
-                    {t("apps.karaoke.queue.playNext")}
+                    <ArrowUp size={14} weight="bold" />
                   </button>
                   <button
                     type="button"

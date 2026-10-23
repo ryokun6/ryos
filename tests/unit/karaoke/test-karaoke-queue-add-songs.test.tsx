@@ -73,13 +73,13 @@ beforeAll(async () => {
           apps: {
             karaoke: {
               queue: {
-                title: "up next",
-                empty: "nothing queued",
-                add: "add to queue",
-                addSongs: "add songs",
-                addSongsHint: "search, then add to the queue",
-                playNext: "play next",
-                remove: "remove",
+                title: "Up Next",
+                empty: "Nothing queued",
+                add: "Add to Queue",
+                addSongs: "Add Songs",
+                addSongsHint: "Search, then add to the queue",
+                playNext: "Play Next",
+                remove: "Remove",
                 from: "{{name}}",
               },
             },
@@ -150,11 +150,12 @@ describe("Karaoke queue add songs", () => {
       })
     );
 
-    expect(host.textContent).toContain("nothing queued");
+    expect(host.textContent).toContain("Nothing queued");
     const buttons = addButtons(host);
     expect(buttons).toHaveLength(1);
-    expect(buttons[0]?.textContent).toBe("add songs");
-    expect(buttons[0]?.className).toContain("metal-inset-btn");
+    expect(buttons[0]?.textContent).toBe("Add Songs");
+    expect(buttons[0]?.className).toContain("aqua-button");
+    expect(buttons[0]?.className).toContain("primary");
     expect(buttons[0]?.closest("ul")).not.toBeNull();
 
     await act(async () => {
@@ -180,7 +181,16 @@ describe("Karaoke queue add songs", () => {
     const buttons = addButtons(host);
     expect(buttons).toHaveLength(1);
     expect(buttons[0]?.closest("ul")).toBeNull();
-    expect(host.textContent).toContain("play next");
+    const playNext = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Play Next"]'
+    );
+    expect(playNext?.getAttribute("title")).toBe("Play Next");
+    expect(playNext?.querySelector("svg")).not.toBeNull();
+    expect(playNext?.textContent?.trim()).toBe("");
+    const remove = host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove"]'
+    );
+    expect(remove?.querySelector("svg")).not.toBeNull();
 
     await act(async () => {
       buttons[0]?.click();
@@ -199,7 +209,7 @@ describe("Karaoke queue add songs", () => {
       })
     );
     expect(addButtons(host)).toHaveLength(0);
-    expect(host.textContent).toContain("nothing queued");
+    expect(host.textContent).toContain("Nothing queued");
   });
 });
 

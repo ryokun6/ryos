@@ -64,7 +64,6 @@ export function KaraokeAppComponent({
               isOpen={c.queueDrawerOpen}
               items={c.listenSession.queue ?? []}
               canEdit={c.canQueueSongs}
-              onClose={() => c.setQueueDrawerOpen(false)}
               onBump={c.handleBumpQueueItem}
               onRemove={c.handleRemoveQueueItem}
               onAddSongs={

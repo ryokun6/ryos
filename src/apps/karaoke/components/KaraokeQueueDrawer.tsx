@@ -9,7 +9,8 @@ interface KaraokeQueueDrawerProps {
   isOpen: boolean;
   items: ListenQueueItem[];
   canEdit: boolean;
-  onClose: () => void;
+  /** When set, the drawer header shows a close button. Karaoke closes from the toolbar toggle. */
+  onClose?: () => void;
   onBump: (entryId: string) => void;
   onRemove: (entryId: string) => void;
   onAddSongs?: () => void;
