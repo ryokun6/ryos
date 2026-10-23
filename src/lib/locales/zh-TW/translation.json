@@ -3826,7 +3826,9 @@
         "rateLimited": "佇列操作太頻繁 – 請稍後再試",
         "notInRoom": "你不在這個房間",
         "invalidTrack": "這首歌不能加入佇列",
-        "openAria": "點歌佇列，{{count}} 首待唱"
+        "openAria": "點歌佇列，{{count}} 首待唱",
+        "addSongs": "加入歌曲",
+        "addSongsHint": "搜尋後加入佇列"
       },
       "lyrics": {
         "noLyricsFound": "找不到歌詞",

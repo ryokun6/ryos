@@ -3826,7 +3826,9 @@
         "rateLimited": "操作が多すぎる – 少し待って",
         "notInRoom": "この部屋にいない",
         "invalidTrack": "この曲は予約できない",
-        "openAria": "予約、{{count}} 曲待ち"
+        "openAria": "予約、{{count}} 曲待ち",
+        "addSongs": "曲を追加",
+        "addSongsHint": "検索して予約に追加"
       },
       "lyrics": {
         "noLyricsFound": "歌詞が見つかりません",

@@ -22,6 +22,13 @@ export interface SongSearchDialogProps {
   /** Listen-together: queue a pasted YouTube URL. */
   onQueueUrl?: (url: string) => Promise<void>;
   onPlayNextUrl?: (url: string) => Promise<void>;
+  /**
+   * Opened from the listen-together queue. Confirm adds to the queue and
+   * leaves the dialog open so several songs can be added.
+   */
+  queueOnly?: boolean;
+  /** Draw above the karaoke fullscreen portal. */
+  aboveFullscreen?: boolean;
   initialQuery?: string;
   mode?: SearchMode;
   appleMusicAuthorized?: boolean;

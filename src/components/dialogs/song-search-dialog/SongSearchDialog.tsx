@@ -12,47 +12,58 @@ import { SongSearchDialogBody } from "./components/SongSearchDialogBody";
 
 export function SongSearchDialog(props: SongSearchDialogProps) {
   const vm = useSongSearchDialog(props);
-  const { t, isWindowsTheme, isMacTheme } = vm;
-  const { isOpen, onOpenChange } = props;
+  const { t, isWindowsTheme, isMacTheme, queueOnly } = vm;
+  const { isOpen, onOpenChange, aboveFullscreen = false } = props;
 
   const dialogContent = <SongSearchDialogBody {...vm} />;
+  const dialogTitle = queueOnly
+    ? t("apps.karaoke.queue.addSongs")
+    : t("apps.ipod.dialogs.addSongTitle");
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        className={cn(isWindowsTheme && "p-0")}
+        className={cn(isWindowsTheme && "p-0", aboveFullscreen && "z-[10050]")}
+        overlayClassName={aboveFullscreen ? "z-[10040]" : undefined}
+        disableSheet={aboveFullscreen}
         onKeyDown={(e) => e.stopPropagation()}
       >
         {isWindowsTheme ? (
           <>
             <DialogTitle className="sr-only">
-              {t("apps.ipod.dialogs.addSongTitle")}
+              {dialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {t("apps.ipod.dialogs.songSearchDescription")}
+              {queueOnly
+                ? t("apps.karaoke.queue.addSongsHint")
+                : t("apps.ipod.dialogs.songSearchDescription")}
             </DialogDescription>
-            <DialogHeader>{t("apps.ipod.dialogs.addSongTitle")}</DialogHeader>
+            <DialogHeader>{dialogTitle}</DialogHeader>
             <div className="window-body">{dialogContent}</div>
           </>
         ) : isMacTheme ? (
           <>
             <DialogTitle className="sr-only">
-              {t("apps.ipod.dialogs.addSongTitle")}
+              {dialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {t("apps.ipod.dialogs.songSearchDescription")}
+              {queueOnly
+                ? t("apps.karaoke.queue.addSongsHint")
+                : t("apps.ipod.dialogs.songSearchDescription")}
             </DialogDescription>
-            <DialogHeader>{t("apps.ipod.dialogs.addSongTitle")}</DialogHeader>
+            <DialogHeader>{dialogTitle}</DialogHeader>
             {dialogContent}
           </>
         ) : (
           <>
             <DialogHeader>
               <DialogTitle className="font-normal text-[16px]">
-                {t("apps.ipod.dialogs.addSongTitle")}
+                {dialogTitle}
               </DialogTitle>
               <DialogDescription className="sr-only">
-                {t("apps.ipod.dialogs.songSearchDescription")}
+                {queueOnly
+                  ? t("apps.karaoke.queue.addSongsHint")
+                  : t("apps.ipod.dialogs.songSearchDescription")}
               </DialogDescription>
             </DialogHeader>
             {dialogContent}

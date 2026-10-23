@@ -3838,7 +3838,9 @@
         "rateLimited": "demasiados cambios – inténtalo luego",
         "notInRoom": "no estás en esta sala",
         "invalidTrack": "esa canción no se puede añadir",
-        "openAria": "cola de canciones, {{count}} en espera"
+        "openAria": "cola de canciones, {{count}} en espera",
+        "addSongs": "añadir canciones",
+        "addSongsHint": "busca y añádelas a la cola"
       },
       "lyrics": {
         "noLyricsFound": "No se encontraron letras",

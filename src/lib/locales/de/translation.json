@@ -3826,7 +3826,9 @@
         "rateLimited": "zu viele Änderungen – später erneut",
         "notInRoom": "du bist nicht in diesem Raum",
         "invalidTrack": "dieser Song kann nicht eingereiht werden",
-        "openAria": "Song-Warteschlange, {{count}} wartend"
+        "openAria": "Song-Warteschlange, {{count}} wartend",
+        "addSongs": "Songs hinzufügen",
+        "addSongsHint": "suchen, dann in die Warteschlange"
       },
       "lyrics": {
         "noLyricsFound": "Keine Liedtexte gefunden",

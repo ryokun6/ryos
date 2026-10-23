@@ -22,6 +22,7 @@ export function useSongSearchDialog({
   onPlayNextSelect,
   onQueueUrl,
   onPlayNextUrl,
+  queueOnly = false,
   initialQuery = "",
   mode = "youtube",
   appleMusicAuthorized = false,
@@ -86,6 +87,25 @@ export function useSongSearchDialog({
         type: "searchError",
         error: t("apps.ipod.dialogs.songSearchEmptyQuery"),
       });
+      return;
+    }
+
+    if (!isAppleMusicMode && isUrl && queueOnly && onQueueUrl) {
+      dispatch({ type: "setAdding", isAdding: true });
+      dispatch({ type: "setError", error: null });
+      try {
+        await onQueueUrl(query.trim());
+      } catch (err) {
+        dispatch({
+          type: "setError",
+          error:
+            err instanceof Error
+              ? err.message
+              : t("apps.ipod.dialogs.songSearchError"),
+        });
+      } finally {
+        dispatch({ type: "setAdding", isAdding: false });
+      }
       return;
     }
 
@@ -229,6 +249,10 @@ export function useSongSearchDialog({
     }
 
     if (selectedIndex >= 0 && selectedIndex < results.length) {
+      if (queueOnly && onQueueSelect) {
+        onQueueSelect(results[selectedIndex]);
+        return;
+      }
       onSelect(results[selectedIndex]);
       onOpenChange(false);
     }
@@ -239,6 +263,8 @@ export function useSongSearchDialog({
     onAppleMusicSelect,
     results,
     onSelect,
+    onQueueSelect,
+    queueOnly,
     onOpenChange,
     t,
   ]);
@@ -278,6 +304,10 @@ export function useSongSearchDialog({
 
       if (index >= 0 && index < results.length) {
         dispatch({ type: "setSelectedIndex", index });
+        if (queueOnly && onQueueSelect) {
+          onQueueSelect(results[index]);
+          return;
+        }
         onSelect(results[index]);
         onOpenChange(false);
       }
@@ -288,6 +318,8 @@ export function useSongSearchDialog({
       onAppleMusicSelect,
       results,
       onSelect,
+      onQueueSelect,
+      queueOnly,
       onOpenChange,
       t,
     ]
@@ -329,6 +361,7 @@ export function useSongSearchDialog({
     onPlayNextSelect,
     onQueueUrl,
     onPlayNextUrl,
+    queueOnly,
     fontStyle,
     fontClass,
     displayedResults,

@@ -14,6 +14,7 @@ interface KaraokeQueueDrawerProps {
   onClose: () => void;
   onBump: (entryId: string) => void;
   onRemove: (entryId: string) => void;
+  onAddSongs?: () => void;
   className?: string;
 }
 
@@ -24,6 +25,7 @@ export const KaraokeQueueDrawer = memo(function KaraokeQueueDrawer({
   onClose,
   onBump,
   onRemove,
+  onAddSongs,
   className,
 }: KaraokeQueueDrawerProps) {
   const { t } = useTranslation();
@@ -52,6 +54,28 @@ export const KaraokeQueueDrawer = memo(function KaraokeQueueDrawer({
     isWindowsTheme && "font-tahoma text-[11px]"
   );
 
+  const showAdd = canEdit && Boolean(onAddSongs);
+  const addSongsButton = showAdd ? (
+    <button
+      type="button"
+      data-karaoke-queue-add=""
+      className={cn(
+        "focus:outline-none",
+        rowFont,
+        isMacOSTheme && "metal-inset-btn px-2 py-0.5 text-[11px]",
+        isSystem7 && "border border-black bg-white px-2 py-0.5 hover:bg-black hover:text-white",
+        isWindowsTheme && !isWin98 && "rounded-sm border border-[#7f9db9] bg-white px-2 py-0.5 text-black hover:bg-[#316AC5] hover:text-white",
+        isWin98 && "border border-[#808080] bg-[#c0c0c0] px-2 py-0.5 text-black"
+      )}
+      onClick={(event) => {
+        event.stopPropagation();
+        onAddSongs?.();
+      }}
+    >
+      {t("apps.karaoke.queue.addSongs")}
+    </button>
+  ) : null;
+
   return (
     <AppDrawer
       isOpen={isOpen}
@@ -65,8 +89,9 @@ export const KaraokeQueueDrawer = memo(function KaraokeQueueDrawer({
         aria-label={t("apps.karaoke.queue.title")}
       >
         {items.length === 0 ? (
-          <li className={cn("px-3 py-2 opacity-60", rowFont)}>
-            {t("apps.karaoke.queue.empty")}
+          <li className={cn("flex flex-col items-start gap-2 px-3 py-3", rowFont)}>
+            <span className="opacity-60">{t("apps.karaoke.queue.empty")}</span>
+            {addSongsButton}
           </li>
         ) : (
           items.map((item, index) => (
@@ -124,6 +149,16 @@ export const KaraokeQueueDrawer = memo(function KaraokeQueueDrawer({
           ))
         )}
       </ul>
+      {showAdd && items.length > 0 ? (
+        <div
+          className={cn(
+            "shrink-0 border-t px-2 py-1.5",
+            isMacOSTheme ? "border-black/10" : "border-black/15"
+          )}
+        >
+          {addSongsButton}
+        </div>
+      ) : null}
     </AppDrawer>
   );
 });

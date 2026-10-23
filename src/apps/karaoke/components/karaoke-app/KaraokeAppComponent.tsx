@@ -67,6 +67,9 @@ export function KaraokeAppComponent({
               onClose={() => c.setQueueDrawerOpen(false)}
               onBump={c.handleBumpQueueItem}
               onRemove={c.handleRemoveQueueItem}
+              onAddSongs={
+                c.canQueueSongs ? c.handleOpenQueueSongSearch : undefined
+              }
             />
           ) : null,
       }}

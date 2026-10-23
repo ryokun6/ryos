@@ -3826,7 +3826,9 @@
         "rateLimited": "변경이 너무 많음 – 잠시 후",
         "notInRoom": "이 방에 없음",
         "invalidTrack": "이 곡은 추가할 수 없음",
-        "openAria": "대기열, {{count}}곡 대기"
+        "openAria": "대기열, {{count}}곡 대기",
+        "addSongs": "곡 추가",
+        "addSongsHint": "검색 후 대기열에 추가"
       },
       "lyrics": {
         "noLyricsFound": "가사를 찾을 수 없습니다",

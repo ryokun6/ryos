@@ -3826,7 +3826,9 @@
         "rateLimited": "队列操作太频繁 – 请稍后再试",
         "notInRoom": "你不在这个房间",
         "invalidTrack": "这首歌不能加入队列",
-        "openAria": "点歌队列，{{count}} 首待唱"
+        "openAria": "点歌队列，{{count}} 首待唱",
+        "addSongs": "添加歌曲",
+        "addSongsHint": "搜索后加入队列"
       },
       "lyrics": {
         "noLyricsFound": "未找到歌词",

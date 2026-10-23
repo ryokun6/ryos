@@ -24,6 +24,7 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
     handleSelectAndAdd,
     onQueueSelect,
     onPlayNextSelect,
+    queueOnly,
     fontStyle,
     fontClass,
     displayedResults,
@@ -40,7 +41,9 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
     >
       {!isAppleMusicMode && (
         <p className={cn("text-neutral-500 mb-2", fontClass)} style={fontStyle}>
-          {t("apps.ipod.dialogs.songSearchDescription")}
+          {queueOnly
+            ? t("apps.karaoke.queue.addSongsHint")
+            : t("apps.ipod.dialogs.songSearchDescription")}
         </p>
       )}
 
@@ -122,9 +125,11 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
               className={cn("w-full sm:w-auto", !isMacTheme && "h-7", fontClass)}
               style={fontStyle}
             >
-              {t("apps.ipod.dialogs.songSearchAddSelected")}
+              {queueOnly
+                ? t("apps.karaoke.queue.add")
+                : t("apps.ipod.dialogs.songSearchAddSelected")}
             </Button>
-            {!isAppleMusicMode && onQueueSelect && onPlayNextSelect ? (
+            {!isAppleMusicMode && !queueOnly && onQueueSelect && onPlayNextSelect ? (
               <>
                 <Button
                   variant={isMacTheme ? "secondary" : "retro"}

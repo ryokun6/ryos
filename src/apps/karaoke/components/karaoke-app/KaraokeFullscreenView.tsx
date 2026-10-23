@@ -38,7 +38,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
     queueDrawerOpen, setQueueDrawerOpen, canQueueSongs,
-    handleBumpQueueItem, handleRemoveQueueItem,
+    handleBumpQueueItem, handleRemoveQueueItem, handleOpenQueueSongSearch,
   } = c;
 
   if (!isFullScreen) return null;
@@ -128,6 +128,7 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
               onClose={() => setQueueDrawerOpen(false)}
               onBump={handleBumpQueueItem}
               onRemove={handleRemoveQueueItem}
+              onAddSongs={canQueueSongs ? handleOpenQueueSongSearch : undefined}
             />
           </div>
         ) : null

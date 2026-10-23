@@ -2432,7 +2432,9 @@
         "rateLimited": "too many queue changes – try again",
         "notInRoom": "you're not in this room",
         "invalidTrack": "that song can't be queued",
-        "openAria": "song queue, {{count}} waiting"
+        "openAria": "song queue, {{count}} waiting",
+        "addSongs": "add songs",
+        "addSongsHint": "search, then add to the queue"
       },
       "menu": {
         "file": "File",

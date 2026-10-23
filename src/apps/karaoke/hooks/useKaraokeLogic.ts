@@ -226,6 +226,9 @@ export function useKaraokeLogic({
   );
 
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
+  const [songSearchPurpose, setSongSearchPurpose] = useState<"library" | "queue">("library");
+  const songSearchPurposeRef = useRef(songSearchPurpose);
+  songSearchPurposeRef.current = songSearchPurpose;
   const queueAdvanceInFlightRef = useRef(false);
   const canQueueSongs = Boolean(listenSession && !isListenSessionAnonymous);
 
@@ -1573,7 +1576,18 @@ export function useKaraokeLogic({
 
   // Song search/add handlers
   const handleAddSong = useCallback(() => {
+    setSongSearchPurpose("library");
     setIsSongSearchDialogOpen(true);
+  }, []);
+
+  const handleOpenQueueSongSearch = useCallback(() => {
+    setSongSearchPurpose("queue");
+    setIsSongSearchDialogOpen(true);
+  }, []);
+
+  const handleSongSearchOpenChange = useCallback((open: boolean) => {
+    setIsSongSearchDialogOpen(open);
+    if (!open) setSongSearchPurpose("library");
   }, []);
 
   const handleSongSearchSelect = useCallback(
@@ -2013,7 +2027,9 @@ export function useKaraokeLogic({
         },
         placement
       );
-      setIsSongSearchDialogOpen(false);
+      if (songSearchPurposeRef.current !== "queue") {
+        setIsSongSearchDialogOpen(false);
+      }
     },
     [queueTrack]
   );
@@ -2035,7 +2051,9 @@ export function useKaraokeLogic({
           { id: added.id, title: added.title, artist: added.artist },
           placement
         );
-        setIsSongSearchDialogOpen(false);
+        if (songSearchPurposeRef.current !== "queue") {
+          setIsSongSearchDialogOpen(false);
+        }
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
@@ -2181,6 +2199,9 @@ export function useKaraokeLogic({
     handleTransferSessionHost,
     handleSendReaction,
     canQueueSongs,
+    songSearchPurpose,
+    handleOpenQueueSongSearch,
+    handleSongSearchOpenChange,
     queueDrawerOpen,
     setQueueDrawerOpen,
     handleQueueLibraryTrack,

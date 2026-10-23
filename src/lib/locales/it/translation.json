@@ -3838,7 +3838,9 @@
         "rateLimited": "troppe modifiche – riprova",
         "notInRoom": "non sei in questa stanza",
         "invalidTrack": "questo brano non si può mettere in coda",
-        "openAria": "coda, {{count}} in attesa"
+        "openAria": "coda, {{count}} in attesa",
+        "addSongs": "aggiungi brani",
+        "addSongsHint": "cerca, poi aggiungi alla coda"
       },
       "lyrics": {
         "noLyricsFound": "Testi non trovati",

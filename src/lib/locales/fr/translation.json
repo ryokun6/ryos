@@ -3838,7 +3838,9 @@
         "rateLimited": "trop de changements – réessayez",
         "notInRoom": "vous n'êtes pas dans cette salle",
         "invalidTrack": "ce titre ne peut pas être ajouté",
-        "openAria": "file, {{count}} en attente"
+        "openAria": "file, {{count}} en attente",
+        "addSongs": "ajouter des chansons",
+        "addSongsHint": "chercher, puis ajouter à la file"
       },
       "lyrics": {
         "noLyricsFound": "Paroles introuvables",
