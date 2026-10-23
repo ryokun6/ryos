@@ -15,6 +15,8 @@ type TrackInfoController = Pick<
   | "currentCoverIndex"
   | "onTogglePlay"
   | "playItemInPlace"
+  | "queueSelectedTrack"
+  | "canQueueTracks"
   | "showCD"
   | "setShowCD"
   | "isMacTheme"
@@ -40,6 +42,8 @@ export function CoverFlowTrackInfoBar({
     currentCoverIndex,
     onTogglePlay,
     playItemInPlace,
+    queueSelectedTrack,
+    canQueueTracks,
     showCD,
     setShowCD,
     isMacTheme,
@@ -123,6 +127,32 @@ export function CoverFlowTrackInfoBar({
             {currentItem.artist}
           </div>
         )}
+        {canQueueTracks ? (
+          <div className="pointer-events-auto mt-1 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              className="text-white/80 hover:text-white hover:underline"
+              style={{ fontSize: "clamp(11px, 3cqmin, 14px)" }}
+              onClick={(event) => {
+                event.stopPropagation();
+                queueSelectedTrack("end");
+              }}
+            >
+              {t("apps.karaoke.queue.add")}
+            </button>
+            <button
+              type="button"
+              className="text-white/80 hover:text-white hover:underline"
+              style={{ fontSize: "clamp(11px, 3cqmin, 14px)" }}
+              onClick={(event) => {
+                event.stopPropagation();
+                queueSelectedTrack("next");
+              }}
+            >
+              {t("apps.karaoke.queue.playNext")}
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {!ipodMode && (

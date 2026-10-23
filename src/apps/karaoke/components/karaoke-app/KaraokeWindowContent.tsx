@@ -3,7 +3,7 @@ import { Suspense, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CoverFlow } from "@/apps/ipod/components/ipod-app/ipodLazyImports";
 import { ReactionOverlay } from "@/components/listen/ReactionOverlay";
-import { ListenSessionToolbar } from "@/components/listen/ListenSessionToolbar";
+import { KaraokeListenChrome } from "./KaraokeListenChrome";
 import { FullscreenPlayerControls } from "@/components/shared/FullscreenPlayerControls";
 import { OfflineEmptyState } from "@/components/shared/OfflineEmptyState";
 import { YouTubePlayer } from "@/components/shared/YouTubePlayer";
@@ -39,8 +39,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
     screenLongPressTimerRef, screenLongPressFiredRef, longPressStartPos, LONG_PRESS_MOVE_THRESHOLD,
     playerRef, lyricsPlaybackSyncRef, duration, statusMessage, showControls,
     userHasInteractedRef, currentTrack, lyricsSourceOverride, coverUrl, translationLanguages,
-    listenSession, listenSessionUsername, listenSessionClientInstanceId, listenListenerCount,
-    isListenSessionHost, isListenSessionDj, isListenSessionAnonymous, showEmptyLibrary,
+    listenSession, isListenSessionDj, showEmptyLibrary,
     effectiveDisplayMode, visualBackgroundActive, auth, isAddingSong, setIsLyricsSearchDialogOpen,
     adjustLyricOffset, showStatus, showOfflineStatus, handleNext, handlePrevious, seekToTime,
     handleOpenCoverFlowFromTitleCard, setLyricOffset, closeSyncMode, handleRefreshLyrics,
@@ -48,8 +47,7 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
     handlePlayPause, handleTrackEnd, handleProgress, setDuration, handlePlay, handleMainPlayerPause,
     handleReady, handlePlaybackAttemptFailed, handleToggleCoverFlow, handleAddSong,
     restartAutoHideTimer, setIsPlaying,
-    setIsSyncModeOpen, setIsListenInviteOpen, handleLeaveListenSession, handleAssignPlaybackDevice,
-    handlePassDj, handleTransferSessionHost, handleSendReaction, cycleAlignment, cycleLyricsFont,
+    setIsSyncModeOpen, cycleAlignment, cycleLyricsFont,
     displayMode, handleDisplayModeSelect, displayModeOptions,
   } = c;
 
@@ -295,6 +293,16 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
               isPlaying={isPlaying}
               onTogglePlay={handlePlayPause}
               onPlayTrackInPlace={handleCoverFlowPlayInPlace}
+              onQueueTrack={
+                c.canQueueSongs
+                  ? (index) => c.handleQueueLibraryTrack(index, "end")
+                  : undefined
+              }
+              onPlayNextTrack={
+                c.canQueueSongs
+                  ? (index) => c.handleQueueLibraryTrack(index, "next")
+                  : undefined
+              }
             />
           </Suspense>
         </div>
@@ -340,33 +348,11 @@ export function KaraokeWindowContent({ c }: KaraokeWindowContentProps) {
         )}
       </AnimatePresence>
 
-      {/* Listen Together toolbar - top right when in a session, not tied to bottom controls */}
       {listenSession && !isCoverFlowOpen && !isSyncModeOpen && (
-        <div
+        <KaraokeListenChrome
+          c={c}
           className="absolute top-6 right-6 z-[60] flex justify-end pointer-events-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            restartAutoHideTimer();
-          }}
-        >
-          <ListenSessionToolbar
-            session={listenSession}
-            isRemoteOnly={isListenSessionRemoteOnly}
-            isHost={isListenSessionHost}
-            isDj={isListenSessionDj}
-            isAnonymous={isListenSessionAnonymous}
-            listenerCount={listenListenerCount}
-            currentUsername={listenSessionUsername}
-            currentClientInstanceId={listenSessionClientInstanceId}
-            onShare={() => setIsListenInviteOpen(true)}
-            onLeave={handleLeaveListenSession}
-            onAssignPlaybackDevice={handleAssignPlaybackDevice}
-            onPassDj={handlePassDj}
-            onTransferHost={handleTransferSessionHost}
-            onSendReaction={handleSendReaction}
-            onInteraction={restartAutoHideTimer}
-          />
-        </div>
+        />
       )}
 
       {/* Control toolbar - hidden when CoverFlow is open */}

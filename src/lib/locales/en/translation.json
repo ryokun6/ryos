@@ -2415,6 +2415,27 @@
         "copyFailed": "Copy failed",
         "copyFailedDescription": "Select the link and copy manually."
       },
+      "queue": {
+        "title": "Up Next",
+        "empty": "Nothing queued",
+        "add": "Add to Queue",
+        "playNext": "Play Next",
+        "remove": "Remove",
+        "open": "Queue",
+        "from": "{{name}}",
+        "queued": "Queued",
+        "playingNext": "Playing Next",
+        "removed": "Removed",
+        "full": "Queue is full",
+        "updateFailed": "Couldn't update the queue",
+        "signIn": "Sign in to queue a song",
+        "rateLimited": "Too many queue changes – try again",
+        "notInRoom": "You're not in this room",
+        "invalidTrack": "That song can't be queued",
+        "openAria": "Song queue, {{count}} waiting",
+        "addSongs": "Add Songs",
+        "addSongsHint": "Search, then add to the queue"
+      },
       "menu": {
         "file": "File",
         "controls": "Controls",

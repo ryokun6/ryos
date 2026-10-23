@@ -164,6 +164,8 @@ export default apiHandler(
         },
       ],
       anonymousListeners: [],
+      queue: [],
+      queueVersion: 0,
     };
 
     try {

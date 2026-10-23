@@ -3809,6 +3809,27 @@
         "shareLinkInvite": "このリンクを共有して、友達をカラオケルームに招待しましょう。",
         "start": "カラオケルームを開く"
       },
+      "queue": {
+        "title": "次に歌う",
+        "empty": "予約なし",
+        "add": "予約に追加",
+        "playNext": "次に再生",
+        "remove": "削除",
+        "open": "予約",
+        "from": "{{name}}",
+        "queued": "予約した",
+        "playingNext": "次に再生",
+        "removed": "削除した",
+        "full": "予約がいっぱい",
+        "updateFailed": "予約を更新できない",
+        "signIn": "ログインして予約",
+        "rateLimited": "操作が多すぎる – 少し待って",
+        "notInRoom": "この部屋にいない",
+        "invalidTrack": "この曲は予約できない",
+        "openAria": "予約、{{count}} 曲待ち",
+        "addSongs": "曲を追加",
+        "addSongsHint": "検索して予約に追加"
+      },
       "lyrics": {
         "noLyricsFound": "歌詞が見つかりません",
         "search": "検索",

@@ -36,6 +36,9 @@ export interface CoverFlowProps {
   onTogglePlay?: () => void;
   /** Callback to play a specific track without exiting CoverFlow */
   onPlayTrackInPlace?: (index: number) => void;
+  /** Listen-together: add the selected cover's song to the shared queue. */
+  onQueueTrack?: (index: number) => void;
+  onPlayNextTrack?: (index: number) => void;
   /** Group Apple Music tracks into album covers instead of per-song covers. */
   groupAppleMusicAlbums?: boolean;
   /**

@@ -1,3 +1,7 @@
+import type { ListenQueueItem } from "../listen/queue";
+
+export type { ListenQueueItem } from "../listen/queue";
+
 export interface ListenTrackMeta {
   title: string;
   artist?: string;
@@ -31,6 +35,9 @@ export interface ListenSession {
   lastSyncAt: number;
   users: ListenSessionUser[];
   anonymousListeners?: ListenAnonymousListener[];
+  /** Upcoming songs. Missing on sessions created before the queue shipped. */
+  queue?: ListenQueueItem[];
+  queueVersion?: number;
 }
 
 export interface ListenSessionSummary {
@@ -132,6 +139,33 @@ export interface ListenSyncPayload {
   listenerCount: number;
   sourceUsername?: string;
   sourceClientInstanceId?: string;
+  /** Present when the server is echoing the stored queue. Older servers omit it. */
+  queue?: ListenQueueItem[];
+  queueVersion?: number;
+}
+
+export interface ListenQueuePayload {
+  queue: ListenQueueItem[];
+  queueVersion: number;
+  timestamp: number;
+}
+
+export interface ListenQueueRequest {
+  username?: string;
+  clientInstanceId?: string;
+  op: "add" | "addNext" | "bump" | "remove" | "advance";
+  trackId?: string;
+  title?: string;
+  artist?: string;
+  entryId?: string;
+}
+
+export interface ListenQueueResponse {
+  success: boolean;
+  queue: ListenQueueItem[];
+  queueVersion: number;
+  advanced: boolean;
+  item?: ListenQueueItem | null;
 }
 
 export interface ListenReactionPayload {

@@ -20,6 +20,8 @@ export function KaraokeMenuBarLibraryMenu({
     currentIndex,
     onAddSong,
     onPlayTrack,
+    onQueueTrack,
+    onPlayNextTrack,
     tracksByArtist,
     artists,
     onClearLibrary,
@@ -50,6 +52,8 @@ export function KaraokeMenuBarLibraryMenu({
               tracksByArtist={tracksByArtist}
               artists={artists}
               onPlayTrack={onPlayTrack}
+              onQueueTrack={onQueueTrack}
+              onPlayNextTrack={onPlayNextTrack}
               t={t}
             />
 

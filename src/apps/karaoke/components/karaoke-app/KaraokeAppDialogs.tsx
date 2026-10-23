@@ -27,7 +27,6 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
     isLyricsSearchDialogOpen,
     setIsLyricsSearchDialogOpen,
     isSongSearchDialogOpen,
-    setIsSongSearchDialogOpen,
     isListenInviteOpen,
     setIsListenInviteOpen,
     isJoinListenDialogOpen,
@@ -43,6 +42,12 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
     handleLyricsSearchReset,
     handleSongSearchSelect,
     handleAddUrl,
+    handleQueueSearchResult,
+    handleQueueUrl,
+    canQueueSongs,
+    songSearchPurpose,
+    handleSongSearchOpenChange,
+    isFullScreen,
     listenSession,
     handleJoinListenSession,
   } = c;
@@ -98,9 +103,27 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
       )}
       <SongSearchDialog
         isOpen={isSongSearchDialogOpen}
-        onOpenChange={setIsSongSearchDialogOpen}
+        onOpenChange={handleSongSearchOpenChange}
         onSelect={handleSongSearchSelect}
         onAddUrl={handleAddUrl}
+        queueOnly={songSearchPurpose === "queue"}
+        aboveFullscreen={isFullScreen && songSearchPurpose === "queue"}
+        onQueueSelect={
+          canQueueSongs
+            ? (result) => handleQueueSearchResult(result, "end")
+            : undefined
+        }
+        onPlayNextSelect={
+          canQueueSongs
+            ? (result) => handleQueueSearchResult(result, "next")
+            : undefined
+        }
+        onQueueUrl={
+          canQueueSongs ? (url) => handleQueueUrl(url, "end") : undefined
+        }
+        onPlayNextUrl={
+          canQueueSongs ? (url) => handleQueueUrl(url, "next") : undefined
+        }
       />
       {listenSession && (
         <ListenSessionInvite

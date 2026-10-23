@@ -23,6 +23,9 @@ type SongSearchControlsProps = Pick<
   | "handleSearch"
   | "fontStyle"
   | "fontClass"
+  | "onQueueUrl"
+  | "onPlayNextUrl"
+  | "queueOnly"
 >;
 
 export function SongSearchControls({
@@ -38,6 +41,9 @@ export function SongSearchControls({
   handleSearch,
   fontStyle,
   fontClass,
+  onQueueUrl,
+  onPlayNextUrl,
+  queueOnly,
 }: SongSearchControlsProps) {
   return (
     <>
@@ -105,9 +111,33 @@ export function SongSearchControls({
               ? t("apps.ipod.dialogs.songSearchAdding")
               : t("apps.ipod.dialogs.songSearchSearching")
             : isUrl && !isAppleMusicMode
-              ? t("apps.ipod.dialogs.songSearchAdd")
+              ? queueOnly
+                ? t("apps.karaoke.queue.add")
+                : t("apps.ipod.dialogs.songSearchAdd")
               : t("apps.ipod.dialogs.songSearchSearch")}
         </Button>
+        {isUrl && !isAppleMusicMode && !queueOnly && onQueueUrl && onPlayNextUrl ? (
+          <div className="flex gap-2">
+            <Button
+              variant={isMacTheme ? "secondary" : "retro"}
+              onClick={() => void onQueueUrl(query)}
+              disabled={isSearching || isAdding || !query.trim()}
+              className={cn("flex-1", !isMacTheme && "h-7", fontClass)}
+              style={fontStyle}
+            >
+              {t("apps.karaoke.queue.add")}
+            </Button>
+            <Button
+              variant={isMacTheme ? "secondary" : "retro"}
+              onClick={() => void onPlayNextUrl(query)}
+              disabled={isSearching || isAdding || !query.trim()}
+              className={cn("flex-1", !isMacTheme && "h-7", fontClass)}
+              style={fontStyle}
+            >
+              {t("apps.karaoke.queue.playNext")}
+            </Button>
+          </div>
+        ) : null}
       </div>
     </>
   );

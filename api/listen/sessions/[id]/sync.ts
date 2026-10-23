@@ -20,6 +20,7 @@ import {
   normalizeClientInstanceId,
 } from "../../_helpers/_client-instance.js";
 import { broadcastDjChanged, broadcastSync } from "../../_helpers/_pusher.js";
+import { normalizeListenQueue } from "../../../../src/shared/listen/queue.js";
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
@@ -167,6 +168,14 @@ export default apiHandler(
         });
       }
 
+      // Re-read so a queue write that landed during this request is not
+      // replaced by the playback snapshot we loaded at the start.
+      const latest = await getSession(sessionId, redis);
+      if (latest) {
+        session.queue = normalizeListenQueue(latest.queue);
+        session.queueVersion = latest.queueVersion ?? 0;
+      }
+
       await setSession(sessionId, session, redis, { registerInIndex: false });
 
       const listenerCount = session.users.length + (session.anonymousListeners?.length ?? 0);
@@ -184,6 +193,8 @@ export default apiHandler(
         listenerCount,
         sourceUsername: username,
         sourceClientInstanceId: callerClientId,
+        queue: normalizeListenQueue(session.queue),
+        queueVersion: session.queueVersion ?? 0,
       });
 
       logger.info("Listen session synced", {

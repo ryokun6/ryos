@@ -2,6 +2,7 @@
  * Redis client and helper functions for listen-together sessions
  */
 
+import { normalizeListenSessionQueue } from "../../../src/shared/listen/queue.js";
 import type { ListenSession } from "./_types.js";
 import type { Redis } from "../../_utils/redis.js";
 import {
@@ -28,7 +29,9 @@ export function generateSessionId(): string {
 }
 
 export function parseSessionData(data: unknown): ListenSession | null {
-  return parseJSON<ListenSession>(data);
+  const session = parseJSON<ListenSession>(data);
+  if (!session) return null;
+  return normalizeListenSessionQueue(session);
 }
 
 // ============================================================================

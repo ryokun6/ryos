@@ -14,6 +14,8 @@ import {
   KaraokeFullscreenLyricsOverlay,
   KaraokeSyncModeFullscreenPanel,
 } from "../karaoke-lyrics-playback";
+import { KaraokeQueueDrawer } from "../KaraokeQueueDrawer";
+import { KaraokeListenChrome } from "./KaraokeListenChrome";
 import { KaraokeVisualLayers } from "./KaraokeVisualLayers";
 import type { KaraokeAppController } from "./useKaraokeAppController";
 
@@ -35,6 +37,8 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
     showEmptyLibrary, handleAddSong, listenSession,     showLyrics, isOffline, seekToTime,
     handleFullscreenLyricsSwipeUp, handleFullscreenLyricsSwipeDown,
     lyricsSourceOverride, isAddingSong, setIsLyricsSearchDialogOpen, auth, lyricsPlaybackSyncRef,
+    queueDrawerOpen, canQueueSongs,
+    handleBumpQueueItem, handleRemoveQueueItem, handleOpenQueueSongSearch,
   } = c;
 
   if (!isFullScreen) return null;
@@ -114,6 +118,20 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
         />
       }
       fullScreenPlayerRef={fullScreenPlayerRef}
+      drawer={
+        listenSession ? (
+          <div className="absolute inset-0 z-[80] pointer-events-none">
+            <KaraokeQueueDrawer
+              isOpen={queueDrawerOpen}
+              items={listenSession.queue ?? []}
+              canEdit={canQueueSongs}
+              onBump={handleBumpQueueItem}
+              onRemove={handleRemoveQueueItem}
+              onAddSongs={canQueueSongs ? handleOpenQueueSongSearch : undefined}
+            />
+          </div>
+        ) : null
+      }
     >
       {({ controlsVisible }) => (
         <div className="flex flex-col w-full h-full">
@@ -188,6 +206,12 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
 
             {!isSyncModeOpen && listenSession && (
               <ReactionOverlay className="absolute inset-0 z-[15]" />
+            )}
+            {!isSyncModeOpen && listenSession && (
+              <KaraokeListenChrome
+                c={c}
+                className="absolute top-6 right-6 z-[60] flex justify-end pointer-events-auto"
+              />
             )}
             {!isSyncModeOpen && !listenSession && (
               <KtvAmbientReactions

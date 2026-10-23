@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Headphones,
+  Queue,
   Export,
   Smiley,
   Fire,
@@ -74,6 +75,9 @@ interface ListenSessionToolbarProps {
   onPassDj: (username: string, clientInstanceId: string) => void;
   onTransferHost: (username: string, clientInstanceId: string) => void;
   onSendReaction: (emoji: string) => void;
+  /** Karaoke only: open the shared song queue. Hidden when omitted. */
+  onToggleQueue?: () => void;
+  queueCount?: number;
   onInteraction?: () => void;
   portalContainer?: HTMLElement | null;
   className?: string;
@@ -94,6 +98,8 @@ export function ListenSessionToolbar({
   onPassDj,
   onTransferHost,
   onSendReaction,
+  onToggleQueue,
+  queueCount = 0,
   onInteraction,
   portalContainer,
   className,
@@ -282,6 +288,26 @@ export function ListenSessionToolbar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {onToggleQueue && (
+        <div className={segmentClasses} style={aquaSegmentStyle}>
+          {isMacTheme && <AquaShineOverlays />}
+          <button
+            type="button"
+            onClick={handleClick(onToggleQueue)}
+            className={cn(buttonClasses, queueCount > 0 && "gap-1 px-2 w-auto")}
+            title={t("apps.karaoke.queue.open")}
+            aria-label={t("apps.karaoke.queue.openAria", { count: queueCount })}
+          >
+            <Queue weight="fill" size={svgSize} className={iconClasses} />
+            {queueCount > 0 ? (
+              <span className={cn("text-sm tabular-nums", iconClasses)}>
+                {queueCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      )}
 
       {/* Reactions – separate button, only for logged-in users */}
       {!isAnonymous && (

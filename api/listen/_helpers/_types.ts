@@ -27,6 +27,10 @@ export type {
   ListenUserPayload,
   ReactionRequest,
   RemoteCommandRequest,
+  ListenQueueItem,
+  ListenQueuePayload,
+  ListenQueueRequest,
+  ListenQueueResponse,
   SyncSessionRequest,
   TransferHostRequest,
 } from "../../../src/shared/contracts/listen.js";

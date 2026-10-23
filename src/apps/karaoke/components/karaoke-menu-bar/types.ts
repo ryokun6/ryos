@@ -16,6 +16,9 @@ export interface KaraokeMenuBarProps {
   onClearLibrary: () => void;
   onSyncLibrary: () => void;
   onPlayTrack: (index: number) => void;
+  /** Listen-together: queue this library song. Omitted outside a room. */
+  onQueueTrack?: (index: number) => void;
+  onPlayNextTrack?: (index: number) => void;
   onTogglePlay: () => void;
   onPreviousTrack: () => void;
   onNextTrack: () => void;

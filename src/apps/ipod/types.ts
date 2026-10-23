@@ -153,6 +153,11 @@ export interface FullScreenPortalProps {
   surfaceLongPressEnabled?: boolean;
   /** Hide bottom player toolbar (e.g. while Cover Flow is open). */
   suppressToolbar?: boolean;
+  /**
+   * In-portal overlay (karaoke queue drawer). Rendered inside the fullscreen
+   * surface so it stays above the black portal.
+   */
+  drawer?: React.ReactNode;
 }
 
 // IpodScreen props

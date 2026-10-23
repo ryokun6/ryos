@@ -3821,6 +3821,27 @@
         "shareLinkInvite": "Partilhe este link para convidar amigos para a sala KTV.",
         "start": "Abrir sala KTV"
       },
+      "queue": {
+        "title": "a seguir",
+        "empty": "nada na fila",
+        "add": "adicionar à fila",
+        "playNext": "tocar a seguir",
+        "remove": "remover",
+        "open": "fila",
+        "from": "{{name}}",
+        "queued": "na fila",
+        "playingNext": "a seguir",
+        "removed": "removida",
+        "full": "a fila está cheia",
+        "updateFailed": "não foi possível atualizar a fila",
+        "signIn": "entre para colocar na fila",
+        "rateLimited": "mudanças demais – tente de novo",
+        "notInRoom": "você não está nesta sala",
+        "invalidTrack": "essa música não pode entrar na fila",
+        "openAria": "fila, {{count}} na espera",
+        "addSongs": "adicionar músicas",
+        "addSongsHint": "pesquise e adicione à fila"
+      },
       "lyrics": {
         "noLyricsFound": "Letras não encontradas",
         "search": "Buscar",

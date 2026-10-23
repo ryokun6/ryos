@@ -19,6 +19,7 @@ import {
   useIpodStore,
 } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import { requestKaraokeSessionNext } from "@/apps/karaoke/listenQueueBridge";
 import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useTvStore } from "@/stores/useTvStore";
 import { buildTvChannelLineup } from "@/apps/tv/data/channels";
@@ -386,6 +387,7 @@ const karaokeAdapter: TransportTargetAdapter = {
   togglePlay: () => useKaraokeStore.getState().togglePlay(),
   selectItem: (id) => useKaraokeStore.getState().setCurrentSongId(id),
   navigate: (direction) => {
+    if (direction === "next" && requestKaraokeSessionNext()) return;
     const karaokeState = useKaraokeStore.getState();
     const navigate =
       direction === "next" ? karaokeState.nextTrack : karaokeState.previousTrack;
