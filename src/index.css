@@ -669,7 +669,9 @@ button.piano-key.piano-key[class*="bg-[#ff33ff]"] {
     font-size: clamp(32px, 8cqw, 96px);
   }
 
-  /* Fullscreen lyrics text - viewport-relative with max cap */
+  /* Fullscreen lyrics text - viewport-relative with max cap.
+     Karaoke fullscreen listen reactions use this same clamp
+     (fullscreenLyricsFontSizePx in fullscreenReactionScale.ts). */
   .fullscreen-lyrics-text {
     font-size: clamp(32px, min(10vw, 10vh), 120px);
   }

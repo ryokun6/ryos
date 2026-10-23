@@ -205,7 +205,10 @@ export function KaraokeFullscreenView({ c, isForeground }: KaraokeFullscreenView
             )}
 
             {!isSyncModeOpen && listenSession && (
-              <ReactionOverlay className="absolute inset-0 z-[15]" />
+              <ReactionOverlay
+                matchFullscreenLyrics
+                className="absolute inset-0 z-[15]"
+              />
             )}
             {!isSyncModeOpen && listenSession && (
               <KaraokeListenChrome

@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ListenReactionPayload } from "@/shared/contracts/listen";
+import {
+  FULLSCREEN_LYRICS_FONT_MIN_PX,
+  fullscreenLyricsScale,
+  fullscreenLyricsScaleFromFontSizePx,
+} from "@/components/listen/fullscreenReactionScale";
 import {
   REACTION_LIFETIME_MS,
   generateSessionReactionPhysics,
@@ -14,12 +19,69 @@ import { useListenSessionStore } from "@/stores/useListenSessionStore";
 
 interface ReactionOverlayProps {
   className?: string;
+  /**
+   * Size glyphs and float distance with `.fullscreen-lyrics-text`.
+   * Windowed overlays leave this off.
+   */
+  matchFullscreenLyrics?: boolean;
+}
+
+function readViewport(): { width: number; height: number } {
+  if (typeof window === "undefined") return { width: 0, height: 0 };
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+function useFullscreenLyricsScale(enabled: boolean) {
+  const probeRef = useRef<HTMLSpanElement>(null);
+  const [viewport, setViewport] = useState(readViewport);
+  const [scale, setScale] = useState(() => {
+    const size = readViewport();
+    return enabled ? fullscreenLyricsScale(size.width, size.height) : 1;
+  });
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    const read = () => {
+      const next = readViewport();
+      const probePx = probeRef.current
+        ? Number.parseFloat(getComputedStyle(probeRef.current).fontSize)
+        : Number.NaN;
+      // Trust the probe only when `.fullscreen-lyrics-text` actually applied.
+      // The clamp never goes below 32px; a smaller used size is inherited text.
+      const nextScale =
+        Number.isFinite(probePx) && probePx + 0.5 >= FULLSCREEN_LYRICS_FONT_MIN_PX
+          ? fullscreenLyricsScaleFromFontSizePx(probePx)
+          : fullscreenLyricsScale(next.width, next.height);
+      setViewport((prev) =>
+        prev.width === next.width && prev.height === next.height ? prev : next,
+      );
+      setScale((prev) => (prev === nextScale ? prev : nextScale));
+    };
+    read();
+    window.addEventListener("resize", read);
+    const observer = new ResizeObserver(read);
+    observer.observe(document.documentElement);
+    return () => {
+      window.removeEventListener("resize", read);
+      observer.disconnect();
+    };
+  }, [enabled]);
+
+  return {
+    scale: enabled ? scale : 1,
+    viewport: enabled ? viewport : undefined,
+    probeRef,
+  };
 }
 
 type VisibleReaction = ListenReactionPayload & ReactionFloaterPhysics;
 
-export function ReactionOverlay({ className }: ReactionOverlayProps) {
+export function ReactionOverlay({
+  className,
+  matchFullscreenLyrics = false,
+}: ReactionOverlayProps) {
   const reactions = useListenSessionStore((state) => state.reactions);
+  const { scale, viewport, probeRef } = useFullscreenLyricsScale(matchFullscreenLyrics);
   const [visible, setVisible] = useState<VisibleReaction[]>([]);
   const timeoutsRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const processedIdsRef = useRef<Set<string>>(new Set());
@@ -77,10 +139,33 @@ export function ReactionOverlay({ className }: ReactionOverlayProps) {
   }));
 
   return (
-    <ReactionFloaterLayer
-      className={cn(className)}
-      position="absolute"
-      items={itemsForLayer}
-    />
+    <>
+      {matchFullscreenLyrics ? (
+        <span
+          ref={probeRef}
+          aria-hidden
+          data-fullscreen-lyrics-probe=""
+          data-reaction-viewport-scale={scale.toFixed(3)}
+          className="fullscreen-lyrics-text pointer-events-none absolute"
+          style={{
+            left: 0,
+            top: 0,
+            width: 0,
+            height: 0,
+            overflow: "hidden",
+            visibility: "hidden",
+          }}
+        >
+          A
+        </span>
+      ) : null}
+      <ReactionFloaterLayer
+        className={cn(className)}
+        position="absolute"
+        items={itemsForLayer}
+        viewportScale={scale}
+        viewport={viewport}
+      />
+    </>
   );
 }
