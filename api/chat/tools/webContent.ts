@@ -21,15 +21,17 @@ import {
   capContent,
   WEB_FETCH_MAX_CONTENT_CHARS,
   WEB_FETCH_MAX_DOWNLOAD_BYTES,
+  WEB_FETCH_PAGE_CHARS,
+  WEB_FETCH_PAGE_HARD_MAX,
   WEB_FETCH_THIN_PAGE_CHARS,
-  WEB_FETCH_TRUNCATION_NOTE,
 } from "./webContentLimits.js";
 
 export {
   WEB_FETCH_MAX_CONTENT_CHARS,
   WEB_FETCH_MAX_DOWNLOAD_BYTES,
+  WEB_FETCH_PAGE_CHARS,
+  WEB_FETCH_PAGE_HARD_MAX,
   WEB_FETCH_THIN_PAGE_CHARS,
-  WEB_FETCH_TRUNCATION_NOTE,
 };
 
 export type WebContentKind = "html" | "json" | "feed" | "text" | "xml" | "unsupported";
@@ -47,6 +49,10 @@ export interface ExtractedWebDocument {
   alternateFeedUrl?: string;
   feedItemCount?: number;
   matchedFeedItem?: boolean;
+  /** Feed title block, present when the document is paged by item. */
+  feedHeader?: string;
+  /** Rendered items within the total cap. Absent for a single matched item. */
+  feedBlocks?: string[];
 }
 
 export interface ExtractWebDocumentOptions {
@@ -215,6 +221,8 @@ function extractJson(
         contentLength: rendered.contentLength,
         feedItemCount: feed.items.length,
         matchedFeedItem: false,
+        feedHeader: rendered.header,
+        feedBlocks: rendered.blocks,
       });
     }
   }

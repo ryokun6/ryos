@@ -190,12 +190,13 @@ describe("webFetch JSON, XML, and text", () => {
     expect(doc.content).toBe("");
   });
 
-  test("truncates a long feed on an item boundary with a note", () => {
+  test("truncates a long feed on an item boundary", () => {
     const doc = extractWebDocument(RSS, "application/rss+xml", { maxChars: 280 });
     expect(doc.truncated).toBe(true);
-    expect(doc.content).toContain("[truncated – ");
-    expect(doc.content).toContain("of 2 posts]");
+    expect(doc.feedItemCount).toBe(2);
     expect(doc.content).toContain("feelings");
+    expect(doc.content).not.toContain("second post body");
+    expect(doc.content).not.toContain("[truncated");
   });
 });
 

@@ -314,41 +314,56 @@ function joinFeed(header: string, blocks: string[]): string {
   return header || body;
 }
 
-export function renderFeed(
-  feed: ParsedFeed,
-  maxChars: number
-): { text: string; truncated: boolean; shown: number; contentLength: number } {
+export interface RenderedFeed {
+  header: string;
+  blocks: string[];
+  text: string;
+  truncated: boolean;
+  shown: number;
+  contentLength: number;
+}
+
+/** Join whole items until maxChars. The paging layer adds the truncation note. */
+export function renderFeed(feed: ParsedFeed, maxChars: number): RenderedFeed {
   const header = renderFeedHeader(feed);
   const blocks = feed.items.map(renderItemBlock);
   const full = joinFeed(header, blocks);
   if (full.length <= maxChars) {
-    return { text: full, truncated: false, shown: blocks.length, contentLength: full.length };
+    return {
+      header,
+      blocks,
+      text: full,
+      truncated: false,
+      shown: blocks.length,
+      contentLength: full.length,
+    };
   }
 
   const kept: string[] = [];
   for (const block of blocks) {
-    const nextShown = kept.length + 1;
-    const note = `\n\n[truncated – ${nextShown} of ${blocks.length} posts]`;
     const candidate = joinFeed(header, [...kept, block]);
-    if (candidate.length + note.length > maxChars) {
-      if (kept.length === 0) {
-        const room = Math.max(0, maxChars - note.length);
-        const clipped = candidate.slice(0, room).trimEnd();
-        return {
-          text: `${clipped}${note}`.trim(),
-          truncated: true,
-          shown: 1,
-          contentLength: full.length,
-        };
-      }
-      break;
-    }
+    if (candidate.length > maxChars) break;
     kept.push(block);
   }
 
-  const note = `\n\n[truncated – ${kept.length} of ${blocks.length} posts]`;
+  if (kept.length === 0 && blocks.length > 0) {
+    const room = Math.max(0, maxChars - (header ? header.length + 2 : 0));
+    const sliced = blocks[0].slice(0, room).trimEnd();
+    const text = joinFeed(header, sliced ? [sliced] : []);
+    return {
+      header,
+      blocks: sliced ? [sliced] : [],
+      text,
+      truncated: true,
+      shown: sliced ? 1 : 0,
+      contentLength: full.length,
+    };
+  }
+
   return {
-    text: `${joinFeed(header, kept)}${note}`.trim(),
+    header,
+    blocks: kept,
+    text: joinFeed(header, kept),
     truncated: true,
     shown: kept.length,
     contentLength: full.length,
@@ -491,6 +506,8 @@ export function extractXmlDocument(xml: string, maxChars: number, matchUrl?: str
       contentLength: rendered.contentLength,
       feedItemCount: feed.items.length,
       matchedFeedItem: false,
+      feedHeader: rendered.header,
+      feedBlocks: rendered.blocks,
     };
   }
 

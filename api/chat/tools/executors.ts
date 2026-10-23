@@ -45,10 +45,18 @@ import {
   WEB_FETCH_MAX_CONTENT_CHARS,
   WEB_FETCH_MAX_DOWNLOAD_BYTES,
   WEB_FETCH_THIN_PAGE_CHARS,
-  WEB_FETCH_TRUNCATION_NOTE,
   type ExtractedWebDocument,
 } from "./webContent.js";
 import { visibleTextLength } from "./htmlExtract.js";
+import {
+  describeWebFetchPage,
+  pageWebDocument,
+} from "./webFetchPage.js";
+import {
+  readWebFetchCache,
+  writeWebFetchCache,
+  type CachedWebFetch,
+} from "./webFetchCache.js";
 import { checkToolRateLimit } from "./_tool-rate-limit.js";
 import {
   getYouTubeApiKeys,
@@ -290,11 +298,53 @@ async function readAlternateFeedItem(
   }
 }
 
+function toCachedWebFetch(
+  doc: ExtractedWebDocument,
+  finalUrl: string,
+  downloadTruncated: boolean
+): CachedWebFetch {
+  const pageByItem = doc.kind === "feed" && !doc.matchedFeedItem && doc.feedBlocks != null;
+  return {
+    finalUrl,
+    title: doc.title,
+    description: doc.description,
+    siteName: doc.siteName,
+    text: doc.content,
+    sourceTruncated: doc.truncated || downloadTruncated,
+    feedHeader: pageByItem ? doc.feedHeader : undefined,
+    feedBlocks: pageByItem ? doc.feedBlocks : undefined,
+    feedItemCount: doc.feedItemCount,
+    matchedFeedItem: doc.matchedFeedItem,
+  };
+}
+
+function pageCachedWebFetch(
+  url: string,
+  doc: CachedWebFetch,
+  request: { offset?: number; part?: number; maxChars?: number }
+): WebFetchOutput {
+  const page = pageWebDocument(doc, request);
+  return {
+    success: true,
+    url,
+    finalUrl: doc.finalUrl,
+    title: doc.title,
+    description: doc.description,
+    siteName: doc.siteName || new URL(doc.finalUrl).hostname,
+    content: page.content,
+    contentLength: doc.text.length,
+    truncated: page.truncated,
+    pagination: page.pagination,
+    message: describeWebFetchPage(doc, page),
+  };
+}
+
 export async function executeWebFetch(
   input: WebFetchInput,
   context: ServerToolContext & { username?: string | null; redis?: Redis }
 ): Promise<WebFetchOutput> {
-  const { url, selector } = input;
+  const { url, selector, offset, part, maxChars } = input;
+  const pageRequest = { offset, part, maxChars };
 
   context.log(`[webFetch] Fetching: ${url}${selector ? ` (selector: ${selector})` : ""}`);
 
@@ -324,6 +374,12 @@ export async function executeWebFetch(
       truncated: false,
       message: `Cannot fetch this URL: ${message}`,
     };
+  }
+
+  const cached = readWebFetchCache(url, selector);
+  if (cached) {
+    context.log(`[webFetch] Cache hit for ${url} offset ${offset ?? 0}`);
+    return pageCachedWebFetch(url, cached, pageRequest);
   }
 
   try {
@@ -390,42 +446,14 @@ export async function executeWebFetch(
       };
     }
 
-    let content = doc.content;
-    const truncated = doc.truncated || downloaded.truncated;
-    if (downloaded.truncated && !content.includes("[truncated")) {
-      content = `${content}${WEB_FETCH_TRUNCATION_NOTE}`;
-    }
-
+    const entry = toCachedWebFetch(doc, finalUrl, downloaded.truncated);
+    writeWebFetchCache(url, selector, entry);
+    if (finalUrl !== url) writeWebFetchCache(finalUrl, selector, entry);
     const hostname = new URL(finalUrl).hostname;
-    const siteName = doc.siteName || hostname;
     context.log(
-      `[webFetch] Extracted ${content.length} chars from ${hostname} (${doc.kind}, title: ${doc.title || "none"})`
+      `[webFetch] Extracted ${entry.text.length} chars from ${hostname} (${doc.kind}, title: ${doc.title || "none"})`
     );
-
-    const clipped = truncated ? ", truncated" : "";
-    const message =
-      doc.kind === "feed" && !doc.matchedFeedItem
-        ? `Fetched feed from ${siteName}${doc.title ? `: "${doc.title}"` : ""} (${doc.feedItemCount ?? 0} posts, ${doc.contentLength} chars${clipped})`
-        : doc.kind === "json"
-          ? `Fetched JSON from ${hostname} (${doc.contentLength} chars${clipped})`
-          : doc.kind === "text"
-            ? `Fetched text from ${hostname} (${doc.contentLength} chars${clipped})`
-            : doc.kind === "xml"
-              ? `Fetched XML from ${hostname} (${doc.contentLength} chars${clipped})`
-              : `Fetched and extracted content from ${siteName}${doc.title ? `: "${doc.title}"` : ""} (${doc.contentLength} chars${clipped})`;
-
-    return {
-      success: true,
-      url,
-      finalUrl,
-      title: doc.title,
-      description: doc.description,
-      siteName,
-      content,
-      contentLength: doc.contentLength,
-      truncated,
-      message,
-    };
+    return pageCachedWebFetch(url, entry, pageRequest);
   } catch (error) {
     if (error instanceof SsrfBlockedError) {
       context.log(`[webFetch] SSRF blocked during redirect: ${error.message}`);

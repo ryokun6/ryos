@@ -285,7 +285,11 @@ export const TOOL_DESCRIPTIONS = {
     "HTML becomes markdown (headings, lists, links, code). Feeds return the feed title and link plus each item's title, link, date, author, and full text. " +
     "Also reads JSON, XML, plain text, and markdown. Does NOT execute JavaScript — " +
     "a script-only page may be thin unless that site also publishes a feed. " +
-    "Optionally pass a CSS selector to extract one section of an HTML page.",
+    "Optionally pass a CSS selector to extract one section of an HTML page. " +
+    "Results are one page (default 12000 characters, hard max 32000). " +
+    "When pagination.hasMore is true, call webFetch again with the same url and offset set to pagination.nextOffset. " +
+    "Copy that number – for a feed it is an item index, for a page it is a character offset. " +
+    "If pagination.nextPart is set, pass it as part too. Stop when hasMore is false.",
 
   runJs:
     "Run pure JavaScript (ES2023) in a secure server-side sandbox and get back console output plus the completion value. " +
