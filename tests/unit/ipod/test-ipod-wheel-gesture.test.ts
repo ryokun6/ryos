@@ -6,6 +6,9 @@ import {
   centerPressDown,
   centerPressHeld,
   centerPressReleased,
+  scrubDiamondCenterPx,
+  scrubDiamondHalfExtentPx,
+  scrubDiamondLeftCss,
   commitScrubIfIdle,
   initialAccelState,
   initialReversalState,
@@ -300,6 +303,45 @@ describe("center button press", () => {
     expect(centerPressReleased("idle").select).toBe(false);
     expect(centerPressHeld("idle").openMenu).toBe(false);
     expect(centerPressHeld("menu").openMenu).toBe(false);
+  });
+});
+
+describe("scrub diamond", () => {
+  test("the full marker stays inside the track at 0%, 50%, and 100%", () => {
+    const width = 210;
+    const half = scrubDiamondHalfExtentPx();
+    for (const fraction of [0, 0.5, 1]) {
+      const center = scrubDiamondCenterPx(fraction, width);
+      expect(center - half).toBeGreaterThanOrEqual(-1e-6);
+      expect(center + half).toBeLessThanOrEqual(width + 1e-6);
+    }
+    expect(scrubDiamondCenterPx(0, width)).toBeCloseTo(half);
+    expect(scrubDiamondCenterPx(1, width)).toBeCloseTo(width - half);
+    expect(scrubDiamondCenterPx(0.5, width)).toBeCloseTo(width / 2);
+  });
+
+  test("the rotated height clears the modern and classic bars", () => {
+    const half = scrubDiamondHalfExtentPx();
+    // pt-1.5 above the bar is 6px. Modern labels start 4px (mt-1) below it.
+    for (const trackHeight of [8, 9]) {
+      expect(half - trackHeight / 2).toBeLessThan(4);
+    }
+  });
+
+  test("the CSS left matches the inset travel range", () => {
+    const half = Math.round(scrubDiamondHalfExtentPx() * 1000) / 1000;
+    expect(scrubDiamondLeftCss(0)).toBe(
+      `calc(${half}px + (100% - ${half * 2}px) * 0)`
+    );
+    expect(scrubDiamondLeftCss(1)).toBe(
+      `calc(${half}px + (100% - ${half * 2}px) * 1)`
+    );
+  });
+
+  test("a track narrower than the marker centers it instead of shoving it outside", () => {
+    const width = 10;
+    expect(scrubDiamondCenterPx(0, width)).toBeCloseTo(width / 2);
+    expect(scrubDiamondCenterPx(1, width)).toBeCloseTo(width / 2);
   });
 });
 

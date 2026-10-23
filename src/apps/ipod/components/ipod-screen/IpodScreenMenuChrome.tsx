@@ -26,6 +26,10 @@ import {
 } from "./useMenuSlideTransition";
 import { formatPlaybackTime } from "./formatPlaybackTime";
 import { ModernNowPlayingArtwork } from "./ModernNowPlayingArtwork";
+import {
+  SCRUB_DIAMOND_SIZE_PX,
+  scrubDiamondLeftCss,
+} from "../../utils/wheelGesture";
 
 export interface IpodScreenMenuChromeProps {
   isModernUi: boolean;
@@ -698,7 +702,7 @@ function TransportBar({
     </div>
   );
   return (
-    <div className="relative w-full">
+    <div className="relative w-full overflow-visible">
       {bar}
       {scrubbing ? (
         <span
@@ -707,9 +711,13 @@ function TransportBar({
             isModernUi ? "bg-[#2260a4]" : "bg-[#0a3667]"
           )}
           style={{
-            left: width,
-            width: 8,
-            height: 8,
+            // Inset by the rotated marker's half-extent. Ancestors clip
+            // (the volume slide, the LCD, and the device shell), and the
+            // track itself is overflow:hidden, so a center on the raw
+            // fraction hangs off at 0% and 100% and the corners are cut.
+            left: scrubDiamondLeftCss(clamped),
+            width: SCRUB_DIAMOND_SIZE_PX,
+            height: SCRUB_DIAMOND_SIZE_PX,
             transform: "translate(-50%, -50%) rotate(45deg)",
             boxShadow: isModernUi
               ? "0 0 0 1px rgba(255,255,255,0.9)"
