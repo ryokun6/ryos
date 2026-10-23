@@ -1,6 +1,6 @@
 import { type RefObject, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
+import { Repeat, RepeatOnce, Shuffle, SpeakerHigh } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
@@ -20,6 +20,10 @@ import {
   MODERN_TITLEBAR_HEIGHT,
   menuVariants,
 } from "./constants";
+import {
+  useMenuSlideTransition,
+  usePrefersReducedMotion,
+} from "./useMenuSlideTransition";
 import { formatPlaybackTime } from "./formatPlaybackTime";
 import { ModernNowPlayingArtwork } from "./ModernNowPlayingArtwork";
 
@@ -63,6 +67,8 @@ export interface IpodScreenMenuChromeProps {
   totalTime: number;
   displayElapsedSeconds: number;
   displayRemainingSeconds: number;
+  showVolumeOverlay: boolean;
+  ipodVolume: number;
   registerActivity: () => void;
   handlePlay: () => void;
   showVideoProp: boolean;
@@ -110,12 +116,22 @@ export function IpodScreenMenuChrome({
   totalTime,
   displayElapsedSeconds,
   displayRemainingSeconds,
+  showVolumeOverlay,
+  ipodVolume,
   registerActivity,
   handlePlay,
   showVideoProp,
   onToggleVideo,
   t,
 }: IpodScreenMenuChromeProps) {
+  const reducedMotion = usePrefersReducedMotion();
+  const menuSlide = useMenuSlideTransition(
+    menuDirection,
+    `${menuDirection}:${menuHistory.length}:${currentMenuTitle}:${showInlineCoverFlow}:${menuMode}`,
+    reducedMotion
+  );
+  const rtl =
+    typeof document !== "undefined" && document.documentElement.dir === "rtl";
   return (
     <>
       {/* Title bar
@@ -258,7 +274,7 @@ export function IpodScreenMenuChrome({
               }
         }
       >
-        <AnimatePresence initial={false} custom={menuDirection} mode="sync">
+        <AnimatePresence initial={false} custom={menuSlide.custom} mode="sync">
           {showInlineCoverFlow ? (
             // Cover Flow inline state — rendered as the third option
             // in the menu panel's AnimatePresence so the existing
@@ -276,8 +292,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
             >
               {coverFlowSlot}
             </motion.div>
@@ -289,8 +305,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
             >
               <div className="flex-1 relative">
                 <div
@@ -372,8 +388,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
               onClick={() => {
                 if (!menuMode && currentTrack) {
                   registerActivity();
@@ -523,51 +539,52 @@ export function IpodScreenMenuChrome({
                     )}
                     <div
                       className={cn(
-                        "mt-auto flex-shrink-0 w-full",
+                        "mt-auto flex-shrink-0 w-full overflow-hidden",
                         nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
                       )}
                     >
-                      {isModernUi ? (
-                        // Same aqua bar as About This Finder memory rows.
-                        <div className="aqua-progress h-[9px] w-full rounded-none">
-                          <div
-                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
+                      {reducedMotion ? (
+                        showVolumeOverlay ? (
+                          <VolumeTransport
+                            isModernUi={isModernUi}
+                            fraction={ipodVolume}
+                            label={String(Math.round(ipodVolume * 100))}
                           />
-                        </div>
+                        ) : (
+                          <TimeTransport
+                            isModernUi={isModernUi}
+                            fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                            elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
+                            remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                          />
+                        )
                       ) : (
-                        <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
-                          <div
-                            className="h-full bg-[#0a3667]"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
+                        <div
+                          className="flex w-[200%]"
+                          style={{
+                            transform: showVolumeOverlay
+                              ? `translateX(${rtl ? "50%" : "-50%"})`
+                              : "translateX(0%)",
+                            transition: "transform 300ms ease-out",
+                          }}
+                        >
+                          <div className="w-1/2 min-w-0">
+                            <TimeTransport
+                              isModernUi={isModernUi}
+                              fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                              elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
+                              remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                            />
+                          </div>
+                          <div className="w-1/2 min-w-0">
+                            <VolumeTransport
+                              isModernUi={isModernUi}
+                              fraction={ipodVolume}
+                              label={String(Math.round(ipodVolume * 100))}
+                            />
+                          </div>
                         </div>
                       )}
-                      <div
-                        className={cn(
-                          "w-full flex justify-between",
-                          isModernUi
-                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
-                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
-                        )}
-                      >
-                        <span>
-                          {formatPlaybackTime(displayElapsedSeconds)}
-                        </span>
-                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
-                      </div>
                     </div>
                   </>
                 ) : (
@@ -638,6 +655,92 @@ export function IpodScreenMenuChrome({
             </motion.div>
           ) : null}
         </AnimatePresence>
+      </div>
+    </>
+  );
+}
+
+function transportLabelClass(isModernUi: boolean): string {
+  return cn(
+    "w-full flex justify-between",
+    isModernUi
+      ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
+      : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+  );
+}
+
+function TransportBar({
+  isModernUi,
+  fraction,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+}) {
+  const width = `${Math.max(0, Math.min(100, fraction * 100))}%`;
+  if (isModernUi) {
+    return (
+      <div className="aqua-progress h-[9px] w-full rounded-none">
+        <div
+          className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
+          style={{ width }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
+      <div className="h-full bg-[#0a3667]" style={{ width }} />
+    </div>
+  );
+}
+
+function TimeTransport({
+  isModernUi,
+  fraction,
+  elapsedLabel,
+  remainingLabel,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+  elapsedLabel: string;
+  remainingLabel: string;
+}) {
+  return (
+    <>
+      <TransportBar isModernUi={isModernUi} fraction={fraction} />
+      <div className={transportLabelClass(isModernUi)}>
+        <span>{elapsedLabel}</span>
+        <span>{remainingLabel}</span>
+      </div>
+    </>
+  );
+}
+
+function VolumeTransport({
+  isModernUi,
+  fraction,
+  label,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+  label: string;
+}) {
+  return (
+    <>
+      <div className="flex min-h-[14px] items-center gap-1">
+        <SpeakerHigh
+          size={isModernUi ? 12 : 14}
+          weight="fill"
+          className={isModernUi ? "text-[rgb(99,101,103)]" : "text-[#0a3667]"}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <TransportBar isModernUi={isModernUi} fraction={fraction} />
+        </div>
+      </div>
+      <div className={transportLabelClass(isModernUi)}>
+        <span />
+        <span>{label}</span>
       </div>
     </>
   );
