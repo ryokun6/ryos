@@ -757,12 +757,12 @@ function ScrubDiamond({
         }}
       >
         {isModernUi ? (
-          // Clip the Aqua fill to the diamond. The fill is counter-rotated
-          // so the bar's top-down gloss still comes from the top of the LCD.
-          // The ring stays on the outer box, which does not clip.
+          // Clip the Aqua button face to the diamond. The face is
+          // counter-rotated so its top gloss still comes from the top of
+          // the LCD. The ring stays on the outer box, which does not clip.
           <span className="absolute inset-0 overflow-hidden">
             <span
-              className="aqua-progress-fill absolute left-1/2 top-1/2 block"
+              className="ipod-scrub-aqua-gem absolute left-1/2 top-1/2 block"
               style={{
                 position: "absolute",
                 width: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
