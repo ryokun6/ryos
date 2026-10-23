@@ -14,6 +14,7 @@ import {
   findAlternateFeedUrl,
   stripHtmlToText,
   stripTagsLoop,
+  stripTagsUntilStable,
 } from "../../../api/chat/tools/htmlExtract";
 import { extractWebDocument } from "../../../api/chat/tools/webContent";
 
@@ -223,6 +224,15 @@ describe("webFetch security", () => {
     const payload = `<scri<script></script>pt>alert(1)</script>`;
     const result = stripTagsLoop(payload, /<script\b[\s\S]*?<\/script[^>]*>/gi);
     expect(result).not.toContain("<script");
+  });
+
+  test("stripTagsUntilStable removes nested tags down to the text", () => {
+    const nested = stripTagsUntilStable("<scr<script>ipt>alert(1)</script>");
+    expect(nested).not.toContain("<script");
+    expect(nested).not.toContain("<");
+    expect(nested).toContain("alert(1)");
+    expect(stripTagsUntilStable("<b>Hello</b>")).toBe("Hello");
+    expect(stripTagsUntilStable("plain")).toBe("plain");
   });
 
   test("strips malformed closing tags with extra chars before >", () => {

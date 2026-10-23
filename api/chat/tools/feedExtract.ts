@@ -281,11 +281,25 @@ export function parseJsonFeed(value: unknown): ParsedFeed | null {
   };
 }
 
+/** Official JSON Feed version URLs. Compared as a parsed URL, not a substring. */
+function isOfficialJsonFeedVersion(version: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(version.trim());
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:" || url.username || url.password || url.port) return false;
+  if (url.hostname !== "jsonfeed.org") return false;
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  return path === "/version/1" || path === "/version/1.1";
+}
+
 export function isJsonFeedDocument(value: unknown, force: boolean): boolean {
   const record = asRecord(value);
   if (!record || !Array.isArray(record.items)) return false;
   if (force) return true;
-  return stringField(record.version).includes("jsonfeed.org");
+  return isOfficialJsonFeedVersion(stringField(record.version));
 }
 
 function renderFeedHeader(feed: ParsedFeed): string {

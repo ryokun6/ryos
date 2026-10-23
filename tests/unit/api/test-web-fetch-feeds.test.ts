@@ -154,6 +154,36 @@ describe("webFetch JSON, XML, and text", () => {
     expect(doc.content).toContain('"ok":true');
   });
 
+  test("accepts only an official jsonfeed.org version url", () => {
+    const official = extractWebDocument(JSON.stringify(JSON_FEED), "application/json");
+    expect(official.kind).toBe("feed");
+    const spoofed = extractWebDocument(
+      JSON.stringify({
+        version: "https://evil.example/jsonfeed.org/version/1.1",
+        items: [{ id: "1", title: "Nope", content_text: "secret" }],
+      }),
+      "application/json"
+    );
+    expect(spoofed.kind).toBe("json");
+    expect(spoofed.content).toContain("evil.example");
+    const lookalike = extractWebDocument(
+      JSON.stringify({
+        version: "https://jsonfeed.org.evil.example/version/1.1",
+        items: [{ id: "1", title: "Host", content_text: "nope" }],
+      }),
+      "application/json"
+    );
+    expect(lookalike.kind).toBe("json");
+    const insecure = extractWebDocument(
+      JSON.stringify({
+        version: "http://jsonfeed.org/version/1.1",
+        items: [{ id: "1", title: "Http", content_text: "nope" }],
+      }),
+      "application/json"
+    );
+    expect(insecure.kind).toBe("json");
+  });
+
   test("does not expand external xml entities", () => {
     const xml = `<?xml version="1.0"?>
 <!DOCTYPE foo [ <!ENTITY xxe SYSTEM "http://127.0.0.1/secret"> ]>

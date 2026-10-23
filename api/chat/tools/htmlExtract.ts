@@ -58,11 +58,27 @@ export function stripTagsLoop(
 ): string {
   let result = html;
   for (let i = 0; i < maxPasses; i++) {
+    pattern.lastIndex = 0;
     const next = result.replace(pattern, "");
     if (next === result) break;
     result = next;
   }
   return result;
+}
+
+/**
+ * Remove HTML tags until the string stops changing.
+ * One pass of `<[^>]+>` turns `<scr<script>ipt>` back into `<script>`.
+ * Repeat until the string stops changing so a nested tag cannot reassemble.
+ */
+export function stripTagsUntilStable(value: string): string {
+  let current = value;
+  let previous: string;
+  do {
+    previous = current;
+    current = current.replace(/<[^>]+>/g, "");
+  } while (current !== previous);
+  return current;
 }
 
 function stripActiveContent(html: string): string {
@@ -358,7 +374,7 @@ function regexHtmlToText(html: string): string {
     /<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi,
     (_match, tag: string, inner: string) => {
       const level = Number(tag.charAt(1));
-      const text = inner.replace(/<[^>]+>/g, "").trim();
+      const text = stripTagsUntilStable(inner).trim();
       return `\n${"#".repeat(level)} ${text}\n`;
     }
   );
@@ -369,7 +385,7 @@ function regexHtmlToText(html: string): string {
   working = working.replace(
     /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi,
     (_match, href: string, text: string) => {
-      const linkText = text.replace(/<[^>]+>/g, "").trim();
+      const linkText = stripTagsUntilStable(text).trim();
       if (!linkText) return "";
       const safe = safeHref(href);
       if (!safe || linkText === safe) return linkText;
