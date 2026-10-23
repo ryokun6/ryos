@@ -241,6 +241,11 @@ export interface IpodScreenProps {
    * until the preview is committed to the player.
    */
   scrubPreviewSeconds?: number | null;
+  /**
+   * True for the whole scrub session, including after a preview commits
+   * and the live playhead is showing again. Drives the diamond marker.
+   */
+  scrubbing?: boolean;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

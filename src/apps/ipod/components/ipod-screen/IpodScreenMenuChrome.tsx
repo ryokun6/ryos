@@ -1,6 +1,6 @@
 import { type RefObject, type ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Repeat, RepeatOnce, Shuffle, SpeakerHigh } from "@phosphor-icons/react";
+import { Repeat, RepeatOnce, Shuffle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { ActivityIndicator } from "@/components/ui/activity-indicator";
 import {
@@ -68,6 +68,7 @@ export interface IpodScreenMenuChromeProps {
   displayElapsedSeconds: number;
   displayRemainingSeconds: number;
   showVolumeOverlay: boolean;
+  scrubbing: boolean;
   ipodVolume: number;
   registerActivity: () => void;
   handlePlay: () => void;
@@ -117,6 +118,7 @@ export function IpodScreenMenuChrome({
   displayElapsedSeconds,
   displayRemainingSeconds,
   showVolumeOverlay,
+  scrubbing,
   ipodVolume,
   registerActivity,
   handlePlay,
@@ -548,7 +550,6 @@ export function IpodScreenMenuChrome({
                           <VolumeTransport
                             isModernUi={isModernUi}
                             fraction={ipodVolume}
-                            label={String(Math.round(ipodVolume * 100))}
                           />
                         ) : (
                           <TimeTransport
@@ -556,6 +557,7 @@ export function IpodScreenMenuChrome({
                             fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
                             elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
                             remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                            scrubbing={scrubbing}
                           />
                         )
                       ) : (
@@ -574,13 +576,13 @@ export function IpodScreenMenuChrome({
                               fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
                               elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
                               remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                              scrubbing={scrubbing}
                             />
                           </div>
                           <div className="w-1/2 min-w-0">
                             <VolumeTransport
                               isModernUi={isModernUi}
                               fraction={ipodVolume}
-                              label={String(Math.round(ipodVolume * 100))}
                             />
                           </div>
                         </div>
@@ -672,24 +674,50 @@ function transportLabelClass(isModernUi: boolean): string {
 function TransportBar({
   isModernUi,
   fraction,
+  scrubbing = false,
 }: {
   isModernUi: boolean;
   fraction: number;
+  scrubbing?: boolean;
 }) {
-  const width = `${Math.max(0, Math.min(100, fraction * 100))}%`;
-  if (isModernUi) {
-    return (
-      <div className="aqua-progress h-[9px] w-full rounded-none">
-        <div
-          className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-          style={{ width }}
-        />
-      </div>
-    );
-  }
-  return (
+  const clamped = Math.max(0, Math.min(1, fraction));
+  const width = `${clamped * 100}%`;
+  const bar = isModernUi ? (
+    <div className="aqua-progress h-[9px] w-full rounded-none">
+      <div
+        className={cn(
+          "aqua-progress-fill h-full rounded-none",
+          scrubbing ? "" : "transition-all duration-200 ease-out"
+        )}
+        style={{ width }}
+      />
+    </div>
+  ) : (
     <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
       <div className="h-full bg-[#0a3667]" style={{ width }} />
+    </div>
+  );
+  return (
+    <div className="relative w-full">
+      {bar}
+      {scrubbing ? (
+        <span
+          className={cn(
+            "pointer-events-none absolute top-1/2 z-[1] block",
+            isModernUi ? "bg-[#2260a4]" : "bg-[#0a3667]"
+          )}
+          style={{
+            left: width,
+            width: 8,
+            height: 8,
+            transform: "translate(-50%, -50%) rotate(45deg)",
+            boxShadow: isModernUi
+              ? "0 0 0 1px rgba(255,255,255,0.9)"
+              : "1px 1px 0 rgba(0,0,0,0.15)",
+          }}
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }
@@ -699,15 +727,21 @@ function TimeTransport({
   fraction,
   elapsedLabel,
   remainingLabel,
+  scrubbing = false,
 }: {
   isModernUi: boolean;
   fraction: number;
   elapsedLabel: string;
   remainingLabel: string;
+  scrubbing?: boolean;
 }) {
   return (
     <>
-      <TransportBar isModernUi={isModernUi} fraction={fraction} />
+      <TransportBar
+        isModernUi={isModernUi}
+        fraction={fraction}
+        scrubbing={scrubbing}
+      />
       <div className={transportLabelClass(isModernUi)}>
         <span>{elapsedLabel}</span>
         <span>{remainingLabel}</span>
@@ -716,31 +750,71 @@ function TimeTransport({
   );
 }
 
+/** LCD speaker drawn for the volume strip. Low is the cone alone; high adds waves. */
+function VolumeSpeaker({ level }: { level: "low" | "high" }) {
+  const high = level === "high";
+  return (
+    <svg
+      viewBox={high ? "0 0 18 12" : "0 0 8 12"}
+      width={high ? 18 : 8}
+      height={12}
+      className="shrink-0"
+      aria-hidden
+    >
+      <path fill="currentColor" d="M0.6 4.15h1.9L5.1 1.7v8.6L2.5 7.85H0.6z" />
+      {high ? (
+        <>
+          <path
+            d="M8.1 3.35a3.1 3.1 0 0 1 0 5.3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.6 1.85a5.2 5.2 0 0 1 0 8.3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+          <path
+            d="M13.1 0.55a7.2 7.2 0 0 1 0 10.9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
 function VolumeTransport({
   isModernUi,
   fraction,
-  label,
 }: {
   isModernUi: boolean;
   fraction: number;
-  label: string;
 }) {
   return (
     <>
-      <div className="flex min-h-[14px] items-center gap-1">
-        <SpeakerHigh
-          size={isModernUi ? 12 : 14}
-          weight="fill"
-          className={isModernUi ? "text-[rgb(99,101,103)]" : "text-[#0a3667]"}
-          aria-hidden
-        />
+      <div
+        className={cn(
+          "flex min-h-[14px] items-center gap-1",
+          isModernUi ? "text-[rgb(99,101,103)]" : "text-[#0a3667]"
+        )}
+      >
+        <VolumeSpeaker level="low" />
         <div className="min-w-0 flex-1">
           <TransportBar isModernUi={isModernUi} fraction={fraction} />
         </div>
+        <VolumeSpeaker level="high" />
       </div>
-      <div className={transportLabelClass(isModernUi)}>
+      <div className={transportLabelClass(isModernUi)} aria-hidden>
         <span />
-        <span>{label}</span>
+        <span />
       </div>
     </>
   );

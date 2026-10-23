@@ -92,6 +92,7 @@ export function IpodScreen({
   fastScrollLetter = null,
   showVolumeOverlay = false,
   scrubPreviewSeconds = null,
+  scrubbing = false,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   // Subscribed here (the screen actually displays time) rather than in
@@ -548,6 +549,7 @@ export function IpodScreen({
       displayElapsedSeconds={displayElapsedSeconds}
       displayRemainingSeconds={displayRemainingSeconds}
       showVolumeOverlay={showVolumeOverlay}
+      scrubbing={scrubbing}
       ipodVolume={ipodVolume}
       registerActivity={registerActivity}
       handlePlay={handlePlay}

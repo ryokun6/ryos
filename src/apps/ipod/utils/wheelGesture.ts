@@ -27,6 +27,40 @@ export const VOLUME_OVERLAY_IDLE_MS = 5000;
 export const HOLD_SEEK_REPEAT_MS = 200;
 export const MENU_SLIDE_FULL_MS = 240;
 
+/**
+ * How long the center button must stay down before it opens the Now Playing
+ * menu. A release before this is a short press (scrub). A release after the
+ * menu has opened must not also count as that short press.
+ */
+export const CENTER_HOLD_MS = 500;
+
+export type CenterGesturePhase = "idle" | "down" | "menu";
+
+export function centerPressDown(): CenterGesturePhase {
+  return "down";
+}
+
+/** The hold threshold opens the menu at most once, and only from a press. */
+export function centerPressHeld(phase: CenterGesturePhase): {
+  phase: CenterGesturePhase;
+  openMenu: boolean;
+} {
+  if (phase !== "down") return { phase, openMenu: false };
+  return { phase: "menu", openMenu: true };
+}
+
+/**
+ * Releasing before the hold threshold selects (scrub). Releasing after the
+ * menu opened does not select.
+ */
+export function centerPressReleased(phase: CenterGesturePhase): {
+  phase: CenterGesturePhase;
+  select: boolean;
+} {
+  if (phase === "down") return { phase: "idle", select: true };
+  return { phase: "idle", select: false };
+}
+
 export type AccelState = {
   direction: -1 | 0 | 1;
   aboveSince: number | null;

@@ -4304,7 +4304,8 @@ export function useIpodLogic({
     }
   }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browsableTracks, sortedBrowsableTracks, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
-  // Cover Flow handlers
+  // Center-button hold (and the LCD long-press) opens the Now Playing menu.
+  // A short center press does not come through here — that enters scrub.
   const handleCenterLongPress = useCallback(() => {
     playClickSound();
     vibrate();
@@ -4433,6 +4434,7 @@ export function useIpodLogic({
 
   const [volumeOverlayVisible, setVolumeOverlayVisible] = useState(false);
   const [scrubPreviewSeconds, setScrubPreviewSeconds] = useState<number | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
   const scrubModeRef = useRef(false);
   const scrubSessionRef = useRef<ScrubSession | null>(null);
   const scrubCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -4529,6 +4531,7 @@ export function useIpodLogic({
     scrubSessionRef.current = null;
     scrubModeRef.current = false;
     scrubClickMutedRef.current = false;
+    setScrubbing(false);
     setScrubPreviewSeconds(null);
   }, [clearScrubCommitTimer, commitScrubPreview]);
   exitScrubRef.current = exitScrubMode;
@@ -4540,6 +4543,7 @@ export function useIpodLogic({
     scrubModeRef.current = true;
     scrubClickMutedRef.current = true;
     cancelPendingWheelClick();
+    setScrubbing(true);
     setScrubPreviewSeconds(seconds);
   }, [cancelPendingWheelClick, hideVolumeOverlay, readPlaybackSeconds]);
 
@@ -5587,6 +5591,7 @@ export function useIpodLogic({
     fastScrollLetter,
     volumeOverlayVisible,
     scrubPreviewSeconds,
+    scrubbing,
     cameFromNowPlayingMenuItem,
     isCoverFlowOpen,
     isMusicQuizOpen,

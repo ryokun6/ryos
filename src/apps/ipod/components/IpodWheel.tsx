@@ -6,10 +6,15 @@ import type { WheelArea, WheelRotationSample } from "../types";
 import {
   ACCEL_GAP_RESET_MS,
   applyReversalHysteresis,
+  CENTER_HOLD_MS,
+  centerPressDown,
+  centerPressHeld,
+  centerPressReleased,
   HOLD_SEEK_REPEAT_MS,
   initialReversalState,
   segmentPassesNearHub,
   smoothWheelSpeed,
+  type CenterGesturePhase,
   type ReversalState,
 } from "../utils/wheelGesture";
 
@@ -23,9 +28,6 @@ interface IpodWheelProps {
   onMenuButton: () => void;
   onCenterLongPress?: () => void;
 }
-
-// Long press delay in milliseconds
-const LONG_PRESS_DELAY = 500;
 
 // How many degrees of wheel rotation should equal one scroll step
 const rotationStepDeg = ROTATION_STEP_DEG;
@@ -76,11 +78,15 @@ export function IpodWheel({
   // Track if we're currently in a mouse drag to prevent button clicks
   const isInMouseDragRef = useRef(false);
 
-  // Long press handling for center button
-  const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const centerLongPressFiredRef = useRef(false);
-  const centerTouchActiveRef = useRef(false);
-  const centerTouchHandledRef = useRef(false);
+  // Center button: short press selects, hold opens the Now Playing menu.
+  // Release after the hold must not also select. One pointer/keyboard path.
+  const centerPhaseRef = useRef<CenterGesturePhase>("idle");
+  const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const centerPointerIdRef = useRef<number | null>(null);
+  const onCenterLongPressRef = useRef(onCenterLongPress);
+  const onWheelClickRef = useRef(onWheelClick);
+  onCenterLongPressRef.current = onCenterLongPress;
+  onWheelClickRef.current = onWheelClick;
 
   const sectorHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectorHoldIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,45 +97,39 @@ export function IpodWheel({
   onSectorHoldRef.current = onSectorHold;
   onWheelGestureEndRef.current = onWheelGestureEnd;
 
-  const clearCenterLongPress = () => {
-    if (centerLongPressTimerRef.current) {
-      clearTimeout(centerLongPressTimerRef.current);
-      centerLongPressTimerRef.current = null;
+  const clearCenterTimer = () => {
+    if (centerTimerRef.current) {
+      clearTimeout(centerTimerRef.current);
+      centerTimerRef.current = null;
     }
   };
 
-  const startCenterLongPress = (isTouch: boolean) => {
-    clearCenterLongPress();
-    centerLongPressFiredRef.current = false;
-    if (isTouch) {
-      centerTouchActiveRef.current = true;
-      centerTouchHandledRef.current = false;
-    }
-    if (onCenterLongPress) {
-      centerLongPressTimerRef.current = setTimeout(() => {
-        centerLongPressFiredRef.current = true;
-        centerTouchHandledRef.current = true;
-        onCenterLongPress();
-      }, LONG_PRESS_DELAY);
-    }
+  const beginCenterPress = () => {
+    if (centerPhaseRef.current !== "idle") return;
+    clearCenterTimer();
+    // A center press must not also arm prev/next hold-seek.
+    finishSectorHold(false);
+    centerPhaseRef.current = centerPressDown();
+    centerTimerRef.current = setTimeout(() => {
+      centerTimerRef.current = null;
+      const held = centerPressHeld(centerPhaseRef.current);
+      centerPhaseRef.current = held.phase;
+      if (held.openMenu) onCenterLongPressRef.current?.();
+    }, CENTER_HOLD_MS);
   };
 
-  const endCenterLongPress = (isTouch: boolean, triggerClick: boolean = false) => {
-    clearCenterLongPress();
-    
-    // For touch events, handle the tap here instead of relying on onClick
-    if (isTouch && triggerClick && !centerLongPressFiredRef.current && !centerTouchHandledRef.current) {
-      centerTouchHandledRef.current = true;
-      onWheelClick("center");
-    }
-    
-    if (isTouch) {
-      // Reset touch state after a delay to block any synthetic click
-      setTimeout(() => {
-        centerTouchActiveRef.current = false;
-        centerTouchHandledRef.current = false;
-      }, 400);
-    }
+  const endCenterPress = () => {
+    clearCenterTimer();
+    centerPointerIdRef.current = null;
+    const released = centerPressReleased(centerPhaseRef.current);
+    centerPhaseRef.current = released.phase;
+    if (released.select) onWheelClickRef.current("center");
+  };
+
+  const cancelCenterPress = () => {
+    clearCenterTimer();
+    centerPointerIdRef.current = null;
+    centerPhaseRef.current = "idle";
   };
 
   const finishSectorHold = (emitEnd: boolean): boolean => {
@@ -164,16 +164,13 @@ export function IpodWheel({
         const repeating = sectorHoldAreaRef.current;
         if (repeating) onSectorHoldRef.current?.(repeating, "repeat");
       }, HOLD_SEEK_REPEAT_MS);
-    }, LONG_PRESS_DELAY);
-  };
-
-  const cancelSectorHoldBecauseDrag = () => {
-    if (sectorHoldAreaRef.current) finishSectorHold(sectorHoldFiredRef.current);
+    }, CENTER_HOLD_MS);
   };
 
   useEffect(() => {
     return () => {
       finishSectorHold(false);
+      clearCenterTimer();
     };
   }, []);
 
@@ -271,7 +268,6 @@ export function IpodWheel({
     ) {
       draggingRef.current = true;
       guardRef.current = true;
-      cancelSectorHoldBecauseDrag();
     }
   };
 
@@ -325,20 +321,24 @@ export function IpodWheel({
     rotationAccumulatorRef.current += (accepted * Math.PI) / 180;
 
     const threshold = (rotationStepDeg * Math.PI) / 180;
-    while (rotationAccumulatorRef.current > threshold) {
+    const emitQuantum = (direction: "clockwise" | "counterclockwise") => {
+      // A real click of the wheel ends hold-seek. Jitter below one quantum
+      // must not, or a slightly unsteady hold never starts seeking.
+      if (sectorHoldAreaRef.current) {
+        finishSectorHold(sectorHoldFiredRef.current);
+      }
       onWheelRotation({
-        direction: "clockwise",
+        direction,
         degrees: rotationStepDeg,
         speedDegPerSec: smoothed,
       });
+    };
+    while (rotationAccumulatorRef.current > threshold) {
+      emitQuantum("clockwise");
       rotationAccumulatorRef.current -= threshold;
     }
     while (rotationAccumulatorRef.current < -threshold) {
-      onWheelRotation({
-        direction: "counterclockwise",
-        degrees: rotationStepDeg,
-        speedDegPerSec: smoothed,
-      });
+      emitQuantum("counterclockwise");
       rotationAccumulatorRef.current += threshold;
     }
   };
@@ -446,6 +446,11 @@ export function IpodWheel({
 
     const startX = e.clientX;
     const startY = e.clientY;
+    // The hub is the center button. A press there must not become a MENU
+    // sector click (the angle at the top of the hub is the menu sector).
+    if (isTouchInCenter(startX, startY)) {
+      return;
+    }
     isDraggingRef.current = false;
     beginRingGesture(startX, startY);
 
@@ -509,53 +514,43 @@ export function IpodWheel({
         role="button"
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
-        onClick={(e) => {
-          // Block clicks only during active touch (centerTouchActiveRef has 400ms timeout)
-          if (centerTouchActiveRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-          // Don't trigger click if long press was fired
-          if (centerLongPressFiredRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            centerLongPressFiredRef.current = false;
-            return;
-          }
-          if (recentTouchRef.current || isInTouchDragRef.current) return;
-          onWheelClick("center");
+        onPointerDown={(e) => {
+          if (e.button !== 0 || centerPhaseRef.current !== "idle") return;
+          e.stopPropagation();
+          e.preventDefault();
+          centerPointerIdRef.current = e.pointerId;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          beginCenterPress();
+        }}
+        onPointerUp={(e) => {
+          if (e.button !== 0) return;
+          if (centerPointerIdRef.current != null && e.pointerId !== centerPointerIdRef.current) return;
+          endCenterPress();
+        }}
+        onPointerCancel={() => {
+          cancelCenterPress();
         }}
         onKeyDown={(e) => {
           if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onWheelClick("center");
-          }
-        }}
-        onMouseDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
           e.stopPropagation();
-          startCenterLongPress(false);
+          if (e.repeat) return;
+          beginCenterPress();
         }}
-        onMouseUp={() => {
-          endCenterLongPress(false);
+        onKeyUp={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          endCenterPress();
         }}
-        onMouseLeave={() => {
-          endCenterLongPress(false);
-        }}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          startCenterLongPress(true);
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault(); // Always prevent to avoid synthetic click
-          endCenterLongPress(true, true); // Pass true to trigger click if appropriate
-        }}
-        onTouchCancel={() => {
-          endCenterLongPress(true, false);
+        onBlur={() => {
+          // Pointer capture can blur the button without ending the press.
+          // Only a keyboard focus loss should abandon the gesture.
+          if (centerPointerIdRef.current != null) return;
+          if (centerPhaseRef.current !== "idle") cancelCenterPress();
         }}
         className={cn(
-          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
+          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture touch-none",
           theme === "classic"
             ? "bg-white/30"
             : theme === "u2"

@@ -3,6 +3,9 @@ import {
   applyReversalHysteresis,
   applyVolumeDegrees,
   advanceScrubSession,
+  centerPressDown,
+  centerPressHeld,
+  centerPressReleased,
   commitScrubIfIdle,
   initialAccelState,
   initialReversalState,
@@ -269,6 +272,34 @@ describe("click scheduling", () => {
     });
     expect(planned.playNow).toBe(false);
     expect(planned.scheduleDelayMs).toBeNull();
+  });
+});
+
+describe("center button press", () => {
+  test("a short release selects and does not open the menu", () => {
+    const down = centerPressDown();
+    expect(down).toBe("down");
+    const released = centerPressReleased(down);
+    expect(released.select).toBe(true);
+    expect(released.phase).toBe("idle");
+  });
+
+  test("holding opens the menu once, and the release does not also select", () => {
+    const down = centerPressDown();
+    const held = centerPressHeld(down);
+    expect(held.openMenu).toBe(true);
+    expect(held.phase).toBe("menu");
+    expect(centerPressHeld(held.phase).openMenu).toBe(false);
+
+    const released = centerPressReleased(held.phase);
+    expect(released.select).toBe(false);
+    expect(released.phase).toBe("idle");
+  });
+
+  test("a cancelled press neither selects nor opens the menu", () => {
+    expect(centerPressReleased("idle").select).toBe(false);
+    expect(centerPressHeld("idle").openMenu).toBe(false);
+    expect(centerPressHeld("menu").openMenu).toBe(false);
   });
 });
 
