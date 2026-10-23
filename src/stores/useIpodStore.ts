@@ -27,6 +27,9 @@ import {
   parseYouTubeTitle,
 } from "@/utils/youtubeMetadata";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
+import { insertTrackKeepingPlayback } from "@/shared/media/libraryInsert";
+import { clampLyricOffset } from "@/shared/songs/lyricOffsetWrite";
+import { publishLyricOffset } from "@/lib/lyricOffsetPublish";
 import { sortTracksLikeServerOrder } from "@/stores/ipodTrackOrder";
 import { shouldUpdatePlaybackTime } from "@/stores/playbackTime";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
@@ -702,7 +705,13 @@ export interface IpodState extends IpodData {
   /** Export library to JSON string */
   exportLibrary: () => string;
   /** Adds a track from a YouTube video ID or URL, fetching metadata automatically */
-  addTrackFromVideoId: (urlOrId: string, autoPlay?: boolean) => Promise<Track | null>;
+  addTrackFromVideoId: (
+    urlOrId: string,
+    autoPlay?: boolean,
+    options?: { keepPlayback?: boolean }
+  ) => Promise<Track | null>;
+  /** Apply a room lyric offset without writing it again. */
+  applySharedLyricOffset: (trackId: string, offsetMs: number) => void;
   /** Load the default library if no tracks exist */
   initializeLibrary: () => Promise<void>;
 
@@ -1725,6 +1734,7 @@ export const useIpodStore = create<IpodState>()(
         // Persist server-side. The endpoint accepts both YouTube (11-char)
         // and Apple Music (`am:<id>`) keys via the relaxed validator.
         debouncedSaveLyricOffset(current.id, newOffset);
+        publishLyricOffset(current.id, newOffset);
       },
       setLyricOffset: (trackIndex, offsetMs, library = "active") => {
         // Validate before calling set() to avoid unnecessary state updates
@@ -1757,6 +1767,30 @@ export const useIpodStore = create<IpodState>()(
         }
 
         debouncedSaveLyricOffset(trackId, offsetMs);
+        publishLyricOffset(trackId, offsetMs);
+      },
+      applySharedLyricOffset: (trackId, offsetMs) => {
+        const clamped = clampLyricOffset(offsetMs);
+        if (clamped == null) return;
+        set((state) => {
+          let youtubeChanged = false;
+          let appleChanged = false;
+          const tracks = state.tracks.map((track) => {
+            if (track.id !== trackId || track.lyricOffset === clamped) return track;
+            youtubeChanged = true;
+            return { ...track, lyricOffset: clamped };
+          });
+          const appleMusicTracks = state.appleMusicTracks.map((track) => {
+            if (track.id !== trackId || track.lyricOffset === clamped) return track;
+            appleChanged = true;
+            return { ...track, lyricOffset: clamped };
+          });
+          if (!youtubeChanged && !appleChanged) return {};
+          return {
+            ...(youtubeChanged ? { tracks } : {}),
+            ...(appleChanged ? { appleMusicTracks } : {}),
+          };
+        });
       },
       setLyricsAlignment: (alignment) => {
         if (get().lyricsAlignment === alignment) {
@@ -1843,7 +1877,19 @@ export const useIpodStore = create<IpodState>()(
           });
         }
       },
-      addTrackFromVideoId: async (urlOrId: string, autoPlay: boolean = true): Promise<Track | null> => {
+      addTrackFromVideoId: async (urlOrId: string, autoPlay: boolean = true, options?: { keepPlayback?: boolean }): Promise<Track | null> => {
+        const keepPlayback = options?.keepPlayback === true;
+        const rememberWithoutPlaying = (track: Track) => {
+          set((state) => ({
+            tracks: insertTrackKeepingPlayback(state.tracks, {
+              ...track,
+              createdAt: track.createdAt ?? Date.now(),
+              importOrder: track.importOrder ?? 0,
+              updatedAt: track.updatedAt ?? Date.now(),
+            }),
+            libraryState: "loaded",
+          }));
+        };
         const videoId =
           parseRyosShareTrackId(urlOrId) ??
           parseYouTubeVideoId(urlOrId);
@@ -1855,6 +1901,7 @@ export const useIpodStore = create<IpodState>()(
         const existingTrack = get().tracks.find((track) => track.id === videoId);
         if (existingTrack) {
           debug(`[iPod Store] Track ${videoId} already exists in library, skipping metadata fetch`);
+          if (keepPlayback) return existingTrack;
           // Set as current track and optionally autoplay
           const currentState = get();
           const isSameTrack = currentState.currentSongId === videoId;
@@ -1892,9 +1939,13 @@ export const useIpodStore = create<IpodState>()(
             };
 
             try {
-              get().addTrack(newTrack);
-              if (!autoPlay) {
-                set(stopPlayback());
+              if (keepPlayback) {
+                rememberWithoutPlaying(newTrack);
+              } else {
+                get().addTrack(newTrack);
+                if (!autoPlay) {
+                  set(stopPlayback());
+                }
               }
               return newTrack;
             } catch (error) {
@@ -1991,10 +2042,13 @@ export const useIpodStore = create<IpodState>()(
         };
 
         try {
-          get().addTrack(newTrack); // Add track to the store
-          // If autoPlay is false (e.g., for iOS), pause after adding
-          if (!autoPlay) {
-            set(stopPlayback());
+          if (keepPlayback) {
+            rememberWithoutPlaying(newTrack);
+          } else {
+            get().addTrack(newTrack);
+            if (!autoPlay) {
+              set(stopPlayback());
+            }
           }
           return newTrack;
         } catch (error) {

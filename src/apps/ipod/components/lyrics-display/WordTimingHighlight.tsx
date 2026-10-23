@@ -37,6 +37,7 @@ import {
   mapWordTimingsToFurigana,
 } from "./furiganaWordMapping";
 import type { WordRenderItem } from "./types";
+import { readListenLyricTimelineMs } from "@/lib/listenLyricClock";
 
 export function WordTimingHighlight({
   wordTimings,
@@ -243,16 +244,20 @@ export function WordTimingHighlight({
     let animationFrameId: number;
     
     const updateMasks = () => {
-      // Interpolate time for smooth animation between prop updates
-      const elapsed = performance.now() - timeRef.current.propTimestamp;
-      const clampedElapsed = Math.min(elapsed, 500); // Max 500ms interpolation
-      const rawTime = timeRef.current.propTime + clampedElapsed;
-      
-      // Monotonic time: ignore tiny backward jitter between progress ticks (~200ms). Keep at 100ms so local
-      // playback stays smooth; larger remote-only drift is smoothed in useListenSync, not here.
-      const lastDisplayed = timeRef.current.lastDisplayedTime;
-      const isSeek = lastDisplayed - rawTime >= 100;
-      const interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
+      const now = performance.now();
+      const liveTimeline = readListenLyricTimelineMs(now);
+      let interpolatedTime: number;
+      if (liveTimeline != null) {
+        interpolatedTime = liveTimeline;
+      } else {
+        // Interpolate time for smooth animation between prop updates
+        const elapsed = now - timeRef.current.propTimestamp;
+        const clampedElapsed = Math.min(elapsed, 500);
+        const rawTime = timeRef.current.propTime + clampedElapsed;
+        const lastDisplayed = timeRef.current.lastDisplayedTime;
+        const isSeek = lastDisplayed - rawTime >= 100;
+        interpolatedTime = isSeek || rawTime >= lastDisplayed ? rawTime : lastDisplayed;
+      }
       timeRef.current.lastDisplayedTime = interpolatedTime;
       
       const timeIntoLine = interpolatedTime - lineStartTimeMs;

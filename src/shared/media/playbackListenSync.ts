@@ -38,6 +38,7 @@ export async function broadcastListenState(args: {
     currentTrackMeta: ListenTrackMeta | null;
     isPlaying: boolean;
     positionMs: number;
+    durationMs?: number;
   }) => Promise<{ ok: boolean; error?: string }>;
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
@@ -45,10 +46,16 @@ export async function broadcastListenState(args: {
 }): Promise<{ ok: boolean; error?: string }> {
   const activePlayer = args.getActivePlayer();
   const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
+  const durationSeconds = activePlayer?.getDuration?.() ?? 0;
+  const durationMs =
+    Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? Math.round(durationSeconds * 1000)
+      : undefined;
   return args.syncSession({
     currentTrackId: args.currentTrackId,
     currentTrackMeta: args.currentTrackMeta,
     isPlaying: args.isPlaying,
     positionMs,
+    ...(durationMs != null ? { durationMs } : {}),
   });
 }

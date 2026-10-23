@@ -15,8 +15,17 @@ import {
   syncListenSession,
   transferListenSessionHost,
   updateListenQueue,
+  publishListenLyricOffset,
+  claimListenDj,
 } from "@/api/listen";
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
+import {
+  forgetListenSession,
+  rememberListenSession,
+} from "@/lib/listenSessionMemory";
+import { setLyricOffsetPublisher } from "@/lib/lyricOffsetPublish";
+import { useIpodStore } from "@/stores/useIpodStore";
+import { normalizeLyricOffsetMap } from "@/shared/listen/lyricOffsets";
 import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
 import { getListenSessionChannelName } from "@/shared/constants/realtime";
 import {
@@ -86,6 +95,7 @@ export interface ListenSessionState {
     currentTrackMeta: ListenTrackMeta | null;
     isPlaying: boolean;
     positionMs: number;
+    durationMs?: number;
     djUsername?: string;
     djClientInstanceId?: string;
   }) => Promise<{ ok: boolean; error?: string }>;
@@ -107,14 +117,26 @@ export interface ListenSessionState {
   }) => Promise<{ ok: boolean; error?: string }>;
   takeRemoteCommands: () => ListenRemoteCommandPayload[];
   updateQueue: (
-    args: Pick<ListenQueueRequest, "op" | "trackId" | "title" | "artist" | "entryId">
+    args: Pick<
+      ListenQueueRequest,
+      "op" | "trackId" | "title" | "artist" | "entryId" | "endedTrackId"
+    >
   ) => Promise<{
     ok: boolean;
     error?: string;
     queue?: ListenQueueItem[];
     advanced?: boolean;
     item?: ListenQueueItem | null;
+    alreadyAdvanced?: boolean;
+    libraryFallback?: boolean;
+    djStale?: boolean;
+    pending?: boolean;
   }>;
+  playbackCatchUp: boolean;
+  clearPlaybackCatchUp: () => void;
+  refreshSession: () => Promise<void>;
+  claimStaleDj: () => Promise<{ ok: boolean; claimed?: boolean; error?: string }>;
+  publishLyricOffset: (trackId: string, lyricOffset: number) => Promise<void>;
 }
 
 const initialState = {
@@ -132,7 +154,37 @@ const initialState = {
   reactions: [],
   remoteCommandFlushId: 0,
   pendingRemotePlayback: null,
+  playbackCatchUp: false,
 };
+
+function payloadFromSession(session: ListenSession, listenerCount: number): ListenSyncPayload {
+  return {
+    currentTrackId: session.currentTrackId,
+    currentTrackMeta: session.currentTrackMeta,
+    isPlaying: session.isPlaying,
+    positionMs: session.positionMs,
+    timestamp: session.lastSyncAt,
+    hostUsername: session.hostUsername,
+    hostClientInstanceId: session.hostClientInstanceId,
+    djUsername: session.djUsername,
+    djClientInstanceId: session.djClientInstanceId,
+    listenerCount,
+    sourceUsername: session.djUsername,
+    sourceClientInstanceId: session.djClientInstanceId,
+    queue: session.queue,
+    queueVersion: session.queueVersion,
+    durationMs: session.currentTrackDurationMs,
+    lyricOffsets: normalizeLyricOffsetMap(session.lyricOffsets),
+  };
+}
+
+function applySharedOffsets(offsets: Record<string, number> | undefined): void {
+  if (!offsets) return;
+  const library = useIpodStore.getState();
+  for (const [trackId, offset] of Object.entries(offsets)) {
+    library.applySharedLyricOffset(trackId, offset);
+  }
+}
 
 let remoteCommandBuffer: ListenRemoteCommandPayload[] = [];
 
@@ -264,10 +316,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("reaction");
     channelRef.unbind("session-ended");
     channelRef.unbind("queue");
+    channelRef.unbind("lyric-offset");
     channelRef.unbind("pusher:subscription_succeeded");
 
     channelRef.bind("sync", (payload: ListenSyncPayload) => {
       const normalized = normalizeListenSyncPayload(payload);
+      applySharedOffsets(normalized.lyricOffsets);
       set((state) => {
         if (!state.currentSession) return {};
         const prevTs = Math.max(
@@ -316,6 +370,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
             djUsername: effective.djUsername,
             ...(effective.djClientInstanceId != null
               ? { djClientInstanceId: effective.djClientInstanceId }
+              : {}),
+            ...(effective.durationMs != null
+              ? { currentTrackDurationMs: effective.durationMs }
+              : {}),
+            ...(effective.lyricOffsets
+              ? { lyricOffsets: effective.lyricOffsets }
               : {}),
           },
           effective.queue,
@@ -527,28 +587,29 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       });
     });
 
+    channelRef.bind("lyric-offset", (payload: {
+      trackId?: string;
+      lyricOffset?: number;
+    }) => {
+      if (!payload?.trackId || typeof payload.lyricOffset !== "number") return;
+      const offsets = normalizeLyricOffsetMap({ [payload.trackId]: payload.lyricOffset });
+      applySharedOffsets(offsets);
+      set((state) => {
+        if (!state.currentSession) return {};
+        return {
+          currentSession: {
+            ...state.currentSession,
+            lyricOffsets: {
+              ...normalizeLyricOffsetMap(state.currentSession.lyricOffsets),
+              ...offsets,
+            },
+          },
+        };
+      });
+    });
+
     channelRef.bind("pusher:subscription_succeeded", () => {
-      const current = get().currentSession;
-      if (!current) return;
-      void fetchListenSession(current.id)
-        .then((data) => {
-          set((state) => {
-            if (!state.currentSession || state.currentSession.id !== data.session.id) {
-              return {};
-            }
-            const fresh = withQueue(data.session);
-            return {
-              currentSession: applyQueueSnapshot(
-                state.currentSession,
-                fresh.queue,
-                fresh.queueVersion
-              ),
-            };
-          });
-        })
-        .catch(() => {
-          // The next DJ sync still carries the queue.
-        });
+      void get().refreshSession();
     });
 
     channelRef.bind("reaction", (payload: ListenReactionPayload) => {
@@ -561,6 +622,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       toast("Session ended", {
         description: "The host ended the listening session.",
       });
+      forgetListenSession();
       unsubscribeFromSession();
       set({
         ...initialState,
@@ -609,16 +671,21 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         remoteCommandBuffer = [];
         bindChannelEvents(session.id);
+        rememberListenSession(session.id, username);
+        const listenerCount =
+          session.users.length + (session.anonymousListeners?.length ?? 0);
         set({
           currentSession: session,
           username,
           clientInstanceId,
           isConnected: true,
+          listenerCount,
           lastSyncAt: session.lastSyncAt,
-          lastSyncPayload: null,
+          lastSyncPayload: payloadFromSession(session, listenerCount),
           reactions: [],
           remoteCommandFlushId: 0,
           pendingRemotePlayback: null,
+          playbackCatchUp: false,
           ...identity,
         });
 
@@ -661,6 +728,9 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
 
         remoteCommandBuffer = [];
         bindChannelEvents(session.id);
+        rememberListenSession(session.id, username ?? null);
+        applySharedOffsets(normalizeLyricOffsetMap(session.lyricOffsets));
+        const isDj = !isAnonymous && identity.isDj === true;
         set({
           currentSession: session,
           username: username ?? null,
@@ -670,10 +740,11 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           isConnected: true,
           listenerCount,
           lastSyncAt: session.lastSyncAt,
-          lastSyncPayload: null,
+          lastSyncPayload: payloadFromSession(session, listenerCount),
           reactions: [],
           remoteCommandFlushId: 0,
           pendingRemotePlayback: null,
+          playbackCatchUp: Boolean(isDj && session.currentTrackId),
           ...identity,
         });
 
@@ -721,6 +792,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
               }
         );
 
+        forgetListenSession();
         unsubscribeFromSession();
         set({
           ...initialState,
@@ -894,6 +966,111 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       return out;
     },
 
+    clearPlaybackCatchUp: () => set({ playbackCatchUp: false }),
+
+    refreshSession: async () => {
+      const current = get().currentSession;
+      if (!current) return;
+      try {
+        const data = await fetchListenSession(current.id);
+        const fresh = withQueue(data.session as ListenSession);
+        applySharedOffsets(normalizeLyricOffsetMap(fresh.lyricOffsets));
+        set((state) => {
+          if (!state.currentSession || state.currentSession.id !== fresh.id) return {};
+          const localTs = Math.max(
+            state.lastSyncAt ?? 0,
+            state.lastSyncPayload?.timestamp ?? 0
+          );
+          const queued = applyQueueSnapshot(
+            state.currentSession,
+            fresh.queue,
+            fresh.queueVersion
+          );
+          if (fresh.lastSyncAt < localTs) {
+            return { currentSession: queued };
+          }
+          const listenerCount =
+            fresh.users.length + (fresh.anonymousListeners?.length ?? 0);
+          const nextSession: ListenSession = {
+            ...queued,
+            currentTrackId: fresh.currentTrackId,
+            currentTrackMeta: fresh.currentTrackMeta,
+            isPlaying: fresh.isPlaying,
+            positionMs: fresh.positionMs,
+            lastSyncAt: fresh.lastSyncAt,
+            currentTrackDurationMs: fresh.currentTrackDurationMs,
+            lyricOffsets: normalizeLyricOffsetMap(fresh.lyricOffsets),
+            djUsername: fresh.djUsername,
+            djClientInstanceId: fresh.djClientInstanceId,
+            hostUsername: fresh.hostUsername,
+            hostClientInstanceId: fresh.hostClientInstanceId,
+          };
+          return {
+            currentSession: nextSession,
+            lastSyncPayload: payloadFromSession(nextSession, listenerCount),
+            lastSyncAt: fresh.lastSyncAt,
+            listenerCount,
+            ...updateIdentityFlags(nextSession, state.username, state.clientInstanceId),
+          };
+        });
+      } catch {
+        // The next sync or resubscribe retries.
+      }
+    },
+
+    claimStaleDj: async () => {
+      const { currentSession, username, clientInstanceId, isAnonymous } = get();
+      if (!currentSession || !username || !clientInstanceId || isAnonymous) {
+        return { ok: false, error: "not_in_session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "Authentication required" };
+      }
+      try {
+        const data = await claimListenDj(currentSession.id, {
+          username,
+          clientInstanceId,
+        });
+        const session = withQueue(data.session as ListenSession);
+        set({
+          currentSession: session,
+          ...updateIdentityFlags(session, username, clientInstanceId),
+        });
+        return { ok: true, claimed: data.claimed === true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Network error";
+        return { ok: false, error: message };
+      }
+    },
+
+    publishLyricOffset: async (trackId, lyricOffset) => {
+      const { currentSession, username, clientInstanceId, isAnonymous } = get();
+      if (!currentSession || !username || !clientInstanceId || isAnonymous) return;
+      if (!hasMatchingAuth(username)) return;
+      try {
+        await publishListenLyricOffset(currentSession.id, {
+          username,
+          clientInstanceId,
+          trackId,
+          lyricOffset,
+        });
+        set((state) => {
+          if (!state.currentSession) return {};
+          return {
+            currentSession: {
+              ...state.currentSession,
+              lyricOffsets: {
+                ...normalizeLyricOffsetMap(state.currentSession.lyricOffsets),
+                [trackId]: lyricOffset,
+              },
+            },
+          };
+        });
+      } catch (error) {
+        console.error("[ListenSession] publishLyricOffset failed", error);
+      }
+    },
+
     updateQueue: async (args) => {
       const { currentSession, username, clientInstanceId, isAnonymous } = get();
       if (!currentSession || !username || !clientInstanceId) {
@@ -928,6 +1105,10 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           queue: data.queue,
           advanced: data.advanced,
           item: data.item,
+          alreadyAdvanced: data.alreadyAdvanced,
+          libraryFallback: data.libraryFallback,
+          djStale: data.djStale,
+          pending: data.pending,
         };
       } catch (error) {
         console.error("[ListenSession] updateQueue failed", error);
@@ -936,4 +1117,17 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       }
     },
   };
+});
+
+const lyricOffsetPublishTimers = new Map<string, ReturnType<typeof setTimeout>>();
+setLyricOffsetPublisher((trackId, lyricOffset) => {
+  const existing = lyricOffsetPublishTimers.get(trackId);
+  if (existing) clearTimeout(existing);
+  lyricOffsetPublishTimers.set(
+    trackId,
+    setTimeout(() => {
+      lyricOffsetPublishTimers.delete(trackId);
+      void useListenSessionStore.getState().publishLyricOffset(trackId, lyricOffset);
+    }, 200)
+  );
 });

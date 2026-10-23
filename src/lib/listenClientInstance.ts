@@ -1,4 +1,10 @@
 const STORAGE_KEY = "ryos:listen-client-instance";
+const IOS_STORAGE_KEY = "ryos:listen-client-instance:ios";
+
+function isIosShell(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.ryosDesktop?.platform === "ios";
+}
 
 function randomId(): string {
   const bytes = new Uint8Array(12);
@@ -16,8 +22,16 @@ export function getListenClientInstanceId(): string {
     if (existing && /^[a-zA-Z0-9_-]+$/.test(existing) && existing.length <= 64) {
       return existing;
     }
+    if (isIosShell()) {
+      const persisted = localStorage.getItem(IOS_STORAGE_KEY);
+      if (persisted && /^[a-zA-Z0-9_-]+$/.test(persisted) && persisted.length <= 64) {
+        sessionStorage.setItem(STORAGE_KEY, persisted);
+        return persisted;
+      }
+    }
     const id = randomId();
     sessionStorage.setItem(STORAGE_KEY, id);
+    if (isIosShell()) localStorage.setItem(IOS_STORAGE_KEY, id);
     return id;
   } catch {
     return randomId();

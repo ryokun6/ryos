@@ -6,6 +6,13 @@ import {
 } from "@/stores/useListenSessionStore";
 import type { ListenTrackMeta } from "@/shared/contracts/listen";
 import { toast } from "sonner";
+import { subscribeRealtimeConnection } from "@/lib/pusherClient";
+import {
+  clearListenLyricClock,
+  readListenLyricMediaMs,
+  stepListenLyricClock,
+} from "@/lib/listenLyricClock";
+import { shouldIgnoreOwnSyncEcho } from "@/shared/listen/selfSync";
 
 interface ListenSyncOptions {
   currentTrackId: string | null;
@@ -27,8 +34,6 @@ const SOFT_SYNC_THRESHOLD_MS = 500; // Below this, no correction needed
 const HARD_SEEK_THRESHOLD_MS = 3000; // Above this, hard seek
 const DJ_DISCONNECT_WARNING_MS = 15000; // Show warning after 15s
 const DJ_DISCONNECT_PROMOTE_MS = 30000; // Auto-promote after 30s
-/** Remote-only UI: throttle virtual clock (not every RAF frame). 50ms ≈ smoother lyrics than 100ms without ~60 React updates/s. */
-const VIRTUAL_ELAPSED_TICK_MS = 50;
 /** Sync payloads can be a few 100ms behind local extrapolation; snapping back looks like jitter. Larger jumps = real seek. */
 const VIRTUAL_BACKWARD_IGNORE_SEC = 0.35;
 
@@ -56,6 +61,8 @@ export function useListenSync({
     lastSyncPayload,
     lastSyncAt,
     syncSession,
+    playbackCatchUp,
+    clearPlaybackCatchUp,
   } = useListenSessionStore(
     useShallow((state) => ({
       currentSession: state.currentSession,
@@ -66,6 +73,8 @@ export function useListenSync({
       lastSyncPayload: state.lastSyncPayload,
       lastSyncAt: state.lastSyncAt,
       syncSession: state.syncSession,
+      playbackCatchUp: state.playbackCatchUp,
+      clearPlaybackCatchUp: state.clearPlaybackCatchUp,
     }))
   );
 
@@ -114,12 +123,18 @@ export function useListenSync({
 
     const player = getActivePlayer();
     const positionMs = Math.max(0, (player?.getCurrentTime() ?? 0) * 1000);
+    const durationSeconds = player?.getDuration?.() ?? 0;
+    const durationMs =
+      Number.isFinite(durationSeconds) && durationSeconds > 0
+        ? Math.round(durationSeconds * 1000)
+        : undefined;
 
     await syncSession({
       currentTrackId,
       currentTrackMeta,
       isPlaying,
       positionMs,
+      ...(durationMs != null ? { durationMs } : {}),
     });
   }, [
     canBroadcast,
@@ -164,18 +179,28 @@ export function useListenSync({
   }, [canBroadcast]);
 
   // Helper to set playback rate on the internal player
-  const setPlaybackRate = useCallback((player: ReactPlayer, rate: number) => {
-    if (currentPlaybackRateRef.current === rate) return;
+  const setPlaybackRate = useCallback((player: ReactPlayer, rate: number): boolean => {
+    if (currentPlaybackRateRef.current === rate) return true;
 
     try {
-      const internalPlayer = player.getInternalPlayer();
+      const internalPlayer = player.getInternalPlayer() as {
+        playbackRate?: number;
+        setPlaybackRate?: (next: number) => void;
+      } | null;
+      if (internalPlayer && typeof internalPlayer.setPlaybackRate === "function") {
+        internalPlayer.setPlaybackRate(rate);
+        currentPlaybackRateRef.current = rate;
+        return true;
+      }
       if (internalPlayer && typeof internalPlayer.playbackRate !== "undefined") {
         internalPlayer.playbackRate = rate;
         currentPlaybackRateRef.current = rate;
+        return true;
       }
     } catch {
       // Some players don't support playbackRate
     }
+    return false;
   }, []);
 
   // Listener effect: apply sync from DJ to local playback
@@ -184,15 +209,22 @@ export function useListenSync({
 
     const source = lastSyncPayload.sourceUsername ?? lastSyncPayload.djUsername;
     const sourceConn = lastSyncPayload.sourceClientInstanceId;
-    const isSelfOriginated =
-      username != null &&
-      source.toLowerCase() === username.toLowerCase() &&
-      (sourceConn == null
-        ? true
-        : sourceConn === clientInstanceId);
 
-    // Playback tab ignores its own sync echo; still applies updates when another tab of the same user sent them.
-    if (isDj && isSelfOriginated) return;
+    // Playback tab ignores its own sync echo, except the first snapshot after
+    // rejoining so a reloaded DJ seeks to the room instead of dragging it off.
+    if (
+      shouldIgnoreOwnSyncEcho({
+        isDj,
+        playbackCatchUp,
+        username,
+        clientInstanceId,
+        sourceUsername: source,
+        sourceClientInstanceId: sourceConn,
+      })
+    ) {
+      return;
+    }
+    if (playbackCatchUp) clearPlaybackCatchUp();
 
     if (!applyListenerPlayback) {
       djDisconnectWarningShownRef.current = false;
@@ -201,18 +233,6 @@ export function useListenSync({
       }
       if (lastSyncPayload.isPlaying !== isPlaying) {
         setIsPlaying(lastSyncPayload.isPlaying);
-      }
-      if (setVirtualElapsedSeconds) {
-        const now = Date.now();
-        const expectedSec =
-          (lastSyncPayload.positionMs +
-            (lastSyncPayload.isPlaying ? now - lastSyncPayload.timestamp : 0)) /
-          1000;
-        applySmoothedVirtualElapsed(
-          expectedSec,
-          lastSyncPayload.currentTrackId,
-          lastSyncPayload.isPlaying
-        );
       }
       return;
     }
@@ -254,10 +274,12 @@ export function useListenSync({
       player.seekTo(expectedPosition / 1000, "seconds");
       setPlaybackRate(player, 1.0);
     } else if (absDrift > SOFT_SYNC_THRESHOLD_MS) {
-      if (driftMs > 0) {
-        setPlaybackRate(player, SOFT_SYNC_RATE_FAST);
-      } else {
-        setPlaybackRate(player, SOFT_SYNC_RATE_SLOW);
+      const nudged = setPlaybackRate(
+        player,
+        driftMs > 0 ? SOFT_SYNC_RATE_FAST : SOFT_SYNC_RATE_SLOW
+      );
+      if (!nudged) {
+        setPlaybackRate(player, 1.0);
       }
     } else {
       setPlaybackRate(player, 1.0);
@@ -278,31 +300,76 @@ export function useListenSync({
     applySmoothedVirtualElapsed,
     clientInstanceId,
     username,
+    playbackCatchUp,
+    clearPlaybackCatchUp,
   ]);
 
-  // Virtual timeline tick for remote-only UI (throttled — not every animation frame)
+  // Remote lyric clock: advance every frame from the last sync, and ease
+  // corrections instead of snapping the word highlight on each heartbeat.
+  useEffect(() => {
+    if (applyListenerPlayback || !currentSession) {
+      clearListenLyricClock();
+    }
+  }, [applyListenerPlayback, currentSession]);
+
   useEffect(() => {
     if (applyListenerPlayback || !setVirtualElapsedSeconds || !lastSyncPayload) return;
-    // Gate on local isPlaying too so we stop immediately on pause (payload can lag one frame).
-    if (!isPlaying || !lastSyncPayload.isPlaying) return;
-    const id = window.setInterval(() => {
-      const now = Date.now();
-      const expectedSec =
-        (lastSyncPayload.positionMs + (now - lastSyncPayload.timestamp)) / 1000;
-      applySmoothedVirtualElapsed(
-        expectedSec,
-        lastSyncPayload.currentTrackId,
-        lastSyncPayload.isPlaying
-      );
-    }, VIRTUAL_ELAPSED_TICK_MS);
-    return () => window.clearInterval(id);
+    let frame = 0;
+    const tick = () => {
+      const playing = isPlaying && lastSyncPayload.isPlaying;
+      const expectedMs =
+        lastSyncPayload.positionMs +
+        (playing ? Date.now() - lastSyncPayload.timestamp : 0);
+      stepListenLyricClock({
+        correctionKey: `${lastSyncPayload.currentTrackId}|${lastSyncPayload.timestamp}|${lastSyncPayload.positionMs}|${lastSyncPayload.isPlaying}`,
+        targetMs: expectedMs,
+        nowMs: performance.now(),
+        trackKey: lastSyncPayload.currentTrackId ?? "",
+        playing,
+      });
+      const mediaMs = readListenLyricMediaMs(performance.now());
+      if (mediaMs != null) {
+        applySmoothedVirtualElapsed(
+          mediaMs / 1000,
+          lastSyncPayload.currentTrackId,
+          playing
+        );
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
   }, [
     applyListenerPlayback,
-    lastSyncPayload,
     applySmoothedVirtualElapsed,
+    currentSession,
     isPlaying,
+    lastSyncPayload,
     setVirtualElapsedSeconds,
   ]);
+
+  useEffect(() => {
+    if (!currentSession) return;
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void useListenSessionStore.getState().refreshSession();
+      if (isDj) void broadcastStateRef.current();
+    };
+    const onOnline = () => {
+      void useListenSessionStore.getState().refreshSession();
+      if (isDj) void broadcastStateRef.current();
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("online", onOnline);
+    const unsubscribe = subscribeRealtimeConnection((state) => {
+      if (state === "connected") refresh();
+    });
+    return () => {
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("online", onOnline);
+      unsubscribe();
+    };
+  }, [currentSession, isDj]);
 
   // DJ disconnect detection - check if we haven't received sync for too long
   useEffect(() => {
@@ -320,6 +387,7 @@ export function useListenSync({
             duration: 10000,
           });
           djDisconnectWarningShownRef.current = true;
+          void useListenSessionStore.getState().claimStaleDj();
         }
       } else if (timeSinceLastSync > DJ_DISCONNECT_WARNING_MS) {
         if (!djDisconnectWarningShownRef.current) {
