@@ -43,6 +43,9 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
     handleLyricsSearchReset,
     handleSongSearchSelect,
     handleAddUrl,
+    handleQueueSearchResult,
+    handleQueueUrl,
+    canQueueSongs,
     listenSession,
     handleJoinListenSession,
   } = c;
@@ -101,6 +104,22 @@ export function KaraokeAppDialogs({ c }: KaraokeAppDialogsProps) {
         onOpenChange={setIsSongSearchDialogOpen}
         onSelect={handleSongSearchSelect}
         onAddUrl={handleAddUrl}
+        onQueueSelect={
+          canQueueSongs
+            ? (result) => handleQueueSearchResult(result, "end")
+            : undefined
+        }
+        onPlayNextSelect={
+          canQueueSongs
+            ? (result) => handleQueueSearchResult(result, "next")
+            : undefined
+        }
+        onQueueUrl={
+          canQueueSongs ? (url) => handleQueueUrl(url, "end") : undefined
+        }
+        onPlayNextUrl={
+          canQueueSongs ? (url) => handleQueueUrl(url, "next") : undefined
+        }
       />
       {listenSession && (
         <ListenSessionInvite

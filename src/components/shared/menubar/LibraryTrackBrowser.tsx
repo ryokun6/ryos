@@ -25,6 +25,8 @@ export function LibraryTrackBrowser<T extends LibraryBrowserItem>({
   tracksByArtist,
   artists,
   onPlayTrack,
+  onQueueTrack,
+  onPlayNextTrack,
   t,
   allItemsLabel,
   itemVariant = "checkbox",
@@ -35,6 +37,8 @@ export function LibraryTrackBrowser<T extends LibraryBrowserItem>({
   tracksByArtist: Record<string, TrackWithIndex<T>[]>;
   artists: string[];
   onPlayTrack: (index: number) => void;
+  onQueueTrack?: (index: number) => void;
+  onPlayNextTrack?: (index: number) => void;
   t: TFunction;
   /** Label for the "all items" submenu. Defaults to the iPod "All Songs" label. */
   allItemsLabel?: string;
@@ -62,7 +66,36 @@ export function LibraryTrackBrowser<T extends LibraryBrowserItem>({
     key: string,
     maxWidthClass: string
   ) =>
-    itemVariant === "checkbox" ? (
+    onQueueTrack && onPlayNextTrack ? (
+      <MenubarSub key={key}>
+        <MenubarSubTrigger className={cn("text-md h-6 px-3 truncate", maxWidthClass)}>
+          <span className="truncate min-w-0">
+            {index === currentIndex ? "♪ " : ""}
+            {track.title}
+          </span>
+        </MenubarSubTrigger>
+        <MenubarSubContent className="px-0">
+          <MenubarItem
+            onClick={() => onPlayTrack(index)}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.ipod.menu.play")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={() => onQueueTrack(index)}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.karaoke.queue.add")}
+          </MenubarItem>
+          <MenubarItem
+            onClick={() => onPlayNextTrack(index)}
+            className="text-md h-6 px-3"
+          >
+            {t("apps.karaoke.queue.playNext")}
+          </MenubarItem>
+        </MenubarSubContent>
+      </MenubarSub>
+    ) : itemVariant === "checkbox" ? (
       <MenubarCheckboxItem
         key={key}
         checked={index === currentIndex}

@@ -28,6 +28,8 @@ import { useLibraryUpdateChecker } from "@/apps/ipod/hooks/useLibraryUpdateCheck
 import { saveSongMetadataFromTrack } from "@/utils/songMetadataCache";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
+import type { ListenQueueItem } from "@/shared/contracts/listen";
+import { registerKaraokeSessionNext } from "../listenQueueBridge";
 import type { KaraokeInitialData } from "../../base/types";
 import type { CoverFlowRef } from "@/apps/ipod/components/cover-flow/types";
 import type { SongSearchResult } from "@/components/dialogs/SongSearchDialog";
@@ -200,6 +202,7 @@ export function useKaraokeLogic({
     sendRemotePlaybackCommand,
     remoteCommandFlushId,
     takeRemoteCommands,
+    updateListenQueue,
   } = useListenSessionStore(
     useShallow((state) => ({
       currentSession: state.currentSession,
@@ -218,8 +221,13 @@ export function useKaraokeLogic({
       sendRemotePlaybackCommand: state.sendRemotePlaybackCommand,
       remoteCommandFlushId: state.remoteCommandFlushId,
       takeRemoteCommands: state.takeRemoteCommands,
+      updateListenQueue: state.updateQueue,
     }))
   );
+
+  const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
+  const queueAdvanceInFlightRef = useRef(false);
+  const canQueueSongs = Boolean(listenSession && !isListenSessionAnonymous);
 
   const listenRemoteOnly = Boolean(
     listenSession && !isListenSessionDj && !isListenSessionAnonymous
@@ -650,6 +658,109 @@ export function useKaraokeLogic({
     showStatus,
   ]);
 
+  const describeQueueError = useCallback(
+    (error: string | undefined) => {
+      if (error === "queue_full") return t("apps.karaoke.queue.full");
+      if (error === "rate_limit_exceeded") return t("apps.karaoke.queue.rateLimited");
+      if (error === "not_in_session") return t("apps.karaoke.queue.notInRoom");
+      if (error === "invalid_track") return t("apps.karaoke.queue.invalidTrack");
+      return t("apps.karaoke.queue.updateFailed");
+    },
+    [t]
+  );
+
+  const queueTrack = useCallback(
+    async (
+      track: { id: string; title: string; artist?: string },
+      placement: "end" | "next"
+    ) => {
+      if (!canQueueSongs) {
+        toast.error(t("apps.karaoke.queue.signIn"));
+        return;
+      }
+      const result = await updateListenQueue({
+        op: placement === "next" ? "addNext" : "add",
+        trackId: track.id,
+        title: track.title,
+        artist: track.artist,
+      });
+      if (!result.ok) {
+        toast.error(describeQueueError(result.error));
+        return;
+      }
+      showStatus(
+        placement === "next"
+          ? t("apps.karaoke.queue.playingNext")
+          : t("apps.karaoke.queue.queued")
+      );
+    },
+    [canQueueSongs, describeQueueError, showStatus, t, updateListenQueue]
+  );
+
+  const playQueuedItem = useCallback(
+    async (item: ListenQueueItem) => {
+      const existing = useMediaLibraryStore
+        .getState()
+        .tracks.some((track) => track.id === item.trackId);
+      if (!existing) {
+        await useMediaLibraryStore
+          .getState()
+          .addTrackFromVideoId(item.trackId, false)
+          .catch(() => null);
+      }
+      startTrackSwitch();
+      setCurrentSongId(item.trackId);
+      setIsPlaying(true);
+    },
+    [setCurrentSongId, setIsPlaying, startTrackSwitch]
+  );
+
+  const consumeSessionQueue = useCallback(async (): Promise<
+    "queued" | "library" | "error"
+  > => {
+    const sessionState = useListenSessionStore.getState();
+    const session = sessionState.currentSession;
+    if (!session || !sessionState.isDj) {
+      useKaraokeStore.getState().nextTrack();
+      return "library";
+    }
+    if (queueAdvanceInFlightRef.current) return "error";
+    queueAdvanceInFlightRef.current = true;
+    try {
+      const result = await sessionState.updateQueue({ op: "advance" });
+      if (!result.ok) {
+        if ((session.queue?.length ?? 0) === 0) {
+          useKaraokeStore.getState().nextTrack();
+          return "library";
+        }
+        toast.error(describeQueueError(result.error));
+        return "error";
+      }
+      if (result.advanced && result.item) {
+        await playQueuedItem(result.item);
+        return "queued";
+      }
+      useKaraokeStore.getState().nextTrack();
+      return "library";
+    } finally {
+      queueAdvanceInFlightRef.current = false;
+    }
+  }, [describeQueueError, playQueuedItem]);
+
+  const consumeSessionQueueRef = useRef(consumeSessionQueue);
+  consumeSessionQueueRef.current = consumeSessionQueue;
+
+  useEffect(() => {
+    registerKaraokeSessionNext(() => {
+      void consumeSessionQueueRef.current();
+    });
+    return () => registerKaraokeSessionNext(null);
+  }, []);
+
+  useEffect(() => {
+    if (!listenSession) setQueueDrawerOpen(false);
+  }, [listenSession]);
+
   const handleNext = useCallback(() => {
     karaokeLog.debug("Next-track control pressed", {
       currentTrackId: currentTrack?.id ?? null,
@@ -663,15 +774,22 @@ export function useKaraokeLogic({
         if (!r.ok) toast.error(r.error ?? "Could not skip");
       });
       showStatus("⏭");
+    } else if (listenSession && isListenSessionDj) {
+      startTrackSwitch();
+      void consumeSessionQueue();
+      showStatus("⏭");
     } else {
       startTrackSwitch();
       nextTrack();
       showStatus("⏭");
     }
   }, [
-    isOffline,
+    consumeSessionQueue,
     currentTrack,
+    isListenSessionDj,
+    isOffline,
     listenRemoteOnly,
+    listenSession,
     nextTrack,
     sendRemotePlaybackCommand,
     showOfflineStatus,
@@ -868,17 +986,29 @@ export function useKaraokeLogic({
       listenRemoteOnly,
     });
     if (listenRemoteOnly) return;
+    if (
+      listenSession &&
+      !isListenSessionDj &&
+      (listenSession.queue?.length ?? 0) > 0
+    ) {
+      return;
+    }
     if (loopCurrent) {
       const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
       activePlayer?.seekTo(0);
       setIsPlaying(true);
+    } else if (listenSession && isListenSessionDj) {
+      void consumeSessionQueue();
     } else {
       nextTrack();
     }
   }, [
+    consumeSessionQueue,
     currentTrack,
     isFullScreen,
+    isListenSessionDj,
     listenRemoteOnly,
+    listenSession,
     loopCurrent,
     nextTrack,
     setIsPlaying,
@@ -1292,6 +1422,7 @@ export function useKaraokeLogic({
 
     const run = async () => {
       let afterSeekMs: number | undefined;
+      let skipStalePush = false;
 
       for (const cmd of cmds) {
         karaokeLog.debug("Applying remote playback command", {
@@ -1329,7 +1460,9 @@ export function useKaraokeLogic({
           }
           case "next":
             startTrackSwitch();
-            useKaraokeStore.getState().nextTrack();
+            if ((await consumeSessionQueueRef.current()) === "queued") {
+              skipStalePush = true;
+            }
             break;
           case "previous":
             startTrackSwitch();
@@ -1358,6 +1491,7 @@ export function useKaraokeLogic({
         if (afterSeekMs !== undefined) {
           getActivePlayer()?.seekTo(afterSeekMs / 1000, "seconds");
         }
+        if (skipStalePush) return;
         void pushListenState().then((r) => {
           if (!r.ok) {
             toast.error("Could not sync after remote control", {
@@ -1685,11 +1819,7 @@ export function useKaraokeLogic({
         handlePrevious();
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        if (listenRemoteOnly) handleNext();
-        else {
-          nextTrack();
-          showStatus("⏭");
-        }
+        handleNext();
       } else if (e.key === "[" || e.key === "]") {
         // Offset adjustment: [ = lyrics earlier (negative), ] = lyrics later (positive)
         const delta = e.key === "[" ? -50 : 50;
@@ -1713,7 +1843,6 @@ export function useKaraokeLogic({
     isOffline,
     listenRemoteOnly,
     togglePlay,
-    nextTrack,
     previousTrack,
     seekTime,
     showStatus,
@@ -1862,6 +1991,78 @@ export function useKaraokeLogic({
     return useKaraokeStore.getState().getCurrentTrack();
   }, []);
 
+  const handleQueueLibraryTrack = useCallback(
+    (index: number, placement: "end" | "next") => {
+      const track = tracks[index];
+      if (!track) return;
+      void queueTrack(
+        { id: track.id, title: track.title, artist: track.artist },
+        placement
+      );
+    },
+    [queueTrack, tracks]
+  );
+
+  const handleQueueSearchResult = useCallback(
+    (result: SongSearchResult, placement: "end" | "next") => {
+      void queueTrack(
+        {
+          id: result.videoId,
+          title: result.title,
+          artist: result.channelTitle,
+        },
+        placement
+      );
+      setIsSongSearchDialogOpen(false);
+    },
+    [queueTrack]
+  );
+
+  const handleQueueUrl = useCallback(
+    async (url: string, placement: "end" | "next") => {
+      const id = parseYouTubeVideoId(url);
+      if (!id) {
+        toast.error(t("apps.karaoke.queue.invalidTrack"));
+        return;
+      }
+      try {
+        const added = await useMediaLibraryStore.getState().addTrackFromVideoId(url, false);
+        if (!added) {
+          toast.error(t("apps.karaoke.queue.updateFailed"));
+          return;
+        }
+        await queueTrack(
+          { id: added.id, title: added.title, artist: added.artist },
+          placement
+        );
+        setIsSongSearchDialogOpen(false);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
+        );
+      }
+    },
+    [queueTrack, t]
+  );
+
+  const handleBumpQueueItem = useCallback(
+    (entryId: string) => {
+      void updateListenQueue({ op: "bump", entryId }).then((result) => {
+        if (!result.ok) toast.error(describeQueueError(result.error));
+      });
+    },
+    [describeQueueError, updateListenQueue]
+  );
+
+  const handleRemoveQueueItem = useCallback(
+    (entryId: string) => {
+      void updateListenQueue({ op: "remove", entryId }).then((result) => {
+        if (!result.ok) toast.error(describeQueueError(result.error));
+      });
+    },
+    [describeQueueError, updateListenQueue]
+  );
+
   return {
     t,
     translatedHelpItems,
@@ -1979,6 +2180,14 @@ export function useKaraokeLogic({
     handleAssignPlaybackDevice,
     handleTransferSessionHost,
     handleSendReaction,
+    canQueueSongs,
+    queueDrawerOpen,
+    setQueueDrawerOpen,
+    handleQueueLibraryTrack,
+    handleQueueSearchResult,
+    handleQueueUrl,
+    handleBumpQueueItem,
+    handleRemoveQueueItem,
     handleShareSong,
     karaokeGenerateShareUrl,
     handleRefreshLyrics,

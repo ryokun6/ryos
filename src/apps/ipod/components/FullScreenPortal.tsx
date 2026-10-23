@@ -54,6 +54,7 @@ export function FullScreenPortal({
   onSurfaceLongPress,
   surfaceLongPressEnabled = true,
   suppressToolbar = false,
+  drawer,
 }: FullScreenPortalProps) {
   const isAnyActivityActive = activityState
     ? activityState.isLoadingLyrics ||
@@ -190,6 +191,7 @@ export function FullScreenPortal({
       el.closest("[data-toolbar]") ||
         el.closest("[data-lyrics]") ||
         el.closest("[data-cover-flow]") ||
+        el.closest("[data-app-drawer-layout]") ||
         el.closest("button") ||
         el.closest("a") ||
         el.closest("input") ||
@@ -636,6 +638,7 @@ export function FullScreenPortal({
           </motion.div>
         )}
       </AnimatePresence>
+      {drawer}
     </div>,
     document.body
   );

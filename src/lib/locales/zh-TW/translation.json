@@ -3809,6 +3809,25 @@
         "shareLinkInvite": "分享這個連結，邀請朋友一起進包房。",
         "start": "開包房"
       },
+      "queue": {
+        "title": "待唱",
+        "empty": "沒有排隊的歌",
+        "add": "加入佇列",
+        "playNext": "下一首播放",
+        "remove": "移除",
+        "open": "佇列",
+        "from": "{{name}}",
+        "queued": "已加入佇列",
+        "playingNext": "排到下一首",
+        "removed": "已移除",
+        "full": "佇列已滿",
+        "updateFailed": "無法更新佇列",
+        "signIn": "登入才能點歌",
+        "rateLimited": "佇列操作太頻繁 – 請稍後再試",
+        "notInRoom": "你不在這個房間",
+        "invalidTrack": "這首歌不能加入佇列",
+        "openAria": "點歌佇列，{{count}} 首待唱"
+      },
       "lyrics": {
         "noLyricsFound": "找不到歌詞",
         "search": "搜尋",

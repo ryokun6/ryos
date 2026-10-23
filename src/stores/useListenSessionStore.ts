@@ -10,15 +10,20 @@ import {
   joinListenSession,
   leaveListenSession,
   reactListenSession,
+  fetchListenSession,
   sendListenRemoteCommand,
   syncListenSession,
   transferListenSessionHost,
+  updateListenQueue,
 } from "@/api/listen";
 import { getListenClientInstanceId } from "@/lib/listenClientInstance";
 import { LISTEN_ANALYTICS, track } from "@/utils/analytics";
 import { getListenSessionChannelName } from "@/shared/constants/realtime";
 import {
   normalizeListenSyncPayload,
+  type ListenQueueItem,
+  type ListenQueuePayload,
+  type ListenQueueRequest,
   type ListenReactionPayload,
   type ListenRemoteCommandAction,
   type ListenRemoteCommandPayload,
@@ -27,6 +32,7 @@ import {
   type ListenSyncPayload,
   type ListenTrackMeta,
 } from "@/shared/contracts/listen";
+import { normalizeListenSessionQueue } from "@/shared/listen/queue";
 
 export type {
   ListenReactionPayload,
@@ -100,6 +106,15 @@ export interface ListenSessionState {
     trackMeta?: ListenTrackMeta;
   }) => Promise<{ ok: boolean; error?: string }>;
   takeRemoteCommands: () => ListenRemoteCommandPayload[];
+  updateQueue: (
+    args: Pick<ListenQueueRequest, "op" | "trackId" | "title" | "artist" | "entryId">
+  ) => Promise<{
+    ok: boolean;
+    error?: string;
+    queue?: ListenQueueItem[];
+    advanced?: boolean;
+    item?: ListenQueueItem | null;
+  }>;
 }
 
 const initialState = {
@@ -160,6 +175,21 @@ function updateIdentityFlags(
     isHost: hostMatch,
     isDj: djMatch,
   };
+}
+
+function withQueue(session: ListenSession): ListenSession {
+  return normalizeListenSessionQueue(session);
+}
+
+function applyQueueSnapshot(
+  session: ListenSession,
+  queue: ListenQueueItem[] | undefined,
+  queueVersion: number | undefined
+): ListenSession {
+  if (!Array.isArray(queue) || typeof queueVersion !== "number") return session;
+  const local = session.queueVersion ?? 0;
+  if (queueVersion < local) return session;
+  return { ...session, queue, queueVersion };
 }
 
 function unsubscribeFromSession(): void {
@@ -229,9 +259,12 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("user-joined");
     channelRef.unbind("user-left");
     channelRef.unbind("dj-changed");
+    channelRef.unbind("host-changed");
     channelRef.unbind("dj-disconnected");
     channelRef.unbind("reaction");
     channelRef.unbind("session-ended");
+    channelRef.unbind("queue");
+    channelRef.unbind("pusher:subscription_succeeded");
 
     channelRef.bind("sync", (payload: ListenSyncPayload) => {
       const normalized = normalizeListenSyncPayload(payload);
@@ -266,24 +299,28 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           }
         }
 
-        const nextSession: ListenSession = {
-          ...state.currentSession,
-          currentTrackId: effective.currentTrackId,
-          currentTrackMeta: effective.currentTrackMeta,
-          isPlaying: effective.isPlaying,
-          positionMs: effective.positionMs,
-          lastSyncAt: effective.timestamp,
-          ...(effective.hostUsername != null
-            ? { hostUsername: effective.hostUsername }
-            : {}),
-          ...(effective.hostClientInstanceId != null
-            ? { hostClientInstanceId: effective.hostClientInstanceId }
-            : {}),
-          djUsername: effective.djUsername,
-          ...(effective.djClientInstanceId != null
-            ? { djClientInstanceId: effective.djClientInstanceId }
-            : {}),
-        };
+        const nextSession: ListenSession = applyQueueSnapshot(
+          {
+            ...state.currentSession,
+            currentTrackId: effective.currentTrackId,
+            currentTrackMeta: effective.currentTrackMeta,
+            isPlaying: effective.isPlaying,
+            positionMs: effective.positionMs,
+            lastSyncAt: effective.timestamp,
+            ...(effective.hostUsername != null
+              ? { hostUsername: effective.hostUsername }
+              : {}),
+            ...(effective.hostClientInstanceId != null
+              ? { hostClientInstanceId: effective.hostClientInstanceId }
+              : {}),
+            djUsername: effective.djUsername,
+            ...(effective.djClientInstanceId != null
+              ? { djClientInstanceId: effective.djClientInstanceId }
+              : {}),
+          },
+          effective.queue,
+          effective.queueVersion
+        );
         return {
           currentSession: nextSession,
           lastSyncPayload: effective,
@@ -477,6 +514,43 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       set({ remoteCommandFlushId: st.remoteCommandFlushId + 1 });
     });
 
+    channelRef.bind("queue", (payload: ListenQueuePayload) => {
+      set((state) => {
+        if (!state.currentSession || !payload) return {};
+        return {
+          currentSession: applyQueueSnapshot(
+            state.currentSession,
+            payload.queue,
+            payload.queueVersion
+          ),
+        };
+      });
+    });
+
+    channelRef.bind("pusher:subscription_succeeded", () => {
+      const current = get().currentSession;
+      if (!current) return;
+      void fetchListenSession(current.id)
+        .then((data) => {
+          set((state) => {
+            if (!state.currentSession || state.currentSession.id !== data.session.id) {
+              return {};
+            }
+            const fresh = withQueue(data.session);
+            return {
+              currentSession: applyQueueSnapshot(
+                state.currentSession,
+                fresh.queue,
+                fresh.queueVersion
+              ),
+            };
+          });
+        })
+        .catch(() => {
+          // The next DJ sync still carries the queue.
+        });
+    });
+
     channelRef.bind("reaction", (payload: ListenReactionPayload) => {
       set((state) => ({
         reactions: [...state.reactions, payload].slice(-40),
@@ -530,7 +604,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       try {
         const clientInstanceId = getListenClientInstanceId();
         const data = await createListenSession(username, clientInstanceId);
-        const session = data.session as ListenSession;
+        const session = withQueue(data.session as ListenSession);
         const identity = updateIdentityFlags(session, username, clientInstanceId);
 
         remoteCommandBuffer = [];
@@ -576,7 +650,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
             ? { anonymousId: anonymousId || undefined }
             : { username, clientInstanceId: clientInstanceId || undefined }
         );
-        const session = data.session as ListenSession;
+        const session = withQueue(data.session as ListenSession);
         const identity = isAnonymous
           ? { isHost: false, isDj: false }
           : updateIdentityFlags(session, username!, clientInstanceId);
@@ -737,7 +811,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           nextHostUsername,
           nextHostClientInstanceId,
         });
-        const session = data.session as ListenSession;
+        const session = withQueue(data.session as ListenSession);
         set({
           currentSession: session,
           ...updateIdentityFlags(session, username, clientInstanceId),
@@ -766,7 +840,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
           nextDjUsername,
           nextDjClientInstanceId,
         });
-        const session = data.session as ListenSession;
+        const session = withQueue(data.session as ListenSession);
         set({
           currentSession: session,
           ...updateIdentityFlags(session, username, clientInstanceId),
@@ -818,6 +892,48 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
       const out = remoteCommandBuffer;
       remoteCommandBuffer = [];
       return out;
+    },
+
+    updateQueue: async (args) => {
+      const { currentSession, username, clientInstanceId, isAnonymous } = get();
+      if (!currentSession || !username || !clientInstanceId) {
+        return { ok: false, error: "not_in_session" };
+      }
+      if (isAnonymous) {
+        return { ok: false, error: "not_in_session" };
+      }
+      if (!hasMatchingAuth(username)) {
+        return { ok: false, error: "not_in_session" };
+      }
+      try {
+        const data = await updateListenQueue(currentSession.id, {
+          username,
+          clientInstanceId,
+          ...args,
+        });
+        set((state) => {
+          if (!state.currentSession || state.currentSession.id !== currentSession.id) {
+            return {};
+          }
+          return {
+            currentSession: applyQueueSnapshot(
+              state.currentSession,
+              data.queue,
+              data.queueVersion
+            ),
+          };
+        });
+        return {
+          ok: true,
+          queue: data.queue,
+          advanced: data.advanced,
+          item: data.item,
+        };
+      } catch (error) {
+        console.error("[ListenSession] updateQueue failed", error);
+        const message = error instanceof Error ? error.message : "Network error. Please try again.";
+        return { ok: false, error: message };
+      }
     },
   };
 });

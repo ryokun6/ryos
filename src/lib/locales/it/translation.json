@@ -3821,6 +3821,25 @@
         "shareLinkInvite": "Condividi questo link per invitare amici nella sala KTV.",
         "start": "Apri sala KTV"
       },
+      "queue": {
+        "title": "in coda",
+        "empty": "niente in coda",
+        "add": "aggiungi alla coda",
+        "playNext": "riproduci dopo",
+        "remove": "rimuovi",
+        "open": "coda",
+        "from": "{{name}}",
+        "queued": "in coda",
+        "playingNext": "subito dopo",
+        "removed": "rimosso",
+        "full": "coda piena",
+        "updateFailed": "coda non aggiornata",
+        "signIn": "accedi per mettere in coda",
+        "rateLimited": "troppe modifiche – riprova",
+        "notInRoom": "non sei in questa stanza",
+        "invalidTrack": "questo brano non si può mettere in coda",
+        "openAria": "coda, {{count}} in attesa"
+      },
       "lyrics": {
         "noLyricsFound": "Testi non trovati",
         "search": "Cerca",

@@ -30,6 +30,8 @@ export function useCoverFlowController({
   isPlaying = false,
   onTogglePlay,
   onPlayTrackInPlace,
+  onQueueTrack,
+  onPlayNextTrack,
   groupAppleMusicAlbums = false,
 }: CoverFlowComponentProps) {
   const { coverItems, currentCoverIndex } = useCoverFlowItems(
@@ -361,6 +363,16 @@ export function useCoverFlowController({
     [coverItems, onPlayTrackInPlace]
   );
 
+  const queueSelectedTrack = useCallback(
+    (placement: "end" | "next") => {
+      const item = coverItems[selectedIndex];
+      if (!item) return;
+      if (placement === "next") onPlayNextTrack?.(item.trackIndex);
+      else onQueueTrack?.(item.trackIndex);
+    },
+    [coverItems, onPlayNextTrack, onQueueTrack, selectedIndex]
+  );
+
   const handleSelectAlbumTrack = useCallback(
     (indexInAlbum: number) => {
       if (!currentItem) return;
@@ -414,6 +426,8 @@ export function useCoverFlowController({
     flipCoverUrl,
     playingPositionInAlbum,
     playItemInPlace,
+    queueSelectedTrack,
+    canQueueTracks: Boolean(onQueueTrack && onPlayNextTrack),
     handleSelectAlbumTrack,
     gesturesDisabled,
     handlePanStart,

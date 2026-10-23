@@ -8,6 +8,8 @@ import type {
   ListenSessionResponse,
   ListenSessionSummary,
   ListenSuccessResponse,
+  ListenQueueRequest,
+  ListenQueueResponse,
   ReactionRequest,
   RemoteCommandRequest,
   SyncSessionRequest,
@@ -25,6 +27,8 @@ export type {
   ListenSessionSummary,
   ListenSuccessResponse,
   ListenTrackMeta,
+  ListenQueueRequest,
+  ListenQueueResponse,
   ReactionRequest,
   RemoteCommandRequest,
   SyncSessionRequest,
@@ -111,6 +115,26 @@ export async function assignListenSessionDj(
 ): Promise<ListenSuccessResponse & ListenSessionResponse> {
   return apiRequest<ListenSuccessResponse & ListenSessionResponse, AssignDjRequest>({
     path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/assign-dj`,
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function fetchListenSession(
+  sessionId: string
+): Promise<ListenSessionResponse> {
+  return apiRequest<ListenSessionResponse>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}`,
+    method: "GET",
+  });
+}
+
+export async function updateListenQueue(
+  sessionId: string,
+  payload: ListenQueueRequest
+): Promise<ListenQueueResponse> {
+  return apiRequest<ListenQueueResponse, ListenQueueRequest>({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/queue`,
     method: "POST",
     body: payload,
   });

@@ -55,6 +55,8 @@ export function useKaraokeAppController({
     setIsConfirmClearOpen,
     manualSync,
     handlePlayTrack,
+    handleQueueLibraryTrack,
+    canQueueSongs,
     handlePlayPause,
     isShuffled,
     toggleShuffle,
@@ -163,6 +165,16 @@ export function useKaraokeAppController({
       onClearLibrary={() => setIsConfirmClearOpen(true)}
       onSyncLibrary={manualSync}
       onPlayTrack={handlePlayTrack}
+      onQueueTrack={
+        canQueueSongs
+          ? (index) => handleQueueLibraryTrack(index, "end")
+          : undefined
+      }
+      onPlayNextTrack={
+        canQueueSongs
+          ? (index) => handleQueueLibraryTrack(index, "next")
+          : undefined
+      }
       onTogglePlay={handlePlayPause}
       onPreviousTrack={handlePrevious}
       onNextTrack={handleNext}

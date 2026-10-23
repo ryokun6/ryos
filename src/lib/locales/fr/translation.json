@@ -3821,6 +3821,25 @@
         "shareLinkInvite": "Partagez ce lien pour inviter des amis dans la salle KTV.",
         "start": "Ouvrir la salle KTV"
       },
+      "queue": {
+        "title": "à suivre",
+        "empty": "rien dans la file",
+        "add": "ajouter à la file",
+        "playNext": "lire ensuite",
+        "remove": "retirer",
+        "open": "file",
+        "from": "{{name}}",
+        "queued": "ajouté",
+        "playingNext": "à suivre",
+        "removed": "retiré",
+        "full": "la file est pleine",
+        "updateFailed": "file non mise à jour",
+        "signIn": "connectez-vous pour ajouter",
+        "rateLimited": "trop de changements – réessayez",
+        "notInRoom": "vous n'êtes pas dans cette salle",
+        "invalidTrack": "ce titre ne peut pas être ajouté",
+        "openAria": "file, {{count}} en attente"
+      },
       "lyrics": {
         "noLyricsFound": "Paroles introuvables",
         "search": "Rechercher",

@@ -22,6 +22,8 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
     isAppleMusicMode,
     handleAddSelected,
     handleSelectAndAdd,
+    onQueueSelect,
+    onPlayNextSelect,
     fontStyle,
     fontClass,
     displayedResults,
@@ -122,6 +124,34 @@ export function SongSearchDialogBody(vm: SongSearchDialogBodyProps) {
             >
               {t("apps.ipod.dialogs.songSearchAddSelected")}
             </Button>
+            {!isAppleMusicMode && onQueueSelect && onPlayNextSelect ? (
+              <>
+                <Button
+                  variant={isMacTheme ? "secondary" : "retro"}
+                  onClick={() => {
+                    const result = results[selectedIndex];
+                    if (result) onQueueSelect(result);
+                  }}
+                  disabled={isSearching || isAdding || selectedIndex < 0}
+                  className={cn("w-full sm:w-auto", !isMacTheme && "h-7", fontClass)}
+                  style={fontStyle}
+                >
+                  {t("apps.karaoke.queue.add")}
+                </Button>
+                <Button
+                  variant={isMacTheme ? "secondary" : "retro"}
+                  onClick={() => {
+                    const result = results[selectedIndex];
+                    if (result) onPlayNextSelect(result);
+                  }}
+                  disabled={isSearching || isAdding || selectedIndex < 0}
+                  className={cn("w-full sm:w-auto", !isMacTheme && "h-7", fontClass)}
+                  style={fontStyle}
+                >
+                  {t("apps.karaoke.queue.playNext")}
+                </Button>
+              </>
+            ) : null}
           </div>
         </DialogFooter>
       )}

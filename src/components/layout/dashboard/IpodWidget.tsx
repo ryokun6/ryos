@@ -5,6 +5,7 @@ import {
   useIpodStore,
 } from "@/stores/useIpodStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
+import { requestKaraokeSessionNext } from "@/apps/karaoke/listenQueueBridge";
 import { useAppStore } from "@/stores/useAppStore";
 import { useDashboardStore, type IpodWidgetConfig } from "@/stores/useDashboardStore";
 import { requestAppLaunch } from "@/utils/appEventBus";
@@ -271,7 +272,10 @@ export function IpodWidget({ widgetId }: IpodWidgetProps) {
   const karaokeTrack = useKaraokeStore((s) => s.getCurrentTrack());
   const karaokeIsPlaying = useKaraokeStore((s) => s.isPlaying);
   const karaokeTogglePlay = useKaraokeStore((s) => s.togglePlay);
-  const karaokeNextTrack = useKaraokeStore((s) => s.nextTrack);
+  const karaokeNextTrack = useCallback(() => {
+    if (requestKaraokeSessionNext()) return;
+    useKaraokeStore.getState().nextTrack();
+  }, []);
   const karaokePreviousTrack = useKaraokeStore((s) => s.previousTrack);
   const karaokeIsShuffled = useKaraokeStore((s) => s.isShuffled);
   const karaokeToggleShuffle = useKaraokeStore((s) => s.toggleShuffle);

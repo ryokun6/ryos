@@ -1,6 +1,7 @@
 import type { AppProps, KaraokeInitialData } from "@/apps/base/types";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { getTranslatedAppName } from "@/utils/i18n";
+import { KaraokeQueueDrawer } from "../KaraokeQueueDrawer";
 import { KaraokeAppDialogs } from "./KaraokeAppDialogs";
 import { KaraokeFullscreenView } from "./KaraokeFullscreenView";
 import { KaraokeWindowContent } from "./KaraokeWindowContent";
@@ -57,6 +58,17 @@ export function KaraokeAppComponent({
         onFullscreenToggle: toggleFullScreen,
         onCoverFlowToggle: handleToggleCoverFlow,
         isCoverFlowActive: isCoverFlowOpen,
+        drawer:
+          c.listenSession && !c.isFullScreen ? (
+            <KaraokeQueueDrawer
+              isOpen={c.queueDrawerOpen}
+              items={c.listenSession.queue ?? []}
+              canEdit={c.canQueueSongs}
+              onClose={() => c.setQueueDrawerOpen(false)}
+              onBump={c.handleBumpQueueItem}
+              onRemove={c.handleRemoveQueueItem}
+            />
+          ) : null,
       }}
       trailing={<KaraokeFullscreenView c={c} isForeground={isForeground} />}
     >

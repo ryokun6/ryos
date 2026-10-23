@@ -8,6 +8,7 @@ import type {
   ListenDjChangedPayload,
   ListenHostChangedPayload,
   ListenReactionPayload,
+  ListenQueuePayload,
   ListenRemoteCommandPayload,
   ListenSyncPayload,
   ListenUserPayload,
@@ -50,6 +51,13 @@ export async function broadcastHostChanged(
   payload: ListenHostChangedPayload
 ): Promise<void> {
   await triggerRealtimeEvent(getListenSessionChannelName(sessionId), "host-changed", payload);
+}
+
+export async function broadcastQueue(
+  sessionId: string,
+  payload: ListenQueuePayload
+): Promise<void> {
+  await triggerRealtimeEvent(getListenSessionChannelName(sessionId), "queue", payload);
 }
 
 export async function broadcastRemoteCommand(

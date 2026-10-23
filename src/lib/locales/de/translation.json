@@ -3809,6 +3809,25 @@
         "shareLinkInvite": "Diesen Link teilen, um Freunde in den KTV-Raum einzuladen.",
         "start": "KTV-Raum öffnen"
       },
+      "queue": {
+        "title": "als Nächstes",
+        "empty": "nichts in der Warteschlange",
+        "add": "zur Warteschlange",
+        "playNext": "als Nächstes",
+        "remove": "entfernen",
+        "open": "Warteschlange",
+        "from": "{{name}}",
+        "queued": "eingereiht",
+        "playingNext": "als Nächstes",
+        "removed": "entfernt",
+        "full": "Warteschlange voll",
+        "updateFailed": "Warteschlange nicht aktualisiert",
+        "signIn": "anmelden, um einzureihen",
+        "rateLimited": "zu viele Änderungen – später erneut",
+        "notInRoom": "du bist nicht in diesem Raum",
+        "invalidTrack": "dieser Song kann nicht eingereiht werden",
+        "openAria": "Song-Warteschlange, {{count}} wartend"
+      },
       "lyrics": {
         "noLyricsFound": "Keine Liedtexte gefunden",
         "search": "Suchen",

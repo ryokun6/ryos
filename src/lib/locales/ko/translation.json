@@ -3809,6 +3809,25 @@
         "shareLinkInvite": "이 링크를 공유해 친구를 노래방에 초대하세요.",
         "start": "노래방 열기"
       },
+      "queue": {
+        "title": "다음 곡",
+        "empty": "대기 없음",
+        "add": "대기열에 추가",
+        "playNext": "다음에 재생",
+        "remove": "제거",
+        "open": "대기열",
+        "from": "{{name}}",
+        "queued": "추가됨",
+        "playingNext": "다음에 재생",
+        "removed": "제거됨",
+        "full": "대기열이 가득 참",
+        "updateFailed": "대기열을 업데이트할 수 없음",
+        "signIn": "로그인 후 추가",
+        "rateLimited": "변경이 너무 많음 – 잠시 후",
+        "notInRoom": "이 방에 없음",
+        "invalidTrack": "이 곡은 추가할 수 없음",
+        "openAria": "대기열, {{count}}곡 대기"
+      },
       "lyrics": {
         "noLyricsFound": "가사를 찾을 수 없습니다",
         "search": "검색",

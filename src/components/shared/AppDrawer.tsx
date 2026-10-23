@@ -336,7 +336,11 @@ export function AppDrawer({
 
     return (
       <motion.div
-        className={cn("absolute select-none flex flex-col", !isOpen && "pointer-events-none", className)}
+        className={cn(
+          "absolute select-none flex flex-col",
+          isOpen ? "pointer-events-auto" : "pointer-events-none",
+          className
+        )}
         style={sheetStyle}
         initial={false}
         animate={{ x: 0, y: isOpen ? 0 : closedY, opacity: isOpen ? 1 : 0 }}
@@ -370,7 +374,11 @@ export function AppDrawer({
 
   return (
     <motion.div
-      className={cn("absolute select-none flex flex-col", !isOpen && "pointer-events-none", className)}
+      className={cn(
+        "absolute select-none flex flex-col",
+        isOpen ? "pointer-events-auto" : "pointer-events-none",
+        className
+      )}
       style={sideStyle}
       initial={false}
       animate={{
