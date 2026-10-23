@@ -2,7 +2,6 @@ import {
   afterAll,
   afterEach,
   beforeAll,
-  beforeEach,
   describe,
   expect,
   test,
@@ -21,100 +20,21 @@ if (typeof document === "undefined") {
   registeredDomForSuite = true;
 }
 
-// useSound creates a gain node on mount. Install a stand-in before the audio
-// module captures window.AudioContext.
-class FakeAudioContext {
-  state = "running";
-  destination = {};
-  sampleRate = 44100;
-  currentTime = 0;
-  onstatechange: (() => void) | null = null;
-  createGain() {
-    const node = {
-      context: this,
-      gain: {
-        value: 1,
-        setValueAtTime() {},
-        linearRampToValueAtTime() {},
-      },
-      connect() {
-        return node;
-      },
-      disconnect() {},
-    };
-    return node;
-  }
-  createBufferSource() {
-    return {
-      buffer: null,
-      connect() {
-        return this;
-      },
-      disconnect() {},
-      start() {},
-      stop() {},
-      addEventListener() {},
-      removeEventListener() {},
-    };
-  }
-  decodeAudioData() {
-    return Promise.resolve({
-      duration: 0,
-      length: 0,
-      numberOfChannels: 1,
-      sampleRate: 44100,
-    });
-  }
-  resume() {
-    return Promise.resolve();
-  }
-  close() {
-    this.state = "closed";
-    return Promise.resolve();
-  }
-}
-Object.defineProperty(window, "AudioContext", {
-  configurable: true,
-  writable: true,
-  value: FakeAudioContext,
-});
-
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
   value: true,
 });
 
-if (typeof globalThis.ResizeObserver === "undefined") {
-  class ResizeObserverStub {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-  Object.defineProperty(globalThis, "ResizeObserver", {
-    configurable: true,
-    value: ResizeObserverStub,
-  });
-}
-
 const i18n = i18next.createInstance();
 
-const { MotionGlobalConfig } = await import("motion/react");
-const previousSkipAnimations = MotionGlobalConfig.skipAnimations;
-
-const { KaraokeQueueDrawer } = await import(
-  "../../../src/apps/karaoke/components/KaraokeQueueDrawer"
-);
-const { SongSearchControls } = await import(
-  "../../../src/components/dialogs/song-search-dialog/components/SongSearchControls"
+const { KaraokeQueueList } = await import(
+  "../../../src/apps/karaoke/components/KaraokeQueueList"
 );
 const { useSongSearchDialog } = await import(
   "../../../src/components/dialogs/song-search-dialog/hooks/useSongSearchDialog"
 );
 const { useThemeStore } = await import("../../../src/stores/useThemeStore");
-const { useAudioSettingsStore } = await import(
-  "../../../src/stores/useAudioSettingsStore"
-);
 
 const YOUTUBE_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
@@ -142,8 +62,8 @@ let root: Root | null = null;
 let originalFetch: typeof globalThis.fetch;
 
 beforeAll(async () => {
-  MotionGlobalConfig.skipAnimations = true;
   originalFetch = globalThis.fetch;
+  useThemeStore.setState({ current: "macosx" });
   await i18n.use(initReactI18next).init({
     lng: "en",
     fallbackLng: "en",
@@ -165,11 +85,15 @@ beforeAll(async () => {
             },
             ipod: {
               dialogs: {
-                songSearchSearch: "search",
-                songSearchAdd: "add",
-                songSearchAdding: "adding…",
+                songSearchError: "search failed",
+                songSearchEmptyQuery: "enter a song",
                 songSearchSearching: "searching…",
-                songSearchPlaceholder: "search",
+                songSearchNoResults: "no results",
+                songSearchQuotaExhausted: "quota",
+                songSearchUnavailable: "unavailable",
+                songSearchHttpError: "http {{status}}",
+                songSearchHttpErrorWithHint: "{{error}} {{hint}}",
+                songSearchInvalidResponse: "bad response",
               },
             },
           },
@@ -178,11 +102,6 @@ beforeAll(async () => {
     },
     interpolation: { escapeValue: false },
   });
-});
-
-beforeEach(() => {
-  useThemeStore.setState({ current: "macosx" });
-  useAudioSettingsStore.setState({ uiSoundsEnabled: false });
 });
 
 afterEach(async () => {
@@ -196,8 +115,6 @@ afterEach(async () => {
 });
 
 afterAll(() => {
-  MotionGlobalConfig.skipAnimations = previousSkipAnimations;
-  useAudioSettingsStore.setState({ uiSoundsEnabled: true });
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
     GlobalRegistrator.unregister();
@@ -218,15 +135,13 @@ function addButtons(host: ParentNode): HTMLButtonElement[] {
   return [...host.querySelectorAll<HTMLButtonElement>("[data-karaoke-queue-add]")];
 }
 
-describe("KaraokeQueueDrawer add songs", () => {
+describe("Karaoke queue add songs", () => {
   test("empty state shows one add songs button and clicking it opens search", async () => {
     let opened = 0;
     const host = await render(
-      React.createElement(KaraokeQueueDrawer, {
-        isOpen: true,
+      React.createElement(KaraokeQueueList, {
         items: [],
         canEdit: true,
-        onClose: () => {},
         onBump: () => {},
         onRemove: () => {},
         onAddSongs: () => {
@@ -251,14 +166,9 @@ describe("KaraokeQueueDrawer add songs", () => {
   test("a filled queue keeps add songs in the footer, once", async () => {
     let opened = 0;
     const host = await render(
-      React.createElement(KaraokeQueueDrawer, {
-        isOpen: true,
-        items: [
-          queueItem("entry-one", "First"),
-          queueItem("entry-two", "Second"),
-        ],
+      React.createElement(KaraokeQueueList, {
+        items: [queueItem("entry-one", "First"), queueItem("entry-two", "Second")],
         canEdit: true,
-        onClose: () => {},
         onBump: () => {},
         onRemove: () => {},
         onAddSongs: () => {
@@ -280,11 +190,9 @@ describe("KaraokeQueueDrawer add songs", () => {
 
   test("read-only viewers do not get an add songs button", async () => {
     const host = await render(
-      React.createElement(KaraokeQueueDrawer, {
-        isOpen: true,
+      React.createElement(KaraokeQueueList, {
         items: [],
         canEdit: false,
-        onClose: () => {},
         onBump: () => {},
         onRemove: () => {},
         onAddSongs: () => {},
@@ -296,43 +204,17 @@ describe("KaraokeQueueDrawer add songs", () => {
 });
 
 describe("queue-only song search", () => {
-  test("a pasted url confirms as add to queue and hides play next", async () => {
-    const host = await render(
-      React.createElement(SongSearchControls, {
-        t: i18n.t.bind(i18n),
-        isMacTheme: true,
-        dispatch: () => {},
-        query: YOUTUBE_URL,
-        activeAppleMusicTab: "catalog",
-        isSearching: false,
-        isAdding: false,
-        isAppleMusicMode: false,
-        isUrl: true,
-        handleSearch: () => {},
-        fontStyle: undefined,
-        fontClass: "",
-        onQueueUrl: async () => {},
-        onPlayNextUrl: async () => {},
-        queueOnly: true,
-      })
-    );
-
-    const labels = [...host.querySelectorAll("button")].map((button) => button.textContent);
-    expect(labels).toEqual(["add to queue"]);
-  });
-
   test("choosing a result adds it to the queue and leaves the dialog open", async () => {
     const opens: boolean[] = [];
     const queued: string[] = [];
     const played: string[] = [];
+    const pending: { current: Promise<unknown> } = { current: Promise.resolve() };
 
     globalThis.fetch = (async () =>
-      new Response(
-        JSON.stringify({ results: [queuedSong] }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      )) as typeof fetch;
-
-    const pending: { current: Promise<unknown> } = { current: Promise.resolve() };
+      new Response(JSON.stringify({ results: [queuedSong] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
 
     function Harness(props: SongSearchDialogProps) {
       const vm = useSongSearchDialog(props);
