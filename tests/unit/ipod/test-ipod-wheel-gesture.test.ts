@@ -9,6 +9,8 @@ import {
   scrubDiamondCenterPx,
   scrubDiamondHalfExtentPx,
   scrubDiamondLeftCss,
+  scrubDiamondRingColor,
+  SCRUB_DIAMOND_COLUMN_GUTTER_PX,
   commitScrubIfIdle,
   initialAccelState,
   initialReversalState,
@@ -307,41 +309,52 @@ describe("center button press", () => {
 });
 
 describe("scrub diamond", () => {
-  test("the full marker stays inside the track at 0%, 50%, and 100%", () => {
+  test("the center sits on the fill tip at 0%, 50%, and 100%", () => {
+    const width = 210;
+    expect(scrubDiamondCenterPx(0, width)).toBeCloseTo(0);
+    expect(scrubDiamondCenterPx(0.5, width)).toBeCloseTo(width / 2);
+    expect(scrubDiamondCenterPx(1, width)).toBeCloseTo(width);
+    expect(scrubDiamondCenterPx(Number.NaN, width)).toBeCloseTo(0);
+    expect(scrubDiamondCenterPx(-1, width)).toBeCloseTo(0);
+    expect(scrubDiamondCenterPx(2, width)).toBeCloseTo(width);
+  });
+
+  test("the marker is allowed to hang past the track ends", () => {
     const width = 210;
     const half = scrubDiamondHalfExtentPx();
-    for (const fraction of [0, 0.5, 1]) {
-      const center = scrubDiamondCenterPx(fraction, width);
-      expect(center - half).toBeGreaterThanOrEqual(-1e-6);
-      expect(center + half).toBeLessThanOrEqual(width + 1e-6);
-    }
-    expect(scrubDiamondCenterPx(0, width)).toBeCloseTo(half);
-    expect(scrubDiamondCenterPx(1, width)).toBeCloseTo(width - half);
-    expect(scrubDiamondCenterPx(0.5, width)).toBeCloseTo(width / 2);
+    expect(scrubDiamondCenterPx(0, width) - half).toBeLessThan(0);
+    expect(scrubDiamondCenterPx(1, width) + half).toBeGreaterThan(width);
   });
 
-  test("the rotated height clears the modern and classic bars", () => {
+  test("the hang fits the column gutter and the gap above the bar", () => {
     const half = scrubDiamondHalfExtentPx();
-    // pt-1.5 above the bar is 6px. Modern labels start 4px (mt-1) below it.
+    expect(half).toBeLessThan(SCRUB_DIAMOND_COLUMN_GUTTER_PX);
+    // pt-1.5 above the bar is 6px. The top tip stays inside that padding.
     for (const trackHeight of [8, 9]) {
-      expect(half - trackHeight / 2).toBeLessThan(4);
+      expect(half - trackHeight / 2).toBeLessThan(6);
     }
   });
 
-  test("the CSS left matches the inset travel range", () => {
-    const half = Math.round(scrubDiamondHalfExtentPx() * 1000) / 1000;
-    expect(scrubDiamondLeftCss(0)).toBe(
-      `calc(${half}px + (100% - ${half * 2}px) * 0)`
-    );
-    expect(scrubDiamondLeftCss(1)).toBe(
-      `calc(${half}px + (100% - ${half * 2}px) * 1)`
-    );
+  test("the CSS left is the raw fraction, with no inset", () => {
+    expect(scrubDiamondLeftCss(0)).toBe("0%");
+    expect(scrubDiamondLeftCss(0.5)).toBe("50%");
+    expect(scrubDiamondLeftCss(1)).toBe("100%");
+    expect(scrubDiamondLeftCss(0)).not.toContain("px");
+    expect(scrubDiamondLeftCss(1)).not.toContain("calc");
   });
 
-  test("a track narrower than the marker centers it instead of shoving it outside", () => {
-    const width = 10;
-    expect(scrubDiamondCenterPx(0, width)).toBeCloseTo(width / 2);
-    expect(scrubDiamondCenterPx(1, width)).toBeCloseTo(width / 2);
+  test("the knockout ring is the LCD field, not the fill", () => {
+    const fills = ["#2260a4", "#0a3667"];
+    const rings = [
+      scrubDiamondRingColor(true, true),
+      scrubDiamondRingColor(true, false),
+      scrubDiamondRingColor(false, true),
+      scrubDiamondRingColor(false, false),
+    ];
+    expect(rings).toEqual(["#ffffff", "#ffffff", "#e0f0fc", "#8a9da9"]);
+    for (const ring of rings) {
+      expect(fills).not.toContain(ring);
+    }
   });
 });
 

@@ -27,8 +27,10 @@ import {
 import { formatPlaybackTime } from "./formatPlaybackTime";
 import { ModernNowPlayingArtwork } from "./ModernNowPlayingArtwork";
 import {
+  SCRUB_DIAMOND_RING_PX,
   SCRUB_DIAMOND_SIZE_PX,
   scrubDiamondLeftCss,
+  scrubDiamondRingColor,
 } from "../../utils/wheelGesture";
 
 export interface IpodScreenMenuChromeProps {
@@ -543,12 +545,16 @@ export function IpodScreenMenuChrome({
                         )}
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "mt-auto flex-shrink-0 w-full overflow-hidden",
-                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
-                      )}
-                    >
+                    <div className="relative mt-auto flex-shrink-0 w-full">
+                      {/* Clip the volume slide on this inner row only. The
+                          diamond is a sibling so it can hang past the bar
+                          ends without opening a gap in the slide. */}
+                      <div
+                        className={cn(
+                          "w-full overflow-hidden",
+                          nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
+                        )}
+                      >
                       {reducedMotion ? (
                         showVolumeOverlay ? (
                           <VolumeTransport
@@ -591,6 +597,15 @@ export function IpodScreenMenuChrome({
                           </div>
                         </div>
                       )}
+                      </div>
+                      {scrubbing && !showVolumeOverlay ? (
+                        <ScrubDiamond
+                          isModernUi={isModernUi}
+                          backlightOn={backlightOn}
+                          fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                          album={Boolean(nowPlayingDisplayTrack.album)}
+                        />
+                      ) : null}
                     </div>
                   </>
                 ) : (
@@ -701,31 +716,46 @@ function TransportBar({
       <div className="h-full bg-[#0a3667]" style={{ width }} />
     </div>
   );
+  return <div className="relative w-full">{bar}</div>;
+}
+
+/**
+ * Diamond centered on the fill tip. It sits outside the volume-slide clip
+ * so the ends stay whole. The column's px-2 gutter is the room it hangs into.
+ */
+function ScrubDiamond({
+  isModernUi,
+  backlightOn,
+  fraction,
+  album,
+}: {
+  isModernUi: boolean;
+  backlightOn: boolean;
+  fraction: number;
+  album: boolean;
+}) {
+  const clamped = Math.max(0, Math.min(1, Number.isFinite(fraction) ? fraction : 0));
   return (
-    <div className="relative w-full overflow-visible">
-      {bar}
-      {scrubbing ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute top-1/2 z-[1] block",
-            isModernUi ? "bg-[#2260a4]" : "bg-[#0a3667]"
-          )}
-          style={{
-            // Inset by the rotated marker's half-extent. Ancestors clip
-            // (the volume slide, the LCD, and the device shell), and the
-            // track itself is overflow:hidden, so a center on the raw
-            // fraction hangs off at 0% and 100% and the corners are cut.
-            left: scrubDiamondLeftCss(clamped),
-            width: SCRUB_DIAMOND_SIZE_PX,
-            height: SCRUB_DIAMOND_SIZE_PX,
-            transform: "translate(-50%, -50%) rotate(45deg)",
-            boxShadow: isModernUi
-              ? "0 0 0 1px rgba(255,255,255,0.9)"
-              : "1px 1px 0 rgba(0,0,0,0.15)",
-          }}
-          aria-hidden
-        />
-      ) : null}
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 z-[2]",
+        album ? "top-1.5" : "top-3",
+        isModernUi ? "h-[9px]" : "h-[8px]"
+      )}
+      aria-hidden
+    >
+      <span
+        data-scrub-diamond=""
+        className="absolute top-1/2 block"
+        style={{
+          left: scrubDiamondLeftCss(clamped),
+          width: SCRUB_DIAMOND_SIZE_PX,
+          height: SCRUB_DIAMOND_SIZE_PX,
+          transform: "translate(-50%, -50%) rotate(45deg)",
+          backgroundColor: isModernUi ? "#2260a4" : "#0a3667",
+          boxShadow: `0 0 0 ${SCRUB_DIAMOND_RING_PX}px ${scrubDiamondRingColor(isModernUi, backlightOn)}`,
+        }}
+      />
     </div>
   );
 }

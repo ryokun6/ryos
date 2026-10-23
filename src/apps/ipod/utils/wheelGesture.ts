@@ -243,45 +243,55 @@ export function clampPlaybackSeconds(
 }
 
 /**
- * Scrub marker: an 8px square rotated 45°. The axis-aligned half-extent is
- * larger than half the square, and the ring is painted outside that.
- * One extra CSS pixel keeps antialiasing inside overflow clipping on
- * both Retina and non-Retina screens.
+ * Scrub marker: an 8px square rotated 45°, centered on the true playback
+ * position. The ring is a 1px knockout in the LCD field color. The shadow
+ * is painted on the square and then rotated with it, so the axis-aligned
+ * half-extent is `(size/2 + ring) * √2`. That hang must stay inside the
+ * Now Playing column's `px-2` gutter. The travel itself is not inset.
  */
 export const SCRUB_DIAMOND_SIZE_PX = 8;
 export const SCRUB_DIAMOND_RING_PX = 1;
-export const SCRUB_DIAMOND_CLIP_SLACK_PX = 1;
+/** Tailwind `px-2` on the Now Playing column. The diamond hangs into it. */
+export const SCRUB_DIAMOND_COLUMN_GUTTER_PX = 8;
 
 export function scrubDiamondHalfExtentPx(
   sizePx: number = SCRUB_DIAMOND_SIZE_PX,
-  ringPx: number = SCRUB_DIAMOND_RING_PX,
-  slackPx: number = SCRUB_DIAMOND_CLIP_SLACK_PX
+  ringPx: number = SCRUB_DIAMOND_RING_PX
 ): number {
-  return (sizePx / 2) * Math.SQRT2 + ringPx + slackPx;
+  return (sizePx / 2 + ringPx) * Math.SQRT2;
 }
 
 /**
- * Center of the diamond along the track, in CSS pixels. The travel range is
- * inset by the half-extent so the full marker stays inside the track at 0%
- * and at 100%. The bar itself is not inset.
+ * Center of the diamond along the track, in CSS pixels. This is the tip of
+ * the filled bar: 0 at the left end, the full width at the right end.
  */
 export function scrubDiamondCenterPx(
   fraction: number,
-  trackWidthPx: number,
-  halfExtentPx: number = scrubDiamondHalfExtentPx()
+  trackWidthPx: number
 ): number {
   const clamped = Math.max(0, Math.min(1, Number.isFinite(fraction) ? fraction : 0));
-  const width = Math.max(0, trackWidthPx);
-  const inset = Math.min(Math.max(0, halfExtentPx), width / 2);
-  return inset + clamped * (width - inset * 2);
+  return clamped * Math.max(0, trackWidthPx);
 }
 
 /** CSS `left` for a marker centered with `translateX(-50%)`. */
 export function scrubDiamondLeftCss(fraction: number): string {
-  const inset = Math.round(scrubDiamondHalfExtentPx() * 1000) / 1000;
   const clamped = Math.max(0, Math.min(1, Number.isFinite(fraction) ? fraction : 0));
-  const clampedCss = Math.round(clamped * 1000) / 1000;
-  return `calc(${inset}px + (100% - ${inset * 2}px) * ${clampedCss})`;
+  const percent = Math.round(clamped * 100 * 1000) / 1000;
+  return `${percent}%`;
+}
+
+/**
+ * Knockout ring. Modern stays white because backlight-off dims the whole
+ * LCD with a filter. Classic lit uses the bottom of the LCD gradient, where
+ * the bar sits. Classic unlit uses the unlit field; the screen filter tints
+ * the ring with the background.
+ */
+export function scrubDiamondRingColor(
+  isModernUi: boolean,
+  backlightOn: boolean
+): string {
+  if (isModernUi) return "#ffffff";
+  return backlightOn ? "#e0f0fc" : "#8a9da9";
 }
 
 export type ScrubSession = {
