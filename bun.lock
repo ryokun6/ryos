@@ -90,7 +90,7 @@
         "tone": "^15.1.22",
         "unified": "^11.0.5",
         "use-stick-to-bottom": "^1.1.6",
-        "uuid": "^14.0.1",
+        "uuid": "^14.0.3",
         "wanakana": "^5.3.1",
         "wavesurfer.js": "^8.0.3",
         "webamp": "^2.3.1",
