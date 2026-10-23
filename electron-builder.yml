@@ -5,12 +5,16 @@ directories:
   output: release
   buildResources: build
 files:
-  - dist-electron/**/*
+  # The directory itself must match, or the walker never descends into a
+  # gitignored output folder. `dir/**/*` matches the files and not the dir.
+  - "dist-electron{,/**/*}"
   - package.json
 asar: true
 # Castlabs Electron for Content Security (Widevine CDM for Apple Music DRM).
+# @electron/get (electron-builder 26) prefixes the release directory with v
+# (v44.9.3+wvcus). A mirror that already ends in v requests vv<version> and 404s.
 electronDownload:
-  mirror: https://github.com/castlabs/electron-releases/releases/download/v
+  mirror: https://github.com/castlabs/electron-releases/releases/download/
 # macOS: VMP-sign before code signing. Windows: VMP-sign after code signing.
 afterPack: scripts/electron-vmp-after-pack.cjs
 afterSign: scripts/electron-vmp-after-sign.cjs

@@ -230,6 +230,9 @@
     "@tootallnate/once": "2.0.1",
     "@xmldom/xmldom": "0.9.12",
     "ajv": "6.14.0",
+    "app-builder-lib": {
+      "ajv": "8.18.0"
+    },
     "brace-expansion": "1.1.21",
     "browserslist": "4.29.4",
     "dompurify": "3.4.17",
