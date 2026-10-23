@@ -214,7 +214,7 @@ describe("Karaoke queue add songs", () => {
 });
 
 describe("queue-only song search", () => {
-  test("choosing a result adds it to the queue and leaves the dialog open", async () => {
+  test("choosing a result adds it to the queue and closes the dialog", async () => {
     const opens: boolean[] = [];
     const queued: string[] = [];
     const played: string[] = [];
@@ -290,10 +290,10 @@ describe("queue-only song search", () => {
 
     expect(queued).toEqual(["dQw4w9WgXcQ"]);
     expect(played).toEqual([]);
-    expect(opens).not.toContain(false);
+    expect(opens).toContain(false);
   });
 
-  test("a queue-only url submits to the queue and stays open", async () => {
+  test("a queue-only url submits to the queue and closes the dialog", async () => {
     const opens: boolean[] = [];
     const queued: string[] = [];
     const libraryAdds: string[] = [];
@@ -331,6 +331,6 @@ describe("queue-only song search", () => {
 
     expect(queued).toEqual([YOUTUBE_URL]);
     expect(libraryAdds).toEqual([]);
-    expect(opens).not.toContain(false);
+    expect(opens).toContain(false);
   });
 });

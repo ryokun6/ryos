@@ -24,7 +24,7 @@ export interface SongSearchDialogProps {
   onPlayNextUrl?: (url: string) => Promise<void>;
   /**
    * Opened from the listen-together queue. Confirm adds to the queue and
-   * leaves the dialog open so several songs can be added.
+   * closes this dialog. The queue drawer stays open.
    */
   queueOnly?: boolean;
   /** Draw above the karaoke fullscreen portal. */

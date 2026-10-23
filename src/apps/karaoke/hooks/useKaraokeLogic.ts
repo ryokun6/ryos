@@ -227,8 +227,6 @@ export function useKaraokeLogic({
 
   const [queueDrawerOpen, setQueueDrawerOpen] = useState(false);
   const [songSearchPurpose, setSongSearchPurpose] = useState<"library" | "queue">("library");
-  const songSearchPurposeRef = useRef(songSearchPurpose);
-  songSearchPurposeRef.current = songSearchPurpose;
   const queueAdvanceInFlightRef = useRef(false);
   const canQueueSongs = Boolean(listenSession && !isListenSessionAnonymous);
 
@@ -2027,9 +2025,7 @@ export function useKaraokeLogic({
         },
         placement
       );
-      if (songSearchPurposeRef.current !== "queue") {
-        setIsSongSearchDialogOpen(false);
-      }
+      setIsSongSearchDialogOpen(false);
     },
     [queueTrack]
   );
@@ -2051,9 +2047,7 @@ export function useKaraokeLogic({
           { id: added.id, title: added.title, artist: added.artist },
           placement
         );
-        if (songSearchPurposeRef.current !== "queue") {
-          setIsSongSearchDialogOpen(false);
-        }
+        setIsSongSearchDialogOpen(false);
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t("apps.karaoke.queue.updateFailed")
