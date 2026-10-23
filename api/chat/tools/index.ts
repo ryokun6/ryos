@@ -280,13 +280,12 @@ export const TOOL_DESCRIPTIONS = {
     "Returns latitude/longitude, accuracy, and the locality name. You can then pass the coordinates to getWeather or mapsSearchPlaces ('near').",
 
   webFetch:
-    "Fetch and read the text content of a web page. Use this when the user asks you to look something up online, " +
-    "read an article, check a website, get information from a URL, or when you need live/current data from the web. " +
-    "Returns extracted text content (HTML is converted to readable text). " +
-    "Supports HTML pages, JSON APIs, and plain text. Does NOT execute JavaScript — " +
-    "works best with server-rendered content (most sites). " +
-    "For JS-heavy single-page apps, content may be limited. " +
-    "Optionally pass a CSS selector to extract a specific section.",
+    "Fetch and read the text content of a URL. Use this when the user asks you to look something up online, " +
+    "read an article, open a link, or read an RSS, Atom, or JSON feed (including a journal feed). " +
+    "HTML becomes markdown (headings, lists, links, code). Feeds return the feed title and link plus each item's title, link, date, author, and full text. " +
+    "Also reads JSON, XML, plain text, and markdown. Does NOT execute JavaScript — " +
+    "a script-only page may be thin unless that site also publishes a feed. " +
+    "Optionally pass a CSS selector to extract one section of an HTML page.",
 
   runJs:
     "Run pure JavaScript (ES2023) in a secure server-side sandbox and get back console output plus the completion value. " +

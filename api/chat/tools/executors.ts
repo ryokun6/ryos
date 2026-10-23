@@ -39,7 +39,16 @@ import {
   writeFilesMetadataToolState,
 } from "../../sync/v2/_tool-state.js";
 import { getAppPublicOrigin } from "../../_utils/runtime-config.js";
-import { extractMetadata, stripHtmlToText } from "./htmlExtract.js";
+import {
+  extractWebDocument,
+  readResponseTextLimited,
+  WEB_FETCH_MAX_CONTENT_CHARS,
+  WEB_FETCH_MAX_DOWNLOAD_BYTES,
+  WEB_FETCH_THIN_PAGE_CHARS,
+  WEB_FETCH_TRUNCATION_NOTE,
+  type ExtractedWebDocument,
+} from "./webContent.js";
+import { visibleTextLength } from "./htmlExtract.js";
 import { checkToolRateLimit } from "./_tool-rate-limit.js";
 import {
   getYouTubeApiKeys,
@@ -195,14 +204,13 @@ export {
   executeStickiesControl,
 } from "./app-state-executors.js";
 
-const WEB_FETCH_MAX_CONTENT_LENGTH = 24_000;
 const WEB_FETCH_TIMEOUT_MS = 15_000;
 
 const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
   "User-Agent":
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
   Accept:
-    "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "text/html,application/xhtml+xml,application/rss+xml,application/atom+xml,application/feed+json,application/xml;q=0.9,application/json;q=0.8,text/plain;q=0.8,*/*;q=0.7",
   "Accept-Language": "en-US,en;q=0.9",
   "Sec-Fetch-Dest": "document",
   "Sec-Fetch-Mode": "navigate",
@@ -210,8 +218,77 @@ const WEB_FETCH_BROWSER_HEADERS: Record<string, string> = {
   "Upgrade-Insecure-Requests": "1",
 };
 
-// Pure HTML→text + metadata helpers live in ./htmlExtract.js so they can be
-// unit-tested without pulling this module's server-only imports.
+// HTML, feed, and XML extraction live in ./htmlExtract.js, ./feedExtract.js,
+// and ./webContent.js so they can be unit-tested without this module's
+// server-only imports. SSRF checks stay on this fetch path.
+
+async function readAlternateFeedItem(
+  page: ExtractedWebDocument,
+  pageUrl: string,
+  deadline: AbortSignal,
+  context: { log: (...args: unknown[]) => void }
+): Promise<ExtractedWebDocument> {
+  const feedUrl = page.alternateFeedUrl;
+  if (!feedUrl) return page;
+  context.log(
+    `[webFetch] Thin HTML (${page.visibleLength} chars), reading feed ${feedUrl}`
+  );
+  try {
+    const { response } = await safeFetchWithRedirects(
+      feedUrl,
+      {
+        headers: WEB_FETCH_BROWSER_HEADERS,
+        signal: deadline,
+      },
+      { maxRedirects: 5 }
+    );
+    if (!response.ok) {
+      try {
+        await response.body?.cancel();
+      } catch {
+        // Ignore body cancel errors.
+      }
+      context.log(`[webFetch] Feed HTTP ${response.status}`);
+      return page;
+    }
+    const downloaded = await readResponseTextLimited(
+      response,
+      WEB_FETCH_MAX_DOWNLOAD_BYTES
+    );
+    const feedType = response.headers.get("content-type") || "application/xml";
+    const matched = extractWebDocument(downloaded.text, feedType, {
+      pageUrl,
+      matchUrl: pageUrl,
+      maxChars: WEB_FETCH_MAX_CONTENT_CHARS,
+    });
+    if (
+      matched.matchedFeedItem &&
+      visibleTextLength(matched.content) > page.visibleLength + 80
+    ) {
+      context.log(
+        `[webFetch] Used feed item (${matched.contentLength} chars) for ${pageUrl}`
+      );
+      return {
+        ...matched,
+        title: matched.title || page.title,
+        description: page.description || matched.description,
+        siteName: page.siteName || matched.siteName,
+        truncated: matched.truncated || downloaded.truncated,
+      };
+    }
+    context.log("[webFetch] Feed had no fuller item for this URL");
+    return page;
+  } catch (error) {
+    if (error instanceof SsrfBlockedError) {
+      context.log(`[webFetch] Feed blocked: ${error.message}`);
+      return page;
+    }
+    context.log(
+      `[webFetch] Feed follow-up failed: ${error instanceof Error ? error.message : "unknown"}`
+    );
+    return page;
+  }
+}
 
 export async function executeWebFetch(
   input: WebFetchInput,
@@ -250,16 +327,24 @@ export async function executeWebFetch(
   }
 
   try {
+    // One deadline for the page and a possible same-site feed follow-up,
+    // so the pair stays inside the tool timeout.
+    const deadline = AbortSignal.timeout(WEB_FETCH_TIMEOUT_MS);
     const { response, finalUrl } = await safeFetchWithRedirects(
       url,
       {
         headers: WEB_FETCH_BROWSER_HEADERS,
-        signal: AbortSignal.timeout(WEB_FETCH_TIMEOUT_MS),
+        signal: deadline,
       },
       { maxRedirects: 5 }
     );
 
     if (!response.ok) {
+      try {
+        await response.body?.cancel();
+      } catch {
+        // Ignore body cancel errors.
+      }
       context.log(`[webFetch] HTTP ${response.status} for ${url}`);
       return {
         success: false,
@@ -273,46 +358,26 @@ export async function executeWebFetch(
     }
 
     const contentType = response.headers.get("content-type") || "";
+    const downloaded = await readResponseTextLimited(
+      response,
+      WEB_FETCH_MAX_DOWNLOAD_BYTES
+    );
+    let doc = extractWebDocument(downloaded.text, contentType, {
+      selector,
+      pageUrl: finalUrl,
+      maxChars: WEB_FETCH_MAX_CONTENT_CHARS,
+    });
 
-    if (contentType.includes("application/json")) {
-      const text = await response.text();
-      const truncated = text.length > WEB_FETCH_MAX_CONTENT_LENGTH;
-      const content = truncated
-        ? text.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]"
-        : text;
-
-      context.log(`[webFetch] JSON response (${text.length} chars)`);
-      return {
-        success: true,
-        url,
-        finalUrl,
-        content,
-        contentLength: text.length,
-        truncated,
-        message: `Fetched JSON from ${new URL(finalUrl).hostname} (${text.length} chars)`,
-      };
+    if (
+      !selector?.trim() &&
+      doc.kind === "html" &&
+      doc.alternateFeedUrl &&
+      doc.visibleLength < WEB_FETCH_THIN_PAGE_CHARS
+    ) {
+      doc = await readAlternateFeedItem(doc, finalUrl, deadline, context);
     }
 
-    if (contentType.includes("text/plain")) {
-      const text = await response.text();
-      const truncated = text.length > WEB_FETCH_MAX_CONTENT_LENGTH;
-      const content = truncated
-        ? text.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]"
-        : text;
-
-      context.log(`[webFetch] Plain text response (${text.length} chars)`);
-      return {
-        success: true,
-        url,
-        finalUrl,
-        content,
-        contentLength: text.length,
-        truncated,
-        message: `Fetched text from ${new URL(finalUrl).hostname} (${text.length} chars)`,
-      };
-    }
-
-    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
+    if (doc.kind === "unsupported") {
       context.log(`[webFetch] Non-text content type: ${contentType}`);
       return {
         success: false,
@@ -325,32 +390,41 @@ export async function executeWebFetch(
       };
     }
 
-    const html = await response.text();
-    const metadata = extractMetadata(html);
-    let textContent = stripHtmlToText(html, selector);
-
-    const truncated = textContent.length > WEB_FETCH_MAX_CONTENT_LENGTH;
-    if (truncated) {
-      textContent =
-        textContent.slice(0, WEB_FETCH_MAX_CONTENT_LENGTH) + "\n\n[...truncated]";
+    let content = doc.content;
+    const truncated = doc.truncated || downloaded.truncated;
+    if (downloaded.truncated && !content.includes("[truncated")) {
+      content = `${content}${WEB_FETCH_TRUNCATION_NOTE}`;
     }
 
     const hostname = new URL(finalUrl).hostname;
+    const siteName = doc.siteName || hostname;
     context.log(
-      `[webFetch] Extracted ${textContent.length} chars from ${hostname} (title: ${metadata.title || "none"})`
+      `[webFetch] Extracted ${content.length} chars from ${hostname} (${doc.kind}, title: ${doc.title || "none"})`
     );
+
+    const clipped = truncated ? ", truncated" : "";
+    const message =
+      doc.kind === "feed" && !doc.matchedFeedItem
+        ? `Fetched feed from ${siteName}${doc.title ? `: "${doc.title}"` : ""} (${doc.feedItemCount ?? 0} posts, ${doc.contentLength} chars${clipped})`
+        : doc.kind === "json"
+          ? `Fetched JSON from ${hostname} (${doc.contentLength} chars${clipped})`
+          : doc.kind === "text"
+            ? `Fetched text from ${hostname} (${doc.contentLength} chars${clipped})`
+            : doc.kind === "xml"
+              ? `Fetched XML from ${hostname} (${doc.contentLength} chars${clipped})`
+              : `Fetched and extracted content from ${siteName}${doc.title ? `: "${doc.title}"` : ""} (${doc.contentLength} chars${clipped})`;
 
     return {
       success: true,
       url,
       finalUrl,
-      title: metadata.title,
-      description: metadata.description,
-      siteName: metadata.siteName || hostname,
-      content: textContent,
-      contentLength: textContent.length,
+      title: doc.title,
+      description: doc.description,
+      siteName,
+      content,
+      contentLength: doc.contentLength,
       truncated,
-      message: `Fetched and extracted content from ${metadata.siteName || hostname}${metadata.title ? `: "${metadata.title}"` : ""} (${textContent.length} chars${truncated ? ", truncated" : ""})`,
+      message,
     };
   } catch (error) {
     if (error instanceof SsrfBlockedError) {
