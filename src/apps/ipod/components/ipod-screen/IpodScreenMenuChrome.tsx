@@ -752,10 +752,28 @@ function ScrubDiamond({
           width: SCRUB_DIAMOND_SIZE_PX,
           height: SCRUB_DIAMOND_SIZE_PX,
           transform: "translate(-50%, -50%) rotate(45deg)",
-          backgroundColor: isModernUi ? "#2260a4" : "#0a3667",
+          backgroundColor: isModernUi ? "transparent" : "#0a3667",
           boxShadow: `0 0 0 ${SCRUB_DIAMOND_RING_PX}px ${scrubDiamondRingColor(isModernUi, backlightOn)}`,
         }}
-      />
+      >
+        {isModernUi ? (
+          // Clip the Aqua fill to the diamond. The fill is counter-rotated
+          // so the bar's top-down gloss still comes from the top of the LCD.
+          // The ring stays on the outer box, which does not clip.
+          <span className="absolute inset-0 overflow-hidden">
+            <span
+              className="aqua-progress-fill absolute left-1/2 top-1/2 block"
+              style={{
+                position: "absolute",
+                width: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                height: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                transform: "translate(-50%, -50%) rotate(-45deg)",
+                borderRadius: 0,
+              }}
+            />
+          </span>
+        ) : null}
+      </span>
     </div>
   );
 }
