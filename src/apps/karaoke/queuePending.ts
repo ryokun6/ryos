@@ -24,6 +24,22 @@ export function nextPendingQueueId(serial: number): string {
   return `${PENDING_ENTRY_PREFIX}${serial}`;
 }
 
+/**
+ * A queue add must not become the song that is already playing.
+ * Returns the id to restore, or null when the current song should stay as it is.
+ */
+export function songIdToRestoreAfterQueueAdd(args: {
+  pinnedSongId: string | null;
+  currentSongId: string | null;
+  trackIds: readonly string[];
+}): string | null {
+  const pinned = args.pinnedSongId;
+  if (!pinned) return null;
+  if (!args.trackIds.includes(pinned)) return null;
+  if (args.currentSongId === pinned) return null;
+  return pinned;
+}
+
 function toDisplay(item: PendingQueueItem): DisplayQueueItem {
   return {
     entryId: item.localId,

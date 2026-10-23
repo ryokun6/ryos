@@ -38,6 +38,7 @@ import {
   isPendingQueueEntry,
   mergeQueueWithPending,
   nextPendingQueueId,
+  songIdToRestoreAfterQueueAdd,
   type PendingQueueItem,
 } from "../queuePending";
 import { registerKaraokeSessionNext } from "../listenQueueBridge";
@@ -795,13 +796,25 @@ export function useKaraokeLogic({
       resolve: () => Promise<{ id: string; title: string; artist?: string } | null>
     ): Promise<"ok" | "metadata-failed" | "queue-failed" | "left"> => {
       const sessionId = useListenSessionStore.getState().currentSession?.id ?? null;
+      const pinnedSongId = useKaraokeStore.getState().currentSongId;
       const localId = beginPendingQueueItem({ ...seed, placement });
+      const restorePinnedSong = () => {
+        const restoreId = songIdToRestoreAfterQueueAdd({
+          pinnedSongId,
+          currentSongId: useKaraokeStore.getState().currentSongId,
+          trackIds: useMediaLibraryStore.getState().tracks.map((track) => track.id),
+        });
+        if (!restoreId) return;
+        useKaraokeStore.setState({ currentSongId: restoreId });
+      };
       try {
         const resolved = await resolve();
         if (!resolved) return "metadata-failed";
         if (useListenSessionStore.getState().currentSession?.id !== sessionId) {
           return "left";
         }
+        restorePinnedSong();
+        setTimeout(restorePinnedSong, 0);
         patchPendingQueueItem(localId, {
           trackId: resolved.id,
           title: resolved.title,
@@ -811,6 +824,8 @@ export function useKaraokeLogic({
           { id: resolved.id, title: resolved.title, artist: resolved.artist },
           placement
         );
+        restorePinnedSong();
+        setTimeout(restorePinnedSong, 0);
         return queued ? "ok" : "queue-failed";
       } finally {
         endPendingQueueItem(localId);

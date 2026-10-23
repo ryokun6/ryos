@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   mergeQueueWithPending,
+  songIdToRestoreAfterQueueAdd,
   type PendingQueueItem,
 } from "../../../src/apps/karaoke/queuePending";
 import type { ListenQueueItem } from "../../../src/shared/listen/queue";
@@ -30,6 +31,42 @@ function pending(
     placement,
   };
 }
+
+describe("songIdToRestoreAfterQueueAdd", () => {
+  test("restores the song that was playing when a queue add retargets playback", () => {
+    expect(
+      songIdToRestoreAfterQueueAdd({
+        pinnedSongId: "cornfield",
+        currentSongId: "time",
+        trackIds: ["time", "cornfield"],
+      })
+    ).toBe("cornfield");
+  });
+
+  test("leaves playback alone when it is still the pinned song or that song left the library", () => {
+    expect(
+      songIdToRestoreAfterQueueAdd({
+        pinnedSongId: "cornfield",
+        currentSongId: "cornfield",
+        trackIds: ["time", "cornfield"],
+      })
+    ).toBeNull();
+    expect(
+      songIdToRestoreAfterQueueAdd({
+        pinnedSongId: "cornfield",
+        currentSongId: "time",
+        trackIds: ["time"],
+      })
+    ).toBeNull();
+    expect(
+      songIdToRestoreAfterQueueAdd({
+        pinnedSongId: null,
+        currentSongId: "time",
+        trackIds: ["time"],
+      })
+    ).toBeNull();
+  });
+});
 
 describe("mergeQueueWithPending", () => {
   test("an empty queue shows the original title while the add is in flight", () => {
