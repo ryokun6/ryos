@@ -18,6 +18,10 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
 import { useOffline } from "@/hooks/useOffline";
 import {
+  adoptFollowPlayState,
+  remotePlayStateAction,
+} from "@/shared/media/confirmedPlayback";
+import {
   broadcastListenState,
   usePlaybackListenSync,
 } from "@/shared/media/playbackListenSync";
@@ -494,6 +498,17 @@ export function useKaraokeLogic({
     syncListenSession,
   ]);
 
+  const adoptRemotePlayState = useCallback((playing: boolean) => {
+    const live = useKaraokeStore.getState();
+    const action = remotePlayStateAction({
+      sessionPlaying: playing,
+      isPlaying: live.isPlaying,
+      playbackRequested: live.playbackRequested,
+    });
+    if (action === "keep") return;
+    useKaraokeStore.setState(adoptFollowPlayState(action === "adopt-playing"));
+  }, []);
+
   usePlaybackListenSync({
     currentTrackId: currentTrack?.id ?? null,
     currentTrackMeta,
@@ -504,6 +519,7 @@ export function useKaraokeLogic({
     addTrackFromId: addTrackFromVideoId,
     listenRemoteOnly,
     setVirtualElapsedSeconds: listenRemoteOnly ? setStoreElapsedTime : undefined,
+    adoptRemotePlayState: listenRemoteOnly ? adoptRemotePlayState : undefined,
   });
   const lyricsSourceOverride = currentTrack?.lyricsSource;
 

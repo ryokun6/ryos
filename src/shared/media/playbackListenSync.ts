@@ -13,6 +13,8 @@ export interface PlaybackListenSyncTarget {
   addTrackFromId?: (trackId: string) => Promise<unknown> | void;
   listenRemoteOnly: boolean;
   setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
+  /** Confirms room play/pause on a device that does not run the player. */
+  adoptRemotePlayState?: (playing: boolean) => void;
 }
 
 export function usePlaybackListenSync(target: PlaybackListenSyncTarget): void {
@@ -27,6 +29,9 @@ export function usePlaybackListenSync(target: PlaybackListenSyncTarget): void {
     applyListenerPlayback: !target.listenRemoteOnly,
     setVirtualElapsedSeconds: target.listenRemoteOnly
       ? target.setVirtualElapsedSeconds
+      : undefined,
+    adoptRemotePlayState: target.listenRemoteOnly
+      ? target.adoptRemotePlayState
       : undefined,
   });
 }

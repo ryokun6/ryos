@@ -26,6 +26,8 @@ interface ListenSyncOptions {
   applyListenerPlayback?: boolean;
   /** Virtual timeline for remotes (seconds). */
   setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
+  /** Confirms room play/pause without waiting for a local player onPlay. */
+  adoptRemotePlayState?: (playing: boolean) => void;
 }
 
 const HEARTBEAT_INTERVAL_MS = 3000; // playing and paused — keeps listeners aligned without long gaps
@@ -51,6 +53,7 @@ export function useListenSync({
   addTrackFromId,
   applyListenerPlayback = true,
   setVirtualElapsedSeconds,
+  adoptRemotePlayState,
 }: ListenSyncOptions) {
   const {
     currentSession,
@@ -231,9 +234,9 @@ export function useListenSync({
       if (lastSyncPayload.currentTrackId !== currentTrackId) {
         setCurrentTrackId(lastSyncPayload.currentTrackId);
       }
-      if (lastSyncPayload.isPlaying !== isPlaying) {
-        setIsPlaying(lastSyncPayload.isPlaying);
-      }
+      // Followers never receive onPlay. setIsPlaying(true) only records a
+      // request and leaves the button paused, which also freezes the lyric clock.
+      adoptRemotePlayState?.(lastSyncPayload.isPlaying);
       return;
     }
 
@@ -297,6 +300,7 @@ export function useListenSync({
     setIsPlaying,
     setPlaybackRate,
     setVirtualElapsedSeconds,
+    adoptRemotePlayState,
     applySmoothedVirtualElapsed,
     clientInstanceId,
     username,
@@ -316,7 +320,7 @@ export function useListenSync({
     if (applyListenerPlayback || !setVirtualElapsedSeconds || !lastSyncPayload) return;
     let frame = 0;
     const tick = () => {
-      const playing = isPlaying && lastSyncPayload.isPlaying;
+      const playing = lastSyncPayload.isPlaying;
       const expectedMs =
         lastSyncPayload.positionMs +
         (playing ? Date.now() - lastSyncPayload.timestamp : 0);
@@ -343,7 +347,6 @@ export function useListenSync({
     applyListenerPlayback,
     applySmoothedVirtualElapsed,
     currentSession,
-    isPlaying,
     lastSyncPayload,
     setVirtualElapsedSeconds,
   ]);

@@ -50,7 +50,9 @@ afterAll(() => {
 
 const { useVideoStore } = await import("../../../src/stores/useVideoStore");
 const {
+  adoptFollowPlayState,
   applyPlayStateAfterViewResume,
+  remotePlayStateAction,
   resolvePlayStateAfterViewResume,
 } = await import("../../../src/shared/media/confirmedPlayback");
 
@@ -73,6 +75,38 @@ describe("confirmed media playback state", () => {
 
     expect(useVideoStore.getState().playbackRequested).toBe(false);
     expect(useVideoStore.getState().isPlaying).toBe(false);
+  });
+
+  test("a listen follower adopts the room play state without a local onPlay", () => {
+    expect(adoptFollowPlayState(true)).toEqual({
+      isPlaying: true,
+      playbackRequested: true,
+    });
+    expect(adoptFollowPlayState(false)).toEqual({
+      isPlaying: false,
+      playbackRequested: false,
+    });
+    expect(
+      remotePlayStateAction({
+        sessionPlaying: true,
+        isPlaying: false,
+        playbackRequested: true,
+      })
+    ).toBe("adopt-playing");
+    expect(
+      remotePlayStateAction({
+        sessionPlaying: true,
+        isPlaying: true,
+        playbackRequested: true,
+      })
+    ).toBe("keep");
+    expect(
+      remotePlayStateAction({
+        sessionPlaying: false,
+        isPlaying: false,
+        playbackRequested: true,
+      })
+    ).toBe("adopt-paused");
   });
 
   test("stores playing=true only after the onPlay confirmation", () => {
