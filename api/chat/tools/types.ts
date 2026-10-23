@@ -605,6 +605,27 @@ export interface WebFetchInput {
   url: string;
   /** Extract only a CSS-selector subset of the page (optional) */
   selector?: string;
+  /**
+   * Character offset into extracted text, or a feed item index.
+   * Pass the previous response's pagination.nextOffset.
+   */
+  offset?: number;
+  /** Continuation chunk of a feed item that is longer than one page. */
+  part?: number;
+  /** Page size in characters. Default 12000, hard max 32000. */
+  maxChars?: number;
+}
+
+export interface WebFetchPagination {
+  unit: "chars" | "items";
+  total: number;
+  offset: number;
+  end: number;
+  part: number;
+  hasMore: boolean;
+  nextOffset: number | null;
+  nextPart: number | null;
+  pageChars: number;
 }
 
 export interface WebFetchOutput {
@@ -615,8 +636,10 @@ export interface WebFetchOutput {
   description?: string;
   siteName?: string;
   content: string;
+  /** Characters stored for this URL, not the length of this page. */
   contentLength: number;
   truncated: boolean;
+  pagination?: WebFetchPagination;
   message: string;
 }
 

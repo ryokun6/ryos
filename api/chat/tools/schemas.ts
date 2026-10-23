@@ -35,6 +35,12 @@ import {
   MAX_CONTENT_LENGTH,
   MAX_DAILY_NOTE_ENTRY_LENGTH,
 } from "../../_utils/_memory.js";
+import {
+  WEB_FETCH_MAX_CONTENT_CHARS,
+  WEB_FETCH_PAGE_CHARS,
+  WEB_FETCH_PAGE_HARD_MAX,
+  WEB_FETCH_PAGE_MIN,
+} from "./webContentLimits.js";
 
 /**
  * Helper to normalize optional string values
@@ -1230,6 +1236,35 @@ export const webFetchSchema = z.object({
       "Optional CSS selector to extract a specific section of the page. " +
       "Examples: 'article', 'main', '.content', '#body-text'. " +
       "If omitted, extracts the main content automatically."
+    ),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .max(WEB_FETCH_MAX_CONTENT_CHARS)
+    .optional()
+    .describe(
+      "Where to resume. Omit or 0 for the start. Copy pagination.nextOffset from the previous result – " +
+      "a character offset for a page, or a feed item index for a feed. Do not guess it."
+    ),
+  part: z
+    .number()
+    .int()
+    .min(0)
+    .max(40)
+    .optional()
+    .describe(
+      "Continuation of a feed item that is longer than one page. Omit unless the previous result set pagination.nextPart."
+    ),
+  maxChars: z
+    .number()
+    .int()
+    .min(WEB_FETCH_PAGE_MIN)
+    .max(WEB_FETCH_PAGE_HARD_MAX)
+    .optional()
+    .describe(
+      `Characters to return in this page. Default ${WEB_FETCH_PAGE_CHARS}. Hard max ${WEB_FETCH_PAGE_HARD_MAX}. ` +
+      "The page still stops on a paragraph, heading, or feed item boundary."
     ),
 });
 

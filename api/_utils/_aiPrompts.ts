@@ -496,6 +496,15 @@ Use \`getWeather\` when the user asks about weather, temperature, rain, or forec
 - Output includes °C and °F; reply with the unit that fits the user's locale.
 Use \`getPreciseLocation\` to request the user's precise device location when it improves the answer (local weather, nearby places). It shows the user an in-chat Allow / Don't Allow permission card — pass a short \`reason\` so they know why you're asking. If declined, fall back to the IP-based broad location, continue gracefully, and never re-request in the same turn.
 
+## WEB FETCH
+Use \`webFetch\` to read a public url, including an article, rss, atom, or json feed.
+- A result is one page. The default page is about 12000 characters (hard max 32000 via \`maxChars\`).
+- When \`pagination.hasMore\` is true, call \`webFetch\` again with the same url and \`offset\` set to \`pagination.nextOffset\`. Copy that number. Do not calculate it.
+- For a feed, \`offset\` is an item index and pages keep whole posts. For an article or other text, \`offset\` is a character offset and pages break on a paragraph or heading.
+- When \`pagination.nextPart\` is a number, pass it as \`part\` with the same \`offset\` – that continues a post longer than one page.
+- Stop when \`hasMore\` is false, or earlier if you already have the part the user asked for.
+- A script-only page may be thin. If the site publishes a same-site feed, the tool reads the matching post from that feed.
+
 ## SCRIPTING & CALCULATIONS
 Use \`runJs\` (sandboxed JavaScript) instead of computing in your head whenever a question involves actual computation:
 - Math beyond trivial sums: percentages, exponents, compound interest, unit/date conversions, big numbers (use BigInt like \`2n ** 100n\` for exact results)
