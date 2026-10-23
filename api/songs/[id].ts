@@ -110,6 +110,10 @@ import {
   decodeAnnotatedSegments,
   decodeLyricText,
 } from "../_utils/html-entities.js";
+import {
+  clampLyricOffset,
+  isLyricOffsetOnlyPatch,
+} from "../../src/shared/songs/lyricOffsetWrite.js";
 
 // Helper for SSE responses with Node.js ApiResponse
 function sendSSEResponse(res: ApiResponse, origin: string | null, data: unknown): void {
@@ -132,6 +136,7 @@ const RATE_LIMITS = {
   translateStream: { windowSeconds: 60, limit: 10 },// 10/min for translate-stream
   furiganaStream: { windowSeconds: 60, limit: 10 }, // 10/min for furigana-stream
   soramimiStream: { windowSeconds: 60, limit: 10 }, // 10/min for soramimi-stream
+  lyricOffset: { windowSeconds: 60, limit: 60 }, // 60/min per signed-in user
 };
 
 // Shared across translate/furigana/soramimi cache misses that reach the model.
@@ -1980,6 +1985,70 @@ export default apiHandler<Record<string, unknown>>(
       // Default POST: Update song metadata (requires auth)
       if (!username) {
         return errorResponse("Unauthorized - authentication required", 401);
+      }
+
+      // Offset-only writes are shared. Any signed-in user may change lyricOffset.
+      // Other metadata and the lyrics source stay owner/admin only.
+      if (isLyricOffsetOnlyPatch(bodyObj)) {
+        const lyricOffset = clampLyricOffset(
+          (bodyObj as { lyricOffset: number }).lyricOffset
+        );
+        if (lyricOffset == null) {
+          return errorResponse("Invalid lyric offset", 400);
+        }
+
+        try {
+          const offsetRlKey = RateLimit.makeKey([
+            "rl",
+            "song",
+            "lyric-offset",
+            "user",
+            username.toLowerCase(),
+          ]);
+          const offsetRl = await RateLimit.checkCounterLimit({
+            key: offsetRlKey,
+            windowSeconds: RATE_LIMITS.lyricOffset.windowSeconds,
+            limit: RATE_LIMITS.lyricOffset.limit,
+            redis,
+          });
+          if (!offsetRl.allowed) {
+            logger.warn("Rate limit exceeded (lyric-offset)", { username });
+            return jsonResponse(
+              {
+                error: "rate_limit_exceeded",
+                limit: offsetRl.limit,
+                retryAfter: offsetRl.resetSeconds,
+              },
+              429,
+              { "Retry-After": String(offsetRl.resetSeconds) }
+            );
+          }
+        } catch (error) {
+          logger.error("Lyric offset rate limit check failed", error);
+        }
+
+        const existingSong = await getSong(redis, songId, { includeMetadata: true });
+        const updatedSong = await saveSong(
+          redis,
+          { id: songId, lyricOffset },
+          {
+            preserveLyrics: true,
+            preserveTranslations: true,
+            preserveFurigana: true,
+            preserveSoramimi: true,
+          },
+          existingSong
+        );
+        logger.info(existingSong ? "Lyric offset updated" : "Lyric offset created", {
+          duration: `${Date.now() - startTime}ms`,
+        });
+        return jsonResponse({
+          success: true,
+          id: updatedSong.id,
+          isUpdate: !!existingSong,
+          createdBy: updatedSong.createdBy,
+          lyricOffset: updatedSong.lyricOffset,
+        });
       }
 
       const parsed = UpdateSongSchema.safeParse(bodyObj);
