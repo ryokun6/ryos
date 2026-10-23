@@ -121,7 +121,9 @@ graph LR
 | `/api/listen/sessions/[id]/transfer-host` | Transfer session host |
 | `/api/listen/sessions/[id]/remote-command` | Submit remote playback command |
 | `/api/listen/sessions/[id]/reaction` | Send emoji reaction |
-| `/api/listen/sessions/[id]/queue` | Add, bump, remove, or advance the shared song queue |
+| `/api/listen/sessions/[id]/queue` | Add, bump, remove, or advance the shared song queue. Song-end advance is idempotent per current track |
+| `/api/listen/sessions/[id]/lyric-offset` | Publish a per-song lyric offset to the room (any member) |
+| `/api/listen/sessions/[id]/claim-dj` | Take over playback after the DJ stops syncing |
 | `/api/irc/servers` | List/create IRC server configs |
 | `/api/irc/servers/[id]` | DELETE — remove IRC server config (admin only) |
 | `/api/irc/servers/[id]/channels` | Browse IRC channels |

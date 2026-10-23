@@ -129,6 +129,33 @@ export async function fetchListenSession(
   });
 }
 
+export async function publishListenLyricOffset(
+  sessionId: string,
+  payload: {
+    username?: string;
+    clientInstanceId?: string;
+    trackId: string;
+    lyricOffset: number;
+  }
+): Promise<{ success: boolean; trackId: string; lyricOffset: number }> {
+  return apiRequest({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/lyric-offset`,
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function claimListenDj(
+  sessionId: string,
+  payload: { username?: string; clientInstanceId?: string }
+): Promise<ListenSuccessResponse & ListenSessionResponse & { claimed?: boolean }> {
+  return apiRequest({
+    path: `/api/listen/sessions/${encodeURIComponent(sessionId)}/claim-dj`,
+    method: "POST",
+    body: payload,
+  });
+}
+
 export async function updateListenQueue(
   sessionId: string,
   payload: ListenQueueRequest

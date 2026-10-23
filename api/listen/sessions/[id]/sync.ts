@@ -21,6 +21,11 @@ import {
 } from "../../_helpers/_client-instance.js";
 import { broadcastDjChanged, broadcastSync } from "../../_helpers/_pusher.js";
 import { normalizeListenQueue } from "../../../../src/shared/listen/queue.js";
+import { normalizeLyricOffsetMap } from "../../../../src/shared/listen/lyricOffsets.js";
+import {
+  clampTrackDurationMs,
+  incomingSyncIsStaleAdvance,
+} from "../../../../src/shared/listen/trackAdvance.js";
 
 export default apiHandler(
   { methods: ["POST"], auth: "required" },
@@ -108,6 +113,8 @@ export default apiHandler(
       }
 
       const now = getCurrentTimestamp();
+      const loadedTrackId = session.currentTrackId;
+      const loadedSyncAt = session.lastSyncAt;
       const nextTrackId = state.currentTrackId ?? null;
       const nextTrackMeta = state.currentTrackMeta ?? null;
 
@@ -116,6 +123,14 @@ export default apiHandler(
       session.isPlaying = state.isPlaying;
       session.positionMs = Math.max(0, Math.floor(state.positionMs));
       session.lastSyncAt = now;
+      const durationMs = clampTrackDurationMs(state.durationMs);
+      if (durationMs != null && nextTrackId === loadedTrackId) {
+        session.currentTrackDurationMs = durationMs;
+      } else if (durationMs != null && nextTrackId !== loadedTrackId) {
+        session.currentTrackDurationMs = durationMs;
+      } else if (nextTrackId !== loadedTrackId) {
+        session.currentTrackDurationMs = undefined;
+      }
 
       const requestedDj =
         state.djUsername != null && String(state.djUsername).trim() !== ""
@@ -171,9 +186,33 @@ export default apiHandler(
       // Re-read so a queue write that landed during this request is not
       // replaced by the playback snapshot we loaded at the start.
       const latest = await getSession(sessionId, redis);
-      if (latest) {
+      if (
+        latest &&
+        incomingSyncIsStaleAdvance({
+          loadedTrackId,
+          djTrackId: nextTrackId,
+          latestTrackId: latest.currentTrackId,
+          loadedSyncAt,
+          latestSyncAt: latest.lastSyncAt,
+        })
+      ) {
+        session.currentTrackId = latest.currentTrackId;
+        session.currentTrackMeta = latest.currentTrackMeta;
+        session.isPlaying = latest.isPlaying;
+        session.positionMs = latest.positionMs;
+        session.lastSyncAt = latest.lastSyncAt;
+        session.currentTrackDurationMs = latest.currentTrackDurationMs;
+        session.lyricOffsets = normalizeLyricOffsetMap(latest.lyricOffsets);
         session.queue = normalizeListenQueue(latest.queue);
         session.queueVersion = latest.queueVersion ?? 0;
+        session.acceptedEndTrackId = latest.acceptedEndTrackId;
+      } else if (latest) {
+        session.queue = normalizeListenQueue(latest.queue);
+        session.queueVersion = latest.queueVersion ?? 0;
+        session.lyricOffsets = normalizeLyricOffsetMap(
+          latest.lyricOffsets ?? session.lyricOffsets
+        );
+        session.acceptedEndTrackId = latest.acceptedEndTrackId ?? session.acceptedEndTrackId;
       }
 
       await setSession(sessionId, session, redis, { registerInIndex: false });
@@ -193,9 +232,11 @@ export default apiHandler(
         listenerCount,
         sourceUsername: username,
         sourceClientInstanceId: callerClientId,
-        queue: normalizeListenQueue(session.queue),
-        queueVersion: session.queueVersion ?? 0,
-      });
+          queue: normalizeListenQueue(session.queue),
+          queueVersion: session.queueVersion ?? 0,
+          durationMs: session.currentTrackDurationMs,
+          lyricOffsets: normalizeLyricOffsetMap(session.lyricOffsets),
+        });
 
       logger.info("Listen session synced", {
         sessionId,

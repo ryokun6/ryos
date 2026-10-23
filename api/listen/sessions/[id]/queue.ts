@@ -34,6 +34,7 @@ import {
   normalizeClientInstanceId,
 } from "../../_helpers/_client-instance.js";
 import { broadcastQueue, broadcastSync } from "../../_helpers/_pusher.js";
+import { redisKeys } from "../../../../src/shared/redisKeys.js";
 
 const bodySchema = z.object({
   username: z.string().optional(),
@@ -43,6 +44,7 @@ const bodySchema = z.object({
   title: z.string().optional(),
   artist: z.string().optional(),
   entryId: z.string().optional(),
+  endedTrackId: z.string().max(80).optional(),
 });
 
 function commandFromBody(
@@ -62,7 +64,8 @@ function commandFromBody(
     return { op: body.op, entryId: body.entryId ?? "" };
   }
   if (body.op === "advance") {
-    return { op: "advance" };
+    const endedTrackId = body.endedTrackId?.trim();
+    return endedTrackId ? { op: "advance", endedTrackId } : { op: "advance" };
   }
   return null;
 }
@@ -153,12 +156,39 @@ export default apiHandler(
         return;
       }
 
+      const endedTrackId =
+        command.op === "advance" ? command.endedTrackId : undefined;
+      if (endedTrackId) {
+        const lockKey = redisKeys.session.listenAdvance(sessionId, endedTrackId);
+        const locked = await redis.set(lockKey, "1", { nx: true, ex: 30 });
+        if (!locked) {
+          const latest = await getSession(sessionId, redis);
+          const moved = latest != null && latest.currentTrackId !== endedTrackId;
+          logger.response(200, Date.now() - startTime);
+          res.status(200).json({
+            success: true,
+            queue: latest?.queue ?? session.queue ?? [],
+            queueVersion: latest?.queueVersion ?? session.queueVersion ?? 0,
+            advanced: false,
+            item: null,
+            alreadyAdvanced: moved,
+            pending: !moved,
+          });
+          return;
+        }
+      }
+
+      const fresh = endedTrackId ? await getSession(sessionId, redis) : session;
+      const working = fresh ?? session;
       const result = applyListenQueueCommand(
-        session,
+        working,
         { username, clientInstanceId },
         command,
         getCurrentTimestamp()
       );
+      if (endedTrackId && !result.ok) {
+        await redis.del(redisKeys.session.listenAdvance(sessionId, endedTrackId));
+      }
 
       if (!result.ok) {
         logger.response(result.status, Date.now() - startTime);
@@ -166,20 +196,27 @@ export default apiHandler(
         return;
       }
 
+      const acceptEnd =
+        Boolean(endedTrackId) && (result.advanced || result.libraryFallback === true);
+      if (acceptEnd && endedTrackId) {
+        working.acceptedEndTrackId = endedTrackId;
+      }
       if (result.changed) {
-        session.queue = result.queue;
-        session.queueVersion = result.queueVersion;
+        working.queue = result.queue;
+        working.queueVersion = result.queueVersion;
         if (result.advanced && result.item) {
-          session.currentTrackId = result.currentTrackId ?? result.item.trackId;
-          session.currentTrackMeta = result.currentTrackMeta ?? {
+          working.currentTrackId = result.currentTrackId ?? result.item.trackId;
+          working.currentTrackMeta = result.currentTrackMeta ?? {
             title: result.item.title,
             ...(result.item.artist ? { artist: result.item.artist } : {}),
           };
-          session.isPlaying = true;
-          session.positionMs = 0;
-          session.lastSyncAt = getCurrentTimestamp();
+          working.isPlaying = true;
+          working.positionMs = 0;
+          working.lastSyncAt = getCurrentTimestamp();
         }
-        await setSession(sessionId, session, redis, { registerInIndex: false });
+      }
+      if (result.changed || acceptEnd) {
+        await setSession(sessionId, working, redis, { registerInIndex: false });
       }
 
       const queue = result.queue;
@@ -192,22 +229,24 @@ export default apiHandler(
 
       if (result.advanced && result.item) {
         const listenerCount =
-          session.users.length + (session.anonymousListeners?.length ?? 0);
+          working.users.length + (working.anonymousListeners?.length ?? 0);
         await broadcastSync(sessionId, {
-          currentTrackId: session.currentTrackId,
-          currentTrackMeta: session.currentTrackMeta,
-          isPlaying: session.isPlaying,
-          positionMs: session.positionMs,
-          timestamp: session.lastSyncAt,
-          hostUsername: session.hostUsername,
-          hostClientInstanceId: session.hostClientInstanceId,
-          djUsername: session.djUsername,
-          djClientInstanceId: session.djClientInstanceId,
+          currentTrackId: working.currentTrackId,
+          currentTrackMeta: working.currentTrackMeta,
+          isPlaying: working.isPlaying,
+          positionMs: working.positionMs,
+          timestamp: working.lastSyncAt,
+          hostUsername: working.hostUsername,
+          hostClientInstanceId: working.hostClientInstanceId,
+          djUsername: working.djUsername,
+          djClientInstanceId: working.djClientInstanceId,
           listenerCount,
           sourceUsername: username,
           sourceClientInstanceId: clientInstanceId,
           queue,
           queueVersion,
+          durationMs: working.currentTrackDurationMs,
+          lyricOffsets: working.lyricOffsets,
         });
       }
 
@@ -225,6 +264,10 @@ export default apiHandler(
         queueVersion,
         advanced: result.advanced,
         item: result.item ?? null,
+        alreadyAdvanced: result.alreadyAdvanced ?? false,
+        libraryFallback: result.libraryFallback ?? false,
+        djStale: result.djStale ?? false,
+        pending: false,
       });
     } catch (error) {
       logger.error("Failed to update listen queue", error);
