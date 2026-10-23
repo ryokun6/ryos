@@ -14,6 +14,8 @@ export function IpodDeviceBody({ c }: IpodDeviceBodyProps) {
     scale,
     handleWheelClick,
     handleWheelRotation,
+    handleWheelGestureEnd,
+    handleSectorHold,
     handleMenuButton,
     handleCenterLongPress,
   } = c;
@@ -47,6 +49,8 @@ export function IpodDeviceBody({ c }: IpodDeviceBodyProps) {
           theme={theme}
           onWheelClick={handleWheelClick}
           onWheelRotation={handleWheelRotation}
+          onWheelGestureEnd={handleWheelGestureEnd}
+          onSectorHold={handleSectorHold}
           onMenuButton={handleMenuButton}
           onCenterLongPress={handleCenterLongPress}
         />

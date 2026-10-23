@@ -359,6 +359,8 @@ interface IpodData {
   displayMode: DisplayMode;
   backlightOn: boolean;
   backlightTimeout: IpodBacklightTimeout;
+  /** Click-wheel tick sound. Missing values stay on. */
+  clickerEnabled: boolean;
   theme: "classic" | "black" | "u2";
   /**
    * On-screen UI variant for the iPod display.
@@ -532,6 +534,7 @@ const initialIpodData: IpodData = {
   displayMode: DisplayMode.Video,
   backlightOn: true,
   backlightTimeout: "2s",
+  clickerEnabled: true,
   theme: "classic",
   uiVariant: "modern",
   lcdFilterOn: true,
@@ -639,6 +642,7 @@ export interface IpodState extends IpodData {
   setDisplayMode: (mode: DisplayMode) => void;
   toggleBacklight: () => void;
   setBacklightTimeout: (timeout: IpodBacklightTimeout) => void;
+  setClickerEnabled: (enabled: boolean) => void;
   toggleLcdFilter: () => void;
   toggleFullScreen: () => void;
   setTheme: (theme: "classic" | "black" | "u2") => void;
@@ -948,7 +952,7 @@ export function navigateActiveIpodTrack(
   }
 }
 
-const CURRENT_IPOD_STORE_VERSION = 43; // Add Chinese Zhuyin pronunciation option
+const CURRENT_IPOD_STORE_VERSION = 44; // Clicker on/off for the wheel tick
 
 type PersistedIpodData = Partial<IpodData> & Record<string, unknown>;
 
@@ -1087,6 +1091,10 @@ export function sanitizePersistedIpodStateForRehydrate(
   }
 
   state.romanization = sanitizeRomanizationSettings(state.romanization);
+
+  if ("clickerEnabled" in state && typeof state.clickerEnabled !== "boolean") {
+    delete state.clickerEnabled;
+  }
 
   return state;
 }
@@ -1335,6 +1343,7 @@ export const useIpodStore = create<IpodState>()(
       toggleBacklight: () =>
         set((state) => ({ backlightOn: !state.backlightOn })),
       setBacklightTimeout: (timeout) => set({ backlightTimeout: timeout }),
+      setClickerEnabled: (enabled) => set({ clickerEnabled: enabled }),
       toggleLcdFilter: () =>
         set((state) => ({ lcdFilterOn: !state.lcdFilterOn })),
       toggleFullScreen: () =>
@@ -2635,6 +2644,7 @@ export const useIpodStore = create<IpodState>()(
         loopCurrent: state.loopCurrent,
         isShuffled: state.isShuffled,
         backlightTimeout: state.backlightTimeout,
+        clickerEnabled: state.clickerEnabled,
         theme: state.theme,
         uiVariant: state.uiVariant,
         lcdFilterOn: state.lcdFilterOn,
@@ -2745,6 +2755,7 @@ if (import.meta.hot) {
       appleMusicStorefrontId: s.appleMusicStorefrontId,
       ipodMenuBreadcrumb: s.ipodMenuBreadcrumb,
       ipodMenuMode: s.ipodMenuMode,
+      clickerEnabled: s.clickerEnabled,
     };
     (data as { [HMR_KEY]?: Partial<IpodData> })[HMR_KEY] = snapshot;
   });

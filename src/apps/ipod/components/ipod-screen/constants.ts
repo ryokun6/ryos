@@ -73,15 +73,33 @@ export const MODERN_NOW_PLAYING_REFLECT_RATIO = 0.3;
 /** Shared clip radius for modern now-playing sleeve + reflection (modern skin only). */
 export const MODERN_NOW_PLAYING_COVER_BORDER_RADIUS_PX = 0;
 
-// Animation variants for menu transitions
+import type { MenuSlideCustom } from "./useMenuSlideTransition";
+
+function slideDirection(
+  custom: MenuSlideCustom | "forward" | "backward"
+): "forward" | "backward" {
+  return typeof custom === "string" ? custom : custom.direction;
+}
+
+function slideFromPercent(custom: MenuSlideCustom | "forward" | "backward"): number {
+  if (typeof custom === "string") return custom === "forward" ? 100 : -100;
+  return custom.fromPercent;
+}
+
+// Animation variants for menu transitions. A full-width trip is 240ms;
+// `fromPercent` shortens a reversal that starts mid-slide.
 export const menuVariants = {
-  enter: (direction: "forward" | "backward") => ({
-    x: direction === "forward" ? "100%" : "-100%",
+  enter: (custom: MenuSlideCustom | "forward" | "backward") => ({
+    x: `${slideFromPercent(custom)}%`,
   }),
   center: {
     x: 0,
   },
-  exit: (direction: "forward" | "backward") => ({
-    x: direction === "forward" ? "-100%" : "100%",
-  }),
+  exit: (custom: MenuSlideCustom | "forward" | "backward") => {
+    const direction = slideDirection(custom);
+    const rtl =
+      typeof document !== "undefined" && document.documentElement.dir === "rtl";
+    const sign = (direction === "forward" ? -1 : 1) * (rtl ? -1 : 1);
+    return { x: `${sign * 100}%` };
+  },
 };

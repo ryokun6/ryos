@@ -37,6 +37,9 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
     activityState,
     appleMusicMenuTitlebarLoading,
     fastScrollLetter,
+    volumeOverlayVisible,
+    scrubPreviewSeconds,
+    scrubbing,
     isCoverFlowOpen,
     isMusicQuizOpen,
     setIsMusicQuizOpen,
@@ -152,6 +155,9 @@ export function IpodScreenArea({ c }: IpodScreenAreaProps) {
         activityState={activityState}
         appleMusicMenuTitlebarLoading={appleMusicMenuTitlebarLoading}
         fastScrollLetter={fastScrollLetter}
+        showVolumeOverlay={volumeOverlayVisible}
+        scrubPreviewSeconds={scrubPreviewSeconds}
+        scrubbing={scrubbing}
         isCoverFlowOpen={isCoverFlowOpen}
         coverFlowSlot={
           isModernIpodUi ? (

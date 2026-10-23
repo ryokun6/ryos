@@ -1,23 +1,36 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-
-type WheelArea = "top" | "right" | "bottom" | "left" | "center";
-type RotationDirection = "clockwise" | "counterclockwise";
+import { ROTATION_STEP_DEG } from "../constants";
+import type { WheelArea, WheelRotationSample } from "../types";
+import {
+  ACCEL_GAP_RESET_MS,
+  applyReversalHysteresis,
+  CENTER_HOLD_MS,
+  centerPressDown,
+  centerPressHeld,
+  centerPressReleased,
+  HOLD_SEEK_REPEAT_MS,
+  initialReversalState,
+  segmentPassesNearHub,
+  smoothWheelSpeed,
+  type CenterGesturePhase,
+  type ReversalState,
+} from "../utils/wheelGesture";
 
 interface IpodWheelProps {
   theme: string;
   onWheelClick: (area: WheelArea) => void;
-  onWheelRotation: (direction: RotationDirection) => void;
+  onWheelRotation: (sample: WheelRotationSample) => void;
+  onWheelGestureEnd?: () => void;
+  /** Prev/next sector hold. `start` fires after the long-press delay, then `repeat`. */
+  onSectorHold?: (area: "left" | "right", phase: "start" | "repeat" | "end") => void;
   onMenuButton: () => void;
   onCenterLongPress?: () => void;
 }
 
-// Long press delay in milliseconds
-const LONG_PRESS_DELAY = 500;
-
 // How many degrees of wheel rotation should equal one scroll step
-const rotationStepDeg = 15; // increase this value to reduce sensitivity
+const rotationStepDeg = ROTATION_STEP_DEG;
 
 // Minimum movement to be considered a drag (not a tap)
 // This is intentionally smaller than rotationStepDeg to catch scrolling intent early
@@ -28,6 +41,8 @@ export function IpodWheel({
   theme,
   onWheelClick,
   onWheelRotation,
+  onWheelGestureEnd,
+  onSectorHold,
   onMenuButton,
   onCenterLongPress,
 }: IpodWheelProps) {
@@ -40,6 +55,11 @@ export function IpodWheel({
   // Refs for tracking continuous touch rotation
   const lastAngleRef = useRef<number | null>(null); // Last touch angle in radians
   const rotationAccumulatorRef = useRef(0); // Accumulated rotation in radians
+  const gestureTravelDegRef = useRef(0);
+  const reversalRef = useRef<ReversalState>(initialReversalState());
+  const speedRef = useRef<number | null>(null);
+  const lastMoveAtRef = useRef<number | null>(null);
+  const lastOffsetRef = useRef<{ x: number; y: number } | null>(null);
 
   // Track whether the user is currently dragging (mouse down + move)
   const isDraggingRef = useRef(false);
@@ -58,52 +78,101 @@ export function IpodWheel({
   // Track if we're currently in a mouse drag to prevent button clicks
   const isInMouseDragRef = useRef(false);
 
-  // Long press handling for center button
-  const centerLongPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const centerLongPressFiredRef = useRef(false);
-  const centerTouchActiveRef = useRef(false);
-  const centerTouchHandledRef = useRef(false);
+  // Center button: short press selects, hold opens the Now Playing menu.
+  // Release after the hold must not also select. One pointer/keyboard path.
+  const centerPhaseRef = useRef<CenterGesturePhase>("idle");
+  const centerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const centerPointerIdRef = useRef<number | null>(null);
+  const onCenterLongPressRef = useRef(onCenterLongPress);
+  const onWheelClickRef = useRef(onWheelClick);
+  onCenterLongPressRef.current = onCenterLongPress;
+  onWheelClickRef.current = onWheelClick;
 
-  const clearCenterLongPress = () => {
-    if (centerLongPressTimerRef.current) {
-      clearTimeout(centerLongPressTimerRef.current);
-      centerLongPressTimerRef.current = null;
+  const sectorHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sectorHoldIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sectorHoldAreaRef = useRef<"left" | "right" | null>(null);
+  const sectorHoldFiredRef = useRef(false);
+  const onSectorHoldRef = useRef(onSectorHold);
+  const onWheelGestureEndRef = useRef(onWheelGestureEnd);
+  onSectorHoldRef.current = onSectorHold;
+  onWheelGestureEndRef.current = onWheelGestureEnd;
+
+  const clearCenterTimer = () => {
+    if (centerTimerRef.current) {
+      clearTimeout(centerTimerRef.current);
+      centerTimerRef.current = null;
     }
   };
 
-  const startCenterLongPress = (isTouch: boolean) => {
-    clearCenterLongPress();
-    centerLongPressFiredRef.current = false;
-    if (isTouch) {
-      centerTouchActiveRef.current = true;
-      centerTouchHandledRef.current = false;
-    }
-    if (onCenterLongPress) {
-      centerLongPressTimerRef.current = setTimeout(() => {
-        centerLongPressFiredRef.current = true;
-        centerTouchHandledRef.current = true;
-        onCenterLongPress();
-      }, LONG_PRESS_DELAY);
-    }
+  const beginCenterPress = () => {
+    if (centerPhaseRef.current !== "idle") return;
+    clearCenterTimer();
+    // A center press must not also arm prev/next hold-seek.
+    finishSectorHold(false);
+    centerPhaseRef.current = centerPressDown();
+    centerTimerRef.current = setTimeout(() => {
+      centerTimerRef.current = null;
+      const held = centerPressHeld(centerPhaseRef.current);
+      centerPhaseRef.current = held.phase;
+      if (held.openMenu) onCenterLongPressRef.current?.();
+    }, CENTER_HOLD_MS);
   };
 
-  const endCenterLongPress = (isTouch: boolean, triggerClick: boolean = false) => {
-    clearCenterLongPress();
-    
-    // For touch events, handle the tap here instead of relying on onClick
-    if (isTouch && triggerClick && !centerLongPressFiredRef.current && !centerTouchHandledRef.current) {
-      centerTouchHandledRef.current = true;
-      onWheelClick("center");
-    }
-    
-    if (isTouch) {
-      // Reset touch state after a delay to block any synthetic click
-      setTimeout(() => {
-        centerTouchActiveRef.current = false;
-        centerTouchHandledRef.current = false;
-      }, 400);
-    }
+  const endCenterPress = () => {
+    clearCenterTimer();
+    centerPointerIdRef.current = null;
+    const released = centerPressReleased(centerPhaseRef.current);
+    centerPhaseRef.current = released.phase;
+    if (released.select) onWheelClickRef.current("center");
   };
+
+  const cancelCenterPress = () => {
+    clearCenterTimer();
+    centerPointerIdRef.current = null;
+    centerPhaseRef.current = "idle";
+  };
+
+  const finishSectorHold = (emitEnd: boolean): boolean => {
+    if (sectorHoldTimerRef.current) {
+      clearTimeout(sectorHoldTimerRef.current);
+      sectorHoldTimerRef.current = null;
+    }
+    if (sectorHoldIntervalRef.current) {
+      clearInterval(sectorHoldIntervalRef.current);
+      sectorHoldIntervalRef.current = null;
+    }
+    const fired = sectorHoldFiredRef.current;
+    const area = sectorHoldAreaRef.current;
+    sectorHoldFiredRef.current = false;
+    sectorHoldAreaRef.current = null;
+    if (emitEnd && fired && area) onSectorHoldRef.current?.(area, "end");
+    return fired;
+  };
+
+  const armSectorHold = (area: WheelArea) => {
+    if ((area !== "left" && area !== "right") || !onSectorHoldRef.current) return;
+    finishSectorHold(false);
+    sectorHoldAreaRef.current = area;
+    sectorHoldFiredRef.current = false;
+    sectorHoldTimerRef.current = setTimeout(() => {
+      sectorHoldTimerRef.current = null;
+      const held = sectorHoldAreaRef.current;
+      if (!held) return;
+      sectorHoldFiredRef.current = true;
+      onSectorHoldRef.current?.(held, "start");
+      sectorHoldIntervalRef.current = setInterval(() => {
+        const repeating = sectorHoldAreaRef.current;
+        if (repeating) onSectorHoldRef.current?.(repeating, "repeat");
+      }, HOLD_SEEK_REPEAT_MS);
+    }, CENTER_HOLD_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      finishSectorHold(false);
+      clearCenterTimer();
+    };
+  }, []);
 
   const getWheelCenter = (): { x: number; y: number } | null => {
     if (!wheelRef.current) return null;
@@ -112,6 +181,33 @@ export function IpodWheel({
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
     };
+  };
+
+  const wheelRadius = (): number => {
+    const rect = wheelRef.current?.getBoundingClientRect();
+    if (!rect) return 90;
+    return Math.max(rect.width, rect.height) / 2;
+  };
+
+  const offsetFromCenter = (x: number, y: number): { x: number; y: number } | null => {
+    const center = getWheelCenter();
+    if (!center) return null;
+    return { x: x - center.x, y: y - center.y };
+  };
+
+  const resetGestureFilters = () => {
+    reversalRef.current = initialReversalState();
+    speedRef.current = null;
+    lastMoveAtRef.current = null;
+    lastOffsetRef.current = null;
+    gestureTravelDegRef.current = 0;
+    rotationAccumulatorRef.current = 0;
+    lastAngleRef.current = null;
+  };
+
+  const endWheelGesture = () => {
+    resetGestureFilters();
+    onWheelGestureEndRef.current?.();
   };
 
   // Calculate angle (in degrees) from the center of the wheel – used for click areas
@@ -152,6 +248,101 @@ export function IpodWheel({
     return distance <= 32;
   };
 
+  const beginRingGesture = (x: number, y: number) => {
+    const angleRad = getAngleFromCenterRad(x, y);
+    lastAngleRef.current = angleRad;
+    rotationAccumulatorRef.current = 0;
+    gestureTravelDegRef.current = 0;
+    reversalRef.current = initialReversalState();
+    speedRef.current = null;
+    lastMoveAtRef.current = performance.now();
+    lastOffsetRef.current = offsetFromCenter(x, y);
+    armSectorHold(getWheelSection(getAngleFromCenterDeg(x, y)));
+  };
+
+  const noteDrag = (distance: number, draggingRef: { current: boolean }, guardRef: { current: boolean }) => {
+    if (draggingRef.current) return;
+    if (
+      gestureTravelDegRef.current > dragDetectionDeg ||
+      distance > dragDetectionDistance
+    ) {
+      draggingRef.current = true;
+      guardRef.current = true;
+    }
+  };
+
+  // Apply one pointer sample: drop hub crossings, gate reversals, then emit 15° quanta.
+  const applyPointerSample = (x: number, y: number) => {
+    if (lastAngleRef.current === null) return;
+    const now = performance.now();
+    const currentAngleRad = getAngleFromCenterRad(x, y);
+    const nextOffset = offsetFromCenter(x, y);
+    const prevOffset = lastOffsetRef.current;
+    if (
+      nextOffset &&
+      prevOffset &&
+      segmentPassesNearHub(prevOffset, nextOffset, wheelRadius())
+    ) {
+      lastOffsetRef.current = nextOffset;
+      lastAngleRef.current = currentAngleRad;
+      lastMoveAtRef.current = now;
+      return;
+    }
+    if (nextOffset) lastOffsetRef.current = nextOffset;
+
+    let delta = currentAngleRad - lastAngleRef.current;
+    if (delta > Math.PI) delta -= 2 * Math.PI;
+    if (delta < -Math.PI) delta += 2 * Math.PI;
+    lastAngleRef.current = currentAngleRad;
+
+    const filtered = applyReversalHysteresis(
+      reversalRef.current,
+      (delta * 180) / Math.PI
+    );
+    reversalRef.current = filtered.state;
+    const accepted = filtered.acceptedDeltaDeg;
+    if (accepted === 0) {
+      lastMoveAtRef.current = now;
+      return;
+    }
+
+    const dt =
+      lastMoveAtRef.current == null
+        ? 16
+        : Math.max(1, now - lastMoveAtRef.current);
+    lastMoveAtRef.current = now;
+    if (dt > ACCEL_GAP_RESET_MS) speedRef.current = null;
+    const smoothed = smoothWheelSpeed(
+      speedRef.current,
+      (Math.abs(accepted) / dt) * 1000
+    );
+    speedRef.current = smoothed;
+    gestureTravelDegRef.current += Math.abs(accepted);
+    rotationAccumulatorRef.current += (accepted * Math.PI) / 180;
+
+    const threshold = (rotationStepDeg * Math.PI) / 180;
+    const emitQuantum = (direction: "clockwise" | "counterclockwise") => {
+      // A real click of the wheel ends hold-seek. Jitter below one quantum
+      // must not, or a slightly unsteady hold never starts seeking.
+      if (sectorHoldAreaRef.current) {
+        finishSectorHold(sectorHoldFiredRef.current);
+      }
+      onWheelRotation({
+        direction,
+        degrees: rotationStepDeg,
+        speedDegPerSec: smoothed,
+      });
+    };
+    while (rotationAccumulatorRef.current > threshold) {
+      emitQuantum("clockwise");
+      rotationAccumulatorRef.current -= threshold;
+    }
+    while (rotationAccumulatorRef.current < -threshold) {
+      emitQuantum("counterclockwise");
+      rotationAccumulatorRef.current += threshold;
+    }
+  };
+
   // Handle touch start
   const handleTouchStart = (e: React.TouchEvent) => {
     // Prevent the browser from interpreting this touch as a scroll/zoom gesture
@@ -164,11 +355,9 @@ export function IpodWheel({
       return;
     }
 
-    const angleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
-    lastAngleRef.current = angleRad;
-    rotationAccumulatorRef.current = 0;
     isTouchDraggingRef.current = false;
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    beginRingGesture(touch.clientX, touch.clientY);
   };
 
   // Handle touch move
@@ -179,48 +368,24 @@ export function IpodWheel({
     if (lastAngleRef.current === null) return;
 
     const touch = e.touches[0];
-    const currentAngleRad = getAngleFromCenterRad(touch.clientX, touch.clientY);
+    applyPointerSample(touch.clientX, touch.clientY);
 
-    // Calculate shortest angular difference (-π, π]
-    let delta = currentAngleRad - lastAngleRef.current;
-    if (delta > Math.PI) delta -= 2 * Math.PI;
-    if (delta < -Math.PI) delta += 2 * Math.PI;
-
-    rotationAccumulatorRef.current += delta;
-    lastAngleRef.current = currentAngleRad;
-
-    const threshold = (rotationStepDeg * Math.PI) / 180; // convert step to radians
-    const dragThreshold = (dragDetectionDeg * Math.PI) / 180; // smaller threshold for drag detection
-
-    // Check for drag intent using either rotation or distance
-    if (!isTouchDraggingRef.current && touchStartPosRef.current) {
+    if (touchStartPosRef.current) {
       const dx = touch.clientX - touchStartPosRef.current.x;
       const dy = touch.clientY - touchStartPosRef.current.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      
-      // Detect drag if rotation exceeds threshold OR distance exceeds threshold
-      if (Math.abs(rotationAccumulatorRef.current) > dragThreshold || distance > dragDetectionDistance) {
-        isTouchDraggingRef.current = true;
-        isInTouchDragRef.current = true;
-      }
-    }
-
-    // Trigger rotation events when threshold exceeded
-    while (rotationAccumulatorRef.current > threshold) {
-      onWheelRotation("clockwise");
-      rotationAccumulatorRef.current -= threshold;
-    }
-
-    while (rotationAccumulatorRef.current < -threshold) {
-      onWheelRotation("counterclockwise");
-      rotationAccumulatorRef.current += threshold;
+      noteDrag(
+        Math.hypot(dx, dy),
+        isTouchDraggingRef,
+        isInTouchDragRef
+      );
     }
   };
 
   // Handle touch end
   const handleTouchEnd = () => {
+    const held = finishSectorHold(true);
     // If the user didn't drag beyond the threshold, treat as a tap on a wheel section
-    if (!isTouchDraggingRef.current && touchStartPosRef.current) {
+    if (!held && !isTouchDraggingRef.current && touchStartPosRef.current) {
       // Use the starting touch position to determine which section was tapped
       const angleDeg = getAngleFromCenterDeg(
         touchStartPosRef.current.x,
@@ -236,11 +401,9 @@ export function IpodWheel({
       }, 500);
     }
 
-    // Reset all touch tracking refs
-    lastAngleRef.current = null;
-    rotationAccumulatorRef.current = 0;
     isTouchDraggingRef.current = false;
     touchStartPosRef.current = null;
+    endWheelGesture();
 
     // Clear the touch drag flag with a small delay to prevent clicks
     if (isInTouchDragRef.current) {
@@ -255,13 +418,14 @@ export function IpodWheel({
     // Accumulate delta and only trigger when it reaches threshold
     wheelDeltaRef.current += Math.abs(e.deltaY);
 
-    // Using a threshold of 50 to reduce sensitivity
+    // Using a threshold of 50 to reduce sensitivity.
+    // Speed stays 0 so a trackpad tick never enters the fast row tiers.
     if (wheelDeltaRef.current >= 50) {
-      if (e.deltaY < 0) {
-        onWheelRotation("counterclockwise");
-      } else {
-        onWheelRotation("clockwise");
-      }
+      onWheelRotation({
+        direction: e.deltaY < 0 ? "counterclockwise" : "clockwise",
+        degrees: rotationStepDeg,
+        speedDegPerSec: 0,
+      });
       // Reset delta after triggering action
       wheelDeltaRef.current = 0;
     }
@@ -280,57 +444,22 @@ export function IpodWheel({
     // Prevent default text selection behaviour while dragging
     e.preventDefault();
 
-    // Initialise rotation tracking
-    const startAngleRad = getAngleFromCenterRad(e.clientX, e.clientY);
     const startX = e.clientX;
     const startY = e.clientY;
-    lastAngleRef.current = startAngleRad;
-    rotationAccumulatorRef.current = 0;
+    // The hub is the center button. A press there must not become a MENU
+    // sector click (the angle at the top of the hub is the menu sector).
+    if (isTouchInCenter(startX, startY)) {
+      return;
+    }
     isDraggingRef.current = false;
-
-    const threshold = (rotationStepDeg * Math.PI) / 180; // rad
-    const dragThreshold = (dragDetectionDeg * Math.PI) / 180; // smaller threshold for drag detection
+    beginRingGesture(startX, startY);
 
     // Mouse move handler (attached to window so it continues even if we leave the wheel)
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (lastAngleRef.current === null) return;
-
-      const currentAngleRad = getAngleFromCenterRad(
-        moveEvent.clientX,
-        moveEvent.clientY
-      );
-
-      // Shortest angular difference
-      let delta = currentAngleRad - lastAngleRef.current;
-      if (delta > Math.PI) delta -= 2 * Math.PI;
-      if (delta < -Math.PI) delta += 2 * Math.PI;
-
-      rotationAccumulatorRef.current += delta;
-      lastAngleRef.current = currentAngleRad;
-
-      // Check for drag intent using either rotation or distance
-      if (!isDraggingRef.current) {
-        const dx = moveEvent.clientX - startX;
-        const dy = moveEvent.clientY - startY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // Detect drag if rotation exceeds threshold OR distance exceeds threshold
-        if (Math.abs(rotationAccumulatorRef.current) > dragThreshold || distance > dragDetectionDistance) {
-          isDraggingRef.current = true;
-          isInMouseDragRef.current = true;
-        }
-      }
-
-      // Emit rotation events whenever accumulated rotation crosses threshold
-      while (rotationAccumulatorRef.current > threshold) {
-        onWheelRotation("clockwise");
-        rotationAccumulatorRef.current -= threshold;
-      }
-
-      while (rotationAccumulatorRef.current < -threshold) {
-        onWheelRotation("counterclockwise");
-        rotationAccumulatorRef.current += threshold;
-      }
+      applyPointerSample(moveEvent.clientX, moveEvent.clientY);
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      noteDrag(Math.hypot(dx, dy), isDraggingRef, isInMouseDragRef);
     };
 
     // Mouse up handler – determine if it was a click or a drag
@@ -338,8 +467,9 @@ export function IpodWheel({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
 
+      const held = finishSectorHold(true);
       // If the user didn't drag beyond the threshold, treat as a click on a wheel section
-      if (!isDraggingRef.current) {
+      if (!held && !isDraggingRef.current) {
         // Only trigger wheel click if the interaction did NOT originate from the MENU label
         if (!fromMenuLabelRef.current) {
           const angleDeg = getAngleFromCenterDeg(
@@ -351,11 +481,9 @@ export function IpodWheel({
         }
       }
 
-      // Reset refs
-      lastAngleRef.current = null;
-      rotationAccumulatorRef.current = 0;
       isDraggingRef.current = false;
       fromMenuLabelRef.current = false;
+      endWheelGesture();
       
       // Clear the mouse drag flag with a small delay to prevent clicks
       if (isInMouseDragRef.current) {
@@ -386,53 +514,43 @@ export function IpodWheel({
         role="button"
         tabIndex={0}
         aria-label={t("apps.ipod.ariaLabels.select")}
-        onClick={(e) => {
-          // Block clicks only during active touch (centerTouchActiveRef has 400ms timeout)
-          if (centerTouchActiveRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-          // Don't trigger click if long press was fired
-          if (centerLongPressFiredRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            centerLongPressFiredRef.current = false;
-            return;
-          }
-          if (recentTouchRef.current || isInTouchDragRef.current) return;
-          onWheelClick("center");
+        onPointerDown={(e) => {
+          if (e.button !== 0 || centerPhaseRef.current !== "idle") return;
+          e.stopPropagation();
+          e.preventDefault();
+          centerPointerIdRef.current = e.pointerId;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          beginCenterPress();
+        }}
+        onPointerUp={(e) => {
+          if (e.button !== 0) return;
+          if (centerPointerIdRef.current != null && e.pointerId !== centerPointerIdRef.current) return;
+          endCenterPress();
+        }}
+        onPointerCancel={() => {
+          cancelCenterPress();
         }}
         onKeyDown={(e) => {
           if (recentTouchRef.current || isInTouchDragRef.current || isInMouseDragRef.current) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onWheelClick("center");
-          }
-        }}
-        onMouseDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
           e.stopPropagation();
-          startCenterLongPress(false);
+          if (e.repeat) return;
+          beginCenterPress();
         }}
-        onMouseUp={() => {
-          endCenterLongPress(false);
+        onKeyUp={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          endCenterPress();
         }}
-        onMouseLeave={() => {
-          endCenterLongPress(false);
-        }}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          startCenterLongPress(true);
-        }}
-        onTouchEnd={(e) => {
-          e.preventDefault(); // Always prevent to avoid synthetic click
-          endCenterLongPress(true, true); // Pass true to trigger click if appropriate
-        }}
-        onTouchCancel={() => {
-          endCenterLongPress(true, false);
+        onBlur={() => {
+          // Pointer capture can blur the button without ending the press.
+          // Only a keyboard focus loss should abandon the gesture.
+          if (centerPointerIdRef.current != null) return;
+          if (centerPhaseRef.current !== "idle") cancelCenterPress();
         }}
         className={cn(
-          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture",
+          "ipod-wheel-center absolute w-16 h-16 rounded-full z-10 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none select-none no-select-gesture touch-none",
           theme === "classic"
             ? "bg-white/30"
             : theme === "u2"

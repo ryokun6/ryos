@@ -50,7 +50,10 @@ import { useShallow } from "zustand/react/shallow";
 import { useIpodStoreShallow } from "@/stores/useIpodStore";
 import { shouldRestartTrackOnPrevious } from "@/shared/media/previousTrackBehavior";
 import { useAppStoreShallow } from "@/stores/useAppStore";
-import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
+import {
+  useAudioSettingsStore,
+  useAudioSettingsStoreShallow,
+} from "@/stores/useAudioSettingsStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
@@ -65,7 +68,6 @@ import {
 } from "@/utils/sharedUrl";
 import { onAppUpdate } from "@/utils/appEventBus";
 import {
-  SEEK_AMOUNT_SECONDS,
   IPOD_NOW_PLAYING_SONG_MENU_KEY as NOW_PLAYING_SONG_MENU_KEY,
   getAlbumGroupingKey,
   getArtistGroupingDisplayName,
@@ -76,7 +78,7 @@ import type {
   MenuHistoryEntry,
   MenuItem,
   WheelArea,
-  RotationDirection,
+  WheelRotationSample,
 } from "../types";
 import type { IpodInitialData } from "../../base/types";
 import type { CoverFlowRef } from "../components/cover-flow/types";
@@ -95,7 +97,22 @@ import {
   resolveAppleMusicPlaylistMenu,
 } from "../utils/appleMusicPlaylistMenu";
 import { getMenuMemoryKey, isNowPlayingSongMenu } from "../utils/menuIdentity";
-import { shouldPlayIpodWheelSound } from "../utils/wheelSound";
+import { planWheelClicks } from "../utils/wheelSound";
+import {
+  advanceScrubSession,
+  applyVolumeDegrees,
+  clampPlaybackSeconds,
+  commitScrubIfIdle,
+  initialAccelState,
+  initialScrubSession,
+  initialVolumeGestureState,
+  nextListRowCount,
+  SCRUB_COMMIT_IDLE_MS,
+  seekHoldStepSeconds,
+  VOLUME_OVERLAY_IDLE_MS,
+  type ScrubSession,
+  type VolumeGestureState,
+} from "../utils/wheelGesture";
 import { shouldEnableAppleMusicIntegration } from "../utils/appleMusicActivation";
 import { ipodLog } from "../logging";
 
@@ -131,12 +148,38 @@ export function useIpodLogic({
   const { play: playClickSound } = useSound(Sounds.BUTTON_CLICK);
   const { play: playScrollSoundSource } = useSound(Sounds.IPOD_CLICK_WHEEL);
   const lastScrollSoundAtRef = useRef<number | null>(null);
+  const pendingWheelClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clickerEnabledRef = useRef(true);
+  const scrubClickMutedRef = useRef(false);
+  const cancelPendingWheelClick = useCallback(() => {
+    if (pendingWheelClickTimerRef.current) {
+      clearTimeout(pendingWheelClickTimerRef.current);
+      pendingWheelClickTimerRef.current = null;
+    }
+  }, []);
   const playScrollSound = useCallback(() => {
+    if (scrubClickMutedRef.current) return;
     playHaptic("selection");
+    if (!clickerEnabledRef.current) return;
     const now = Date.now();
-    if (!shouldPlayIpodWheelSound(lastScrollSoundAtRef.current, now)) return;
-    lastScrollSoundAtRef.current = now;
-    void playScrollSoundSource();
+    const plan = planWheelClicks({
+      quanta: 1,
+      lastPlayedAt: lastScrollSoundAtRef.current,
+      now,
+      hasPending: pendingWheelClickTimerRef.current != null,
+    });
+    if (plan.playNow) {
+      lastScrollSoundAtRef.current = plan.nextLastPlayedAt;
+      void playScrollSoundSource();
+    }
+    if (plan.scheduleDelayMs != null) {
+      pendingWheelClickTimerRef.current = setTimeout(() => {
+        pendingWheelClickTimerRef.current = null;
+        if (scrubClickMutedRef.current || !clickerEnabledRef.current) return;
+        lastScrollSoundAtRef.current = Date.now();
+        void playScrollSoundSource();
+      }, plan.scheduleDelayMs);
+    }
   }, [playScrollSoundSource]);
   const vibrateWeb = useVibration(100, 50);
   const vibrate = useCallback(() => {
@@ -196,6 +239,8 @@ export function useIpodLogic({
     toggleVideo,
     toggleBacklight,
     setBacklightTimeout,
+    clickerEnabled,
+    setClickerEnabled,
     setTheme,
     setUiVariant,
     clearLibrary,
@@ -211,6 +256,8 @@ export function useIpodLogic({
   } = useIpodStoreShallow((s) => ({
     theme: s.theme,
     backlightTimeout: s.backlightTimeout,
+    clickerEnabled: s.clickerEnabled,
+    setClickerEnabled: s.setClickerEnabled,
     lcdFilterOn: s.lcdFilterOn,
     displayMode: s.displayMode ?? DisplayMode.Video,
     showLyrics: s.showLyrics,
@@ -705,6 +752,17 @@ export function useIpodLogic({
       userHasInteractedRef.current = true;
     }
   }, [toggleBacklight, showStatus, registerActivity, menuLocale]);
+
+  clickerEnabledRef.current = clickerEnabled;
+
+  const memoizedToggleClicker = useCallback(() => {
+    const next = !useIpodStore.getState().clickerEnabled;
+    setClickerEnabled(next);
+    showStatus(
+      next ? t("apps.ipod.menuItems.on") : t("apps.ipod.menuItems.off")
+    );
+    registerActivity();
+  }, [setClickerEnabled, showStatus, registerActivity, menuLocale]);
 
   const memoizedCycleBacklightTimeout = useCallback(() => {
     const currentSetting = useIpodStore.getState().backlightTimeout;
@@ -2351,6 +2409,14 @@ export function useIpodLogic({
             : t("apps.ipod.menuItems.off"),
       },
       {
+        label: t("apps.ipod.menuItems.clicker"),
+        action: memoizedToggleClicker,
+        showChevron: false,
+        value: clickerEnabled
+          ? t("apps.ipod.menuItems.on")
+          : t("apps.ipod.menuItems.off"),
+      },
+      {
         label: t("apps.ipod.menuItems.theme"),
         action: memoizedHandleThemeChange,
         showChevron: false,
@@ -2403,6 +2469,8 @@ export function useIpodLogic({
     loopAll,
     isShuffled,
     backlightTimeout,
+    clickerEnabled,
+    memoizedToggleClicker,
     theme,
     uiVariant,
     memoizedToggleRepeat,
@@ -4236,7 +4304,8 @@ export function useIpodLogic({
     }
   }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browsableTracks, sortedBrowsableTracks, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
-  // Cover Flow handlers
+  // Center-button hold (and the LCD long-press) opens the Now Playing menu.
+  // A short center press does not come through here — that enters scrub.
   const handleCenterLongPress = useCallback(() => {
     playClickSound();
     vibrate();
@@ -4363,6 +4432,135 @@ export function useIpodLogic({
     playScrollSound();
   }, [playScrollSound]);
 
+  const [volumeOverlayVisible, setVolumeOverlayVisible] = useState(false);
+  const [scrubPreviewSeconds, setScrubPreviewSeconds] = useState<number | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
+  const scrubModeRef = useRef(false);
+  const scrubSessionRef = useRef<ScrubSession | null>(null);
+  const scrubCommitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeOverlayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeGestureRef = useRef<VolumeGestureState>(initialVolumeGestureState());
+  const volumeLastSetRef = useRef<number | null>(null);
+  const listAccelRef = useRef(initialAccelState());
+  const listAccelMenuKeyRef = useRef("");
+  const holdSeekIndexRef = useRef(0);
+  const exitScrubRef = useRef<() => void>(() => {});
+
+  const readPlaybackSeconds = useCallback(() => {
+    const activePlayer = isFullScreen
+      ? fullScreenPlayerRef.current
+      : playerRef.current;
+    const fromPlayer = activePlayer?.getCurrentTime?.();
+    if (typeof fromPlayer === "number" && Number.isFinite(fromPlayer)) return fromPlayer;
+    return useIpodStore.getState().elapsedTime || 0;
+  }, [isFullScreen]);
+
+  const seekPlaybackSeconds = useCallback(
+    (seconds: number) => {
+      const activePlayer = isFullScreen
+        ? fullScreenPlayerRef.current
+        : playerRef.current;
+      activePlayer?.seekTo(seconds);
+      useIpodStore.getState().setElapsedTime(seconds);
+    },
+    [isFullScreen]
+  );
+
+  const hideVolumeOverlay = useCallback(() => {
+    if (volumeOverlayTimerRef.current) {
+      clearTimeout(volumeOverlayTimerRef.current);
+      volumeOverlayTimerRef.current = null;
+    }
+    setVolumeOverlayVisible(false);
+  }, []);
+
+  const revealVolumeOverlay = useCallback(() => {
+    setVolumeOverlayVisible(true);
+    if (volumeOverlayTimerRef.current) clearTimeout(volumeOverlayTimerRef.current);
+    volumeOverlayTimerRef.current = setTimeout(() => {
+      volumeOverlayTimerRef.current = null;
+      setVolumeOverlayVisible(false);
+    }, VOLUME_OVERLAY_IDLE_MS);
+  }, []);
+
+  const clearScrubCommitTimer = useCallback(() => {
+    if (scrubCommitTimerRef.current) {
+      clearTimeout(scrubCommitTimerRef.current);
+      scrubCommitTimerRef.current = null;
+    }
+  }, []);
+
+  const commitScrubPreview = useCallback(
+    (force: boolean, now: number = Date.now()) => {
+      const session = scrubSessionRef.current;
+      if (!session) return;
+      const result = force
+        ? session.preview === session.committed
+          ? { session, commitSeconds: null as number | null }
+          : {
+              commitSeconds: session.preview,
+              session: { ...session, committed: session.preview },
+            }
+        : commitScrubIfIdle(session, now);
+      scrubSessionRef.current = result.session;
+      if (result.commitSeconds != null) {
+        seekPlaybackSeconds(result.commitSeconds);
+        setScrubPreviewSeconds(null);
+      }
+    },
+    [seekPlaybackSeconds]
+  );
+
+  const scheduleScrubCommit = useCallback(() => {
+    clearScrubCommitTimer();
+    scrubCommitTimerRef.current = setTimeout(() => {
+      scrubCommitTimerRef.current = null;
+      const lastInputAt = scrubSessionRef.current?.lastInputAt;
+      // The timer is the idle signal. Pass a timestamp that satisfies the
+      // pure idle check even if the timeout fires a millisecond early.
+      commitScrubPreview(
+        false,
+        lastInputAt == null ? Date.now() : lastInputAt + SCRUB_COMMIT_IDLE_MS
+      );
+    }, SCRUB_COMMIT_IDLE_MS);
+  }, [clearScrubCommitTimer, commitScrubPreview]);
+
+  const exitScrubMode = useCallback(() => {
+    clearScrubCommitTimer();
+    commitScrubPreview(true);
+    scrubSessionRef.current = null;
+    scrubModeRef.current = false;
+    scrubClickMutedRef.current = false;
+    setScrubbing(false);
+    setScrubPreviewSeconds(null);
+  }, [clearScrubCommitTimer, commitScrubPreview]);
+  exitScrubRef.current = exitScrubMode;
+
+  const enterScrubMode = useCallback(() => {
+    hideVolumeOverlay();
+    const seconds = readPlaybackSeconds();
+    scrubSessionRef.current = initialScrubSession(seconds);
+    scrubModeRef.current = true;
+    scrubClickMutedRef.current = true;
+    cancelPendingWheelClick();
+    setScrubbing(true);
+    setScrubPreviewSeconds(seconds);
+  }, [cancelPendingWheelClick, hideVolumeOverlay, readPlaybackSeconds]);
+
+  useEffect(() => {
+    if ((menuMode || isCoverFlowOpen) && scrubModeRef.current) {
+      exitScrubRef.current();
+    }
+  }, [menuMode, isCoverFlowOpen]);
+
+  useEffect(() => {
+    return () => {
+      cancelPendingWheelClick();
+      if (scrubCommitTimerRef.current) clearTimeout(scrubCommitTimerRef.current);
+      if (volumeOverlayTimerRef.current) clearTimeout(volumeOverlayTimerRef.current);
+    };
+  }, [cancelPendingWheelClick]);
+
   // Wheel click handler
   const handleWheelClick = useCallback(
     (area: WheelArea) => {
@@ -4375,6 +4573,7 @@ export function useIpodLogic({
           handleMenuButton();
           break;
         case "right":
+          if (scrubModeRef.current) return;
           if (isMusicQuizOpen && musicQuizRef.current) {
             musicQuizRef.current.navigate("next");
             return;
@@ -4415,6 +4614,7 @@ export function useIpodLogic({
           }
           break;
         case "left":
+          if (scrubModeRef.current) return;
           if (isMusicQuizOpen && musicQuizRef.current) {
             musicQuizRef.current.navigate("previous");
             return;
@@ -4456,27 +4656,14 @@ export function useIpodLogic({
             if (currentMenu?.items[selectedMenuItem]) {
               currentMenu.items[selectedMenuItem].action();
             }
-          } else {
-            if (tracks[currentIndex]) {
-              if (!isPlaying) {
-                if (isOffline) {
-                  showOfflineStatus();
-                } else {
-                  togglePlay();
-                  showStatus("▶");
-                  setTimeout(() => {
-                    if (!useIpodStore.getState().showVideo) toggleVideo();
-                  }, 200);
-                }
-              } else {
-                if (!isOffline) toggleVideo();
-              }
-            }
+          } else if (tracks[currentIndex]) {
+            if (scrubModeRef.current) exitScrubMode();
+            else enterScrubMode();
           }
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, togglePlay, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, isPlaying, toggleVideo, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen]
+    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, enterScrubMode, exitScrubMode]
   );
 
   // -------------------------------------------------------------------
@@ -4562,7 +4749,8 @@ export function useIpodLogic({
 
   // Wheel rotation handler
   const handleWheelRotation = useCallback(
-    (direction: RotationDirection) => {
+    (sample: WheelRotationSample) => {
+      const direction = sample.direction;
       // Brick game: skip all state-mutating work (registerActivity, playScrollSound)
       // so the RAF loop runs uninterrupted. Only update the ref for interaction tracking.
       if (isBrickGameOpen && brickGameRef.current) {
@@ -4577,17 +4765,18 @@ export function useIpodLogic({
 
       // Handle Music Quiz navigation
       if (isMusicQuizOpen && musicQuizRef.current) {
-        playScrollSound();
         const handled = musicQuizRef.current.navigate(
           direction === "clockwise" ? "next" : "previous"
         );
-        if (handled) return;
+        if (handled) {
+          playScrollSound();
+          return;
+        }
       }
-
-      playScrollSound();
 
       // Handle Cover Flow navigation
       if (isCoverFlowOpen && coverFlowRef.current) {
+        playScrollSound();
         if (direction === "clockwise") {
           coverFlowRef.current.navigateNext();
         } else {
@@ -4627,16 +4816,32 @@ export function useIpodLogic({
           fastScrollActiveRef.current = true;
         }
         const useLetterJump = isAlphabetic && fastScrollActiveRef.current;
+        const menuKey = `${menuHistory.length}:${currentMenu.id ?? currentMenu.title}`;
+        if (menuKey !== listAccelMenuKeyRef.current) {
+          listAccelRef.current = initialAccelState();
+          listAccelMenuKeyRef.current = menuKey;
+        }
+        const signed = direction === "clockwise" ? 1 : -1;
+        let rows = 1;
+        if (useLetterJump) {
+          listAccelRef.current = initialAccelState();
+        } else {
+          const stepped = nextListRowCount(listAccelRef.current, {
+            direction: signed,
+            speedDegPerSec: sample.speedDegPerSec,
+            now,
+          });
+          listAccelRef.current = stepped.state;
+          rows = stepped.rows;
+        }
+
+        playScrollSound();
 
         setSelectedMenuItem((prevIndex) => {
           const safePrev = Math.max(0, Math.min(prevIndex, menuLength - 1));
           let newIndex = safePrev;
           if (!useLetterJump) {
-            if (direction === "clockwise") {
-              newIndex = Math.min(menuLength - 1, safePrev + 1);
-            } else {
-              newIndex = Math.max(0, safePrev - 1);
-            }
+            newIndex = Math.max(0, Math.min(menuLength - 1, safePrev + signed * rows));
           } else {
             const items = currentMenu.items;
             const currentLetter = getMenuItemLetter(items[safePrev]?.label);
@@ -4689,23 +4894,83 @@ export function useIpodLogic({
         if (isAlphabetic && fastScrollActiveRef.current) {
           scheduleFastScrollIdle();
         }
-      } else {
-        const activePlayer = isFullScreen ? fullScreenPlayerRef.current : playerRef.current;
-        const currentTime = activePlayer?.getCurrentTime() || 0;
-        let newTime = currentTime;
-        if (direction === "clockwise") {
-          newTime = currentTime + SEEK_AMOUNT_SECONDS;
-          activePlayer?.seekTo(newTime);
-        } else {
-          newTime = Math.max(0, currentTime - SEEK_AMOUNT_SECONDS);
-          activePlayer?.seekTo(newTime);
+      } else if (scrubModeRef.current) {
+        const signed = direction === "clockwise" ? 1 : -1;
+        const durationSeconds = useIpodStore.getState().totalTime || 0;
+        let session =
+          scrubSessionRef.current ?? initialScrubSession(readPlaybackSeconds());
+        if (session.preview === session.committed) {
+          const live = readPlaybackSeconds();
+          session = { ...session, preview: live, committed: live };
         }
-        showStatus(
-          `${direction === "clockwise" ? "⏩︎" : "⏪︎"} ${formatSecondsAsMinutesSeconds(newTime)}`
+        const next = advanceScrubSession(session, {
+          direction: signed,
+          speedDegPerSec: sample.speedDegPerSec,
+          now: Date.now(),
+          durationSeconds,
+        });
+        scrubSessionRef.current = next;
+        setScrubPreviewSeconds(next.preview);
+        scheduleScrubCommit();
+      } else {
+        const signedDegrees =
+          (direction === "clockwise" ? 1 : -1) * (sample.degrees || 15);
+        const audio = useAudioSettingsStore.getState();
+        if (
+          volumeLastSetRef.current != null &&
+          Math.abs(audio.ipodVolume - volumeLastSetRef.current) > 0.0005
+        ) {
+          volumeGestureRef.current = initialVolumeGestureState();
+        }
+        const applied = applyVolumeDegrees(
+          audio.ipodVolume,
+          volumeGestureRef.current,
+          signedDegrees
         );
+        volumeGestureRef.current = applied.state;
+        volumeLastSetRef.current = applied.volume01;
+        if (applied.volume01 !== audio.ipodVolume) {
+          audio.setIpodVolume(applied.volume01);
+        }
+        if (applied.changed) playScrollSound();
+        revealVolumeOverlay();
       }
     },
-    [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isFullScreen, showStatus, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, getMenuItemLetter, scheduleFastScrollIdle, setSelectedMenuItem]
+    [playScrollSound, registerActivity, registerActivityRef, menuMode, menuHistory, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, getMenuItemLetter, scheduleFastScrollIdle, setSelectedMenuItem, readPlaybackSeconds, scheduleScrubCommit, revealVolumeOverlay]
+  );
+
+  const handleWheelGestureEnd = useCallback(() => {
+    cancelPendingWheelClick();
+  }, [cancelPendingWheelClick]);
+
+  const handleSectorHold = useCallback(
+    (area: "left" | "right", phase: "start" | "repeat" | "end") => {
+      if (phase === "end") {
+        holdSeekIndexRef.current = 0;
+        return;
+      }
+      if (
+        scrubModeRef.current ||
+        menuMode ||
+        isCoverFlowOpen ||
+        isMusicQuizOpen ||
+        isBrickGameOpen
+      ) {
+        return;
+      }
+      hideVolumeOverlay();
+      const repeatIndex = holdSeekIndexRef.current;
+      holdSeekIndexRef.current = repeatIndex + 1;
+      const step = seekHoldStepSeconds(repeatIndex);
+      const delta = area === "right" ? step : -step;
+      const next = clampPlaybackSeconds(
+        readPlaybackSeconds() + delta,
+        useIpodStore.getState().totalTime || 0
+      );
+      seekPlaybackSeconds(next);
+      registerActivity();
+    },
+    [menuMode, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, hideVolumeOverlay, readPlaybackSeconds, seekPlaybackSeconds, registerActivity]
   );
 
   // Scaling (extracted to useIpodScale)
@@ -5324,6 +5589,9 @@ export function useIpodLogic({
     menuHistory,
     appleMusicMenuTitlebarLoading,
     fastScrollLetter,
+    volumeOverlayVisible,
+    scrubPreviewSeconds,
+    scrubbing,
     cameFromNowPlayingMenuItem,
     isCoverFlowOpen,
     isMusicQuizOpen,
@@ -5387,6 +5655,8 @@ export function useIpodLogic({
     handleMenuButton,
     handleWheelClick,
     handleWheelRotation,
+    handleWheelGestureEnd,
+    handleSectorHold,
     handleCenterLongPress,
     handleCoverFlowSelect,
     handleCoverFlowPlayInPlace,

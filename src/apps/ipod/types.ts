@@ -11,6 +11,13 @@ import type { ActivityInfo } from "@/hooks/useActivityLabel";
 export type WheelArea = "top" | "right" | "bottom" | "left" | "center";
 export type RotationDirection = "clockwise" | "counterclockwise";
 
+/** One 15° wheel quantum. `speedDegPerSec` is 0 for trackpad ticks. */
+export type WheelRotationSample = {
+  direction: RotationDirection;
+  degrees: number;
+  speedDegPerSec: number;
+};
+
 // Menu item type
 export interface MenuItem {
   label: string;
@@ -227,6 +234,18 @@ export interface IpodScreenProps {
    * `IpodScreen` just renders the overlay when this prop is set.
    */
   fastScrollLetter?: string | null;
+  /** Now Playing volume strip is covering the time row. */
+  showVolumeOverlay?: boolean;
+  /**
+   * Scrub preview in seconds. While set, the time row shows this position
+   * until the preview is committed to the player.
+   */
+  scrubPreviewSeconds?: number | null;
+  /**
+   * True for the whole scrub session, including after a preview commits
+   * and the live playhead is showing again. Drives the diamond marker.
+   */
+  scrubbing?: boolean;
 }
 
 // Battery manager interface for browsers that expose navigator.getBattery

@@ -90,6 +90,9 @@ export function IpodScreen({
   isCoverFlowOpen = false,
   coverFlowSlot,
   fastScrollLetter = null,
+  showVolumeOverlay = false,
+  scrubPreviewSeconds = null,
+  scrubbing = false,
 }: IpodScreenProps) {
   const { t } = useTranslation();
   // Subscribed here (the screen actually displays time) rather than in
@@ -136,6 +139,7 @@ export function IpodScreen({
   }, []);
 
   const finalIpodVolume = useAudioSettingsStore(selectEffectiveIpodVolume);
+  const ipodVolume = useAudioSettingsStore((state) => state.ipodVolume);
   const isAppleMusicTrack = currentTrack?.source === "appleMusic";
   const isAppleMusicCollectionShell =
     isAppleMusicCollectionTrack(currentTrack);
@@ -220,10 +224,14 @@ export function IpodScreen({
     currentTrack?.title
       ? currentTrack.title
       : currentMenuTitle;
+  const transportElapsed =
+    scrubPreviewSeconds != null ? scrubPreviewSeconds : elapsedTime;
   const displayDurationSeconds = Math.max(0, Math.floor(totalTime));
   const displayElapsedSeconds = Math.max(
     0,
-    Math.min(displayDurationSeconds, Math.floor(elapsedTime))
+    displayDurationSeconds > 0
+      ? Math.min(displayDurationSeconds, Math.floor(transportElapsed))
+      : Math.floor(transportElapsed)
   );
   const displayRemainingSeconds = Math.max(
     0,
@@ -536,10 +544,13 @@ export function IpodScreen({
       loopCurrent={loopCurrent}
       loopAll={loopAll}
       coverUrl={coverUrl}
-      elapsedTime={elapsedTime}
+      elapsedTime={transportElapsed}
       totalTime={totalTime}
       displayElapsedSeconds={displayElapsedSeconds}
       displayRemainingSeconds={displayRemainingSeconds}
+      showVolumeOverlay={showVolumeOverlay}
+      scrubbing={scrubbing}
+      ipodVolume={ipodVolume}
       registerActivity={registerActivity}
       handlePlay={handlePlay}
       showVideoProp={showVideo}

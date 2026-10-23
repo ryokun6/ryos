@@ -20,8 +20,18 @@ import {
   MODERN_TITLEBAR_HEIGHT,
   menuVariants,
 } from "./constants";
+import {
+  useMenuSlideTransition,
+  usePrefersReducedMotion,
+} from "./useMenuSlideTransition";
 import { formatPlaybackTime } from "./formatPlaybackTime";
 import { ModernNowPlayingArtwork } from "./ModernNowPlayingArtwork";
+import {
+  SCRUB_DIAMOND_RING_PX,
+  SCRUB_DIAMOND_SIZE_PX,
+  scrubDiamondLeftCss,
+  scrubDiamondRingColor,
+} from "../../utils/wheelGesture";
 
 export interface IpodScreenMenuChromeProps {
   isModernUi: boolean;
@@ -63,6 +73,9 @@ export interface IpodScreenMenuChromeProps {
   totalTime: number;
   displayElapsedSeconds: number;
   displayRemainingSeconds: number;
+  showVolumeOverlay: boolean;
+  scrubbing: boolean;
+  ipodVolume: number;
   registerActivity: () => void;
   handlePlay: () => void;
   showVideoProp: boolean;
@@ -110,12 +123,23 @@ export function IpodScreenMenuChrome({
   totalTime,
   displayElapsedSeconds,
   displayRemainingSeconds,
+  showVolumeOverlay,
+  scrubbing,
+  ipodVolume,
   registerActivity,
   handlePlay,
   showVideoProp,
   onToggleVideo,
   t,
 }: IpodScreenMenuChromeProps) {
+  const reducedMotion = usePrefersReducedMotion();
+  const menuSlide = useMenuSlideTransition(
+    menuDirection,
+    `${menuDirection}:${menuHistory.length}:${currentMenuTitle}:${showInlineCoverFlow}:${menuMode}`,
+    reducedMotion
+  );
+  const rtl =
+    typeof document !== "undefined" && document.documentElement.dir === "rtl";
   return (
     <>
       {/* Title bar
@@ -258,7 +282,7 @@ export function IpodScreenMenuChrome({
               }
         }
       >
-        <AnimatePresence initial={false} custom={menuDirection} mode="sync">
+        <AnimatePresence initial={false} custom={menuSlide.custom} mode="sync">
           {showInlineCoverFlow ? (
             // Cover Flow inline state — rendered as the third option
             // in the menu panel's AnimatePresence so the existing
@@ -276,8 +300,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
             >
               {coverFlowSlot}
             </motion.div>
@@ -289,8 +313,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
             >
               <div className="flex-1 relative">
                 <div
@@ -372,8 +396,8 @@ export function IpodScreenMenuChrome({
               animate="center"
               exit="exit"
               variants={menuVariants}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              custom={menuDirection}
+              transition={menuSlide.transition}
+              custom={menuSlide.custom}
               onClick={() => {
                 if (!menuMode && currentTrack) {
                   registerActivity();
@@ -521,53 +545,67 @@ export function IpodScreenMenuChrome({
                         )}
                       </div>
                     )}
-                    <div
-                      className={cn(
-                        "mt-auto flex-shrink-0 w-full",
-                        nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
-                      )}
-                    >
-                      {isModernUi ? (
-                        // Same aqua bar as About This Finder memory rows.
-                        <div className="aqua-progress h-[9px] w-full rounded-none">
-                          <div
-                            className="aqua-progress-fill h-full rounded-none transition-all duration-200 ease-out"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
-                          <div
-                            className="h-full bg-[#0a3667]"
-                            style={{
-                              width: `${
-                                totalTime > 0
-                                  ? (elapsedTime / totalTime) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                      )}
+                    <div className="relative mt-auto flex-shrink-0 w-full">
+                      {/* Clip the volume slide on this inner row only. The
+                          diamond is a sibling so it can hang past the bar
+                          ends without opening a gap in the slide. */}
                       <div
                         className={cn(
-                          "w-full flex justify-between",
-                          isModernUi
-                            ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
-                            : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+                          "w-full overflow-hidden",
+                          nowPlayingDisplayTrack.album ? "pt-1.5" : "pt-3"
                         )}
                       >
-                        <span>
-                          {formatPlaybackTime(displayElapsedSeconds)}
-                        </span>
-                        <span>-{formatPlaybackTime(displayRemainingSeconds)}</span>
+                      {reducedMotion ? (
+                        showVolumeOverlay ? (
+                          <VolumeTransport
+                            isModernUi={isModernUi}
+                            fraction={ipodVolume}
+                          />
+                        ) : (
+                          <TimeTransport
+                            isModernUi={isModernUi}
+                            fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                            elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
+                            remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                            scrubbing={scrubbing}
+                          />
+                        )
+                      ) : (
+                        <div
+                          className="flex w-[200%]"
+                          style={{
+                            transform: showVolumeOverlay
+                              ? `translateX(${rtl ? "50%" : "-50%"})`
+                              : "translateX(0%)",
+                            transition: "transform 300ms ease-out",
+                          }}
+                        >
+                          <div className="w-1/2 min-w-0">
+                            <TimeTransport
+                              isModernUi={isModernUi}
+                              fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                              elapsedLabel={formatPlaybackTime(displayElapsedSeconds)}
+                              remainingLabel={`-${formatPlaybackTime(displayRemainingSeconds)}`}
+                              scrubbing={scrubbing}
+                            />
+                          </div>
+                          <div className="w-1/2 min-w-0">
+                            <VolumeTransport
+                              isModernUi={isModernUi}
+                              fraction={ipodVolume}
+                            />
+                          </div>
+                        </div>
+                      )}
                       </div>
+                      {scrubbing && !showVolumeOverlay ? (
+                        <ScrubDiamond
+                          isModernUi={isModernUi}
+                          backlightOn={backlightOn}
+                          fraction={totalTime > 0 ? elapsedTime / totalTime : 0}
+                          album={Boolean(nowPlayingDisplayTrack.album)}
+                        />
+                      ) : null}
                     </div>
                   </>
                 ) : (
@@ -638,6 +676,201 @@ export function IpodScreenMenuChrome({
             </motion.div>
           ) : null}
         </AnimatePresence>
+      </div>
+    </>
+  );
+}
+
+function transportLabelClass(isModernUi: boolean): string {
+  return cn(
+    "w-full flex justify-between",
+    isModernUi
+      ? "font-ipod-modern-ui text-[12px] min-h-[14px] leading-[1.06] mt-1 text-[rgb(99,101,103)] font-normal tabular-nums"
+      : "font-chicago text-[16px] h-[22px] text-[#0a3667] [text-shadow:1px_1px_0_rgba(0,0,0,0.15)]"
+  );
+}
+
+function TransportBar({
+  isModernUi,
+  fraction,
+  scrubbing = false,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+  scrubbing?: boolean;
+}) {
+  const clamped = Math.max(0, Math.min(1, fraction));
+  const width = `${clamped * 100}%`;
+  const bar = isModernUi ? (
+    <div className="aqua-progress h-[9px] w-full rounded-none">
+      <div
+        className={cn(
+          "aqua-progress-fill h-full rounded-none",
+          scrubbing ? "" : "transition-all duration-200 ease-out"
+        )}
+        style={{ width }}
+      />
+    </div>
+  ) : (
+    <div className="w-full h-[8px] rounded-full border border-[#0a3667] overflow-hidden">
+      <div className="h-full bg-[#0a3667]" style={{ width }} />
+    </div>
+  );
+  return <div className="relative w-full">{bar}</div>;
+}
+
+/**
+ * Diamond centered on the fill tip. It sits outside the volume-slide clip
+ * so the ends stay whole. The column's px-2 gutter is the room it hangs into.
+ */
+function ScrubDiamond({
+  isModernUi,
+  backlightOn,
+  fraction,
+  album,
+}: {
+  isModernUi: boolean;
+  backlightOn: boolean;
+  fraction: number;
+  album: boolean;
+}) {
+  const clamped = Math.max(0, Math.min(1, Number.isFinite(fraction) ? fraction : 0));
+  return (
+    <div
+      className={cn(
+        "pointer-events-none absolute inset-x-0 z-[2]",
+        album ? "top-1.5" : "top-3",
+        isModernUi ? "h-[9px]" : "h-[8px]"
+      )}
+      aria-hidden
+    >
+      <span
+        data-scrub-diamond=""
+        className="absolute top-1/2 block"
+        style={{
+          left: scrubDiamondLeftCss(clamped),
+          width: SCRUB_DIAMOND_SIZE_PX,
+          height: SCRUB_DIAMOND_SIZE_PX,
+          transform: "translate(-50%, -50%) rotate(45deg)",
+          backgroundColor: isModernUi ? "transparent" : "#0a3667",
+          boxShadow: `0 0 0 ${SCRUB_DIAMOND_RING_PX}px ${scrubDiamondRingColor(isModernUi, backlightOn)}`,
+        }}
+      >
+        {isModernUi ? (
+          // Clip the Aqua button face to the diamond. The face is
+          // counter-rotated so its top gloss still comes from the top of
+          // the LCD. The ring stays on the outer box, which does not clip.
+          <span className="absolute inset-0 overflow-hidden">
+            <span
+              className="ipod-scrub-aqua-gem absolute left-1/2 top-1/2 block"
+              style={{
+                position: "absolute",
+                width: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                height: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                transform: "translate(-50%, -50%) rotate(-45deg)",
+                borderRadius: 0,
+              }}
+            />
+          </span>
+        ) : null}
+      </span>
+    </div>
+  );
+}
+
+function TimeTransport({
+  isModernUi,
+  fraction,
+  elapsedLabel,
+  remainingLabel,
+  scrubbing = false,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+  elapsedLabel: string;
+  remainingLabel: string;
+  scrubbing?: boolean;
+}) {
+  return (
+    <>
+      <TransportBar
+        isModernUi={isModernUi}
+        fraction={fraction}
+        scrubbing={scrubbing}
+      />
+      <div className={transportLabelClass(isModernUi)}>
+        <span>{elapsedLabel}</span>
+        <span>{remainingLabel}</span>
+      </div>
+    </>
+  );
+}
+
+/** LCD speaker drawn for the volume strip. Low is the cone alone; high adds waves. */
+function VolumeSpeaker({ level }: { level: "low" | "high" }) {
+  const high = level === "high";
+  return (
+    <svg
+      viewBox={high ? "0 0 18 12" : "0 0 8 12"}
+      width={high ? 18 : 8}
+      height={12}
+      className="shrink-0"
+      aria-hidden
+    >
+      <path fill="currentColor" d="M0.6 4.15h1.9L5.1 1.7v8.6L2.5 7.85H0.6z" />
+      {high ? (
+        <>
+          <path
+            d="M8.1 3.35a3.1 3.1 0 0 1 0 5.3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.6 1.85a5.2 5.2 0 0 1 0 8.3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+          <path
+            d="M13.1 0.55a7.2 7.2 0 0 1 0 10.9"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.15"
+            strokeLinecap="round"
+          />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function VolumeTransport({
+  isModernUi,
+  fraction,
+}: {
+  isModernUi: boolean;
+  fraction: number;
+}) {
+  return (
+    <>
+      <div
+        className={cn(
+          "flex min-h-[14px] items-center gap-1",
+          isModernUi ? "text-[rgb(99,101,103)]" : "text-[#0a3667]"
+        )}
+      >
+        <VolumeSpeaker level="low" />
+        <div className="min-w-0 flex-1">
+          <TransportBar isModernUi={isModernUi} fraction={fraction} />
+        </div>
+        <VolumeSpeaker level="high" />
+      </div>
+      <div className={transportLabelClass(isModernUi)} aria-hidden>
+        <span />
+        <span />
       </div>
     </>
   );
