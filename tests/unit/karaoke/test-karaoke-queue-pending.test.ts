@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   mergeQueueWithPending,
   songIdToRestoreAfterQueueAdd,
+  visibleSongIdForQueueAdd,
   type PendingQueueItem,
 } from "../../../src/apps/karaoke/queuePending";
 import type { ListenQueueItem } from "../../../src/shared/listen/queue";
@@ -31,6 +32,26 @@ function pending(
     placement,
   };
 }
+
+describe("visibleSongIdForQueueAdd", () => {
+  test("pins the first library song when nothing is selected, so a prepend cannot steal the screen", () => {
+    expect(
+      visibleSongIdForQueueAdd({
+        currentSongId: null,
+        trackIds: ["time", "cornfield"],
+      })
+    ).toBe("time");
+  });
+
+  test("keeps an explicit selection", () => {
+    expect(
+      visibleSongIdForQueueAdd({
+        currentSongId: "cornfield",
+        trackIds: ["time", "cornfield"],
+      })
+    ).toBe("cornfield");
+  });
+});
 
 describe("songIdToRestoreAfterQueueAdd", () => {
   test("restores the song that was playing when a queue add retargets playback", () => {

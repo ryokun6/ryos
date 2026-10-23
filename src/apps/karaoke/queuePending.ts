@@ -25,7 +25,21 @@ export function nextPendingQueueId(serial: number): string {
 }
 
 /**
- * A queue add must not become the song that is already playing.
+ * The song on screen before a queue add. With no selection, Karaoke shows the
+ * first library track, and a new track is inserted in front of it.
+ */
+export function visibleSongIdForQueueAdd(args: {
+  currentSongId: string | null;
+  trackIds: readonly string[];
+}): string | null {
+  if (args.currentSongId && args.trackIds.includes(args.currentSongId)) {
+    return args.currentSongId;
+  }
+  return args.trackIds[0] ?? null;
+}
+
+/**
+ * A queue add must not become the song that is already on screen.
  * Returns the id to restore, or null when the current song should stay as it is.
  */
 export function songIdToRestoreAfterQueueAdd(args: {

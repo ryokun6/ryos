@@ -39,6 +39,7 @@ import {
   mergeQueueWithPending,
   nextPendingQueueId,
   songIdToRestoreAfterQueueAdd,
+  visibleSongIdForQueueAdd,
   type PendingQueueItem,
 } from "../queuePending";
 import { registerKaraokeSessionNext } from "../listenQueueBridge";
@@ -796,7 +797,17 @@ export function useKaraokeLogic({
       resolve: () => Promise<{ id: string; title: string; artist?: string } | null>
     ): Promise<"ok" | "metadata-failed" | "queue-failed" | "left"> => {
       const sessionId = useListenSessionStore.getState().currentSession?.id ?? null;
-      const pinnedSongId = useKaraokeStore.getState().currentSongId;
+      const tracksBefore = useMediaLibraryStore.getState().tracks;
+      const pinnedSongId = visibleSongIdForQueueAdd({
+        currentSongId: useKaraokeStore.getState().currentSongId,
+        trackIds: tracksBefore.map((track) => track.id),
+      });
+      if (
+        pinnedSongId &&
+        useKaraokeStore.getState().currentSongId !== pinnedSongId
+      ) {
+        useKaraokeStore.setState({ currentSongId: pinnedSongId });
+      }
       const localId = beginPendingQueueItem({ ...seed, placement });
       const restorePinnedSong = () => {
         const restoreId = songIdToRestoreAfterQueueAdd({
