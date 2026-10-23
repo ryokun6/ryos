@@ -156,7 +156,13 @@ describe("Karaoke queue add songs", () => {
     expect(buttons[0]?.textContent).toBe("Add Songs");
     expect(buttons[0]?.className).toContain("aqua-button");
     expect(buttons[0]?.className).toContain("primary");
-    expect(buttons[0]?.closest("ul")).not.toBeNull();
+    expect(buttons[0]?.className).toContain("w-full");
+    expect(buttons[0]?.closest("ul")).toBeNull();
+    const emptyRow = host.querySelector("ul li");
+    expect(emptyRow?.textContent).toContain("Nothing queued");
+    expect(emptyRow?.className).toContain("items-center");
+    expect(emptyRow?.className).toContain("justify-center");
+    expect(emptyRow?.className).toContain("flex-1");
 
     await act(async () => {
       buttons[0]?.click();
@@ -180,6 +186,7 @@ describe("Karaoke queue add songs", () => {
 
     const buttons = addButtons(host);
     expect(buttons).toHaveLength(1);
+    expect(buttons[0]?.className).toContain("w-full");
     expect(buttons[0]?.closest("ul")).toBeNull();
     const playNext = host.querySelector<HTMLButtonElement>(
       'button[aria-label="Play Next"]'
