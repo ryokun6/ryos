@@ -738,16 +738,24 @@ def plan_ipod(L, dev, B, length=30):
             O[f"{key}_s"] = O[f"{key}_beats"] * B
     # The menu is already open and sits still for about a second before the first click.
     # Playing that still span across the title holds the open iPod; it is not a slowed gesture.
-    # Desktop passes `rest`, so D() parks the iBook on the same right-side framing as the step
-    # captions and the title keeps the left column. Phone captions sit under the device; a new
-    # tuple stays on the resting camera (tuple(rest) is rest, which would take a side shift).
     open_beats = 12 if length == 60 else 8
     menu_hold = 0.7
-    open_cam = rest if L["key"] == "h" else (rest[0], rest[1], rest[2])
-    opening = D(title, [shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=open_cam)],
-                cap_in_s=0.25, title=True)
-    opening["cap_dur_s"] = O["title_s"]
-    opening["clip_from_shot"] = True
+    if L["key"] == "v" and O.get("v_title_push"):
+        # Large hero title (one word per line), then the phone rises from below into the demo
+        # frame. The screen is the open iPod menu, held still; the rise is the camera move.
+        s0, fx, fy = rest
+        below = (s0, fx, fy - (L["H"] + 8 - STYLE["layout"]["v"]["device_top"]) / s0)
+        opening = dict(kind="device", caption=title, title=True, cap_in=0, cap_out=None, cap_in_s=None,
+                       title_push=True,
+                       shots=[shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=below,
+                                   moves=[(O["push_at_s"], rest, STYLE["move"]["duration_s"])])])
+    else:
+        # Desktop: cam is `rest`, so D() parks the iBook on the step-caption framing and the
+        # title keeps the left column.
+        opening = D(title, [shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=rest)],
+                    cap_in_s=0.25, title=True)
+        opening["cap_dur_s"] = O["title_s"]
+        opening["clip_from_shot"] = True
 
     def slide_center(scene, beats):
         """Desktop ending: slide the iBook sideways back to center. Same scale, same vertical aim."""
@@ -1030,8 +1038,14 @@ def side_caption(L, dev, text, size, lay):
     y = int(round(H / 2 - cap.h / 2))
     ink_w = cap.w - 2 * cap.pad
     # A fixed column keeps the device still across steps. A wider title keeps its own ink width.
+    # side_column_right pins that column's right edge in output px, so the text inset can grow
+    # without sliding the device.
+    column_right = lay.get("side_column_right")
     slot = lay.get("side_slot_w")
-    ink_right = x + slot if slot and ink_w <= slot + 1 else x + ink_w
+    if column_right is not None:
+        ink_right = column_right
+    else:
+        ink_right = x + slot if slot and ink_w <= slot + 1 else x + ink_w
     left, right = ink_right + lay["device_gap"], W - x
     bx0, by0, bx1, by1 = dev.bbox
     if lay.get("side_scale") == "rest":
