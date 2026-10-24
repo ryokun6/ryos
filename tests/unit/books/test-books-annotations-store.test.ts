@@ -1,11 +1,12 @@
 import "../../helpers/local-storage-stub";
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { buildHighlightAnnotationStyles } from "../../../src/apps/books/hooks/useBooksAnnotations";
+import { useCloudSyncStore } from "../../../src/stores/useCloudSyncStore";
 import {
   useBooksStore,
   type BookBookmark,
   type BookHighlight,
 } from "../../../src/stores/useBooksStore";
-import { buildHighlightAnnotationStyles } from "../../../src/apps/books/hooks/useBooksAnnotations";
 
 const PATH = "/Books/Test.epub";
 const OTHER = "/Books/Other.epub";
@@ -41,6 +42,15 @@ beforeEach(() => {
     lastOpenedPath: null,
     openPath: null,
   });
+  useCloudSyncStore.setState((state) => ({
+    deletionMarkers: { ...state.deletionMarkers, booksHighlightIds: {} },
+  }));
+});
+
+afterEach(() => {
+  useCloudSyncStore.setState((state) => ({
+    deletionMarkers: { ...state.deletionMarkers, booksHighlightIds: {} },
+  }));
 });
 
 describe("books highlights store", () => {
@@ -109,11 +119,87 @@ describe("books highlights store", () => {
     expect(useBooksStore.getState().highlightsByPath).toBe(before);
   });
 
+  test("addHighlight merges overlapping and contiguous ranges into one mark", () => {
+    const s = useBooksStore.getState();
+    s.addHighlight(
+      PATH,
+      makeHighlight({
+        id: "h1",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:12)",
+        text: "abcdefghijkl",
+        color: "yellow",
+        createdAt: 1000,
+      })
+    );
+    s.addHighlight(
+      PATH,
+      makeHighlight({
+        id: "h2",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:12,/1:20)",
+        text: "mnopqrst",
+        color: "green",
+        createdAt: 2000,
+      })
+    );
+
+    const list = useBooksStore.getState().highlightsByPath[PATH];
+    expect(list).toHaveLength(1);
+    expect(list[0]).toMatchObject({
+      id: "h2",
+      cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:20)",
+      text: "abcdefghijklmnopqrst",
+      color: "green",
+      createdAt: 1000,
+    });
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.h1
+    ).toEqual(expect.any(String));
+  });
+
+  test("setHighlightColor merges neighbors into the recolored range", () => {
+    useBooksStore.setState({
+      highlightsByPath: {
+        [PATH]: [
+          makeHighlight({
+            id: "h1",
+            cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:12)",
+            text: "abcdefghijkl",
+          }),
+          makeHighlight({
+            id: "h2",
+            cfiRange: "epubcfi(/6/4!/4/2,/1:20,/1:24)",
+            text: "wxyz",
+            color: "blue",
+          }),
+          makeHighlight({
+            id: "h3",
+            cfiRange: "epubcfi(/6/4!/4/2,/1:8,/1:16)",
+            text: "ijklmnop",
+            color: "pink",
+            createdAt: 1500,
+          }),
+        ],
+      },
+    });
+
+    useBooksStore.getState().setHighlightColor(PATH, "h1", "purple");
+    const list = useBooksStore.getState().highlightsByPath[PATH];
+    expect(list.map((h) => h.id).sort()).toEqual(["h1", "h2"]);
+    expect(list.find((h) => h.id === "h1")).toMatchObject({
+      color: "purple",
+      cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:16)",
+    });
+    expect(list.find((h) => h.id === "h2")?.color).toBe("blue");
+  });
+
   test("removeHighlight drops the entry and the empty book key", () => {
     const s = useBooksStore.getState();
     s.addHighlight(PATH, makeHighlight());
     s.removeHighlight(PATH, "h1");
     expect(useBooksStore.getState().highlightsByPath[PATH]).toBeUndefined();
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.h1
+    ).toEqual(expect.any(String));
   });
 });
 
@@ -151,6 +237,9 @@ describe("books annotations lifecycle", () => {
     s.removeBook(PATH);
     const state = useBooksStore.getState();
     expect(state.highlightsByPath[PATH]).toBeUndefined();
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.h1
+    ).toEqual(expect.any(String));
     expect(state.bookmarksByPath[PATH]).toBeUndefined();
     expect(state.highlightsByPath[OTHER]).toHaveLength(1);
   });

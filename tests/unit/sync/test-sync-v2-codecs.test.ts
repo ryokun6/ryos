@@ -803,6 +803,204 @@ describe("books settings codec", () => {
   });
 });
 
+describe("books highlights codec", () => {
+  const path = "/Books/a.epub";
+  const other = "/Books/b.epub";
+
+  beforeEach(() => {
+    useBooksStore.setState({ highlightsByPath: {} });
+    useCloudSyncStore.setState((state) => ({
+      deletionMarkers: { ...state.deletionMarkers, booksHighlightIds: {} },
+    }));
+  });
+
+  test("collects, applies, renames, and removes highlights", async () => {
+    useBooksStore.getState().addHighlight(path, {
+      id: "h1",
+      cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+      text: "alpha",
+      color: "yellow",
+      createdAt: 10,
+    });
+    useBooksStore.getState().addHighlight(other, {
+      id: "h2",
+      cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+      text: "beta",
+      color: "blue",
+      createdAt: 11,
+    });
+
+    const docs = SYNC_CODECS["books-highlights"].collect(ctx) as Map<
+      string,
+      unknown
+    >;
+    expect(Object.fromEntries(docs)).toEqual({
+      "books-highlights/h1": {
+        path,
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+        text: "alpha",
+        color: "yellow",
+        createdAt: 10,
+      },
+      "books-highlights/h2": {
+        path: other,
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+        text: "beta",
+        color: "blue",
+        createdAt: 11,
+      },
+    });
+
+    useBooksStore.getState().renameProgressPath(path, "/Books/renamed.epub");
+    const renamed = SYNC_CODECS["books-highlights"].collect(ctx) as Map<
+      string,
+      { path: string }
+    >;
+    expect(renamed.get("books-highlights/h1")?.path).toBe("/Books/renamed.epub");
+    expect(renamed.has("books-highlights/h2")).toBe(true);
+
+    useBooksStore.getState().removeHighlight("/Books/renamed.epub", "h1");
+    const afterRemove = SYNC_CODECS["books-highlights"].collect(ctx) as Map<
+      string,
+      unknown
+    >;
+    expect(afterRemove.has("books-highlights/h1")).toBe(false);
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.h1
+    ).toEqual(expect.any(String));
+  });
+
+  test("apply upserts a highlight and ignores malformed documents", async () => {
+    const result = await SYNC_CODECS["books-highlights"].apply(
+      [
+        {
+          k: "books-highlights/h1",
+          v: {
+            path,
+            cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+            text: "alpha",
+            color: "pink",
+            createdAt: 20,
+          },
+          t,
+        },
+        {
+          k: "books-highlights/bad",
+          v: {
+            path,
+            cfiRange: "epubcfi(/6/4!/4/2/1:0)",
+            text: "point",
+            color: "orange",
+            createdAt: 21,
+          },
+          t,
+        },
+        { k: "books-highlights/empty", v: { path, text: "   " }, t },
+      ],
+      ctx
+    );
+
+    expect(result).toBeUndefined();
+    expect(useBooksStore.getState().highlightsByPath[path]).toEqual([
+      {
+        id: "h1",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+        text: "alpha",
+        color: "pink",
+        createdAt: 20,
+      },
+    ]);
+  });
+
+  test("apply deletes a highlight and merges an overlapping remote range", async () => {
+    useBooksStore.setState({
+      highlightsByPath: {
+        [path]: [
+          {
+            id: "local",
+            cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:12)",
+            text: "abcdefghijkl",
+            color: "yellow",
+            createdAt: 5,
+          },
+          {
+            id: "gone",
+            cfiRange: "epubcfi(/6/8!/4/2,/1:0,/1:3)",
+            text: "zzz",
+            color: "green",
+            createdAt: 6,
+          },
+        ],
+      },
+    });
+
+    const result = await SYNC_CODECS["books-highlights"].apply(
+      [
+        {
+          k: "books-highlights/remote",
+          v: {
+            path,
+            cfiRange: "epubcfi(/6/4!/4/2,/1:10,/1:18)",
+            text: "klmnopqr",
+            color: "purple",
+            createdAt: 9,
+          },
+          t,
+        },
+        { k: "books-highlights/gone", del: true, t },
+      ],
+      ctx
+    );
+
+    const list = useBooksStore.getState().highlightsByPath[path];
+    expect(list).toEqual([
+      {
+        id: "remote",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:18)",
+        text: "abcdefghijklmnopqr",
+        color: "purple",
+        createdAt: 5,
+      },
+    ]);
+    expect(result?.rejectedKeys?.sort()).toEqual([
+      "books-highlights/local",
+      "books-highlights/remote",
+    ]);
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.local
+    ).toEqual(expect.any(String));
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.booksHighlightIds.gone
+    ).toBeUndefined();
+  });
+
+  test("subscription reports created, recolored, and removed highlight keys", () => {
+    const changes: string[][] = [];
+    const unsubscribe = SYNC_CODECS["books-highlights"].subscribe((keys) => {
+      changes.push(keys ? [...keys] : []);
+    });
+
+    try {
+      useBooksStore.getState().addHighlight(path, {
+        id: "h1",
+        cfiRange: "epubcfi(/6/4!/4/2,/1:0,/1:4)",
+        text: "alpha",
+        color: "yellow",
+        createdAt: 10,
+      });
+      useBooksStore.getState().setHighlightColor(path, "h1", "blue");
+      useBooksStore.getState().removeHighlight(path, "h1");
+      expect(changes).toEqual([
+        ["books-highlights/h1"],
+        ["books-highlights/h1"],
+        ["books-highlights/h1"],
+      ]);
+    } finally {
+      unsubscribe();
+    }
+  });
+});
+
 describe("bookshelf sync engine wiring (stale-reject re-upload)", () => {
   beforeEach(() => {
     useBooksStore.setState({

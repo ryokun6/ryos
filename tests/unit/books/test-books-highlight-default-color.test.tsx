@@ -12,7 +12,10 @@ import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { Contents, Rendition } from "epubjs";
-import { useBooksAnnotations } from "../../../src/apps/books/hooks/useBooksAnnotations";
+import {
+  HIGHLIGHT_APPLY_DELAY_MS,
+  useBooksAnnotations,
+} from "../../../src/apps/books/hooks/useBooksAnnotations";
 import {
   BOOKS_HIGHLIGHT_COLORS,
   DEFAULT_BOOKS_HIGHLIGHT_COLOR,
@@ -40,6 +43,8 @@ Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
 
 const CFI = "epubcfi(/6/4!/4/2,/1:0,/1:12)";
 const OTHER_CFI = "epubcfi(/6/4!/4/2,/1:14,/1:24)";
+const OVERLAP_CFI = "epubcfi(/6/4!/4/2,/1:10,/1:20)";
+const UNION_CFI = "epubcfi(/6/4!/4/2,/1:0,/1:20)";
 
 type AnnotationsApi = ReturnType<typeof useBooksAnnotations>;
 
@@ -47,10 +52,15 @@ interface FakeReader {
   rendition: Rendition;
   contents: Contents;
   select: (text: string) => void;
+  changeSelection: (text: string) => void;
+  collapse: () => void;
   emitSelected: (cfiRange?: string) => void;
 }
 
-function createFakeReader(initialText: string): FakeReader {
+function createFakeReader(
+  initialText: string,
+  rangeText?: Record<string, string>
+): FakeReader {
   const listeners = new Map<string, Set<(...args: never[]) => void>>();
   const docListeners = new Map<string, Set<(event: Event) => void>>();
   let text = initialText;
@@ -90,7 +100,9 @@ function createFakeReader(initialText: string): FakeReader {
       listeners.get(event)?.delete(handler);
     },
     getContents: () => [contents],
-    getRange: () => ({ toString: () => text }),
+    getRange: (cfi: string) => ({
+      toString: () => rangeText?.[cfi] ?? text,
+    }),
     annotations: {
       remove() {},
       highlight() {},
@@ -107,6 +119,17 @@ function createFakeReader(initialText: string): FakeReader {
       text = next;
       selection.rangeCount = 1;
       selection.isCollapsed = false;
+    },
+    changeSelection(next: string) {
+      text = next;
+      selection.rangeCount = 1;
+      selection.isCollapsed = false;
+      docListeners
+        .get("selectionchange")
+        ?.forEach((handler) => handler(new Event("selectionchange")));
+    },
+    collapse() {
+      selection.removeAllRanges();
     },
     emitSelected(cfiRange = CFI) {
       rendition.emit(
@@ -259,6 +282,15 @@ describe("books selection commits the last highlight color", () => {
     await act(async () => {
       reader.emitSelected();
     });
+    expect(added).toHaveLength(0);
+    expect(currentApi().activeSelection).toMatchObject({
+      kind: "selection",
+      color: "blue",
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
+    });
 
     expect(added).toHaveLength(1);
     expect(added[0]?.color).toBe("blue");
@@ -283,6 +315,11 @@ describe("books selection commits the last highlight color", () => {
 
     await act(async () => {
       reader.emitSelected();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
+    });
+    await act(async () => {
       reader.select("once");
       reader.emitSelected();
     });
@@ -297,6 +334,9 @@ describe("books selection commits the last highlight color", () => {
 
     await act(async () => {
       reader.emitSelected();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
     });
     const id = added[0]?.id;
     expect(id).toBeTruthy();
@@ -314,6 +354,9 @@ describe("books selection commits the last highlight color", () => {
     reader.select("next passage");
     await act(async () => {
       reader.emitSelected(OTHER_CFI);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
     });
 
     expect(added).toHaveLength(2);
@@ -344,5 +387,84 @@ describe("books selection commits the last highlight color", () => {
       color: "green",
     });
     expect(useBooksStore.getState().settings.lastHighlightColor).toBe("pink");
+  });
+
+  test("clears the pending highlight when the selection collapses", async () => {
+    const reader = createFakeReader("not yet");
+    await mount(reader);
+
+    await act(async () => {
+      reader.emitSelected();
+      reader.collapse();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
+    });
+
+    expect(added).toHaveLength(0);
+    expect(currentApi().activeSelection).toBeNull();
+  });
+
+  test("does not apply when the selection text changes before the pause", async () => {
+    const reader = createFakeReader("first words");
+    await mount(reader);
+
+    await act(async () => {
+      reader.emitSelected();
+      reader.changeSelection("different words");
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
+    });
+
+    expect(added).toHaveLength(0);
+  });
+
+  test("a swatch tap during the pause applies that color once", async () => {
+    const reader = createFakeReader("tap early");
+    await mount(reader);
+
+    await act(async () => {
+      reader.emitSelected();
+    });
+    await act(async () => {
+      currentApi().applyHighlightColor("green");
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS + 50);
+    });
+
+    expect(added).toHaveLength(1);
+    expect(added[0]?.color).toBe("green");
+    expect(useBooksStore.getState().settings.lastHighlightColor).toBe("green");
+    expect(currentApi().activeSelection).toBeNull();
+  });
+
+  test("an overlapping selection merges into one range in the active color", async () => {
+    const existing: BookHighlight = {
+      id: "saved",
+      cfiRange: CFI,
+      text: "abcdefghijkl",
+      color: "yellow",
+      createdAt: 50,
+    };
+    const reader = createFakeReader("klmnopqrst", {
+      [UNION_CFI]: "abcdefghijklmnopqrst",
+    });
+    await mount(reader, [existing]);
+
+    await act(async () => {
+      reader.emitSelected(OVERLAP_CFI);
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(HIGHLIGHT_APPLY_DELAY_MS);
+    });
+
+    expect(added).toHaveLength(1);
+    expect(added[0]).toMatchObject({
+      cfiRange: UNION_CFI,
+      text: "abcdefghijklmnopqrst",
+      color: "yellow",
+    });
   });
 });

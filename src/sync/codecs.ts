@@ -56,6 +56,7 @@ import {
   invalidateStuffCoverCache,
   stripImageDataUrlForSync,
 } from "@/apps/stuff/utils/stuffCoverBlobs";
+import { mergeTouchingHighlights, isHighlightRangeCfi } from "@/apps/books/utils/booksHighlightRanges";
 import {
   BOOKS_FONT_SIZE_MAX,
   BOOKS_FONT_SIZE_MIN,
@@ -69,6 +70,7 @@ import {
   isBooksThemeOverride,
   normalizeBooksCustomColor,
   useBooksStore,
+  type BookHighlight,
   type BookProgress,
   type BooksReaderSettings,
 } from "@/stores/useBooksStore";
@@ -165,6 +167,7 @@ export const DELETION_BUCKET_PREFIXES: Record<CloudSyncDeletionBucket, string> =
   fitnessWorkoutIds: "fitness/workout:",
   fitnessBodyStatIds: "fitness/body:",
   fitnessFoodIds: "fitness/food:",
+  booksHighlightIds: "books-highlights/",
 };
 
 export function getDeletionMarkerForKey(key: string): string | null {
@@ -1926,8 +1929,9 @@ const fitnessCodec: SyncCodec = {
 // Reading progress reconciles per book with `updatedAt`-aware last-writer-wins
 // on apply (a stale remote op never clobbers newer local progress), layered on
 // top of the engine's per-key timestamp LWW. Reader preferences sync through
-// the separate `books-settings` namespace. `shelfView` and `openPath` remain
-// device-local (reopen this device's last reader/shelf session).
+// the separate `books-settings` namespace, and text highlights through
+// `books-highlights`. `shelfView` and `openPath` remain device-local (reopen
+// this device's last reader/shelf session). Bookmarks stay on the device.
 //
 // Deleting a book: `useBooksLogic.deleteBook` calls `useBooksStore.removeBook`,
 // which drops the book's `progress`/`docmap` entries and prunes it from the
@@ -2305,6 +2309,221 @@ const booksSettingsCodec: SyncCodec = {
 };
 
 // ---------------------------------------------------------------------------
+// Books highlights codec
+//
+// One key per highlight so a color change, a merged range, or a removal on
+// one passage does not rewrite every other annotation:
+//   books-highlights/<id> — { path, cfiRange, text, color, createdAt }
+//
+// The id is the key (not the book path) so renaming a file updates the
+// document in place. Overlapping ranges that arrive from two devices collapse
+// on apply; the codec reports those keys rejected so the engine re-uploads
+// the single merged mark and tombstones the ids that were folded in.
+// Removing a highlight (or a whole book) records a deletion marker, which
+// corroborates the shadow-diff tombstone when a book carries many marks.
+// ---------------------------------------------------------------------------
+
+const BOOKS_HIGHLIGHTS_PREFIX = "books-highlights/";
+
+interface SyncedBookHighlight extends BookHighlight {
+  path: string;
+}
+
+function booksHighlightKey(id: string): string {
+  return `${BOOKS_HIGHLIGHTS_PREFIX}${id}`;
+}
+
+function sanitizeBooksHighlight(
+  value: unknown,
+  id: string
+): SyncedBookHighlight | null {
+  const doc = asRecord(value);
+  if (!doc || !id) return null;
+  if (typeof doc.path !== "string" || doc.path.length === 0) return null;
+  if (typeof doc.cfiRange !== "string" || !isHighlightRangeCfi(doc.cfiRange)) {
+    return null;
+  }
+  if (typeof doc.text !== "string" || doc.text.trim().length === 0) return null;
+  if (!isBooksHighlightColor(doc.color)) return null;
+  if (typeof doc.createdAt !== "number" || !Number.isFinite(doc.createdAt)) {
+    return null;
+  }
+  return {
+    id,
+    path: doc.path,
+    cfiRange: doc.cfiRange,
+    text: doc.text,
+    color: doc.color,
+    createdAt: doc.createdAt,
+  };
+}
+
+function highlightsMatch(a: SyncedBookHighlight, b: SyncedBookHighlight): boolean {
+  return (
+    a.path === b.path &&
+    a.cfiRange === b.cfiRange &&
+    a.text === b.text &&
+    a.color === b.color &&
+    a.createdAt === b.createdAt
+  );
+}
+
+function flattenBookHighlights(
+  highlightsByPath: Record<string, BookHighlight[] | undefined>
+): Map<string, SyncedBookHighlight> {
+  const byId = new Map<string, SyncedBookHighlight>();
+  for (const [path, list] of Object.entries(highlightsByPath)) {
+    if (!list) continue;
+    for (const highlight of list) {
+      if (!highlight?.id) continue;
+      byId.set(highlight.id, { ...highlight, path });
+    }
+  }
+  return byId;
+}
+
+function groupBookHighlights(
+  byId: Iterable<SyncedBookHighlight>
+): Record<string, BookHighlight[]> {
+  const highlightsByPath: Record<string, BookHighlight[]> = {};
+  for (const item of byId) {
+    const { path, ...highlight } = item;
+    const list = highlightsByPath[path] ?? [];
+    list.push(highlight);
+    highlightsByPath[path] = list;
+  }
+  return highlightsByPath;
+}
+
+function collectBooksHighlights(keys?: ReadonlySet<string>): Map<string, unknown> {
+  const docs = new Map<string, unknown>();
+  for (const item of flattenBookHighlights(useBooksStore.getState().highlightsByPath).values()) {
+    const key = booksHighlightKey(item.id);
+    if (keys && !keys.has(key)) continue;
+    docs.set(key, {
+      path: item.path,
+      cfiRange: item.cfiRange,
+      text: item.text,
+      color: item.color,
+      createdAt: item.createdAt,
+    });
+  }
+  return docs;
+}
+
+function diffBookHighlightKeys(
+  previous: Record<string, BookHighlight[] | undefined>,
+  next: Record<string, BookHighlight[] | undefined>
+): string[] {
+  const before = flattenBookHighlights(previous);
+  const after = flattenBookHighlights(next);
+  const keys: string[] = [];
+  for (const [id, highlight] of after) {
+    const prior = before.get(id);
+    if (!prior || !highlightsMatch(prior, highlight)) {
+      keys.push(booksHighlightKey(id));
+    }
+  }
+  for (const id of before.keys()) {
+    if (!after.has(id)) keys.push(booksHighlightKey(id));
+  }
+  return keys;
+}
+
+function applyBooksHighlights(ops: AppliedSyncOp[]): SyncApplyResult | undefined {
+  const existing = flattenBookHighlights(useBooksStore.getState().highlightsByPath);
+  const byId = new Map(existing);
+  const accepted = new Map<string, SyncedBookHighlight>();
+  const deletedIds = new Set<string>();
+  let relevant = false;
+
+  for (const op of ops) {
+    if (!op.k.startsWith(BOOKS_HIGHLIGHTS_PREFIX)) continue;
+    const id = op.k.slice(BOOKS_HIGHLIGHTS_PREFIX.length);
+    if (!id) continue;
+    if (op.del) {
+      deletedIds.add(id);
+      accepted.delete(id);
+      relevant = byId.delete(id) || relevant;
+      continue;
+    }
+    const highlight = sanitizeBooksHighlight(op.v, id);
+    if (!highlight) continue;
+    relevant = true;
+    byId.set(id, highlight);
+    accepted.set(id, highlight);
+  }
+  if (!relevant) return;
+
+  const preferredIds = new Set(accepted.keys());
+  const mergedByPath: Record<string, BookHighlight[]> = {};
+  for (const [path, list] of Object.entries(groupBookHighlights(byId.values()))) {
+    const merged = mergeTouchingHighlights(list, { preferredIds });
+    if (merged.length > 0) mergedByPath[path] = merged;
+  }
+  const mergedById = flattenBookHighlights(mergedByPath);
+  const unchanged =
+    mergedById.size === existing.size &&
+    [...mergedById].every(([id, highlight]) => {
+      const prior = existing.get(id);
+      return prior !== undefined && highlightsMatch(prior, highlight);
+    });
+  if (unchanged) return;
+
+  const removedByMerge: string[] = [];
+  const rejected = new Set<string>();
+  for (const [id, incoming] of accepted) {
+    const local = mergedById.get(id);
+    if (!local || !highlightsMatch(local, incoming)) {
+      rejected.add(booksHighlightKey(id));
+    }
+  }
+  for (const id of byId.keys()) {
+    if (mergedById.has(id) || deletedIds.has(id)) continue;
+    removedByMerge.push(id);
+    rejected.add(booksHighlightKey(id));
+  }
+
+  useBooksStore.setState({ highlightsByPath: mergedByPath });
+  if (removedByMerge.length > 0) {
+    useCloudSyncStore
+      .getState()
+      .markDeletedKeys("booksHighlightIds", removedByMerge);
+  }
+  const survivingIds = [...mergedById.keys()];
+  if (survivingIds.length > 0) {
+    useCloudSyncStore.getState().clearDeletedKeys("booksHighlightIds", survivingIds);
+  }
+
+  return rejected.size > 0 ? { rejectedKeys: [...rejected] } : undefined;
+}
+
+const booksHighlightsCodec: SyncCodec = {
+  namespace: "books-highlights",
+  collect(_ctx, keys) {
+    return collectBooksHighlights(keys);
+  },
+  apply(ops) {
+    return applyBooksHighlights(ops);
+  },
+  subscribe(onChange) {
+    return useBooksStore.subscribe((state, prev) => {
+      if (state.highlightsByPath === prev.highlightsByPath) return;
+      if (!useBooksStore.persist.hasHydrated()) return;
+      const keys = diffBookHighlightKeys(
+        prev.highlightsByPath,
+        state.highlightsByPath
+      );
+      if (keys.length === 0) return;
+      onChange(keys);
+    });
+  },
+  isReady() {
+    return useBooksStore.persist.hasHydrated();
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Blob codecs (images / trash / applets / wallpapers)
 // ---------------------------------------------------------------------------
 
@@ -2431,6 +2650,7 @@ export const SYNC_CODECS: Record<SyncNamespace, SyncCodec> = {
   books: booksCodec,
   bookshelf: bookshelfCodec,
   "books-settings": booksSettingsCodec,
+  "books-highlights": booksHighlightsCodec,
   trash: trashCodec,
   applets: appletsCodec,
   wallpapers: wallpapersCodec,
@@ -2459,6 +2679,7 @@ export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "files",
   "bookshelf",
   "books-settings",
+  "books-highlights",
   "songs",
   "videos",
   "tv",
