@@ -263,6 +263,7 @@ export class X11Recorder {
   private framesDir = "";
   private t0 = 0;
   private stopLoop = false;
+  private holdCaptures = false;
   private loopDone: Promise<void> = Promise.resolve();
   constructor(private dir: string, private page?: Page, private fps = 30) {}
 
@@ -304,13 +305,26 @@ export class X11Recorder {
 
     const shoot = async () => {
       const started = Date.now() / 1000;
-      const shot = await this.cdp!.send("Page.captureScreenshot", {
-        format: "jpeg",
-        quality: 90,
-        fromSurface: true,
-        captureBeyondViewport: true,
-        clip: { x: 0, y: 0, width: VIEWPORT.width, height: VIEWPORT.height, scale: DSF },
-      });
+      const clip = { x: 0, y: 0, width: VIEWPORT.width, height: VIEWPORT.height, scale: DSF };
+      let shot: { data: string };
+      try {
+        shot = await this.cdp!.send("Page.captureScreenshot", {
+          format: "jpeg",
+          quality: 62,
+          fromSurface: true,
+          captureBeyondViewport: true,
+          optimizeForSpeed: true,
+          clip,
+        } as Parameters<typeof this.cdp.send<"Page.captureScreenshot">>[1]);
+      } catch {
+        shot = await this.cdp!.send("Page.captureScreenshot", {
+          format: "jpeg",
+          quality: 62,
+          fromSurface: true,
+          captureBeyondViewport: true,
+          clip,
+        });
+      }
       const n = this.frameTimes.length + 1;
       const file = path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`);
       this.frameTimes.push(started);
@@ -334,6 +348,10 @@ export class X11Recorder {
     this.loopDone = (async () => {
       let lastLog = Date.now();
       while (!this.stopLoop) {
+        if (this.holdCaptures) {
+          await sleep(20);
+          continue;
+        }
         const t = Date.now();
         try {
           await shoot();
@@ -353,6 +371,16 @@ export class X11Recorder {
         }
       }
     })();
+  }
+
+  /** Let the page process a click. captureScreenshot blocks the renderer long enough to turn a center press into a long-press. */
+  async pauseCaptures() {
+    this.holdCaptures = true;
+    await sleep(160);
+  }
+
+  resumeCaptures() {
+    this.holdCaptures = false;
   }
 
   mark(name: string, box?: Box | null) {

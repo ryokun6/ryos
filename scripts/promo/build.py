@@ -771,7 +771,8 @@ def plan_ipod(L, dev, B, length=30):
     # One continuous full-screen hold, split only so the caption can roll. Rate 1 — lyrics should not be slowed.
     full_src = ex.t("fullscreen", 0.35)
     full = D("Full Screen lyrics.", [shot(ex, 0, full_src)])
-    furi = D("Furigana on each word.", [shot(ex, 0, full_src + 16 * B)], zoom="fullscreen", zoom_beat=4)
+    # Furigana is on by default, but it often arrives after the line is already up. Don't caption it.
+    furi = D("In time with the song.", [shot(ex, 0, full_src + 16 * B)], zoom="fullscreen", zoom_beat=4)
     bed2 = clip("song-lyrics.mp3")
     if bed2:
         full["sfx"] = [(ex, "fullscreen", bed2)]
