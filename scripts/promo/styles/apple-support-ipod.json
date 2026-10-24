@@ -1,0 +1,23 @@
+{
+  "_about": "iPod promo on the bgm2 Apple Support grid. Desktop left-column ink starts at 144 px (was 72); side_column_right keeps the iBook on the same right-side framing, and it slides back to center at the end without a zoom. The phone open is the 300 px hero title, then the phone rises into the demo frame. Step captions stay at 68 px (desktop) and 84 px (phone). Volume and seek play at capture speed.",
+  "extends": "apple-support-bgm2.json",
+  "layout": {
+    "h": {
+      "caption_anchor": "side",
+      "caption_size": 68,
+      "text_x_frac": 0.075,
+      "block_w_frac": 0.3375,
+      "max_chars": null,
+      "side_column_right": 602,
+      "side_scale": "rest"
+    },
+    "v": {
+      "caption_size": 84
+    }
+  },
+  "zoom": {
+    "lyrics": {"factor": 1.28, "beat": 4},
+    "fullscreen": {"factor": 1.1, "beat": 4}
+  },
+  "song": {"duck_db": 10, "duck_ramp_s": 0.2, "duck_lead_s": 0.08, "duck_tail_s": 0.45}
+}
