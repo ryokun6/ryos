@@ -5,10 +5,10 @@ import path from "node:path";
 export const BASE = process.env.RYOS_URL || "http://localhost:5173";
 /**
  * Viewports match the screens of the bezels build.py frames them in:
- * desktop = MacBook Air 13" (1280x832 CSS at 2x = 2560x1664), `PROMO_DEVICE=phone` = iPhone 18 Pro (402x874 at 3x = 1206x2622).
+ * desktop = iBook G4 (1280x960 CSS at 2x = 2560x1920, 4:3), `PROMO_DEVICE=phone` = iPhone 18 Pro (402x874 at 3x = 1206x2622).
  */
 export const DEVICE = process.env.PROMO_DEVICE === "phone" ? "phone" : "desktop";
-export const VIEWPORT = DEVICE === "phone" ? { width: 402, height: 874 } : { width: 1280, height: 832 };
+export const VIEWPORT = DEVICE === "phone" ? { width: 402, height: 874 } : { width: 1280, height: 960 };
 export const DSF = DEVICE === "phone" ? 3 : 2;
 /** iPhone 18 Pro portrait safe-area insets (CSS px): status bar / Dynamic Island on top, home indicator below. */
 export const PHONE_SAFE_AREA = { top: 62, bottom: 34, left: 0, right: 0 };

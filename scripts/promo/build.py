@@ -5,7 +5,7 @@ Compose the 30 s (or --length 60) Dictionary + Fitness promo from real ryOS capt
   python3 scripts/promo/build.py --music bgm2.mp3 [--length 30|60] [--vertical] [--out path.mp4]
                                  [--style style.json] [--music-start s] [--bpm bpm]
 
-Horizontal = desktop takes in Apple's MacBook Air 13" bezel; --vertical = phone takes in the iPhone 18 Pro bezel.
+Horizontal = desktop takes in the iBook G4 bezel (4:3); --vertical = phone takes in the iPhone 18 Pro bezel.
 Bezels come from Apple Design Resources and are downloaded + cached by bezels.py (never committed). The captures
 are the bezel's native screen size, so footage maps 1:1 onto the screen cut-out (its corner radius, the notch and
 the Dynamic Island come from the bezel's own alpha). The camera moves the whole device: zooms scale and slide
