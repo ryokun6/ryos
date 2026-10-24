@@ -1403,6 +1403,7 @@ def compose(L, B, out, music=None, music_start=0.0):
         n = f1 - f0
         kind = sc["kind"]
         sc["t0"] = f0 / FPS
+        print(f"[scene] {sc['t0']:.2f}s {kind} {sc.get('caption') or sc.get('name') or sc.get('url') or ''}", flush=True)
         # A scene keeps rendering past its end for as long as the next scene's entrance overlaps it.
         nxt = scenes[i + 1][2] if i + 1 < len(scenes) else None
         extra = round(enter_s(nxt) * FPS) if nxt is not None else 0
