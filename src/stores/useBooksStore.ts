@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { mergeTouchingHighlights } from "@/apps/books/utils/booksHighlightRanges";
+import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
 export type BooksColumnMode = "auto" | "single" | "double";
@@ -91,6 +93,20 @@ export function isBooksHighlightColor(
   return (BOOKS_HIGHLIGHT_COLORS as readonly unknown[]).includes(value);
 }
 
+/**
+ * Swatch used when the reader has no saved highlight color. Matches the first
+ * color in the selection toolbar.
+ */
+export const DEFAULT_BOOKS_HIGHLIGHT_COLOR: BooksHighlightColor =
+  BOOKS_HIGHLIGHT_COLORS[0];
+
+/** Coerce a persisted highlight swatch, falling back to the toolbar default. */
+export function normalizeBooksHighlightColor(
+  value: unknown
+): BooksHighlightColor {
+  return isBooksHighlightColor(value) ? value : DEFAULT_BOOKS_HIGHLIGHT_COLOR;
+}
+
 export interface BookHighlight {
   id: string;
   /** EPUB CFI range of the highlighted passage. */
@@ -143,6 +159,12 @@ export interface BooksReaderSettings {
   gutterPx: number;
   /** Read-aloud (browser TTS) speaking rate multiplier. */
   speechRate: number;
+  /**
+   * Highlight color committed when a text selection settles, and the swatch
+   * shown as current for that new highlight. Tapping another swatch updates
+   * the passage and this preference.
+   */
+  lastHighlightColor: BooksHighlightColor;
 }
 
 export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
@@ -158,6 +180,7 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   lineHeight: 1.5,
   gutterPx: 24,
   speechRate: 1,
+  lastHighlightColor: DEFAULT_BOOKS_HIGHLIGHT_COLOR,
 };
 
 const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -237,12 +260,12 @@ interface BooksStoreState {
    */
   docMapByPath: Record<string, BookDocMap>;
   /**
-   * Text highlights per book. Device-local (not cloud-synced): the bookshelf
-   * sync namespace can't grow new keys without older clients inferring
-   * deletions, so annotations stay on the device that made them.
+   * Text highlights per book. Synced as `books-highlights/<id>` under the
+   * books category (not on `bookshelf`, which older clients would tombstone
+   * if it grew keys they don't collect).
    */
   highlightsByPath: Record<string, BookHighlight[]>;
-  /** Page bookmarks per book. Device-local, same reasoning as highlights. */
+  /** Page bookmarks per book. Device-local: not part of books cloud sync. */
   bookmarksByPath: Record<string, BookBookmark[]>;
   settings: BooksReaderSettings;
   shelfView: BooksShelfView;
@@ -294,6 +317,40 @@ interface BooksStoreState {
 const without = (list: string[], path: string) =>
   list.filter((p) => p !== path);
 
+function highlightsEqual(a: BookHighlight, b: BookHighlight): boolean {
+  return (
+    a.id === b.id &&
+    a.cfiRange === b.cfiRange &&
+    a.text === b.text &&
+    a.color === b.color &&
+    a.createdAt === b.createdAt
+  );
+}
+
+function sameHighlightList(
+  previous: readonly BookHighlight[] | undefined,
+  next: readonly BookHighlight[]
+): boolean {
+  if ((previous?.length ?? 0) !== next.length) return false;
+  return next.every((highlight, index) =>
+    highlightsEqual(highlight, previous![index])
+  );
+}
+
+/** Tombstone ids that disappeared and clear markers for ids that remain. */
+function noteHighlightListChange(
+  previous: readonly BookHighlight[] | undefined,
+  next: readonly BookHighlight[]
+) {
+  const nextIds = new Set(next.map((highlight) => highlight.id));
+  const removed = (previous ?? [])
+    .map((highlight) => highlight.id)
+    .filter((id) => !nextIds.has(id));
+  const cloud = useCloudSyncStore.getState();
+  if (removed.length > 0) cloud.markDeletedKeys("booksHighlightIds", removed);
+  if (nextIds.size > 0) cloud.clearDeletedKeys("booksHighlightIds", nextIds);
+}
+
 export const useBooksStore = create<BooksStoreState>()(
   persist(
     (set, get) => ({
@@ -333,7 +390,16 @@ export const useBooksStore = create<BooksStoreState>()(
             docMapByPath: { ...state.docMapByPath, [path]: docMap },
           };
         }),
-      removeBook: (path) =>
+      removeBook: (path) => {
+        const removedHighlights = get().highlightsByPath[path];
+        if (removedHighlights && removedHighlights.length > 0) {
+          useCloudSyncStore
+            .getState()
+            .markDeletedKeys(
+              "booksHighlightIds",
+              removedHighlights.map((highlight) => highlight.id)
+            );
+        }
         set((state) => {
           const hadProgress = path in state.progressByPath;
           const hadDocMap = path in state.docMapByPath;
@@ -387,38 +453,45 @@ export const useBooksStore = create<BooksStoreState>()(
             lastOpenedPath: wasLastOpened ? null : state.lastOpenedPath,
             openPath: wasOpen ? null : state.openPath,
           };
-        }),
-      addHighlight: (path, highlight) =>
+        });
+      },
+      addHighlight: (path, highlight) => {
+        const list = get().highlightsByPath[path] ?? [];
+        const merged = mergeTouchingHighlights(
+          [...list.filter((item) => item.id !== highlight.id), highlight],
+          { preferredId: highlight.id }
+        );
+        if (sameHighlightList(list, merged)) return;
+        noteHighlightListChange(list, merged);
         set((state) => ({
           highlightsByPath: {
             ...state.highlightsByPath,
-            [path]: [
-              // Same id (re-add) or same range (re-highlighting the exact
-              // passage) replaces the existing mark instead of stacking.
-              ...(state.highlightsByPath[path] ?? []).filter(
-                (h) =>
-                  h.id !== highlight.id && h.cfiRange !== highlight.cfiRange
-              ),
-              highlight,
-            ],
+            [path]: merged,
           },
-        })),
-      setHighlightColor: (path, id, color) =>
+        }));
+      },
+      setHighlightColor: (path, id, color) => {
+        const list = get().highlightsByPath[path];
+        if (!list?.some((item) => item.id === id)) return;
+        const merged = mergeTouchingHighlights(
+          list.map((item) => (item.id === id ? { ...item, color } : item)),
+          { preferredId: id }
+        );
+        if (sameHighlightList(list, merged)) return;
+        noteHighlightListChange(list, merged);
+        set((state) => ({
+          highlightsByPath: {
+            ...state.highlightsByPath,
+            [path]: merged,
+          },
+        }));
+      },
+      removeHighlight: (path, id) => {
+        const list = get().highlightsByPath[path];
+        if (!list?.some((item) => item.id === id)) return;
+        const next = list.filter((item) => item.id !== id);
+        noteHighlightListChange(list, next);
         set((state) => {
-          const list = state.highlightsByPath[path];
-          if (!list?.some((h) => h.id === id)) return state;
-          return {
-            highlightsByPath: {
-              ...state.highlightsByPath,
-              [path]: list.map((h) => (h.id === id ? { ...h, color } : h)),
-            },
-          };
-        }),
-      removeHighlight: (path, id) =>
-        set((state) => {
-          const list = state.highlightsByPath[path];
-          if (!list?.some((h) => h.id === id)) return state;
-          const next = list.filter((h) => h.id !== id);
           const highlightsByPath = { ...state.highlightsByPath };
           if (next.length > 0) {
             highlightsByPath[path] = next;
@@ -426,7 +499,8 @@ export const useBooksStore = create<BooksStoreState>()(
             delete highlightsByPath[path];
           }
           return { highlightsByPath };
-        }),
+        });
+      },
       addBookmark: (path, bookmark) =>
         set((state) => ({
           bookmarksByPath: {
@@ -540,7 +614,8 @@ export const useBooksStore = create<BooksStoreState>()(
       // v8: device-local `openPath` for reader/shelf session restore.
       // v9: device-local `highlightsByPath` / `bookmarksByPath` annotations.
       // v10: `docMapByPath` for KOReader kosync document-id bridging.
-      version: 10,
+      // v11: `settings.lastHighlightColor` (last highlight swatch).
+      version: 11,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {
@@ -549,6 +624,9 @@ export const useBooksStore = create<BooksStoreState>()(
         };
         // v6 raised the line-height floor from 1.1 to 1.5.
         settings.lineHeight = clampBooksLineHeight(settings.lineHeight);
+        settings.lastHighlightColor = normalizeBooksHighlightColor(
+          settings.lastHighlightColor
+        );
         return {
           ...state,
           settings,

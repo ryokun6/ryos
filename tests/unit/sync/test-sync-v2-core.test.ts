@@ -101,11 +101,13 @@ describe("sync v2 keys", () => {
     expect(isValidSyncKey("settings/theme")).toBe(true);
     expect(isValidSyncKey("files/item:/Documents/notes.md")).toBe(true);
     expect(isValidSyncKey("books-settings/fontSizePct")).toBe(true);
+    expect(isValidSyncKey("books-highlights/hl-1")).toBe(true);
     expect(isValidSyncKey("bogus/key")).toBe(false);
     expect(isValidSyncKey("settings")).toBe(false);
     expect(getSyncKeyNamespace("images/item:abc")).toBe("images");
     expect(getSyncNamespaceCategory("wallpapers")).toBe("files");
     expect(getSyncNamespaceCategory("books-settings")).toBe("books");
+    expect(getSyncNamespaceCategory("books-highlights")).toBe("books");
   });
 
   test("validateSyncOps rejects malformed batches", () => {

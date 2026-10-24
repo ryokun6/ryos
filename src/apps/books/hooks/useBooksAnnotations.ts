@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Contents, Rendition } from "epubjs";
+import { mergeTouchingHighlights } from "@/apps/books/utils/booksHighlightRanges";
 import {
   BOOKS_HIGHLIGHT_COLOR_HEX,
+  normalizeBooksHighlightColor,
+  useBooksStore,
   type BookHighlight,
   type BooksHighlightColor,
 } from "@/stores/useBooksStore";
@@ -28,6 +31,13 @@ html, body, body * {
  * slightly above epub.js's own 250ms "selected" debounce so a clear never
  * races the selection event that preceded it. */
 const SELECTION_CLEAR_DEBOUNCE_MS = 300;
+
+/**
+ * Pause after epub.js reports a settled selection before the highlight is
+ * saved. Gives the selection toolbar time to appear, and lets a cleared or
+ * revised selection cancel the mark. Matches the selection-clear debounce.
+ */
+export const HIGHLIGHT_APPLY_DELAY_MS = 300;
 
 /** SVG attributes for a highlight mark; blend mode keeps the text readable on
  * both light (multiply darkens ink under the tint) and dark (screen lightens
@@ -103,6 +113,42 @@ function makeHighlightId(): string {
   }
 }
 
+function readRangeText(
+  rendition: Rendition | null,
+  cfiRange: string
+): string {
+  if (!rendition) return "";
+  try {
+    return normalizeSelectionText(rendition.getRange(cfiRange)?.toString());
+  } catch {
+    return "";
+  }
+}
+
+/** Fold the new passage into any highlight it touches, preferring DOM text. */
+function highlightForSelection(
+  existing: readonly BookHighlight[],
+  cfiRange: string,
+  text: string,
+  color: BooksHighlightColor,
+  rendition: Rendition | null
+): BookHighlight {
+  const incoming: BookHighlight = {
+    id: makeHighlightId(),
+    cfiRange,
+    text,
+    color,
+    createdAt: Date.now(),
+  };
+  const merged =
+    mergeTouchingHighlights([...existing, incoming], {
+      preferredId: incoming.id,
+    }).find((item) => item.id === incoming.id) ?? incoming;
+  if (merged.cfiRange === incoming.cfiRange) return merged;
+  const domText = readRangeText(rendition, merged.cfiRange);
+  return domText ? { ...merged, text: domText } : merged;
+}
+
 /**
  * Text-selection + highlight annotations for the Books reader.
  *
@@ -110,6 +156,14 @@ function makeHighlightId(): string {
  * iframe) and `markClicked` events (tap on an existing highlight), keeps the
  * rendition's SVG highlight marks in sync with the saved highlights, and
  * exposes the actions behind the selection toolbar (highlight color, copy).
+ *
+ * A settled text selection is committed in the last-used highlight color
+ * (reader setting `lastHighlightColor`) after a short pause, so the next
+ * passage does not require another swatch tap. The pause is cancelled when
+ * the selection is cleared or revised. Tapping a swatch applies that color
+ * immediately, recolors the highlight, and becomes the new default.
+ * Overlapping or contiguous highlights on the same passage collapse into one
+ * range in the color being applied.
  */
 export function useBooksAnnotations({
   getRendition,
@@ -122,9 +176,39 @@ export function useBooksAnnotations({
 }: UseBooksAnnotationsOptions): BooksAnnotationsApi {
   const [activeSelection, setActiveSelection] =
     useState<BooksActiveSelection | null>(null);
+  const activeSelectionRef = useRef(activeSelection);
+  activeSelectionRef.current = activeSelection;
 
   const highlightsRef = useRef(highlights);
   highlightsRef.current = highlights;
+  const getRenditionRef = useRef(getRendition);
+  getRenditionRef.current = getRendition;
+
+  const lastHighlightColor = normalizeBooksHighlightColor(
+    useBooksStore((state) => state.settings.lastHighlightColor)
+  );
+  const lastHighlightColorRef = useRef(lastHighlightColor);
+  lastHighlightColorRef.current = lastHighlightColor;
+
+  const onAddHighlightRef = useRef(onAddHighlight);
+  onAddHighlightRef.current = onAddHighlight;
+
+  // Highlight just committed from a selection, before the saved list prop
+  // catches up. Stops a second `selected` for the same range from inserting
+  // another id.
+  const pendingHighlightRef = useRef<BookHighlight | null>(null);
+  const pendingApplyTimerRef = useRef<number | null>(null);
+  const pendingApplyRef = useRef<{ cfiRange: string; text: string } | null>(
+    null
+  );
+
+  const cancelPendingHighlightApply = useCallback(() => {
+    if (pendingApplyTimerRef.current !== null) {
+      window.clearTimeout(pendingApplyTimerRef.current);
+      pendingApplyTimerRef.current = null;
+    }
+    pendingApplyRef.current = null;
+  }, []);
 
   // cfiRanges currently registered on the rendition, so re-syncs (highlight
   // list or palette change) can remove exactly what was added.
@@ -150,18 +234,113 @@ export function useBooksAnnotations({
     }
   }, [getRendition]);
 
+  const clearDocumentSelectionsRef = useRef(clearDocumentSelections);
+  clearDocumentSelectionsRef.current = clearDocumentSelections;
+
   // Selection tracking: epub.js emits `selected` (debounced selectionchange)
   // with the selection's CFI range; clearing is detected with our own
   // per-document selectionchange listener (epub.js stays silent on collapse).
+  // `getRendition` is read through a ref so an inline callback identity change
+  // does not restart the effect and cancel a highlight that is still waiting.
   useEffect(() => {
     if (!isReady) return;
-    const rendition = getRendition();
+    const rendition = getRenditionRef.current();
     if (!rendition) return;
 
     let disposed = false;
     let clearTimer: number | null = null;
     const docsWithListener = new WeakSet<Document>();
     const cleanups: Array<() => void> = [];
+
+    const commitSelection = (cfiRange: string, text: string) => {
+      const saved =
+        highlightsRef.current.find(
+          (highlight) => highlight.cfiRange === cfiRange
+        ) ??
+        (pendingHighlightRef.current?.cfiRange === cfiRange
+          ? pendingHighlightRef.current
+          : undefined);
+      if (saved) {
+        const next = {
+          kind: "highlight" as const,
+          cfiRange: saved.cfiRange,
+          text: saved.text || text,
+          highlightId: saved.id,
+          color: saved.color,
+        };
+        activeSelectionRef.current = next;
+        setActiveSelection(next);
+        clearDocumentSelectionsRef.current();
+        return;
+      }
+
+      const highlight = highlightForSelection(
+        highlightsRef.current,
+        cfiRange,
+        text,
+        lastHighlightColorRef.current,
+        rendition
+      );
+      pendingHighlightRef.current = highlight;
+      onAddHighlightRef.current(highlight);
+      // Clear the pending-apply token before dropping the native selection.
+      // removeAllRanges fires selectionchange, which must not cancel a commit
+      // that has already landed or dismiss the saved-highlight toolbar.
+      pendingApplyRef.current = null;
+      const next = {
+        kind: "highlight" as const,
+        cfiRange: highlight.cfiRange,
+        text: highlight.text,
+        highlightId: highlight.id,
+        color: highlight.color,
+      };
+      activeSelectionRef.current = next;
+      setActiveSelection(next);
+      clearDocumentSelectionsRef.current();
+    };
+
+    const scheduleHighlightApply = (
+      cfiRange: string,
+      text: string,
+      contents: Contents
+    ) => {
+      cancelPendingHighlightApply();
+      pendingApplyRef.current = { cfiRange, text };
+      pendingApplyTimerRef.current = window.setTimeout(() => {
+        pendingApplyTimerRef.current = null;
+        const expected = pendingApplyRef.current;
+        if (
+          disposed ||
+          !expected ||
+          expected.cfiRange !== cfiRange ||
+          expected.text !== text
+        ) {
+          return;
+        }
+        const active = activeSelectionRef.current;
+        if (
+          !active ||
+          active.kind !== "selection" ||
+          active.cfiRange !== cfiRange ||
+          active.text !== text
+        ) {
+          return;
+        }
+        let liveText = "";
+        let collapsed = true;
+        try {
+          const selection = contents.window?.getSelection();
+          collapsed =
+            !selection || selection.rangeCount === 0 || selection.isCollapsed;
+          liveText = normalizeSelectionText(selection?.toString());
+        } catch {
+          return;
+        }
+        if (collapsed || liveText !== text) return;
+        pendingApplyRef.current = null;
+        commitSelection(cfiRange, text);
+      }, HIGHLIGHT_APPLY_DELAY_MS);
+    };
 
     const handleSelected = (cfiRange: string, contents: Contents) => {
       if (disposed) return;
@@ -174,16 +353,45 @@ export function useBooksAnnotations({
         text = "";
       }
       if (!text) {
-        try {
-          text = normalizeSelectionText(
-            rendition.getRange(cfiRange)?.toString()
-          );
-        } catch {
-          text = "";
-        }
+        text = readRangeText(rendition, cfiRange);
       }
       if (!text) return;
-      setActiveSelection({ kind: "selection", cfiRange, text });
+
+      const saved =
+        highlightsRef.current.find(
+          (highlight) => highlight.cfiRange === cfiRange
+        ) ??
+        (pendingHighlightRef.current?.cfiRange === cfiRange
+          ? pendingHighlightRef.current
+          : undefined);
+      if (saved) {
+        cancelPendingHighlightApply();
+        // Reselecting a passage that is already highlighted opens it. The
+        // stored color wins; this is not a new default.
+        const next = {
+          kind: "highlight" as const,
+          cfiRange: saved.cfiRange,
+          text: saved.text || text,
+          highlightId: saved.id,
+          color: saved.color,
+        };
+        activeSelectionRef.current = next;
+        setActiveSelection(next);
+        clearDocumentSelectionsRef.current();
+        return;
+      }
+
+      // Show the toolbar immediately, but wait before saving the mark so a
+      // selection that is still moving can be cancelled.
+      const next = {
+        kind: "selection" as const,
+        cfiRange,
+        text,
+        color: lastHighlightColorRef.current,
+      };
+      activeSelectionRef.current = next;
+      setActiveSelection(next);
+      scheduleHighlightApply(cfiRange, text, contents);
     };
 
     const handleMarkClicked = (
@@ -211,21 +419,38 @@ export function useBooksAnnotations({
       if (!doc || !win || docsWithListener.has(doc)) return;
       docsWithListener.add(doc);
       const onSelectionChange = () => {
+        let collapsed = true;
+        let liveText = "";
+        try {
+          const selection = win.getSelection();
+          collapsed =
+            !selection || selection.rangeCount === 0 || selection.isCollapsed;
+          liveText = normalizeSelectionText(selection?.toString());
+        } catch {
+          collapsed = true;
+        }
+        const pending = pendingApplyRef.current;
+        if (
+          pending &&
+          (collapsed || liveText !== pending.text)
+        ) {
+          // Don't wait for the clear debounce: the apply timer is the same
+          // length and would otherwise save a selection that already moved.
+          cancelPendingHighlightApply();
+        }
         if (clearTimer !== null) window.clearTimeout(clearTimer);
         clearTimer = window.setTimeout(() => {
           clearTimer = null;
           if (disposed) return;
-          let collapsed = true;
+          let stillCollapsed = true;
           try {
             const selection = win.getSelection();
-            collapsed =
-              !selection ||
-              selection.rangeCount === 0 ||
-              selection.isCollapsed;
+            stillCollapsed =
+              !selection || selection.rangeCount === 0 || selection.isCollapsed;
           } catch {
-            collapsed = true;
+            stillCollapsed = true;
           }
-          if (collapsed) {
+          if (stillCollapsed) {
             // Only fresh selections follow the document selection; a tapped
             // highlight has no live selection backing it.
             setActiveSelection((prev) =>
@@ -274,6 +499,7 @@ export function useBooksAnnotations({
 
     return () => {
       disposed = true;
+      cancelPendingHighlightApply();
       if (clearTimer !== null) window.clearTimeout(clearTimer);
       cleanups.forEach((cleanup) => cleanup());
       try {
@@ -284,7 +510,17 @@ export function useBooksAnnotations({
         // rendition may already be destroyed
       }
     };
-  }, [getRendition, isReady]);
+  }, [cancelPendingHighlightApply, isReady]);
+
+  // Once the saved list includes the highlight we just inserted, the list
+  // itself dedupes a repeat selection of that range.
+  useEffect(() => {
+    const pending = pendingHighlightRef.current;
+    if (!pending) return;
+    if (highlights.some((highlight) => highlight.id === pending.id)) {
+      pendingHighlightRef.current = null;
+    }
+  }, [highlights]);
 
   // Keep the rendition's highlight marks in sync with the saved highlights
   // (re-tinted when the palette flips light/dark, and brightened while a
@@ -328,53 +564,76 @@ export function useBooksAnnotations({
   // Reset transient selection state when the book changes/unmounts.
   useEffect(
     () => () => {
+      cancelPendingHighlightApply();
       registeredCfiRangesRef.current = [];
       setActiveSelection(null);
     },
-    []
+    [cancelPendingHighlightApply]
   );
 
   const clearActiveSelection = useCallback(() => {
+    cancelPendingHighlightApply();
     clearDocumentSelections();
     setActiveSelection(null);
-  }, [clearDocumentSelections]);
+  }, [cancelPendingHighlightApply, clearDocumentSelections]);
 
   // Store updates must stay OUT of setActiveSelection updaters: React runs
   // updaters during render (updating the parent mid-render) and StrictMode
   // invokes them twice, which double-added highlights with distinct ids.
   const applyHighlightColor = useCallback(
     (color: BooksHighlightColor) => {
+      cancelPendingHighlightApply();
       const active = activeSelection;
       if (!active) return;
+      const stored = normalizeBooksHighlightColor(
+        useBooksStore.getState().settings.lastHighlightColor
+      );
+      if (stored !== color) {
+        useBooksStore.getState().updateSettings({ lastHighlightColor: color });
+      }
       if (active.kind === "highlight" && active.highlightId) {
         onSetHighlightColor(active.highlightId, color);
       } else {
-        onAddHighlight({
-          id: makeHighlightId(),
-          cfiRange: active.cfiRange,
-          text: active.text,
+        const highlight = highlightForSelection(
+          highlightsRef.current,
+          active.cfiRange,
+          active.text,
           color,
-          createdAt: Date.now(),
-        });
+          getRendition()
+        );
+        pendingHighlightRef.current = highlight;
+        onAddHighlight(highlight);
       }
       setActiveSelection(null);
       clearDocumentSelections();
     },
     [
       activeSelection,
+      cancelPendingHighlightApply,
       clearDocumentSelections,
+      getRendition,
       onAddHighlight,
       onSetHighlightColor,
     ]
   );
 
   const removeActiveHighlight = useCallback(() => {
+    cancelPendingHighlightApply();
     const active = activeSelection;
     if (active?.kind === "highlight" && active.highlightId) {
+      if (pendingHighlightRef.current?.id === active.highlightId) {
+        pendingHighlightRef.current = null;
+      }
       onRemoveHighlight(active.highlightId);
     }
     setActiveSelection(null);
-  }, [activeSelection, onRemoveHighlight]);
+    clearDocumentSelections();
+  }, [
+    activeSelection,
+    cancelPendingHighlightApply,
+    clearDocumentSelections,
+    onRemoveHighlight,
+  ]);
 
   const copyActiveSelection = useCallback(async (): Promise<boolean> => {
     const text = activeSelection?.text;
