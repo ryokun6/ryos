@@ -1407,12 +1407,16 @@ def build_audio(music, start, out_wav, sfx=(), beds=()):
         check=True, capture_output=True)
 
 
-# On-screen clock at the `playing` mark ("0:02") and the lyrics seek (the pronunciation line).
-IPOD_POS_AT_PLAYING = 2.0
+# seekPlayer target for the pronunciation line: (line start − lyricOffset) / 1000 + 0.6.
+# The stem jumps here at the `lyrics` mark, the first frame the edit keeps. The
+# previous mix jumped at video-end, so ~2.1 s of the line played into a gap the
+# cut skips and the lyrics shot opened already that far into the vocal.
 IPOD_SEEK_SECONDS = 37.883
-# inspectLyrics arms the player here. Each 22° spin is one 15° detent → +3 volume units.
-IPOD_VOLUME0 = 0.28
-IPOD_VOLUME_STEP = 0.03
+# Quiet intro sits under a bed ducked 10 dB. Hold it up, then rise 8 dB across
+# the volume shot (the old +10.5 dB intro lift was decaying through that shot,
+# so the slider moved and the level did not).
+IPOD_GAIN_BEFORE_DB = 5.0
+IPOD_GAIN_RIDE_DB = 8.0
 
 
 def _has_audio(path):
@@ -1557,12 +1561,6 @@ def ipod_source_events(marks):
     return spread
 
 
-def _song_gain(volume01):
-    """The song stem is already at -14 LUFS. Unity leads a bed ducked 10 dB; each detent adds ~0.8 dB."""
-    db = (volume01 - IPOD_VOLUME0) / IPOD_VOLUME_STEP * 0.8
-    return 10 ** (min(6.0, db) / 20)
-
-
 def _normalized_song(src):
     """One -14 LUFS / -3 dBTP copy of the YouTube audio, so the mix doesn't chase its true peak."""
     out = os.path.join(ROOT, "supernatural-norm.wav")
@@ -1580,11 +1578,72 @@ def _normalized_song(src):
     return out
 
 
+def _clock_slices(marks):
+    """(capture_start, song_seconds, duration) for the on-screen player.
+
+    Reads of the LCD (desktop and phone takes differ by where playback began):
+    the clock runs with the capture until the scrub digits step, then again
+    until the lyrics mark, where the shooter seeks to the pronunciation line.
+    That seek used to fire at video-end, inside a gap the edit does not play.
+    """
+    playing = _mark_t(marks, "playing")
+    lyrics = _mark_t(marks, "lyrics")
+    end = float(marks["end"]["t"]) + 0.4
+    phone = playing < 14
+    # (capture_t, song_s) anchors. Slope is 1 between them except where the
+    # next anchor's song time jumps ahead of realtime — those are the scrub steps.
+    if phone:
+        anchors = [
+            (playing, 8.0 + (playing - 18.80)),
+            (23.60, 14.00),
+            (24.40, 16.00),
+            (25.20, 17.00),
+            (lyrics, None),  # realtime up to the lyrics seek
+        ]
+    else:
+        anchors = [
+            (playing, 8.0 + (playing - 22.00)),
+            (28.00, 14.00),
+            (28.40, 15.00),
+            (28.80, 16.00),
+            (29.60, 18.00),
+            (lyrics, None),
+        ]
+    slices = []
+    for i, (t0, song0) in enumerate(anchors):
+        if song0 is None:
+            break
+        nxt_t, nxt_song = anchors[i + 1]
+        if nxt_song is None:
+            # Realtime up to the lyrics mark, then the pronunciation-line seek.
+            slices.append((t0, max(0.0, song0), lyrics - t0))
+            slices.append((lyrics, IPOD_SEEK_SECONDS, end - lyrics))
+            break
+        slices.append((t0, max(0.0, song0), nxt_t - t0))
+    return [(t, s, d) for t, s, d in slices if d > 0.04]
+
+
+def _slice_gain_expr(t0, dur, volume_t, volume_end):
+    """Gain vs the -14 LUFS stem. +5 dB before the volume shot, then +8 dB across it."""
+    lo = 10 ** (IPOD_GAIN_BEFORE_DB / 20)
+    hi = 10 ** ((IPOD_GAIN_BEFORE_DB + IPOD_GAIN_RIDE_DB) / 20)
+    if t0 + dur <= volume_t + 0.001:
+        return f"{lo:.4f}"
+    if t0 >= volume_end - 0.001:
+        return f"{hi:.4f}"
+    t_vol = volume_t - t0
+    t_hold = volume_end - t0
+    span = max(0.05, t_hold - t_vol)
+    return (f"if(lt(t,{t_vol:.3f}),{lo:.4f},if(gt(t,{t_hold:.3f}),{hi:.4f},"
+            f"pow(10,({IPOD_GAIN_BEFORE_DB:.1f}+{IPOD_GAIN_RIDE_DB:.1f}*(t-{t_vol:.3f})/{span:.3f})/20)))")
+
+
 def write_ipod_program(take_dir, marks):
     """Source-timeline mix of the UI samples plus Supernatural, for a capture that has no audio track.
 
     The screencast is pictures only. These are the same click and wheel files the app played
-    (ui sounds default on), placed on the gesture clock, with the song at the on-screen position.
+    (ui sounds default on), placed on the gesture clock. The song follows the on-screen
+    player, including the scrub steps and the lyrics seek.
     """
     song_src = os.environ.get("PROMO_IPOD_SONG") or os.path.join(ROOT, "supernatural.webm")
     if not os.path.exists(song_src):
@@ -1595,27 +1654,9 @@ def write_ipod_program(take_dir, marks):
     wheel = os.path.join(sounds, "WheelsOfTime.m4a")
     events = ipod_source_events(marks)
     dur = float(marks["end"]["t"]) + 0.4
-    playing = _mark_t(marks, "playing")
     volume_t = _mark_t(marks, "volume")
     volume_end = _mark_t(marks, "volume-end")
-    jump = _mark_t(marks, "video-end") + 0.15
-    vol = IPOD_VOLUME0
-    for t, kind in events:
-        if kind == "wheel" and _mark_t(marks, "play-end") - 0.3 <= t <= volume_end + 0.3:
-            vol = min(1.0, vol + IPOD_VOLUME_STEP)
-    g0, g1 = _song_gain(IPOD_VOLUME0), _song_gain(vol)
-    pre = max(0.3, jump - playing)
-    post = max(0.3, dur - jump)
-    t_vol = max(0.05, volume_t - playing)
-    t_hold = max(t_vol + 0.05, volume_end - playing)
-    detent = (f"if(lt(t,{t_vol:.3f}),{g0:.4f},if(gt(t,{t_hold:.3f}),{g1:.4f},"
-              f"{g0:.4f}+{(g1 - g0):.4f}*(t-{t_vol:.3f})/({t_hold - t_vol:.3f})))")
-    # The on-screen Now Playing hold is the quiet intro (about -26 dBFS against a -15 dBFS chorus).
-    # Lift it so the song already leads, then let the chorus and the volume wheel take over.
-    lift = 10 ** (10.5 / 20)
-    intro = (f"if(lt(t,5.8),{lift:.3f},if(gt(t,7.2),1,"
-             f"{lift:.3f}+(1-{lift:.3f})*((t-5.8)/1.4)))")
-    vol_expr = f"({detent})*({intro})"
+    slices = _clock_slices(marks)
     inputs = ["-f", "lavfi", "-t", f"{dur:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
     graph, labels = [], ["[0:a]"]
     for i, (t, kind) in enumerate(events):
@@ -1627,23 +1668,29 @@ def write_ipod_program(take_dir, marks):
         labels.append(f"[e{i}]")
     si = 1 + len(events)
     inputs += ["-i", song]
-    play_ms = int(round(playing * 1000))
-    jump_ms = int(round(jump * 1000))
-    graph.append(f"[{si}:a]asplit=2[sa][sb]")
-    graph.append(f"[sa]aresample=48000,aformat=channel_layouts=stereo,"
-                 f"atrim=start={IPOD_POS_AT_PLAYING:.3f}:end={IPOD_POS_AT_PLAYING + pre:.3f},asetpts=PTS-STARTPTS,"
-                 f"volume='{vol_expr}':eval=frame,afade=t=in:d=0.03,adelay={play_ms}|{play_ms},apad[songA]")
-    graph.append(f"[sb]aresample=48000,aformat=channel_layouts=stereo,"
-                 f"atrim=start={IPOD_SEEK_SECONDS:.3f}:end={IPOD_SEEK_SECONDS + post:.3f},asetpts=PTS-STARTPTS,"
-                 f"volume={g1:.4f},afade=t=in:d=0.04,adelay={jump_ms}|{jump_ms},apad[songB]")
-    labels += ["[songA]", "[songB]"]
+    n = len(slices)
+    graph.append(f"[{si}:a]asplit={n}" + "".join(f"[s{k}]" for k in range(n)))
+    prev_end = None
+    for k, (t0, song0, length) in enumerate(slices):
+        ms = int(round(t0 * 1000))
+        expr = _slice_gain_expr(t0, length, volume_t, volume_end)
+        seek = prev_end is None or abs(song0 - prev_end) > 0.05
+        fade = "afade=t=in:d=0.03," if seek else ""
+        graph.append(f"[s{k}]aresample=48000,aformat=channel_layouts=stereo,"
+                     f"atrim=start={song0:.3f}:end={song0 + length + 0.02:.3f},asetpts=PTS-STARTPTS,"
+                     f"volume='{expr}':eval=frame,{fade}adelay={ms}|{ms},apad[song{k}]")
+        labels.append(f"[song{k}]")
+        prev_end = song0 + length
+        print(f"[ipod-audio] song {t0:.2f}s+{length:.2f}s ← file {song0:.2f}s"
+              + (" seek" if seek else ""))
     graph.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=first:dropout_transition=0,"
                  f"alimiter=limit=0.95:attack=5:release=80[out]")
     out = os.path.join(take_dir, "program.wav")
     subprocess.run(["ffmpeg", "-hide_banner", "-y", *inputs, "-filter_complex", ";".join(graph),
                     "-map", "[out]", "-ac", "2", "-t", f"{dur:.3f}", out],
                    check=True, capture_output=True)
-    print(f"[ipod-audio] {out} {len(events)} ui sounds, song gain {g0:.2f}→{g1:.2f}, seek at {jump:.2f}s")
+    print(f"[ipod-audio] {out} {len(events)} ui sounds, {n} song slices, "
+          f"volume +{IPOD_GAIN_RIDE_DB:.0f} dB across {volume_t:.2f}–{volume_end:.2f}s")
     return out
 
 
