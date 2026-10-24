@@ -1,0 +1,11 @@
+{
+  "_about": "iPod promo on the bgm2 Apple Support grid. The MacBook keeps its resting size and slides right beside the two-line title. One gentle zoom, on the last lyrics step, so the camera never pulls back.",
+  "extends": "apple-support-bgm2.json",
+  "layout": {
+    "h": {"side_scale": "rest"}
+  },
+  "zoom": {
+    "lyrics": {"factor": 1.28, "beat": 4},
+    "fullscreen": {"factor": 1.1, "beat": 4}
+  }
+}

@@ -34,6 +34,7 @@ export async function ensureXvfb() {
 
 export async function launch(): Promise<{ browser: Browser; ctx: BrowserContext; page: Page }> {
   if (process.env.PROMO_HEADLESS === "1") return launchHeadless();
+  if (process.platform === "darwin") return launchDarwin();
   await ensureXvfb();
   const profile = `/tmp/promo-chrome-${Date.now()}`;
   const ctx = await chromium.launchPersistentContext(profile, {
@@ -63,6 +64,34 @@ export async function launch(): Promise<{ browser: Browser; ctx: BrowserContext;
     await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "fullscreen" } });
     await sleep(800);
   }
+  const browser = { close: () => ctx.close() } as unknown as Browser;
+  return { browser, ctx, page };
+}
+
+/** Headed Google Chrome on this Mac. CDP screencast records the emulated viewport at device pixels, so the display can be smaller than the capture. */
+async function launchDarwin(): Promise<{ browser: Browser; ctx: BrowserContext; page: Page }> {
+  const profile = `/tmp/promo-chrome-${Date.now()}`;
+  const ctx = await chromium.launchPersistentContext(profile, {
+    executablePath: process.env.CHROME_PATH || "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    headless: false,
+    viewport: VIEWPORT,
+    deviceScaleFactor: DSF,
+    hasTouch: DEVICE === "phone",
+    args: [
+      "--window-position=40,40",
+      `--window-size=${Math.max(WINDOW.width, 540)},${VIEWPORT.height + 88}`,
+      "--autoplay-policy=no-user-gesture-required",
+      "--disable-blink-features=AutomationControlled",
+      "--font-render-hinting=none",
+      "--force-color-profile=srgb",
+      "--hide-scrollbars",
+      "--disable-infobars",
+      "--no-first-run",
+    ],
+    ignoreDefaultArgs: ["--enable-automation"],
+  });
+  const page = ctx.pages()[0] ?? (await ctx.newPage());
+  page.on("pageerror", (e) => console.log("[pageerror]", e.message.slice(0, 200)));
   const browser = { close: () => ctx.close() } as unknown as Browser;
   return { browser, ctx, page };
 }
@@ -149,7 +178,7 @@ export async function signIn(page: Page) {
     },
     { username, password }
   );
-  console.log("[signIn]", username, res.status);
+  console.log("[signIn]", username, res.status, res.status >= 400 ? res.body : "");
 }
 
 /**
@@ -224,15 +253,26 @@ export async function fillPhoneWindow(page: Page, gap = 8) {
   await page.waitForTimeout(500);
 }
 
-/** 30 fps x11grab of the Xvfb display; marks are wall-clock and aligned via the mkv's epoch start_time. */
+/** 30 fps capture. Linux: x11grab of the Xvfb display. macOS: Chrome screencast of the emulated viewport at device pixels. */
 export class X11Recorder {
   private proc?: ReturnType<typeof Bun.spawn>;
   private marks: { name: string; ts: number; box?: Box }[] = [];
-  constructor(private dir: string, private fps = 30) {}
+  private cdp?: import("playwright").CDPSession;
+  private frameTimes: number[] = [];
+  private writeChain: Promise<void> = Promise.resolve();
+  private framesDir = "";
+  private t0 = 0;
+  private stopLoop = false;
+  private loopDone: Promise<void> = Promise.resolve();
+  constructor(private dir: string, private page?: Page, private fps = 30) {}
 
   async start() {
     await rm(this.dir, { recursive: true, force: true });
     await mkdir(this.dir, { recursive: true });
+    if (process.platform === "darwin") {
+      await this.startScreencast();
+      return;
+    }
     const size = `${VIEWPORT.width * DSF}x${VIEWPORT.height * DSF}`;
     this.proc = Bun.spawn(
       [
@@ -245,6 +285,74 @@ export class X11Recorder {
     );
     await sleep(1200);
     this.mark("start");
+  }
+
+  /**
+   * Page.startScreencast on this Mac delivered one CSS-pixel frame and then stalled
+   * (the ack deadlocks inside the CDP event). Capture the emulated viewport the same
+   * way Playwright's screenshot does: a clip in CSS pixels at `scale: DSF`, so the
+   * jpeg is the bezel's device-pixel size (2560×1664 or 1206×2622).
+   */
+  private async startScreencast() {
+    if (!this.page) throw new Error("macOS capture needs the Playwright page");
+    this.framesDir = path.join(this.dir, "frames");
+    await mkdir(this.framesDir, { recursive: true });
+    this.stopLoop = false;
+    this.cdp = await this.page.context().newCDPSession(this.page);
+    const sw = VIEWPORT.width * DSF;
+    const sh = VIEWPORT.height * DSF;
+
+    const shoot = async () => {
+      const started = Date.now() / 1000;
+      const shot = await this.cdp!.send("Page.captureScreenshot", {
+        format: "jpeg",
+        quality: 90,
+        fromSurface: true,
+        captureBeyondViewport: true,
+        clip: { x: 0, y: 0, width: VIEWPORT.width, height: VIEWPORT.height, scale: DSF },
+      });
+      const n = this.frameTimes.length + 1;
+      const file = path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`);
+      this.frameTimes.push(started);
+      const buf = Buffer.from(shot.data, "base64");
+      this.writeChain = this.writeChain.then(() => Bun.write(file, buf)).then(() => undefined);
+    };
+
+    await shoot();
+    const first = path.join(this.framesDir, "00001.jpg");
+    await this.writeChain;
+    const dim = Bun.spawnSync([
+      "ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "csv=p=0", first,
+    ]);
+    const [w, h] = dim.stdout.toString().trim().split(",").map(Number);
+    if (w !== sw || h !== sh) {
+      throw new Error(`capture frame is ${w}x${h}, bezel screen is ${sw}x${sh}`);
+    }
+    this.t0 = this.frameTimes[0];
+    this.mark("start");
+
+    this.loopDone = (async () => {
+      let lastLog = Date.now();
+      while (!this.stopLoop) {
+        const t = Date.now();
+        try {
+          await shoot();
+        } catch (e) {
+          if (this.stopLoop) break;
+          console.warn("[rec] frame failed", e instanceof Error ? e.message : e);
+          await sleep(40);
+          continue;
+        }
+        const wait = 1000 / this.fps - (Date.now() - t);
+        if (wait > 2) await sleep(wait);
+        if (Date.now() - lastLog > 5000) {
+          const n = this.frameTimes.length;
+          const span = this.frameTimes[n - 1] - this.frameTimes[0];
+          console.log(`[rec] ${n} frames, ${span > 0 ? (n / span).toFixed(1) : "?"} fps`);
+          lastLog = Date.now();
+        }
+      }
+    })();
   }
 
   mark(name: string, box?: Box | null) {
@@ -261,7 +369,11 @@ export class X11Recorder {
 
   async stop() {
     this.mark("end");
-    await sleep(800);
+    await sleep(500);
+    if (process.platform === "darwin") {
+      await this.stopScreencast();
+      return;
+    }
     const stdin = this.proc!.stdin as import("bun").FileSink;
     stdin.write("q");
     stdin.end();
@@ -282,6 +394,52 @@ export class X11Recorder {
       )
     );
     console.log(`[rec] start_time=${t0} duration=${fmt.duration}`);
+  }
+
+  private async stopScreencast() {
+    this.stopLoop = true;
+    await this.loopDone;
+    await this.cdp?.detach().catch(() => {});
+    await this.writeChain;
+    const n = this.frameTimes.length;
+    const sw = VIEWPORT.width * DSF;
+    const sh = VIEWPORT.height * DSF;
+    const lines = ["ffconcat version 1.0"];
+    for (let i = 0; i < n; i++) {
+      const dur = i + 1 < n ? Math.max(1 / 120, this.frameTimes[i + 1] - this.frameTimes[i]) : 1 / this.fps;
+      lines.push(`file '${path.join(this.framesDir, `${String(i + 1).padStart(5, "0")}.jpg`)}'`);
+      lines.push(`duration ${dur.toFixed(4)}`);
+    }
+    lines.push(`file '${path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`)}'`);
+    const list = path.join(this.dir, "frames.txt");
+    await writeFile(list, lines.join("\n") + "\n");
+    console.log(`[rec] ${n} frames at ${sw}x${sh}`);
+    const enc = Bun.spawnSync([
+      "ffmpeg", "-hide_banner", "-loglevel", "warning", "-y",
+      "-f", "concat", "-safe", "0", "-i", list,
+      "-fps_mode", "cfr", "-r", String(this.fps),
+      "-c:v", "libx264", "-preset", "ultrafast", "-crf", "12", "-pix_fmt", "yuv420p",
+      path.join(this.dir, "capture.mkv"),
+    ]);
+    if (enc.exitCode !== 0) {
+      console.error(enc.stderr.toString().slice(-2000));
+      throw new Error(`ffmpeg encode failed (${enc.exitCode})`);
+    }
+    await rm(this.framesDir, { recursive: true, force: true });
+    const probe = Bun.spawnSync([
+      "ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path.join(this.dir, "capture.mkv"),
+    ]);
+    const duration = Number(probe.stdout.toString().trim());
+    await writeFile(
+      path.join(this.dir, "marks.json"),
+      JSON.stringify(
+        { source: "capture.mkv", startTime: 0, duration, dsf: DSF,
+          marks: this.marks.map((m) => ({ ...m, t: +(m.ts - this.t0).toFixed(3) })) },
+        null,
+        2
+      )
+    );
+    console.log(`[rec] duration=${duration.toFixed(2)}s`);
   }
 }
 

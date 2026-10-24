@@ -87,6 +87,42 @@ export async function setLanguage(page: Page, lang: string) {
   await page.waitForTimeout(800);
 }
 
+/**
+ * Make sure these YouTube tracks are in the library (real metadata + lyrics via addTrackFromVideoId)
+ * and leave the hero paused on the root-menu path: modern skin, backlight held on, lyrics hidden.
+ */
+export async function seedIpod(page: Page, ids: string[], hero: string) {
+  return store(
+    page,
+    `const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+     for (let i = 0; i < 40 && useIpodStore.getState().libraryState === "uninitialized"; i++) await wait(250);
+     const s = useIpodStore.getState();
+     s.setUiVariant("modern");
+     s.setTheme("classic");
+     s.setLibrarySource("youtube");
+     s.setBacklightTimeout("always-on");
+     if (!s.backlightOn) s.toggleBacklight();
+     if (s.showLyrics) s.toggleLyrics();
+     s.setShowVideo(false);
+     if (s.isShuffled) s.toggleShuffle();
+     for (const id of arg.ids) {
+       if (!useIpodStore.getState().tracks.some((t) => t.id === id)) {
+         await useIpodStore.getState().addTrackFromVideoId(id, false, { keepPlayback: true });
+       }
+     }
+     const st = useIpodStore.getState();
+     if (st.tracks.some((t) => t.id === arg.hero)) st.setCurrentSongId(arg.hero);
+     st.setIsPlaying(false);
+     st.setShowVideo(false);
+     return {
+       state: st.libraryState,
+       tracks: st.tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist || "", album: t.album || "", cover: Boolean(t.cover), lyrics: Boolean(t.lyricsSource) })),
+     };`,
+    { ids, hero }
+  );
+}
+
 export async function fitnessView(page: Page, view: string) {
   await store(page, `const m = await import("/src/stores/useFitnessStore.ts"); m.useFitnessStore.getState().setView(arg);`, view);
 }

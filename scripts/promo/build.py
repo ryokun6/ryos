@@ -71,6 +71,17 @@ HOME_INDICATOR = (134, 5, 8)
 # iOS status bar text (not a caption): system UI face.
 STATUS_FONT = os.path.join(os.environ.get("PROMO_FONT_DIR", "/usr/share/fonts/truetype/macos"), "Inter-SemiBold.ttf")
 
+
+def status_font_path():
+    """iOS status-bar face. Inter on Linux; a system face on macOS."""
+    for p in (STATUS_FONT,
+              "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+              "/Library/Fonts/Arial Bold.ttf",
+              "/System/Library/Fonts/Supplemental/Arial.ttf"):
+        if os.path.exists(p):
+            return p
+    raise FileNotFoundError("no font for the iOS status bar")
+
 STYLE = style_mod.load()
 BG = tuple(STYLE["colors"]["bg"])
 INK = tuple(STYLE["colors"]["ink"])
@@ -194,9 +205,15 @@ def behind_x(dst, layer, x, y, clip_x):
 
 
 def wrap(text, size, max_w, max_chars=None):
-    """Fewest lines that fit max_w (and max_chars per line), then the most even break into that many lines."""
+    """Fewest lines that fit max_w (and max_chars per line), then the most even break into that many lines.
+    A newline in `text` is an explicit line break (the iPod title is "iPod" / "on ryOS")."""
     font = ImageFont.truetype(FONT, size)
     width = lambda s: font.getlength(s) + max(0, len(s) - 1) * size * STYLE["tracking_em"]  # noqa: E731
+    if "\n" in text:
+        lines = text.split("\n")
+        if max(width(l) for l in lines) > max_w or (max_chars and max(len(l) for l in lines) > max_chars):
+            raise ValueError(f"{text!r} does not fit {max_w}px / {max_chars} chars at {size}px")
+        return lines
     words = text.split(" ")
     for n in range(1, len(words) + 1):
         best = None
@@ -343,7 +360,7 @@ class Device:
         d = ImageDraw.Draw(img)
         white = (255, 255, 255, 255)
         cy = (icy - sy) * ss
-        font = ImageFont.truetype(STATUS_FONT, 52 * ss)
+        font = ImageFont.truetype(status_font_path(), 52 * ss)
         lx = ((ix0 - sx) / 2 + 18) * ss
         d.text((lx, cy), "9:41", font=font, fill=white, anchor="mm")
         rx = ((ix1 - sx) + (sw - (ix1 - sx)) / 2 - 10) * ss
@@ -653,10 +670,131 @@ def union(*boxes):
 
 
 # ---------------------------------------------------------------- timeline
+APP = os.environ.get("PROMO_APP", "dictionary")
+
+
+def plan_ipod(L, dev, B, length=30):
+    """iPod only. 30 s: menu, Cover Flow, Now Playing, synced lyrics. 60 s adds Add Song, skip/shuffle,
+    and full-screen glow lyrics (furigana when the hero is Japanese)."""
+    home, ipod = Take(L, "desktop"), Take(L, "ipod")
+    extra = (Take(L, "ipod-extra"),) if length == 60 else ()
+    for t in (home, ipod, *extra):
+        assert t.size == dev.screen[2:], f"{t.dir}: capture {t.size} != bezel screen {dev.screen[2:]} – re-shoot"
+    rest = dev.rest
+    cb = lambda box: dev.from_capture(box)  # noqa: E731
+
+    def shot(take, at, src, rate=1.0, cam=rest, moves=()):
+        return {"take": take, "at": at, "src": src, "rate": rate, "cam": cam, "moves": list(moves)}
+
+    Z = STYLE["zoom"]
+    targets = {}
+    if ipod.marks.get("win", {}).get("box"):
+        targets["lyrics"] = cb(ipod.box("win"))
+    if extra and extra[0].marks.get("fs", {}).get("box"):
+        targets["fullscreen"] = cb(extra[0].box("fs"))
+
+    def D(caption, shots, zoom=None, cap_in=0, title=False, cap_in_s=None, zoom_beat=None):
+        cap_out = None
+        if not STYLE["trailing_period"]:
+            caption = caption.rstrip(".")
+        side = make_caption(L, dev, caption, title)[2]
+        if side is not None:
+            for sh_ in shots:
+                if sh_["cam"] is rest:
+                    sh_["cam"] = side
+                sh_["moves"] = [(m[0], side, *m[2:]) if m[1] is rest else m for m in sh_["moves"]]
+            if cap_in_s is None:
+                cap_in_s = STYLE["caption_in_s"]
+        if zoom and Z.get(zoom) and zoom in targets:
+            beat = Z[zoom]["beat"] if zoom_beat is None else zoom_beat
+            t = beat * B
+            s = [sh_ for sh_ in shots if sh_["at"] <= t][-1]
+            s["moves"].append((t - s["at"], dev.zoom(targets[zoom], Z[zoom]["factor"])))
+            cap_out = beat
+        return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
+                    cap_in_s=cap_in_s)
+
+    title = "iPod\non ryOS" if L["key"] == "h" else "iPod on ryOS"
+    O = dict(STYLE["open"])
+    if length == 60 and O.get("push_at_beats_60") is not None:
+        O["push_at_beats"] = O["push_at_beats_60"]
+    for key in ("move_at", "push_at"):
+        if O.get(f"{key}_beats") is not None:
+            O[f"{key}_s"] = O[f"{key}_beats"] * B
+    if L["key"] == "v" and O.get("v_title_push"):
+        s0, fx, fy = rest
+        below = (s0, fx, fy - (L["H"] + 8 - STYLE["layout"]["v"]["device_top"]) / s0)
+        opening = dict(kind="device", caption=title, title=True, cap_in=0, cap_out=None, cap_in_s=None,
+                       title_push=True, shots=[shot(home, 0, home.t("start", 0.3), cam=below,
+                                                    moves=[(O["push_at_s"], rest, STYLE["move"]["duration_s"])])])
+    else:
+        s0, fx, _ = rest
+        centred = (s0, fx, (dev.bbox[1] + dev.bbox[3]) / 2)
+        opening = D(title, [shot(home, 0, home.t("start", 0.3), cam=centred,
+                                 moves=[(O["move_at_s"], rest, O["move_s"])])],
+                    cap_in_s=O["move_at_s"], title=True)
+        opening["cap_dur_s"] = O["title_s"]
+
+    def clip(name):
+        path = os.path.join(ROOT, name)
+        return path if os.path.exists(path) else None
+
+    icon = dict(kind="icon", icon="macosx/ipod.png", name="iPod")
+    end = dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")
+    browse = D("Browse with the click wheel.", [
+        shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10 if length == 30 else 12, B))])
+    covers = D("Flip through Cover Flow.", [
+        shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("playing", -0.25), 10 if length == 30 else 12, B))])
+    playing = D("Now Playing.", [
+        shot(ipod, 0, ipod.t("playing", -0.1), span_rate(ipod.t("playing", -0.1), ipod.t("video", 1.0), 12, B))])
+    bed = clip("song-play.mp3")
+    if bed:
+        playing["sfx"] = [(ipod, "video", bed)]
+    lyrics = D("Lyrics, in time.", [shot(ipod, 0, ipod.t("lyrics", 0.2))], zoom="lyrics", zoom_beat=4)
+
+    if length == 30:
+        return [
+            (0, 8, opening),
+            (8, 12, icon),
+            (12, 22, browse),
+            (22, 32, covers),
+            (32, 44, playing),
+            (44, 56, lyrics),
+            (56, None, end),
+        ]
+
+    ex = extra[0]
+    add = D("Add a song from YouTube.", [
+        shot(ex, 0, ex.t("add", 0.1), span_rate(ex.t("add", 0.1), ex.t("added", 0.6), 14, B))])
+    skip = D("Skip ahead with shuffle on.", [
+        shot(ex, 0, ex.t("shuffle", -0.3), span_rate(ex.t("shuffle", -0.3), ex.t("skipped", 1.2), 12, B))])
+    # One continuous full-screen hold, split only so the caption can roll. Rate 1 — lyrics should not be slowed.
+    full_src = ex.t("fullscreen", 0.35)
+    full = D("Full Screen lyrics.", [shot(ex, 0, full_src)])
+    furi = D("Furigana on each word.", [shot(ex, 0, full_src + 16 * B)], zoom="fullscreen", zoom_beat=4)
+    bed2 = clip("song-lyrics.mp3")
+    if bed2:
+        full["sfx"] = [(ex, "fullscreen", bed2)]
+    return [
+        (0, 12, opening),
+        (12, 16, icon),
+        (16, 28, browse),
+        (28, 40, covers),
+        (40, 52, playing),
+        (52, 66, add),
+        (66, 78, skip),
+        (78, 94, full),
+        (94, 112, furi),
+        (112, None, end),
+    ]
+
+
 def plan(L, dev, B, length=30):
     """Scenes on the beat grid: (start_beat, end_beat, scene). Captions sit under the device at rest and slide
     out as the camera punches in, so a zoomed device never has text over it. `length` 60 adds speech, readings,
     schedule, set logging and the exercise library (sessions dict-extra, fitness-extra, exercises)."""
+    if APP == "ipod":
+        return plan_ipod(L, dev, B, length)
     k = L["dsf"]
     home, d, fz = Take(L, "desktop"), Take(L, "dictionary"), Take(L, "fitness")
     extra = (Take(L, "dict-extra"), Take(L, "fitness-extra"), Take(L, "exercises")) if length == 60 else ()
@@ -1314,13 +1452,17 @@ if __name__ == "__main__":
                     help="downbeat the excerpt starts on (default: bgm2's offset for --length)")
     ap.add_argument("--bpm", type=float, default=os.environ.get("PROMO_BPM"), help="default: bgm2's tempo for --length")
     ap.add_argument("--length", type=int, choices=(30, 60), default=int(os.environ.get("PROMO_LENGTH", "30")))
+    ap.add_argument("--app", choices=("dictionary", "ipod"), default=os.environ.get("PROMO_APP", "dictionary"))
     args = ap.parse_args()
+    global APP
+    APP = args.app
     start, bpm = BGM2_GRID[args.length]
     args.music_start = start if args.music_start is None else float(args.music_start)
     args.bpm = bpm if args.bpm is None else float(args.bpm)
     DURATION = float(args.length)
     configure(style_mod.load(args.style))
     L = LAYOUTS["v" if args.vertical else "h"]
-    out = args.out or os.path.join(ROOT, "out", f"ryos-dictionary-fitness-{args.length}s{'-vertical' if args.vertical else ''}.mp4")
+    stem = "ryos-ipod" if args.app == "ipod" else "ryos-dictionary-fitness"
+    out = args.out or os.path.join(ROOT, "out", f"{stem}-{args.length}s{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     compose(L, 60.0 / args.bpm, out, args.music, args.music_start)

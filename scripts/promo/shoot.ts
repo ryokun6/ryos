@@ -9,6 +9,7 @@
  */
 import type { Locator, Page } from "playwright";
 import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
+import { runIpod, runIpodExtra } from "./ipod";
 import { fitnessView, seedDesktopShortcuts, seedFitness } from "./seed";
 
 const session = process.argv[2] ?? "dictionary";
@@ -36,7 +37,7 @@ async function dictionary(page: Page) {
   const win = page.locator("[data-window-instance-id]").last();
   await retype(page, input, "serendipity", 20);
   await sleep(2000);
-  const rec = new X11Recorder(dir);
+  const rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(900);
 
@@ -107,7 +108,7 @@ async function fitness(page: Page) {
   await fitnessView(page, "food");
   await sleep(1500);
   const win = page.locator("[data-window-instance-id]").last();
-  const rec = new X11Recorder(dir);
+  const rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(900);
 
@@ -204,7 +205,7 @@ async function dictExtra(page: Page) {
       return play.call(this);
     };
   });
-  rec = new X11Recorder(dir);
+  rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(900);
 
@@ -264,7 +265,7 @@ async function fitnessExtra(page: Page) {
   await fitnessView(page, "schedule");
   await sleep(2500);
   const win = page.locator("[data-window-instance-id]").last();
-  const rec = new X11Recorder(dir);
+  const rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(900);
 
@@ -300,7 +301,7 @@ async function exercises(page: Page) {
   await page.getByRole("option").first().waitFor({ timeout: 30000 });
   await sleep(1500);
   const win = page.locator("[data-window-instance-id]").last();
-  const rec = new X11Recorder(dir);
+  const rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(900);
 
@@ -322,7 +323,7 @@ async function exercises(page: Page) {
 
 async function desktop() {
   await sleep(1500);
-  const rec = new X11Recorder(dir);
+  const rec = new X11Recorder(dir, page);
   await rec.start();
   await sleep(4500);
   await rec.stop();
@@ -331,9 +332,12 @@ async function desktop() {
 const { browser, page } = await launch();
 await boot(page, { language: session === "exercises" ? "ja" : "en" });
 await signIn(page);
-await seedDesktopShortcuts(page);
+const forIpod = session.startsWith("ipod") || (session === "desktop" && process.env.PROMO_APP === "ipod");
+await seedDesktopShortcuts(page, forIpod ? [["ipod", "iPod"]] : [["dictionary", "Dictionary"], ["fitness", "Fitness"]]);
 const sessions: Record<string, (page: Page) => Promise<void>> = {
   desktop, dictionary, fitness, "dict-extra": dictExtra, "fitness-extra": fitnessExtra, exercises,
+  ipod: (p) => runIpod(p, dir, phone),
+  "ipod-extra": (p) => runIpodExtra(p, dir, phone),
 };
 if (!sessions[session]) throw new Error(`unknown session ${session}: ${Object.keys(sessions).join(", ")}`);
 await sessions[session](page);
