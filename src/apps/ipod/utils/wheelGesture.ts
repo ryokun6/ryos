@@ -29,12 +29,25 @@ export const MENU_SLIDE_FULL_MS = 240;
 
 /**
  * How long the center button must stay down before it opens the Now Playing
- * menu. A release before this is a short press (scrub). A release after the
- * menu has opened must not also count as that short press.
+ * menu. A release before this is a short press. On Now Playing that press
+ * cycles seek, then video, then the plain screen. A release after the menu
+ * has opened must not also count as that short press.
  */
 export const CENTER_HOLD_MS = 500;
 
 export type CenterGesturePhase = "idle" | "down" | "menu";
+
+/** Now Playing screen reached by a short center press. */
+export type NowPlayingCenterMode = "seek" | "video" | "normal";
+
+/** Short center press on Now Playing: seek, then video, then the plain screen. */
+export function nextNowPlayingCenterMode(
+  mode: NowPlayingCenterMode
+): NowPlayingCenterMode {
+  if (mode === "seek") return "video";
+  if (mode === "video") return "normal";
+  return "seek";
+}
 
 export function centerPressDown(): CenterGesturePhase {
   return "down";
@@ -50,8 +63,9 @@ export function centerPressHeld(phase: CenterGesturePhase): {
 }
 
 /**
- * Releasing before the hold threshold selects (scrub). Releasing after the
- * menu opened does not select.
+ * Releasing before the hold threshold selects. On Now Playing, selection
+ * cycles seek → video → the plain screen. Releasing after the menu opened
+ * does not select.
  */
 export function centerPressReleased(phase: CenterGesturePhase): {
   phase: CenterGesturePhase;

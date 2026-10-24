@@ -6,6 +6,7 @@ import {
   centerPressDown,
   centerPressHeld,
   centerPressReleased,
+  nextNowPlayingCenterMode,
   scrubDiamondCenterPx,
   scrubDiamondHalfExtentPx,
   scrubDiamondLeftCss,
@@ -299,6 +300,12 @@ describe("center button press", () => {
     const released = centerPressReleased(held.phase);
     expect(released.select).toBe(false);
     expect(released.phase).toBe("idle");
+  });
+
+  test("Now Playing cycles seek, then video, then the plain screen", () => {
+    expect(nextNowPlayingCenterMode("normal")).toBe("seek");
+    expect(nextNowPlayingCenterMode("seek")).toBe("video");
+    expect(nextNowPlayingCenterMode("video")).toBe("normal");
   });
 
   test("a cancelled press neither selects nor opens the menu", () => {
