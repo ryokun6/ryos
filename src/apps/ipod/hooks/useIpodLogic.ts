@@ -107,6 +107,7 @@ import {
   initialScrubSession,
   initialVolumeGestureState,
   nextListRowCount,
+  nextNowPlayingCenterMode,
   SCRUB_COMMIT_IDLE_MS,
   seekHoldStepSeconds,
   VOLUME_OVERLAY_IDLE_MS,
@@ -4305,7 +4306,8 @@ export function useIpodLogic({
   }, [playClickSound, vibrate, registerActivity, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, isNowPlayingSongMenuOpen, closeNowPlayingSongMenu, restoreNowPlayingSongMenu, showVideo, toggleVideo, menuMode, menuHistory, mainMenuItems, musicMenuItems, allSongsMenuItems, browsableTracks, sortedBrowsableTracks, browseCurrentIndex, cameFromNowPlayingMenuItem, t]);
 
   // Center-button hold (and the LCD long-press) opens the Now Playing menu.
-  // A short center press does not come through here — that enters scrub.
+  // A short center press does not come through here — on Now Playing it
+  // cycles seek, then video, then the plain screen.
   const handleCenterLongPress = useCallback(() => {
     playClickSound();
     vibrate();
@@ -4657,13 +4659,29 @@ export function useIpodLogic({
               currentMenu.items[selectedMenuItem].action();
             }
           } else if (tracks[currentIndex]) {
-            if (scrubModeRef.current) exitScrubMode();
-            else enterScrubMode();
+            const mode = scrubModeRef.current
+              ? "seek"
+              : useIpodStore.getState().showVideo
+                ? "video"
+                : "normal";
+            const next = nextNowPlayingCenterMode(mode);
+            if (next === "video" && isOffline) {
+              showOfflineStatus();
+              break;
+            }
+            if (mode === "seek") exitScrubMode();
+            if (next === "seek") {
+              enterScrubMode();
+            } else if (next === "video") {
+              if (!useIpodStore.getState().showVideo) toggleVideo();
+            } else if (useIpodStore.getState().showVideo) {
+              useIpodStore.setState({ showVideo: false });
+            }
           }
           break;
       }
     },
-    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, enterScrubMode, exitScrubMode]
+    [playClickSound, vibrate, registerActivity, getCurrentAppleMusicCollectionShellTrack, skipAppleMusicCollectionShell, nextTrack, showStatus, previousTrack, menuMode, menuHistory, selectedMenuItem, tracks, currentIndex, handleMenuButton, isOffline, showOfflineStatus, startTrackSwitch, isCoverFlowOpen, isMusicQuizOpen, isBrickGameOpen, enterScrubMode, exitScrubMode, toggleVideo]
   );
 
   // -------------------------------------------------------------------

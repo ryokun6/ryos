@@ -757,21 +757,25 @@ function ScrubDiamond({
         }}
       >
         {isModernUi ? (
-          // Clip the Aqua button face to the diamond. The face is
-          // counter-rotated so its top gloss still comes from the top of
-          // the LCD. The ring stays on the outer box, which does not clip.
-          <span className="absolute inset-0 overflow-hidden">
-            <span
-              className="ipod-scrub-aqua-gem absolute left-1/2 top-1/2 block"
-              style={{
-                position: "absolute",
-                width: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
-                height: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
-                transform: "translate(-50%, -50%) rotate(-45deg)",
-                borderRadius: 0,
-              }}
-            />
-          </span>
+          // Clip the progress-bar fill to the diamond. The fill is
+          // counter-rotated so its vertical gradient stays screen-up,
+          // matching the bar. The inset edge sits on the diamond outline
+          // and is not clipped away with the oversized fill square.
+          <>
+            <span className="absolute inset-0 overflow-hidden">
+              <span
+                className="ipod-scrub-aqua-gem absolute left-1/2 top-1/2 block"
+                style={{
+                  position: "absolute",
+                  width: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                  height: SCRUB_DIAMOND_SIZE_PX * Math.SQRT2 + 2,
+                  transform: "translate(-50%, -50%) rotate(-45deg)",
+                  borderRadius: 0,
+                }}
+              />
+            </span>
+            <span className="ipod-scrub-aqua-edge pointer-events-none absolute inset-0" />
+          </>
         ) : null}
       </span>
     </div>
