@@ -214,6 +214,20 @@ export async function signIn(page: Page) {
   `, username) as { username: string | null; auth: boolean };
   console.log("[signIn] session", JSON.stringify(who));
   if (!who.auth || who.username !== username) throw new Error(`session did not stick for ${username}`);
+  // The account's synced language is applied for them, but the promo copy is English.
+  // Swap i18n only — writing the store would upload English over their setting.
+  const lang = await store(page, `
+    const { useLanguageStore } = await import("/src/stores/useLanguageStore.ts");
+    const i18nMod = await import("/src/lib/i18n.ts");
+    useLanguageStore.setState({
+      setLanguage: async (language) => {
+        useLanguageStore.setState({ current: language });
+      },
+    });
+    await i18nMod.applyLanguage("en");
+    return { store: useLanguageStore.getState().current, ui: i18nMod.default.language };
+  `);
+  console.log("[signIn] language", JSON.stringify(lang));
 }
 
 /**
@@ -387,9 +401,9 @@ export class X11Recorder {
         this.cdp?.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
       }, 0);
       if (this.stopLoop || this.holdCaptures) return;
-      // metadata.timestamp is unix seconds (same clock as marks). Fall back if Chrome omits it.
-      const stamp = ev.metadata?.timestamp;
-      const t = stamp && stamp > 1_700_000_000 ? stamp : Date.now() / 1000;
+      // Receive time, same clock as marks. Chrome's frame timestamp pauses on a
+      // static page, which would shrink the take and miss every later mark.
+      const t = Date.now() / 1000;
       const n = this.frameTimes.length + 1;
       const file = path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`);
       this.frameTimes.push(t);
@@ -493,9 +507,13 @@ export class X11Recorder {
     const n = this.frameTimes.length;
     const sw = VIEWPORT.width * DSF;
     const sh = VIEWPORT.height * DSF;
+    const wallEnd = Date.now() / 1000;
     const lines = ["ffconcat version 1.0"];
     for (let i = 0; i < n; i++) {
-      const dur = i + 1 < n ? Math.max(1 / 120, this.frameTimes[i + 1] - this.frameTimes[i]) : 1 / this.fps;
+      // Hold the last frame through the end mark. A static desktop stops emitting frames.
+      const dur = i + 1 < n
+        ? Math.max(1 / 120, this.frameTimes[i + 1] - this.frameTimes[i])
+        : Math.max(1 / this.fps, wallEnd - this.frameTimes[i]);
       lines.push(`file '${path.join(this.framesDir, `${String(i + 1).padStart(5, "0")}.jpg`)}'`);
       lines.push(`duration ${dur.toFixed(4)}`);
     }

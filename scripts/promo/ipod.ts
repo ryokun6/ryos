@@ -131,10 +131,21 @@ async function ensureRootMenu(page: Page) {
     await clickMenu(page);
     await sleep(450);
   }
-  throw new Error("iPod root menu never showed Music");
+  const text = await page.locator(".ipod-device-surface").innerText().catch(() => "");
+  throw new Error(`iPod root menu never showed Music. Screen: ${text.slice(0, 240).replace(/\s+/g, " ")}`);
 }
 
 async function prepare(page: Page, phone: boolean) {
+  // Open on the root menu. A restored breadcrumb keeps the account's last
+  // (often translated) menu, which hides the English "Music" row.
+  await store(page, `
+    const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+    const s = useIpodStore.getState();
+    // An empty breadcrumb leaves a signed-in library on Now Playing.
+    // One root entry plus menu mode opens the English Music list.
+    s.setIpodMenuBreadcrumb([{ kind: "root", id: "ipod", title: "iPod", selectedIndex: 0 }]);
+    s.setIpodMenuMode(true);
+  `);
   await launchApp(page, "ipod");
   await sleep(1200);
   await placeIpod(page, phone);
