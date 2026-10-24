@@ -87,6 +87,9 @@ async function launchDarwin(): Promise<{ browser: Browser; ctx: BrowserContext; 
       "--hide-scrollbars",
       "--disable-infobars",
       "--no-first-run",
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
     ],
     ignoreDefaultArgs: ["--enable-automation"],
   });
@@ -143,6 +146,10 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
     } catch {
       // storage unavailable – the app falls back to its defaults
     }
+    const style = document.createElement("style");
+    style.id = "promo-quiet";
+    style.textContent = "[data-sonner-toaster]{display:none!important}";
+    document.documentElement.appendChild(style);
   }, opts.language ?? "en");
   await page.goto(`${BASE}/?_ryo=1`);
   await page.waitForTimeout(5000);
@@ -163,12 +170,16 @@ async function emulateIosShell(page: Page) {
   });
 }
 
+/** The local test account. Promo captures stay signed in as this user for the whole take. */
+const PROMO_USERNAME = process.env.PROMO_USERNAME || "ryo";
+const PROMO_PASSWORD = process.env.PROMO_PASSWORD || "testtest";
+
 export async function signIn(page: Page) {
-  const username = `promo${Date.now().toString(36)}`;
-  const password = `Promo-${crypto.randomUUID()}!9`;
+  const username = PROMO_USERNAME;
+  const password = PROMO_PASSWORD;
   const res = await page.evaluate(
     async ({ username, password }) => {
-      const r = await fetch("/api/auth/register", {
+      const r = await fetch("/api/auth/login", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -178,7 +189,52 @@ export async function signIn(page: Page) {
     },
     { username, password }
   );
-  console.log("[signIn]", username, res.status, res.status >= 400 ? res.body : "");
+  console.log("[signIn]", username, res.status, res.status === 200 ? "ok" : res.body);
+  if (res.status !== 200) throw new Error(`sign-in failed for ${username} (${res.status})`);
+  const who = await store(page, `
+    const { useChatsStore } = await import("/src/stores/useChatsStore.ts");
+    const s = useChatsStore.getState();
+    if (s.username !== arg) s.setUsername(arg);
+    s.setAuthenticated(true);
+    return { username: useChatsStore.getState().username, auth: useChatsStore.getState().isAuthenticated };
+  `, username) as { username: string | null; auth: boolean };
+  console.log("[signIn] session", JSON.stringify(who));
+  if (!who.auth || who.username !== username) throw new Error(`session did not stick for ${username}`);
+}
+
+/**
+ * A clean desktop for the hero shot: no open windows, boot/tour already finished,
+ * and the Mac-app download toast dismissed (and kept off screen).
+ */
+export async function quietDesktop(page: Page) {
+  const state = await store(page, `
+    const { useAppStore } = await import("/src/stores/useAppStore.ts");
+    const app = useAppStore.getState();
+    app.setHasBooted();
+    let version = null;
+    try {
+      const v = await fetch("/version.json").then((r) => (r.ok ? r.json() : null));
+      version = (v && (v.desktopVersion || v.version)) || null;
+    } catch { /* version.json is optional in dev */ }
+    if (version) app.setLastSeenDesktopVersion(String(version));
+    try {
+      const { toast } = await import("sonner");
+      toast.dismiss();
+    } catch { /* the toaster is also hidden by the boot stylesheet */ }
+    const open = Object.values(useAppStore.getState().instances).filter((i) => i.isOpen);
+    for (const inst of open) useAppStore.getState().closeAppInstance(inst.instanceId);
+    document.querySelectorAll("[data-sonner-toast]").forEach((n) => n.remove());
+    const text = document.body?.innerText || "";
+    return {
+      windows: Object.values(useAppStore.getState().instances).filter((i) => i.isOpen).length,
+      version,
+      downloadBanner: /available as a|download mac/i.test(text),
+    };
+  `) as { windows: number; version: string | null; downloadBanner: boolean };
+  console.log("[desktop]", JSON.stringify(state));
+  if (state.downloadBanner) throw new Error("Mac app download banner is still on screen");
+  if (state.windows !== 0) throw new Error(`${state.windows} window(s) still open`);
+  await sleep(300);
 }
 
 /**
@@ -253,7 +309,9 @@ export async function fillPhoneWindow(page: Page, gap = 8) {
   await page.waitForTimeout(500);
 }
 
-/** 30 fps capture. Linux: x11grab of the Xvfb display. macOS: Chrome screencast of the emulated viewport at device pixels. */
+/** 60 fps capture. Linux: x11grab of the Xvfb display. macOS: Chrome screencast of the emulated viewport at device pixels. */
+export const CAPTURE_FPS = Number(process.env.PROMO_FPS || 60);
+
 export class X11Recorder {
   private proc?: ReturnType<typeof Bun.spawn>;
   private marks: { name: string; ts: number; box?: Box }[] = [];
@@ -264,8 +322,9 @@ export class X11Recorder {
   private t0 = 0;
   private stopLoop = false;
   private holdCaptures = false;
-  private loopDone: Promise<void> = Promise.resolve();
-  constructor(private dir: string, private page?: Page, private fps = 30) {}
+  private firstFrame: Promise<void> = Promise.resolve();
+  private resolveFirst: () => void = () => {};
+  constructor(private dir: string, private page?: Page, private fps = CAPTURE_FPS) {}
 
   async start() {
     await rm(this.dir, { recursive: true, force: true });
@@ -289,52 +348,63 @@ export class X11Recorder {
   }
 
   /**
-   * Page.startScreencast on this Mac delivered one CSS-pixel frame and then stalled
-   * (the ack deadlocks inside the CDP event). Capture the emulated viewport the same
-   * way Playwright's screenshot does: a clip in CSS pixels at `scale: DSF`, so the
-   * jpeg is the bezel's device-pixel size (2560×1664 or 1206×2622).
+   * Chrome's compositor screencast, not captureScreenshot. A screenshot blocks the
+   * renderer (the old loop managed ~11 fps and turned a center click into a long-press).
+   * The ack is deferred: sending it inside the CDP handler deadlocks Playwright and
+   * the stream stops after one frame. maxWidth/maxHeight are the bezel's device pixels.
    */
   private async startScreencast() {
     if (!this.page) throw new Error("macOS capture needs the Playwright page");
     this.framesDir = path.join(this.dir, "frames");
     await mkdir(this.framesDir, { recursive: true });
     this.stopLoop = false;
+    this.frameTimes = [];
     this.cdp = await this.page.context().newCDPSession(this.page);
     const sw = VIEWPORT.width * DSF;
     const sh = VIEWPORT.height * DSF;
+    this.firstFrame = new Promise((resolve) => {
+      this.resolveFirst = resolve;
+    });
+    let logged = 0;
 
-    const shoot = async () => {
-      const started = Date.now() / 1000;
-      const clip = { x: 0, y: 0, width: VIEWPORT.width, height: VIEWPORT.height, scale: DSF };
-      let shot: { data: string };
-      try {
-        shot = await this.cdp!.send("Page.captureScreenshot", {
-          format: "jpeg",
-          quality: 62,
-          fromSurface: true,
-          captureBeyondViewport: true,
-          optimizeForSpeed: true,
-          clip,
-        } as Parameters<typeof this.cdp.send<"Page.captureScreenshot">>[1]);
-      } catch {
-        shot = await this.cdp!.send("Page.captureScreenshot", {
-          format: "jpeg",
-          quality: 62,
-          fromSurface: true,
-          captureBeyondViewport: true,
-          clip,
-        });
-      }
+    this.cdp.on("Page.screencastFrame", (ev: { data: string; sessionId: number; metadata?: { timestamp?: number } }) => {
+      const sessionId = ev.sessionId;
+      setTimeout(() => {
+        this.cdp?.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
+      }, 0);
+      if (this.stopLoop || this.holdCaptures) return;
+      // Wall clock, same clock as marks. Chrome's metadata timestamp is not the same epoch.
+      const t = Date.now() / 1000;
       const n = this.frameTimes.length + 1;
       const file = path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`);
-      this.frameTimes.push(started);
-      const buf = Buffer.from(shot.data, "base64");
-      this.writeChain = this.writeChain.then(() => Bun.write(file, buf)).then(() => undefined);
-    };
+      this.frameTimes.push(t);
+      const buf = Buffer.from(ev.data, "base64");
+      this.writeChain = this.writeChain.then(() => Bun.write(file, buf)).then(() => {
+        if (n === 1) this.resolveFirst();
+      });
+      if (n === 30 || n % 120 === 0) {
+        const span = t - this.frameTimes[0];
+        if (span > logged) {
+          console.log(`[rec] ${n} frames, ${(n / span).toFixed(1)} fps`);
+          logged = span;
+        }
+      }
+    });
 
-    await shoot();
-    const first = path.join(this.framesDir, "00001.jpg");
+    await this.cdp.send("Page.startScreencast", {
+      format: "jpeg",
+      quality: 85,
+      maxWidth: sw,
+      maxHeight: sh,
+      everyFrame: true,
+    });
+    const arrived = await Promise.race([
+      this.firstFrame.then(() => true),
+      sleep(8000).then(() => false),
+    ]);
+    if (!arrived) throw new Error("Chrome screencast produced no frames");
     await this.writeChain;
+    const first = path.join(this.framesDir, "00001.jpg");
     const dim = Bun.spawnSync([
       "ffprobe", "-v", "error", "-select_streams", "v", "-show_entries", "stream=width,height", "-of", "csv=p=0", first,
     ]);
@@ -344,39 +414,12 @@ export class X11Recorder {
     }
     this.t0 = this.frameTimes[0];
     this.mark("start");
-
-    this.loopDone = (async () => {
-      let lastLog = Date.now();
-      while (!this.stopLoop) {
-        if (this.holdCaptures) {
-          await sleep(20);
-          continue;
-        }
-        const t = Date.now();
-        try {
-          await shoot();
-        } catch (e) {
-          if (this.stopLoop) break;
-          console.warn("[rec] frame failed", e instanceof Error ? e.message : e);
-          await sleep(40);
-          continue;
-        }
-        const wait = 1000 / this.fps - (Date.now() - t);
-        if (wait > 2) await sleep(wait);
-        if (Date.now() - lastLog > 5000) {
-          const n = this.frameTimes.length;
-          const span = this.frameTimes[n - 1] - this.frameTimes[0];
-          console.log(`[rec] ${n} frames, ${span > 0 ? (n / span).toFixed(1) : "?"} fps`);
-          lastLog = Date.now();
-        }
-      }
-    })();
   }
 
-  /** Let the page process a click. captureScreenshot blocks the renderer long enough to turn a center press into a long-press. */
+  /** Drop frames across a click so a held compositor frame is not the one we keep. Screencast does not block the renderer. */
   async pauseCaptures() {
     this.holdCaptures = true;
-    await sleep(160);
+    await sleep(30);
   }
 
   resumeCaptures() {
@@ -426,7 +469,8 @@ export class X11Recorder {
 
   private async stopScreencast() {
     this.stopLoop = true;
-    await this.loopDone;
+    await this.cdp?.send("Page.stopScreencast").catch(() => {});
+    await sleep(200);
     await this.cdp?.detach().catch(() => {});
     await this.writeChain;
     const n = this.frameTimes.length;

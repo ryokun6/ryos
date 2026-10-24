@@ -76,6 +76,16 @@ export async function seedDesktopShortcuts(page: Page, apps: [appId: string, nam
          (i) => i.status === "active" && i.path.startsWith("/Desktop/") && i.aliasType === "app" && i.aliasTarget === appId);
        if (!existing) fs.createAlias("", name, "app", appId);
        else if (existing.hiddenOnThemes?.length) fs.updateItemMetadata(existing.path, { hiddenOnThemes: [] });
+     }
+     const keep = new Set(arg.map(([id]) => id));
+     if (keep.size === 1 && keep.has("ipod")) {
+       for (const item of Object.values(useFilesStore.getState().items)) {
+         if (item.status !== "active" || !item.path.startsWith("/Desktop/") || item.aliasType !== "app") continue;
+         if (keep.has(item.aliasTarget)) continue;
+         const hidden = new Set(item.hiddenOnThemes || []);
+         hidden.add("macosx");
+         useFilesStore.getState().updateItemMetadata(item.path, { hiddenOnThemes: [...hidden] });
+       }
      }`,
     apps
   );

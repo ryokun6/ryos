@@ -8,7 +8,7 @@
  * Marks named `tap:*` carry the clicked element's box (CSS px) for tap indicators.
  */
 import type { Locator, Page } from "playwright";
-import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
+import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, quietDesktop, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
 import { runIpod, runIpodExtra } from "./ipod";
 import { fitnessView, seedDesktopShortcuts, seedFitness } from "./seed";
 
@@ -325,13 +325,15 @@ async function desktop() {
   await sleep(1500);
   const rec = new X11Recorder(dir, page);
   await rec.start();
-  await sleep(4500);
+  // The 60s title holds this shot for ~5.6s from the start mark. Leave slack so the last frames are real.
+  await sleep(7000);
   await rec.stop();
 }
 
 const { browser, page } = await launch();
 await boot(page, { language: session === "exercises" ? "ja" : "en" });
 await signIn(page);
+await quietDesktop(page);
 const forIpod = session.startsWith("ipod") || (session === "desktop" && process.env.PROMO_APP === "ipod");
 await seedDesktopShortcuts(page, forIpod ? [["ipod", "iPod"]] : [["dictionary", "Dictionary"], ["fitness", "Fitness"]]);
 const sessions: Record<string, (page: Page) => Promise<void>> = {
