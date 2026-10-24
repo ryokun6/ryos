@@ -738,13 +738,13 @@ def plan_ipod(L, dev, B, length=30):
             O[f"{key}_s"] = O[f"{key}_beats"] * B
     # The menu is already open and sits still for about a second before the first click.
     # Playing that still span across the title holds the open iPod; it is not a slowed gesture.
-    # A fresh tuple stays centered: D() only parks the device beside a side caption when the
-    # shot's camera is the resting camera object itself.
+    # Desktop passes `rest`, so D() parks the iBook on the same right-side framing as the step
+    # captions and the title keeps the left column. Phone captions sit under the device; a new
+    # tuple stays on the resting camera (tuple(rest) is rest, which would take a side shift).
     open_beats = 12 if length == 60 else 8
     menu_hold = 0.7
-    # A new tuple: tuple(rest) is rest itself, and D() would then slide the laptop aside.
-    centred = (rest[0], rest[1], rest[2])
-    opening = D(title, [shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=centred)],
+    open_cam = rest if L["key"] == "h" else (rest[0], rest[1], rest[2])
+    opening = D(title, [shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=open_cam)],
                 cap_in_s=0.25, title=True)
     opening["cap_dur_s"] = O["title_s"]
     opening["clip_from_shot"] = True
@@ -1257,8 +1257,8 @@ def render_device(L, dev, sc, B, n):
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
     behind_mode = STYLE["caption_entrance"] == "behind"
     if side_cam:
-        # The title opens with the device centered, so the text tucks behind that laptop
-        # rather than behind the shifted step-caption framing.
+        # Tuck the entrance behind the laptop this shot actually shows (the right-side
+        # framing on the desktop title, the centered phone otherwise).
         clip_cam = sc["shots"][0]["cam"] if sc.get("clip_from_shot") else side_cam
         edge = dev.left_edge_rows(clip_cam, cy, cap.h)
         clip0 = float(edge[np.isfinite(edge)].max())   # tucked: the ink starts behind the lid on every text row

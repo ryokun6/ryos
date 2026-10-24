@@ -1,5 +1,5 @@
 {
-  "_about": "iPod promo on the bgm2 Apple Support grid. The title opens on the iPod, already up and centered. Desktop step captions are a larger left column; the iBook keeps its resting size and slides back to center at the end, without a zoom. Phone step captions stay under the phone, larger than before. Volume and seek play at capture speed.",
+  "_about": "iPod promo on the bgm2 Apple Support grid. The title opens on the iPod, already up. On desktop the iBook stays on the right beside the left title card, the same framing as the step captions, and slides back to center at the end without a zoom. Phone step captions stay under the phone, larger than before. Volume and seek play at capture speed.",
   "extends": "apple-support-bgm2.json",
   "layout": {
     "h": {
