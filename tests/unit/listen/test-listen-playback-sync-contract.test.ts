@@ -64,6 +64,7 @@ const makeTarget = (listenRemoteOnly: boolean) => {
     addTrackFromId: () => {},
     listenRemoteOnly,
     setVirtualElapsedSeconds,
+    adoptRemotePlayState: () => {},
   };
 };
 
@@ -77,6 +78,7 @@ describe("usePlaybackListenSync mapping", () => {
     expect(call.currentTrackId).toBe("track-1");
     expect(call.applyListenerPlayback).toBe(true);
     expect(call.setVirtualElapsedSeconds).toBeUndefined();
+    expect(call.adoptRemotePlayState).toBeUndefined();
   });
 
   test("remote-only listeners do not drive the local player", () => {
@@ -90,6 +92,7 @@ describe("usePlaybackListenSync mapping", () => {
     expect(call.setVirtualElapsedSeconds).toBe(
       target.setVirtualElapsedSeconds
     );
+    expect(call.adoptRemotePlayState).toBe(target.adoptRemotePlayState);
   });
 });
 

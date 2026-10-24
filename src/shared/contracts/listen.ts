@@ -38,6 +38,12 @@ export interface ListenSession {
   /** Upcoming songs. Missing on sessions created before the queue shipped. */
   queue?: ListenQueueItem[];
   queueVersion?: number;
+  /** Known length of the current track, in ms. Missing until the DJ reports it. */
+  currentTrackDurationMs?: number;
+  /** Track id whose ending was already accepted, so a second report cannot skip again. */
+  acceptedEndTrackId?: string;
+  /** Per-track lyric offsets (ms) shared with the room. */
+  lyricOffsets?: Record<string, number>;
 }
 
 export interface ListenSessionSummary {
@@ -55,6 +61,7 @@ export interface ListenPlaybackState {
   currentTrackMeta: ListenTrackMeta | null;
   isPlaying: boolean;
   positionMs: number;
+  durationMs?: number;
   djUsername?: string;
   djClientInstanceId?: string;
 }
@@ -142,6 +149,8 @@ export interface ListenSyncPayload {
   /** Present when the server is echoing the stored queue. Older servers omit it. */
   queue?: ListenQueueItem[];
   queueVersion?: number;
+  durationMs?: number;
+  lyricOffsets?: Record<string, number>;
 }
 
 export interface ListenQueuePayload {
@@ -158,6 +167,8 @@ export interface ListenQueueRequest {
   title?: string;
   artist?: string;
   entryId?: string;
+  /** Set when a device is reporting that this track finished. */
+  endedTrackId?: string;
 }
 
 export interface ListenQueueResponse {
@@ -166,6 +177,10 @@ export interface ListenQueueResponse {
   queueVersion: number;
   advanced: boolean;
   item?: ListenQueueItem | null;
+  alreadyAdvanced?: boolean;
+  libraryFallback?: boolean;
+  djStale?: boolean;
+  pending?: boolean;
 }
 
 export interface ListenReactionPayload {

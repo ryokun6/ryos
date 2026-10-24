@@ -8,14 +8,19 @@
  * Permissions (server-enforced):
  * - Any current session member may add, play next (`addNext`), bump any item
  *   to the front, or remove any item. It does not matter who added the song.
- * - The DJ is the only member who may `advance` (pop the next song into
- *   playback). Song end and skip on the playback device use this.
+ * - Manual skip (`advance` without `endedTrackId`) is DJ-only.
+ * - Song end (`advance` with `endedTrackId`) is idempotent on the current
+ *   track. The DJ may report it immediately. Another member may report it
+ *   only after the shared clock passes the end plus a grace period. An empty
+ *   queue falls through to library next/shuffle/loop on the playback device.
  * - Anyone who is not a current member is rejected.
  *
  * This is the party queue from the Karaoke 點歌 plan (PR #2043). It is not a
  * local karaoke-store queue, and it does not change pitch or vocal removal.
  * `playTrack` stays "play now".
  */
+
+import { decideTrackAdvance } from "./trackAdvance";
 
 export const LISTEN_QUEUE_MAX_LENGTH = 40;
 export const LISTEN_QUEUE_TITLE_MAX = 180;
@@ -48,6 +53,12 @@ export interface ListenQueueSessionState {
   djClientInstanceId?: string;
   queue?: ListenQueueItem[];
   queueVersion?: number;
+  currentTrackId?: string | null;
+  positionMs?: number;
+  isPlaying?: boolean;
+  lastSyncAt?: number;
+  currentTrackDurationMs?: number;
+  acceptedEndTrackId?: string;
 }
 
 export type ListenQueueCommand =
@@ -59,7 +70,7 @@ export type ListenQueueCommand =
       entryId: string;
     }
   | { op: "bump" | "remove"; entryId: string }
-  | { op: "advance" };
+  | { op: "advance"; endedTrackId?: string };
 
 export type ListenQueueSuccess = {
   ok: true;
@@ -67,6 +78,9 @@ export type ListenQueueSuccess = {
   queue: ListenQueueItem[];
   queueVersion: number;
   advanced: boolean;
+  alreadyAdvanced?: boolean;
+  libraryFallback?: boolean;
+  djStale?: boolean;
   item?: ListenQueueItem;
   currentTrackId?: string;
   currentTrackMeta?: { title: string; artist?: string };
@@ -170,7 +184,46 @@ export function applyListenQueueCommand(
   const version = session.queueVersion ?? 0;
 
   if (command.op === "advance") {
-    if (!isDj(session, actor)) {
+    if (command.endedTrackId) {
+      const decision = decideTrackAdvance({
+        actorIsDj: isDj(session, actor),
+        endedTrackId: command.endedTrackId,
+        now,
+        playback: {
+          currentTrackId: session.currentTrackId ?? null,
+          positionMs: session.positionMs ?? 0,
+          isPlaying: session.isPlaying ?? false,
+          lastSyncAt: session.lastSyncAt ?? 0,
+          durationMs: session.currentTrackDurationMs,
+          queueLength: queue.length,
+          acceptedEndTrackId: session.acceptedEndTrackId,
+        },
+      });
+      if (decision.kind === "already-advanced") {
+        return {
+          ok: true,
+          changed: false,
+          queue,
+          queueVersion: version,
+          advanced: false,
+          alreadyAdvanced: true,
+        };
+      }
+      if (decision.kind === "deny") {
+        return { ok: false, status: 409, error: decision.error };
+      }
+      if (decision.kind === "library-fallback") {
+        return {
+          ok: true,
+          changed: false,
+          queue,
+          queueVersion: version,
+          advanced: false,
+          libraryFallback: true,
+          djStale: decision.djStale,
+        };
+      }
+    } else if (!isDj(session, actor)) {
       return { ok: false, status: 403, error: "not_dj" };
     }
     const next = queue[0];

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { scaleSessionReactionMotion } from "./fullscreenReactionScale";
 import { REACTION_MAP, type ReactionFloaterPhysics } from "./reactionFloaterConstants";
 
 export interface ReactionFloaterItem extends ReactionFloaterPhysics {
@@ -14,12 +15,21 @@ interface ReactionFloaterLayerProps {
   /** Render as fixed (fullscreen portal root) vs absolute stack child */
   position?: "absolute" | "fixed";
   items: ReactionFloaterItem[];
+  /**
+   * Viewport multiplier for fullscreen listen reactions. 1 keeps the
+   * windowed glyph size and float distance.
+   */
+  viewportScale?: number;
+  /** Used above scale 1 so a grown glyph stays inside the screen. */
+  viewport?: { width: number; height: number };
 }
 
 export function ReactionFloaterLayer({
   className,
   items,
   position = "absolute",
+  viewportScale = 1,
+  viewport,
 }: ReactionFloaterLayerProps) {
   const posCls = position === "fixed" ? "fixed inset-0" : "absolute inset-0";
 
@@ -37,7 +47,12 @@ export function ReactionFloaterLayer({
             const reactionDef = REACTION_MAP[reaction.emoji];
             if (!reactionDef) return null;
             const IconComponent = reactionDef.icon;
-            const iconSize = Math.round(22 * reaction.scale);
+            const motionScale = scaleSessionReactionMotion(
+              reaction,
+              viewportScale,
+              viewport,
+            );
+            const iconSize = motionScale.iconSize;
             const peak = reaction.peakOpacity ?? 0.92;
 
             return (
@@ -45,23 +60,23 @@ export function ReactionFloaterLayer({
                 key={reaction.id}
                 initial={{
                   opacity: 0,
-                  y: 16,
-                  x: reaction.xOffset,
+                  y: motionScale.enterOffset,
+                  x: motionScale.xOffset,
                   scale: 0.42,
                 }}
                 animate={{
                   opacity: [0, peak * 0.9, peak * 0.72, 0],
                   y: [
-                    14,
-                    -reaction.floatHeight * 0.34,
-                    -reaction.floatHeight * 0.68,
-                    -reaction.floatHeight,
+                    motionScale.enterKeyframe,
+                    -motionScale.floatHeight * 0.34,
+                    -motionScale.floatHeight * 0.68,
+                    -motionScale.floatHeight,
                   ],
                   x: [
-                    reaction.xOffset,
-                    reaction.xOffset + reaction.wobble,
-                    reaction.xOffset - reaction.wobble * 0.55,
-                    reaction.xOffset + reaction.wobble * 0.28,
+                    motionScale.xOffset,
+                    motionScale.xOffset + motionScale.wobble,
+                    motionScale.xOffset - motionScale.wobble * 0.55,
+                    motionScale.xOffset + motionScale.wobble * 0.28,
                   ],
                   scale: [
                     0.45,

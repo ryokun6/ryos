@@ -23,6 +23,7 @@ import {
   type RomanizationSettings,
 } from "@/types/lyrics";
 import { resolveChineseLyricsLanguage } from "@/shared/media/chineseLyrics";
+import { setListenLyricOffsetMs } from "@/lib/listenLyricClock";
 
 export interface KaraokeLyricsPlaybackContextValue {
   lyricsControls: ReturnType<typeof useLyrics>;
@@ -78,6 +79,10 @@ export function KaraokeLyricsPlaybackProvider({
   const { i18n } = useTranslation();
   const appLanguage = i18n.resolvedLanguage ?? i18n.language;
   const elapsedTime = useKaraokeStore(useShallow((s) => s.elapsedTime));
+
+  useEffect(() => {
+    setListenLyricOffsetMs(currentTrack?.lyricOffset ?? 0);
+  }, [currentTrack?.id, currentTrack?.lyricOffset]);
 
   const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.GoldGlow);
 

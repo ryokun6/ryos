@@ -74,6 +74,22 @@ export async function broadcastReaction(
   await triggerRealtimeEvent(getListenSessionChannelName(sessionId), "reaction", payload);
 }
 
+export async function broadcastLyricOffset(
+  sessionId: string,
+  payload: {
+    trackId: string;
+    lyricOffset: number;
+    timestamp: number;
+    sourceUsername: string;
+  }
+): Promise<void> {
+  await triggerRealtimeEvent(
+    getListenSessionChannelName(sessionId),
+    "lyric-offset",
+    payload
+  );
+}
+
 export async function broadcastSessionEnded(sessionId: string): Promise<void> {
   await triggerRealtimeEvent(getListenSessionChannelName(sessionId), "session-ended", {});
 }

@@ -95,6 +95,7 @@ export function useSongSearchDialog({
       dispatch({ type: "setError", error: null });
       try {
         await onQueueUrl(query.trim());
+        onOpenChange(false);
       } catch (err) {
         dispatch({
           type: "setError",
@@ -251,6 +252,7 @@ export function useSongSearchDialog({
     if (selectedIndex >= 0 && selectedIndex < results.length) {
       if (queueOnly && onQueueSelect) {
         onQueueSelect(results[selectedIndex]);
+        onOpenChange(false);
         return;
       }
       onSelect(results[selectedIndex]);
@@ -306,6 +308,7 @@ export function useSongSearchDialog({
         dispatch({ type: "setSelectedIndex", index });
         if (queueOnly && onQueueSelect) {
           onQueueSelect(results[index]);
+          onOpenChange(false);
           return;
         }
         onSelect(results[index]);

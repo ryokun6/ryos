@@ -2,10 +2,10 @@ import { useTranslation } from "react-i18next";
 import { ArrowUp, Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
-import type { ListenQueueItem } from "@/shared/listen/queue";
+import type { DisplayQueueItem } from "../queuePending";
 
 interface KaraokeQueueListProps {
-  items: ListenQueueItem[];
+  items: ReadonlyArray<DisplayQueueItem>;
   canEdit: boolean;
   onBump: (entryId: string) => void;
   onRemove: (entryId: string) => void;
@@ -39,11 +39,11 @@ export function KaraokeQueueList({
       type="button"
       data-karaoke-queue-add=""
       className={cn(
-        "focus:outline-none",
+        "w-full min-w-0 justify-center px-3 py-2 h-auto text-[12px] leading-normal focus:outline-none",
         rowFont,
-        isMacOSTheme && "aqua-button primary text-[11px]",
+        isMacOSTheme && "aqua-button primary",
         isSystem7 &&
-          "inline-flex items-center justify-center rounded-md bg-primary px-3 text-primary-foreground hover:bg-primary/90 h-8 text-xs",
+          "inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90",
         isWindowsTheme && "button"
       )}
       onClick={(event) => {
@@ -58,18 +58,27 @@ export function KaraokeQueueList({
   return (
     <>
       <ul
-        className={cn("flex-1 min-h-0 overflow-y-auto", !isMacOSTheme && "bg-white")}
+        className={cn(
+          "flex flex-1 min-h-0 flex-col overflow-y-auto",
+          !isMacOSTheme && "bg-white"
+        )}
         aria-label={t("apps.karaoke.queue.title")}
       >
         {items.length === 0 ? (
-          <li className={cn("flex flex-col items-start gap-2 px-3 py-3", rowFont)}>
+          <li
+            className={cn(
+              "flex flex-1 items-center justify-center px-3 text-center",
+              rowFont
+            )}
+          >
             <span className="opacity-60">{t("apps.karaoke.queue.empty")}</span>
-            {addSongsButton}
           </li>
         ) : (
           items.map((item, index) => (
             <li
               key={item.entryId}
+              data-karaoke-queue-pending={item.pending ? "" : undefined}
+              aria-busy={item.pending || undefined}
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5 text-black/90",
                 rowFont,
@@ -89,7 +98,7 @@ export function KaraokeQueueList({
                   {t("apps.karaoke.queue.from", { name: item.requestedBy })}
                 </div>
               </div>
-              {canEdit ? (
+              {canEdit && !item.pending ? (
                 <div className="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
@@ -121,10 +130,10 @@ export function KaraokeQueueList({
           ))
         )}
       </ul>
-      {showAdd && items.length > 0 ? (
+      {showAdd ? (
         <div
           className={cn(
-            "shrink-0 border-t px-2 py-1.5",
+            "shrink-0 w-full min-w-0 border-t px-2 py-2",
             isMacOSTheme ? "border-black/10" : "border-black/15"
           )}
         >

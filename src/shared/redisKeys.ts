@@ -300,6 +300,8 @@ export const redisKeys = {
     listenIds: () => redisKey("session", "listen", "ids"),
     listen: (sessionId: string) =>
       redisKeyCaseSensitive("session", "listen", sessionId),
+    listenAdvance: (sessionId: string, trackId: string) =>
+      redisKeyCaseSensitive("session", "listen", sessionId, "advance", trackId),
     airdropTransfer: (transferId: string) =>
       redisKeyCaseSensitive("session", "airdrop", "transfer", transferId),
   },

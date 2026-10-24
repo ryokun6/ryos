@@ -156,7 +156,13 @@ describe("Karaoke queue add songs", () => {
     expect(buttons[0]?.textContent).toBe("Add Songs");
     expect(buttons[0]?.className).toContain("aqua-button");
     expect(buttons[0]?.className).toContain("primary");
-    expect(buttons[0]?.closest("ul")).not.toBeNull();
+    expect(buttons[0]?.className).toContain("w-full");
+    expect(buttons[0]?.closest("ul")).toBeNull();
+    const emptyRow = host.querySelector("ul li");
+    expect(emptyRow?.textContent).toContain("Nothing queued");
+    expect(emptyRow?.className).toContain("items-center");
+    expect(emptyRow?.className).toContain("justify-center");
+    expect(emptyRow?.className).toContain("flex-1");
 
     await act(async () => {
       buttons[0]?.click();
@@ -180,6 +186,7 @@ describe("Karaoke queue add songs", () => {
 
     const buttons = addButtons(host);
     expect(buttons).toHaveLength(1);
+    expect(buttons[0]?.className).toContain("w-full");
     expect(buttons[0]?.closest("ul")).toBeNull();
     const playNext = host.querySelector<HTMLButtonElement>(
       'button[aria-label="Play Next"]'
@@ -198,6 +205,32 @@ describe("Karaoke queue add songs", () => {
     expect(opened).toBe(1);
   });
 
+  test("a pending add shows the original title instead of an empty queue", async () => {
+    const host = await render(
+      React.createElement(KaraokeQueueList, {
+        items: [
+          {
+            ...queueItem("pending-1", "Original Title"),
+            pending: true,
+            artist: "Original Channel",
+          },
+        ],
+        canEdit: true,
+        onBump: () => {},
+        onRemove: () => {},
+        onAddSongs: () => {},
+      })
+    );
+
+    expect(host.textContent).toContain("Original Title");
+    expect(host.textContent).toContain("Original Channel");
+    expect(host.textContent).not.toContain("Nothing queued");
+    const pending = host.querySelector("li[data-karaoke-queue-pending]");
+    expect(pending?.getAttribute("aria-busy")).toBe("true");
+    expect(pending?.querySelector("button")).toBeNull();
+    expect(addButtons(host)).toHaveLength(1);
+  });
+
   test("read-only viewers do not get an add songs button", async () => {
     const host = await render(
       React.createElement(KaraokeQueueList, {
@@ -214,7 +247,7 @@ describe("Karaoke queue add songs", () => {
 });
 
 describe("queue-only song search", () => {
-  test("choosing a result adds it to the queue and leaves the dialog open", async () => {
+  test("choosing a result adds it to the queue and closes the dialog", async () => {
     const opens: boolean[] = [];
     const queued: string[] = [];
     const played: string[] = [];
@@ -290,10 +323,10 @@ describe("queue-only song search", () => {
 
     expect(queued).toEqual(["dQw4w9WgXcQ"]);
     expect(played).toEqual([]);
-    expect(opens).not.toContain(false);
+    expect(opens).toContain(false);
   });
 
-  test("a queue-only url submits to the queue and stays open", async () => {
+  test("a queue-only url submits to the queue and closes the dialog", async () => {
     const opens: boolean[] = [];
     const queued: string[] = [];
     const libraryAdds: string[] = [];
@@ -331,6 +364,6 @@ describe("queue-only song search", () => {
 
     expect(queued).toEqual([YOUTUBE_URL]);
     expect(libraryAdds).toEqual([]);
-    expect(opens).not.toContain(false);
+    expect(opens).toContain(false);
   });
 });

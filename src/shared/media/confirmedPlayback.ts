@@ -30,6 +30,28 @@ export function stopPlayback(): ConfirmedPlaybackFields {
   };
 }
 
+/**
+ * A listen-together follower has no local player, so nothing emits `onPlay`.
+ * `setIsPlaying(true)` would leave `isPlaying` false and the UI paused.
+ * Adopt the room's play state as already confirmed.
+ */
+export function adoptFollowPlayState(playing: boolean): ConfirmedPlaybackFields {
+  return playing
+    ? { isPlaying: true, playbackRequested: true }
+    : stopPlayback();
+}
+
+export function remotePlayStateAction(args: {
+  sessionPlaying: boolean;
+  isPlaying: boolean;
+  playbackRequested: boolean;
+}): "adopt-playing" | "adopt-paused" | "keep" {
+  if (args.sessionPlaying) {
+    return args.isPlaying && args.playbackRequested ? "keep" : "adopt-playing";
+  }
+  return args.isPlaying || args.playbackRequested ? "adopt-paused" : "keep";
+}
+
 export function togglePlayback(
   state: Pick<ConfirmedPlaybackFields, "playbackRequested">
 ): ConfirmedPlaybackFields {

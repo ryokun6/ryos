@@ -13,6 +13,8 @@ export interface PlaybackListenSyncTarget {
   addTrackFromId?: (trackId: string) => Promise<unknown> | void;
   listenRemoteOnly: boolean;
   setVirtualElapsedSeconds?: Dispatch<SetStateAction<number>>;
+  /** Confirms room play/pause on a device that does not run the player. */
+  adoptRemotePlayState?: (playing: boolean) => void;
 }
 
 export function usePlaybackListenSync(target: PlaybackListenSyncTarget): void {
@@ -28,6 +30,9 @@ export function usePlaybackListenSync(target: PlaybackListenSyncTarget): void {
     setVirtualElapsedSeconds: target.listenRemoteOnly
       ? target.setVirtualElapsedSeconds
       : undefined,
+    adoptRemotePlayState: target.listenRemoteOnly
+      ? target.adoptRemotePlayState
+      : undefined,
   });
 }
 
@@ -38,6 +43,7 @@ export async function broadcastListenState(args: {
     currentTrackMeta: ListenTrackMeta | null;
     isPlaying: boolean;
     positionMs: number;
+    durationMs?: number;
   }) => Promise<{ ok: boolean; error?: string }>;
   currentTrackId: string | null;
   currentTrackMeta: ListenTrackMeta | null;
@@ -45,10 +51,16 @@ export async function broadcastListenState(args: {
 }): Promise<{ ok: boolean; error?: string }> {
   const activePlayer = args.getActivePlayer();
   const positionMs = Math.max(0, (activePlayer?.getCurrentTime() ?? 0) * 1000);
+  const durationSeconds = activePlayer?.getDuration?.() ?? 0;
+  const durationMs =
+    Number.isFinite(durationSeconds) && durationSeconds > 0
+      ? Math.round(durationSeconds * 1000)
+      : undefined;
   return args.syncSession({
     currentTrackId: args.currentTrackId,
     currentTrackMeta: args.currentTrackMeta,
     isPlaying: args.isPlaying,
     positionMs,
+    ...(durationMs != null ? { durationMs } : {}),
   });
 }
