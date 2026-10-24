@@ -393,10 +393,14 @@ class Device:
     # -- camera
     def zoom(self, box, factor):
         """Camera `factor` x the resting scale, pulled toward a bezel-space box (x, y, w, h) by STYLE move.pull."""
+        return self.zoom_from(self.rest, box, factor)
+
+    def zoom_from(self, cam, box, factor):
+        """`factor` times `cam`'s scale, pulled toward a bezel-space box by STYLE move.pull."""
         x, y, w, h = box
-        s0, fx, fy = self.rest
+        s, fx, fy = cam
         pull = STYLE["move"]["pull"]
-        return (min(S_MAX, s0 * factor), fx + (x + w / 2 - fx) * pull, fy + (y + h / 2 - fy) * pull)
+        return (min(S_MAX, s * factor), fx + (x + w / 2 - fx) * pull, fy + (y + h / 2 - fy) * pull)
 
     def out_box(self, cam):
         """Output-space bbox of the whole device (bezel incl.) under a camera."""
@@ -713,7 +717,15 @@ def plan_ipod(L, dev, B, length=30):
             beat = Z[zoom]["beat"] if zoom_beat is None else zoom_beat
             t = beat * B
             s = [sh_ for sh_ in shots if sh_["at"] <= t][-1]
-            s["moves"].append((t - s["at"], dev.zoom(targets[zoom], Z[zoom]["factor"])))
+            # A side-shifted iBook scales in place. Zooming from `rest` (or pulling toward the
+            # screen) would slide it back across the caption column.
+            base = s["cam"]
+            if base is rest:
+                zcam = dev.zoom(targets[zoom], Z[zoom]["factor"])
+            else:
+                zs, zfx, zfy = base
+                zcam = (min(S_MAX, zs * Z[zoom]["factor"]), zfx, zfy)
+            s["moves"].append((t - s["at"], zcam))
             cap_out = beat
         return dict(kind="device", caption=caption, cap_in=cap_in, cap_out=cap_out, title=title, shots=shots,
                     cap_in_s=cap_in_s)
@@ -741,7 +753,6 @@ def plan_ipod(L, dev, B, length=30):
 
     icon = dict(kind="icon", icon="macosx/ipod.png", name="iPod")
     end = dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")
-    # Words stay within the horizontal caption's 9-character line cap.
     browse = D("Browse with the click wheel.", [
         shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10, B))])
     covers = D("Flip through Cover Flow.", [
@@ -762,28 +773,44 @@ def plan_ipod(L, dev, B, length=30):
             (56, None, end),
         ]
 
-    volume = D("Turn the volume.", [
-        shot(ipod, 0, ipod.t("volume", 0.1), span_rate(ipod.t("volume", 0.1), ipod.t("volume-end", -0.1), 10, B))])
-    seek = D("Seek in the song.", [
-        shot(ipod, 0, ipod.t("seek", 0.1), span_rate(ipod.t("seek", 0.1), ipod.t("seek-end", -0.1), 12, B))])
+    # Volume and seek play at capture speed (rate 1). A fixed beat count here was slow-motion:
+    # the wheel and the scrub were stretched to fill 10 and 12 beats. One frame short of the
+    # trimmed source window, so the shot ends before the next gesture and the last frame is never held.
+    def realtime_beats(a, b):
+        frames = max(1, math.floor((b - a) * FPS) - 1)
+        return frames / (FPS * B)
+
+    vol_a, vol_b = ipod.t("volume", 0.1), ipod.t("volume-end", -0.1)
+    seek_a, seek_b = ipod.t("seek", 0.1), ipod.t("seek-end", -0.1)
+    vol_beats, seek_beats = realtime_beats(vol_a, vol_b), realtime_beats(seek_a, seek_b)
+    volume = D("Turn the volume.", [shot(ipod, 0, vol_a, 1.0)])
+    seek = D("Seek in the song.", [shot(ipod, 0, seek_a, 1.0)])
     video = D("Watch the video.", [
         shot(ipod, 0, ipod.t("video", 0.2), span_rate(ipod.t("video", 0.2), ipod.t("video-end", -0.1), 12, B))])
-    # One full-screen hold. The second caption rolls in on the same frames, then the camera punches in.
-    # 16 beats of source must exist after the lyrics mark (the shooter holds the frame for longer than that).
+    # Freed beats go to the lyrics hold, still at rate 1, and only while capture remains.
+    # The end card stays on beat 112 when the take is long enough; otherwise it starts early
+    # rather than holding the last lyrics frame.
+    cursor = 46 + vol_beats + seek_beats + 12
+    lyric_frames = max(1, math.floor((ipod.t("end") - lyrics_src) * FPS) - 1)
+    lyric_beats = min(lyric_frames / (FPS * B), 112 - cursor)
+    end_beat = 112.0 if lyric_beats >= 112 - cursor - 1e-9 else cursor + lyric_beats
+    ly0 = cursor
+    ly1 = cursor + lyric_beats / 2
+    sung_out = (round(ly1 * B * FPS) - round(ly0 * B * FPS)) / FPS
     sung = D("Lyrics, in time.", [shot(ipod, 0, lyrics_src)])
-    reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + 16 * B)], zoom="lyrics", zoom_beat=4)
+    reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + sung_out)], zoom="lyrics", zoom_beat=4)
     return [
         (0, 12, opening),
         (12, 16, icon),
         (16, 26, browse),
         (26, 36, covers),
         (36, 46, playing),
-        (46, 56, volume),
-        (56, 68, seek),
-        (68, 80, video),
-        (80, 96, sung),
-        (96, 112, reading),
-        (112, None, end),
+        (46, 46 + vol_beats, volume),
+        (46 + vol_beats, 46 + vol_beats + seek_beats, seek),
+        (46 + vol_beats + seek_beats, cursor, video),
+        (ly0, ly1, sung),
+        (ly1, end_beat, reading),
+        (end_beat, None, end),
     ]
 
 
@@ -986,7 +1013,10 @@ def side_caption(L, dev, text, size, lay):
     x = int(round(lay["text_x_frac"] * W))
     cap = Caption(text, size, lay["block_w_frac"] * W - x, lay["line_height"], lay.get("max_chars"), align="left")
     y = int(round(H / 2 - cap.h / 2))
-    ink_right = x + cap.w - 2 * cap.pad
+    ink_w = cap.w - 2 * cap.pad
+    # A fixed column keeps the device still across steps. A wider title keeps its own ink width.
+    slot = lay.get("side_slot_w")
+    ink_right = x + slot if slot and ink_w <= slot + 1 else x + ink_w
     left, right = ink_right + lay["device_gap"], W - x
     bx0, by0, bx1, by1 = dev.bbox
     if lay.get("side_scale") == "rest":

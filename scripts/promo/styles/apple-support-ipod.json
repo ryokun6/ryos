@@ -1,8 +1,14 @@
 {
-  "_about": "iPod promo on the bgm2 Apple Support grid. The iBook G4 keeps its resting size and slides right beside the two-line title. One gentle zoom, on the last lyrics step (translation and pronunciation), so the camera never pulls back.",
+  "_about": "iPod promo on the bgm2 Apple Support grid. Desktop step captions sit in a fixed column left of the iBook, smaller than the title; the laptop keeps its resting size. Volume and seek play at capture speed. One gentle zoom, on the last lyrics step (translation and pronunciation), punches in from that framing.",
   "extends": "apple-support-bgm2.json",
   "layout": {
-    "h": {"side_scale": "rest"}
+    "h": {
+      "caption_anchor": "side",
+      "caption_size": 40,
+      "max_chars": null,
+      "side_slot_w": 470,
+      "side_scale": "rest"
+    }
   },
   "zoom": {
     "lyrics": {"factor": 1.28, "beat": 4},
