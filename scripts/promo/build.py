@@ -29,6 +29,11 @@ grid: --music-start ($PROMO_MUSIC_START) is the downbeat the excerpt starts on a
 tempo. Both default to bgm2's grid for the chosen length (BGM2_GRID); for another track find them with music.py. The excerpt is faded out over the end card, normalized to -14 LUFS and
 muxed as AAC 192k. In the 60 s cut the pronunciation clip the Listen button played (dict-extra/listen.*) is
 mixed in at the moment it plays on screen, with the music ducked under it (style "sfx").
+The iPod cut keeps the take's own audio when the capture has some (click-wheel ticks and the YouTube song
+together). A silent screencast gets that same mix rebuilt from the app's click samples and the song file
+($PROMO_IPOD_SONG, default tmp/promo/supernatural.webm), lined up to the on-screen clock. The bed ducks under
+the song and stays up under the ticks. --remux VIDEO writes that mix onto an existing master without
+re-encoding the picture.
 Without music the video is silent on the same grid.
 
 Needs numpy, Pillow, opencv-python-headless, ffmpeg and 7z (for bezels.py).
@@ -1291,37 +1296,101 @@ TRANSITIONS = {"push": push, "wipe_in": wipe_in, "wipe_out": wipe_out}
 
 
 # ---------------------------------------------------------------- audio
-def build_audio(music, start, out_wav, sfx=()):
-    """Music excerpt with a short fade over the end card, plus any in-app sounds (`sfx`: (output time, file)) with
-    the music ducked under them; the mix is normalized to -14 LUFS (two-pass loudnorm)."""
-    fade, A = 1.6, STYLE["sfx"]
+def _env_term(a, b, ramp):
+    """Smooth 0→1→0 step covering [a, b], with `ramp` seconds of attack and release."""
+    return (f"min(max((t-{a - ramp:.4f})/{ramp:.4f},0),1)"
+            f"*min(max(({b + ramp:.4f}-t)/{ramp:.4f},0),1)")
+
+
+def _max_env(terms):
+    env = terms[0]
+    for term in terms[1:]:
+        env = f"max({env},{term})"
+    return env
+
+
+def atempo_chain(rate):
+    """ffmpeg atempo stays in (0.5, 2]. Chain stages when a shot is faster or slower than that."""
+    filters, r = [], float(rate)
+    if r <= 0:
+        raise ValueError(f"playback rate {rate}")
+    while r > 2.0 + 1e-6:
+        filters.append("atempo=2.0")
+        r /= 2.0
+    while r < 0.5 - 1e-6:
+        filters.append("atempo=0.5")
+        r /= 0.5
+    filters.append(f"atempo={r:.6f}")
+    return ",".join(filters)
+
+
+def build_audio(music, start, out_wav, sfx=(), beds=()):
+    """Music excerpt with a short fade over the end card, normalized to -14 LUFS (two-pass loudnorm).
+
+    `sfx` is (output time, file): dictionary pronunciation clips, and the bed ducks under each one.
+    `beds` are pieces of a take's own audio already lined up with a shot:
+    {path, t, src, dur, rate, duck}. `duck` dips the bed for that piece (the iPod song). Click-wheel
+    ticks ride in the same take audio with duck left off, so the bed stays at its normal level under them.
+    """
+    fade = 1.6
+    A, S = STYLE["sfx"], STYLE.get("song") or STYLE["sfx"]
     inputs = ["-ss", f"{start}", "-t", f"{DURATION}", "-i", music]
     music_chain = f"afade=t=in:d=0.02,afade=t=out:st={DURATION - fade:.2f}:d={fade}"
-    graph, mix = [], "[m]"
+    dips = []
     if sfx:
-        duck, r = 1 - 10 ** (-A["duck_db"] / 20), A["duck_ramp_s"]
+        duck = 1 - 10 ** (-A["duck_db"] / 20)
         terms = []
         for t, path in sfx:
-            dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
-                                       capture_output=True, text=True).stdout)
-            a, b = t - A["duck_lead_s"], t + dur + A["duck_tail_s"]
-            terms.append(f"min(max((t-{a - r:.3f})/{r},0),1)*min(max(({b + r:.3f}-t)/{r},0),1)")
-        env = terms[0]
-        for term in terms[1:]:
-            env = f"max({env},{term})"
-        music_chain += f",volume='1-{duck:.4f}*{env}':eval=frame"
-        labels = []
-        for i, (t, path) in enumerate(sfx):
-            inputs += ["-i", path]
-            ms = int(round(t * 1000))
-            graph.append(f"[{i + 1}:a]aresample=48000,aformat=channel_layouts=stereo,volume={A['gain_db']}dB,"
-                         f"adelay={ms}|{ms},apad[s{i}]")
-            labels.append(f"[s{i}]")
-        graph.insert(0, f"[0:a]aresample=48000,aformat=channel_layouts=stereo,{music_chain}[m]")
+            dur = float(subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+                capture_output=True, text=True).stdout)
+            terms.append(_env_term(t - A["duck_lead_s"], t + dur + A["duck_tail_s"], A["duck_ramp_s"]))
+        dips.append(f"{duck:.4f}*({_max_env(terms)})")
+    song_windows = []
+    for bed in beds:
+        if not bed.get("duck"):
+            continue
+        out_dur = bed["dur"] / bed["rate"]
+        song_windows.append((bed["t"], bed["t"] + out_dur))
+    if song_windows:
+        duck = 1 - 10 ** (-S["duck_db"] / 20)
+        terms = [_env_term(a - S["duck_lead_s"], b + S["duck_tail_s"], S["duck_ramp_s"]) for a, b in song_windows]
+        dips.append(f"{duck:.4f}*({_max_env(terms)})")
+    if dips:
+        music_chain += f",volume='max(0.02,1-({'+'.join(dips)}))':eval=frame"
+
+    graph, labels = [], []
+    idx = 1
+    for i, (t, path) in enumerate(sfx):
+        inputs += ["-i", path]
+        ms = int(round(t * 1000))
+        graph.append(f"[{idx}:a]aresample=48000,aformat=channel_layouts=stereo,volume={A['gain_db']}dB,"
+                     f"adelay={ms}|{ms},apad[s{i}]")
+        labels.append(f"[s{i}]")
+        idx += 1
+    for i, bed in enumerate(beds):
+        inputs += ["-i", bed["path"]]
+        out_dur = bed["dur"] / bed["rate"]
+        edge = min(0.012, out_dur / 4) if out_dur > 0.05 else 0.0
+        fade_out = min(bed.get("fade_out", edge), out_dur / 3) if out_dur > 0.05 else 0.0
+        ms = int(round(max(0.0, bed["t"]) * 1000))
+        chain = (f"[{idx}:a]aresample=48000,aformat=channel_layouts=stereo,"
+                 f"atrim=start={bed['src']:.4f}:end={bed['src'] + bed['dur']:.4f},asetpts=PTS-STARTPTS,"
+                 f"{atempo_chain(bed['rate'])}")
+        if edge > 0:
+            chain += f",afade=t=in:d={edge:.4f}"
+        if fade_out > 0:
+            chain += f",afade=t=out:st={max(0.0, out_dur - fade_out):.4f}:d={fade_out:.4f}"
+        chain += f",adelay={ms}|{ms},apad[b{i}]"
+        graph.append(chain)
+        labels.append(f"[b{i}]")
+        idx += 1
+    graph.insert(0, f"[0:a]aresample=48000,aformat=channel_layouts=stereo,{music_chain}[m]")
+    if labels:
         graph.append(f"[m]{''.join(labels)}amix=inputs={len(labels) + 1}:normalize=0:duration=first[mix]")
         mix = "[mix]"
     else:
-        graph.append(f"[0:a]aresample=48000,aformat=channel_layouts=stereo,{music_chain}[m]")
+        mix = "[m]"
 
     def run(tail, extra, **kw):
         return subprocess.run(["ffmpeg", "-hide_banner", "-y", *inputs, "-filter_complex", ";".join(graph) + f";{mix}{tail}",
@@ -1332,8 +1401,322 @@ def build_audio(music, start, out_wav, sfx=()):
     st = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
     norm = (f"loudnorm=I=-14:TP=-1:LRA=11:measured_I={st['input_i']}:measured_TP={st['input_tp']}:"
             f"measured_LRA={st['input_lra']}:measured_thresh={st['input_thresh']}:offset={st['target_offset']}:linear=true")
-    run(f"{norm},aresample=48000[out]", ["-map", "[out]", "-ac", "2", "-t", f"{DURATION}", out_wav],
+    # level defaults on, which would undo loudnorm. AAC still adds a little inter-sample peak.
+    post = ",alimiter=limit=0.89:level=disabled:attack=5:release=60" if beds else ""
+    run(f"{norm},aresample=48000{post}[out]", ["-map", "[out]", "-ac", "2", "-t", f"{DURATION}", out_wav],
         check=True, capture_output=True)
+
+
+# On-screen clock at the `playing` mark ("0:02") and the lyrics seek (the pronunciation line).
+IPOD_POS_AT_PLAYING = 2.0
+IPOD_SEEK_SECONDS = 37.883
+# inspectLyrics arms the player here. Each 22° spin is one 15° detent → +3 volume units.
+IPOD_VOLUME0 = 0.28
+IPOD_VOLUME_STEP = 0.03
+
+
+def _has_audio(path):
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0", path],
+        capture_output=True, text=True)
+    return bool(probe.stdout.strip())
+
+
+def _mark_t(marks, name):
+    return marks[name]["t"]
+
+
+def ipod_gesture_script():
+    """Nominal seconds for each click and wheel detent, one list per stretch between marks.
+
+    Durations follow shoot.ts (sleeps, and ~0.36 s per spin() drag). The wheel plays one tick per
+    spin — 22° clears the reversal gate once. Seek mode mutes the clicker, so those spins are silent.
+    """
+    def stretch():
+        t, ev = 0.0, []
+
+        def wait(s):
+            nonlocal t
+            t += s
+
+        def click():
+            ev.append((t, "click"))
+
+        def spins(n):
+            nonlocal t
+            for _ in range(abs(n)):
+                ev.append((t + 0.16, "wheel"))
+                t += 0.36
+
+        return ev, wait, click, spins, lambda: t
+
+    segs = []
+
+    def add(a, b, build):
+        ev, end = build()
+        segs.append((a, b, ev, end))
+
+    def menu_to_songs():
+        ev, wait, click, spins, end = stretch()
+        wait(1.10); click(); wait(0.70); spins(3); wait(0.25); click(); wait(1.40)
+        return ev, end()
+
+    def songs_to_cover():
+        ev, wait, click, spins, end = stretch()
+        click(); wait(0.40); spins(3); wait(0.18); click(); wait(0.70)
+        return ev, end()
+
+    def cover_flips():
+        ev, wait, click, spins, end = stretch()
+        spins(4); wait(0.20); spins(4); wait(0.25)
+        return ev, end()
+
+    def start_playback():
+        ev, wait, click, spins, end = stretch()
+        wait(0.50); click(); wait(0.80)
+        return ev, end()
+
+    def volume_on():
+        ev, wait, click, spins, end = stretch()
+        spins(1); wait(0.08)
+        return ev, end()
+
+    def volume_ride():
+        ev, wait, click, spins, end = stretch()
+        spins(4); wait(1.80)
+        return ev, end()
+
+    def into_seek():
+        ev, wait, click, spins, end = stretch()
+        click(); wait(0.25)
+        return ev, end()
+
+    def into_video():
+        ev, wait, click, spins, end = stretch()
+        click(); wait(0.55)
+        return ev, end()
+
+    def into_lyrics():
+        ev, wait, click, spins, end = stretch()
+        wait(1.10); click(); wait(0.22); click(); wait(0.30)
+        return ev, end()
+
+    add("menu", "songs", menu_to_songs)
+    add("songs", "cover", songs_to_cover)
+    add("cover", "cover-end", cover_flips)
+    add("cover-end", "playing", start_playback)
+    add("play-end", "volume", volume_on)
+    add("volume", "volume-end", volume_ride)
+    add("volume-end", "seek", into_seek)
+    add("seek-end", "video", into_video)
+    add("video-end", "lyrics", into_lyrics)
+    return segs
+
+
+def ipod_heard_windows(marks):
+    """Source ranges the 30 s and 60 s cuts actually play. A tick that lands just before one is kept."""
+    m = lambda n, off=0.0: _mark_t(marks, n) + off
+    return [
+        (m("menu", 0.15), m("songs", 0.4)),
+        (m("cover", 0.15), m("cover-end", -0.1)),
+        (m("playing", 0.2), m("play-end", -0.15)),
+        (m("volume", 0.1), m("volume-end", -0.1)),
+        (m("seek", 0.1), m("seek-end", -0.1)),
+        (m("video", 0.2), m("video-end", -0.1)),
+        (m("lyrics"), m("end")),
+    ]
+
+
+def ipod_source_events(marks):
+    """Click and wheel times on the capture clock, scaled into each measured gap, then nudged into a heard window."""
+    events = []
+    for a, b, rel, nominal in ipod_gesture_script():
+        span = _mark_t(marks, b) - _mark_t(marks, a)
+        scale = span / nominal if nominal else 1.0
+        for t, kind in rel:
+            events.append((_mark_t(marks, a) + t * scale, kind))
+    windows = ipod_heard_windows(marks)
+    kept = []
+    for t, kind in events:
+        if any(a - 0.02 <= t <= b + 0.02 for a, b in windows):
+            kept.append((t, kind))
+            continue
+        nxt = min((a for a, b in windows if a > t), default=None)
+        if nxt is not None and nxt - t <= 1.0:
+            kept.append((nxt + 0.04, kind))
+            print(f"[ipod-audio] nudge {kind} {t:.2f}s → {nxt + 0.04:.2f}s")
+        else:
+            print(f"[ipod-audio] skip {kind} {t:.2f}s (between shots)")
+    kept.sort()
+    spread, last = [], -1.0
+    for t, kind in kept:
+        if t - last < 0.06:
+            t = last + 0.07
+        spread.append((t, kind))
+        last = t
+    return spread
+
+
+def _song_gain(volume01):
+    """The song stem is already at -14 LUFS. Unity leads a bed ducked 10 dB; each detent adds ~0.8 dB."""
+    db = (volume01 - IPOD_VOLUME0) / IPOD_VOLUME_STEP * 0.8
+    return 10 ** (min(6.0, db) / 20)
+
+
+def _normalized_song(src):
+    """One -14 LUFS / -3 dBTP copy of the YouTube audio, so the mix doesn't chase its true peak."""
+    out = os.path.join(ROOT, "supernatural-norm.wav")
+    if os.path.exists(out) and os.path.getmtime(out) >= os.path.getmtime(src):
+        return out
+    probe = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-i", src, "-af", "loudnorm=I=-14:TP=-3:LRA=11:print_format=json", "-f", "null", "-"],
+        capture_output=True, text=True).stderr
+    st = json.loads(probe[probe.rindex("{"):probe.rindex("}") + 1])
+    norm = (f"loudnorm=I=-14:TP=-3:LRA=11:measured_I={st['input_i']}:measured_TP={st['input_tp']}:"
+            f"measured_LRA={st['input_lra']}:measured_thresh={st['input_thresh']}:offset={st['target_offset']}:linear=true")
+    subprocess.run(["ffmpeg", "-hide_banner", "-y", "-i", src, "-af", norm, "-ar", "48000", "-ac", "2", out],
+                   check=True, capture_output=True)
+    print(f"[ipod-audio] normalized song → {out}")
+    return out
+
+
+def write_ipod_program(take_dir, marks):
+    """Source-timeline mix of the UI samples plus Supernatural, for a capture that has no audio track.
+
+    The screencast is pictures only. These are the same click and wheel files the app played
+    (ui sounds default on), placed on the gesture clock, with the song at the on-screen position.
+    """
+    song_src = os.environ.get("PROMO_IPOD_SONG") or os.path.join(ROOT, "supernatural.webm")
+    if not os.path.exists(song_src):
+        raise FileNotFoundError(f"no iPod song audio at {song_src} (set PROMO_IPOD_SONG)")
+    song = _normalized_song(song_src)
+    sounds = os.path.join(REPO, "public", "sounds")
+    click = os.path.join(sounds, "ButtonClickDown.mp3")
+    wheel = os.path.join(sounds, "WheelsOfTime.m4a")
+    events = ipod_source_events(marks)
+    dur = float(marks["end"]["t"]) + 0.4
+    playing = _mark_t(marks, "playing")
+    volume_t = _mark_t(marks, "volume")
+    volume_end = _mark_t(marks, "volume-end")
+    jump = _mark_t(marks, "video-end") + 0.15
+    vol = IPOD_VOLUME0
+    for t, kind in events:
+        if kind == "wheel" and _mark_t(marks, "play-end") - 0.3 <= t <= volume_end + 0.3:
+            vol = min(1.0, vol + IPOD_VOLUME_STEP)
+    g0, g1 = _song_gain(IPOD_VOLUME0), _song_gain(vol)
+    pre = max(0.3, jump - playing)
+    post = max(0.3, dur - jump)
+    t_vol = max(0.05, volume_t - playing)
+    t_hold = max(t_vol + 0.05, volume_end - playing)
+    detent = (f"if(lt(t,{t_vol:.3f}),{g0:.4f},if(gt(t,{t_hold:.3f}),{g1:.4f},"
+              f"{g0:.4f}+{(g1 - g0):.4f}*(t-{t_vol:.3f})/({t_hold - t_vol:.3f})))")
+    # The on-screen Now Playing hold is the quiet intro (about -26 dBFS against a -15 dBFS chorus).
+    # Lift it so the song already leads, then let the chorus and the volume wheel take over.
+    lift = 10 ** (10.5 / 20)
+    intro = (f"if(lt(t,5.8),{lift:.3f},if(gt(t,7.2),1,"
+             f"{lift:.3f}+(1-{lift:.3f})*((t-5.8)/1.4)))")
+    vol_expr = f"({detent})*({intro})"
+    inputs = ["-f", "lavfi", "-t", f"{dur:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
+    graph, labels = [], ["[0:a]"]
+    for i, (t, kind) in enumerate(events):
+        inputs += ["-i", click if kind == "click" else wheel]
+        ms = int(round(t * 1000))
+        gain = "1.25" if kind == "click" else "2.5"
+        graph.append(f"[{i + 1}:a]aresample=48000,aformat=channel_layouts=stereo,volume={gain},"
+                     f"adelay={ms}|{ms},apad[e{i}]")
+        labels.append(f"[e{i}]")
+    si = 1 + len(events)
+    inputs += ["-i", song]
+    play_ms = int(round(playing * 1000))
+    jump_ms = int(round(jump * 1000))
+    graph.append(f"[{si}:a]asplit=2[sa][sb]")
+    graph.append(f"[sa]aresample=48000,aformat=channel_layouts=stereo,"
+                 f"atrim=start={IPOD_POS_AT_PLAYING:.3f}:end={IPOD_POS_AT_PLAYING + pre:.3f},asetpts=PTS-STARTPTS,"
+                 f"volume='{vol_expr}':eval=frame,afade=t=in:d=0.03,adelay={play_ms}|{play_ms},apad[songA]")
+    graph.append(f"[sb]aresample=48000,aformat=channel_layouts=stereo,"
+                 f"atrim=start={IPOD_SEEK_SECONDS:.3f}:end={IPOD_SEEK_SECONDS + post:.3f},asetpts=PTS-STARTPTS,"
+                 f"volume={g1:.4f},afade=t=in:d=0.04,adelay={jump_ms}|{jump_ms},apad[songB]")
+    labels += ["[songA]", "[songB]"]
+    graph.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=first:dropout_transition=0,"
+                 f"alimiter=limit=0.95:attack=5:release=80[out]")
+    out = os.path.join(take_dir, "program.wav")
+    subprocess.run(["ffmpeg", "-hide_banner", "-y", *inputs, "-filter_complex", ";".join(graph),
+                    "-map", "[out]", "-ac", "2", "-t", f"{dur:.3f}", out],
+                   check=True, capture_output=True)
+    print(f"[ipod-audio] {out} {len(events)} ui sounds, song gain {g0:.2f}→{g1:.2f}, seek at {jump:.2f}s")
+    return out
+
+
+def ipod_program(take_dir):
+    """The take's audio. A real capture track is used whole; a silent screencast gets program.wav."""
+    mkv = os.path.join(take_dir, "capture.mkv")
+    if _has_audio(mkv):
+        print(f"[ipod-audio] using capture audio {mkv}")
+        return mkv
+    marks = {mk["name"]: mk for mk in json.load(open(os.path.join(take_dir, "marks.json")))["marks"]}
+    return write_ipod_program(take_dir, marks)
+
+
+def stamp_scenes(scenes, B):
+    total = int(round(DURATION * FPS))
+    for b0, b1, sc in scenes:
+        f0 = round(b0 * B * FPS)
+        f1 = total if b1 is None else round(b1 * B * FPS)
+        sc["t0"] = f0 / FPS
+        sc["t1"] = f1 / FPS
+    return scenes
+
+
+def ipod_beds(scenes):
+    """One audio piece per iPod shot, time-warped like the picture. The bed ducks only once the song is on."""
+    by_dir = {}
+    beds = []
+    song_from = {}
+    last_song = None
+    pieces = []
+    for _, _, sc in scenes:
+        if sc.get("kind") != "device":
+            continue
+        for sh in sc["shots"]:
+            if not sh["take"].dir.endswith("-ipod"):
+                continue
+            src = by_dir.get(sh["take"].dir)
+            if src is None:
+                src = by_dir[sh["take"].dir] = ipod_program(sh["take"].dir)
+                song_from[sh["take"].dir] = sh["take"].t("playing")
+            dur = max(0.05, (sc["t1"] - sc["t0"] - sh["at"]) * sh["rate"])
+            piece = {"path": src, "t": sc["t0"] + sh["at"], "src": sh["src"], "dur": dur, "rate": sh["rate"],
+                     "duck": sh["src"] + dur > song_from[sh["take"].dir] + 0.05}
+            pieces.append(piece)
+            if piece["duck"]:
+                last_song = piece
+    if last_song is not None:
+        last_song["fade_out"] = 0.28
+    for piece in pieces:
+        if piece["duck"]:
+            print(f"[ipod-audio] duck {piece['t']:.2f}s+{piece['dur'] / piece['rate']:.2f}s "
+                  f"src {piece['src']:.2f} rate {piece['rate']:.3f}")
+    beds.extend(pieces)
+    return beds
+
+
+def mux_audio(video, wav, out):
+    """AAC 48 kHz on the existing frames. Video is copied, so a remux does not rebuild the picture."""
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-i", wav, "-map", "0:v:0", "-map", "1:a:0",
+                    "-c:v", "copy", "-c:a", "aac", "-ar", "48000", "-b:a", "192k",
+                    "-t", f"{DURATION}", "-movflags", "+faststart", out], check=True)
+
+
+def remux_audio(L, B, video, out, music, music_start):
+    """Replace the soundtrack on a finished master. The video bitstream is copied through."""
+    dev = Device(L)
+    scenes = stamp_scenes(plan(L, dev, B, int(DURATION)), B)
+    with tempfile.TemporaryDirectory() as td:
+        wav = os.path.join(td, "music.wav")
+        beds = ipod_beds(scenes) if APP == "ipod" else []
+        build_audio(music, music_start, wav, sfx_times(scenes), beds)
+        mux_audio(video, wav, out)
+    print(f"[remux] {out}")
 
 
 def sfx_times(scenes):
@@ -1382,6 +1765,7 @@ def compose(L, B, out, music=None, music_start=0.0):
         n = f1 - f0
         kind = sc["kind"]
         sc["t0"] = f0 / FPS
+        sc["t1"] = f1 / FPS
         # A scene keeps rendering past its end for as long as the next scene's entrance overlaps it.
         nxt = scenes[i + 1][2] if i + 1 < len(scenes) else None
         extra = round(enter_s(nxt) * FPS) if nxt is not None else 0
@@ -1419,10 +1803,9 @@ def compose(L, B, out, music=None, music_start=0.0):
     if music:
         with tempfile.TemporaryDirectory() as td:
             wav = os.path.join(td, "music.wav")
-            build_audio(music, music_start, wav, sfx_times(scenes))
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp_video, "-i", wav, "-map", "0:v", "-map", "1:a",
-                            "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out],
-                           check=True)
+            beds = ipod_beds(scenes) if APP == "ipod" else []
+            build_audio(music, music_start, wav, sfx_times(scenes), beds)
+            mux_audio(tmp_video, wav, out)
         os.remove(tmp_video)
     else:
         os.replace(tmp_video, out)
@@ -1446,6 +1829,8 @@ if __name__ == "__main__":
     ap.add_argument("--bpm", type=float, default=os.environ.get("PROMO_BPM"), help="default: bgm2's tempo for --length")
     ap.add_argument("--length", type=int, choices=(30, 60), default=int(os.environ.get("PROMO_LENGTH", "30")))
     ap.add_argument("--app", choices=("dictionary", "ipod"), default=os.environ.get("PROMO_APP", "dictionary"))
+    ap.add_argument("--remux", metavar="VIDEO",
+                    help="Keep this master's frames and write a new -14 LUFS mix to --out")
     args = ap.parse_args()
     APP = args.app
     start, bpm = BGM2_GRID[args.length]
@@ -1457,4 +1842,7 @@ if __name__ == "__main__":
     stem = "ryos-ipod" if args.app == "ipod" else "ryos-dictionary-fitness"
     out = args.out or os.path.join(ROOT, "out", f"{stem}-{args.length}s{'-vertical' if args.vertical else ''}.mp4")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    compose(L, 60.0 / args.bpm, out, args.music, args.music_start)
+    if args.remux:
+        remux_audio(L, 60.0 / args.bpm, args.remux, out, args.music, args.music_start)
+    else:
+        compose(L, 60.0 / args.bpm, out, args.music, args.music_start)

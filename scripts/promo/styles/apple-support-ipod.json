@@ -7,5 +7,6 @@
   "zoom": {
     "lyrics": {"factor": 1.28, "beat": 4},
     "fullscreen": {"factor": 1.1, "beat": 4}
-  }
+  },
+  "song": {"duck_db": 10, "duck_ramp_s": 0.2, "duck_lead_s": 0.08, "duck_tail_s": 0.45}
 }

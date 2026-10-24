@@ -56,6 +56,8 @@ DEFAULTS = {
     # In-app sounds (the 60 s cut's pronunciation clip): the music dips by duck_db, ramping over duck_ramp_s,
     # from duck_lead_s before the sound until duck_tail_s after it; gain_db lifts the clip itself.
     "sfx": {"duck_db": 10, "duck_ramp_s": 0.15, "duck_lead_s": 0.1, "duck_tail_s": 0.3, "gain_db": 5},
+    # iPod: the bed ducks under the song (not under click-wheel ticks). A short ramp, and the bed stays audible.
+    "song": {"duck_db": 10, "duck_ramp_s": 0.2, "duck_lead_s": 0.08, "duck_tail_s": 0.45},
     # One entry per zoom in the cut: factor vs the resting device, and the beat (within its scene) it starts on.
     # The scene's caption exits on the same beat.
     "zoom": {
