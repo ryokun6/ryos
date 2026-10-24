@@ -9,7 +9,7 @@
  */
 import type { Locator, Page } from "playwright";
 import { boot, centerWindow, DEVICE, fillPhoneWindow, launch, launchApp, quietDesktop, signIn, sleep, union, WORK_DIR, X11Recorder } from "./lib";
-import { runIpod, runIpodExtra } from "./ipod";
+import { runIpod } from "./ipod";
 import { fitnessView, seedDesktopShortcuts, seedFitness } from "./seed";
 
 const session = process.argv[2] ?? "dictionary";
@@ -339,7 +339,6 @@ await seedDesktopShortcuts(page, forIpod ? [["ipod", "iPod"]] : [["dictionary", 
 const sessions: Record<string, (page: Page) => Promise<void>> = {
   desktop, dictionary, fitness, "dict-extra": dictExtra, "fitness-extra": fitnessExtra, exercises,
   ipod: (p) => runIpod(p, dir, phone),
-  "ipod-extra": (p) => runIpodExtra(p, dir, phone),
 };
 if (!sessions[session]) throw new Error(`unknown session ${session}: ${Object.keys(sessions).join(", ")}`);
 await sessions[session](page);

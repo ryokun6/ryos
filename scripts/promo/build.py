@@ -674,11 +674,11 @@ APP = os.environ.get("PROMO_APP", "dictionary")
 
 
 def plan_ipod(L, dev, B, length=30):
-    """iPod only. 30 s: menu, Cover Flow, Now Playing, synced lyrics. 60 s adds Add Song, skip/shuffle,
-    and full-screen glow lyrics (furigana when the hero is Japanese)."""
+    """iPod. Both cuts end on lyrics that show a translation and a pronunciation guide.
+    30 s: browse, Cover Flow, Now Playing, lyrics.
+    60 s, in order: browse, Cover Flow, Now Playing, volume, seek, video, lyrics."""
     home, ipod = Take(L, "desktop"), Take(L, "ipod")
-    extra = (Take(L, "ipod-extra"),) if length == 60 else ()
-    for t in (home, ipod, *extra):
+    for t in (home, ipod):
         assert t.size == dev.screen[2:], f"{t.dir}: capture {t.size} != bezel screen {dev.screen[2:]} – re-shoot"
     rest = dev.rest
     cb = lambda box: dev.from_capture(box)  # noqa: E731
@@ -688,10 +688,9 @@ def plan_ipod(L, dev, B, length=30):
 
     Z = STYLE["zoom"]
     targets = {}
-    if ipod.marks.get("win", {}).get("box"):
-        targets["lyrics"] = cb(ipod.box("win"))
-    if extra and extra[0].marks.get("fs", {}).get("box"):
-        targets["fullscreen"] = cb(extra[0].box("fs"))
+    if ipod.marks.get("fs", {}).get("box"):
+        # Full-screen glow lyrics. A light punch-in keeps the ruby and the translation line in frame.
+        targets["lyrics"] = cb(ipod.box("fs"))
 
     def D(caption, shots, zoom=None, cap_in=0, title=False, cap_in_s=None, zoom_beat=None):
         cap_out = None
@@ -735,35 +734,19 @@ def plan_ipod(L, dev, B, length=30):
                     cap_in_s=O["move_at_s"], title=True)
         opening["cap_dur_s"] = O["title_s"]
 
-    def clip(name):
-        path = os.path.join(ROOT, name)
-        return path if os.path.exists(path) else None
-
     icon = dict(kind="icon", icon="macosx/ipod.png", name="iPod")
     end = dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")
+    # Words stay within the horizontal caption's 9-character line cap.
     browse = D("Browse with the click wheel.", [
-        shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10 if length == 30 else 12, B))])
+        shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10, B))])
     covers = D("Flip through Cover Flow.", [
-        shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("playing", -0.25), 10 if length == 30 else 12, B))])
+        shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("playing", -0.25), 10, B))])
+    playing = D("Now Playing.", [
+        shot(ipod, 0, ipod.t("playing", 0.2), span_rate(ipod.t("playing", 0.2), ipod.t("play-end", -0.15), 12 if length == 30 else 10, B))])
+    # The bed is bgm2. A ducked clip of the previous hero would play the wrong song under this picture.
+    lyrics_src = ipod.t("lyrics")
     if length == 30:
-        playing = D("Now Playing.", [
-            shot(ipod, 0, ipod.t("playing", -0.1), span_rate(ipod.t("playing", -0.1), ipod.t("video", 1.0), 12, B))])
-        bed_name = "song-play.mp3"
-    else:
-        # Land on the YouTube frame within 3 beats, then hold it until just before the lyrics UI. The next
-        # step is Add Song, so this scene must not play into that menu or keep the track running under it.
-        src0, src_v, src_end = ipod.t("playing", -0.1), ipod.t("video"), ipod.t("lyrics", -0.2)
-        playing = D("Now Playing.", [
-            shot(ipod, 0, src0, span_rate(src0, src_v, 3, B)),
-            shot(ipod, 3 * B, src_v, span_rate(src_v, src_end, 9, B)),
-        ])
-        bed_name = "song-play-60.mp3"
-    bed = clip(bed_name)
-    if bed:
-        playing["sfx"] = [(ipod, "video", bed)]
-    lyrics = D("Lyrics, in time.", [shot(ipod, 0, ipod.t("lyrics", 0.2))], zoom="lyrics", zoom_beat=4)
-
-    if length == 30:
+        lyrics = D("Meaning and reading.", [shot(ipod, 0, lyrics_src)], zoom="lyrics", zoom_beat=4)
         return [
             (0, 8, opening),
             (8, 12, icon),
@@ -774,31 +757,27 @@ def plan_ipod(L, dev, B, length=30):
             (56, None, end),
         ]
 
-    ex = extra[0]
-    add = D("Add a song from YouTube.", [
-        shot(ex, 0, ex.t("add", 0.1), span_rate(ex.t("add", 0.1), ex.t("added", 0.6), 14, B))])
-    skip = D("Skip ahead with shuffle on.", [
-        shot(ex, 0, ex.t("shuffle", -0.3), span_rate(ex.t("shuffle", -0.3), ex.t("skipped", 1.2), 12, B))])
-    # One continuous full-screen hold, split only so the caption can roll. Rate 1 — lyrics should not be slowed.
-    # Start on the fullscreen mark itself so the ducked track lines up with the shot (sfx mapping requires the mark
-    # to fall inside the shot's source range).
-    full_src = ex.t("fullscreen")
-    full = D("Full Screen lyrics.", [shot(ex, 0, full_src)])
-    # Furigana is on by default, but it often arrives after the line is already up. Don't caption it.
-    furi = D("In time with the song.", [shot(ex, 0, full_src + 16 * B)], zoom="fullscreen", zoom_beat=4)
-    bed2 = clip("song-lyrics.mp3")
-    if bed2:
-        full["sfx"] = [(ex, "fullscreen", bed2)]
+    volume = D("Turn the volume.", [
+        shot(ipod, 0, ipod.t("volume", 0.1), span_rate(ipod.t("volume", 0.1), ipod.t("volume-end", -0.1), 10, B))])
+    seek = D("Seek in the song.", [
+        shot(ipod, 0, ipod.t("seek", 0.1), span_rate(ipod.t("seek", 0.1), ipod.t("seek-end", -0.1), 12, B))])
+    video = D("Watch the video.", [
+        shot(ipod, 0, ipod.t("video", 0.2), span_rate(ipod.t("video", 0.2), ipod.t("video-end", -0.1), 12, B))])
+    # One full-screen hold. The second caption rolls in on the same frames, then the camera punches in.
+    # 16 beats of source must exist after the lyrics mark (the shooter holds the frame for longer than that).
+    sung = D("Lyrics, in time.", [shot(ipod, 0, lyrics_src)])
+    reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + 16 * B)], zoom="lyrics", zoom_beat=4)
     return [
         (0, 12, opening),
         (12, 16, icon),
-        (16, 28, browse),
-        (28, 40, covers),
-        (40, 52, playing),
-        (52, 66, add),
-        (66, 78, skip),
-        (78, 94, full),
-        (94, 112, furi),
+        (16, 26, browse),
+        (26, 36, covers),
+        (36, 46, playing),
+        (46, 56, volume),
+        (56, 68, seek),
+        (68, 80, video),
+        (80, 96, sung),
+        (96, 112, reading),
         (112, None, end),
     ]
 

@@ -153,7 +153,7 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
       // storage unavailable – the app falls back to its defaults
     }
     // A fresh profile reconciles local settings up to the signed-in account. Keep that
-    // account's theme on the server; the shoot only forces Aqua Glass in this browser.
+    // account's theme and Debug Mode on the server; the shoot only forces them in this browser.
     const nativeFetch = window.fetch.bind(window);
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       try {
@@ -162,7 +162,11 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
         if (method === "POST" && url.includes("/api/sync/v2/ops") && init?.body && typeof init.body === "string") {
           const payload = JSON.parse(init.body) as { ops?: { k?: string }[] };
           if (Array.isArray(payload.ops)) {
-            const held = payload.ops.filter((op) => typeof op?.k === "string" && (op.k === "settings/theme" || op.k.startsWith("settings/theme/")));
+            const held = payload.ops.filter((op) => {
+              const k = op?.k;
+              return k === "settings/theme" || (typeof k === "string" && k.startsWith("settings/theme/"))
+                || k === "settings/display/debugMode" || k === "settings/display/showResizers";
+            });
             if (held.length) {
               const keep = payload.ops.filter((op) => !held.includes(op));
               const fake = held.map((op) => ({ k: op.k, accepted: true }));
@@ -311,6 +315,23 @@ export async function signIn(page: Page) {
     return { store: useLanguageStore.getState().current, ui: i18nMod.default.language };
   `);
   console.log("[signIn] language", JSON.stringify(lang));
+  // Control Panels → Accounts → Debug Mode stays off, even if the account has it on.
+  // Sync writes the field with setState, so a subscriber puts it back after each apply.
+  const debug = await store(page, `
+    const { useDisplaySettingsStore } = await import("/src/stores/useDisplaySettingsStore.ts");
+    const off = () => {
+      const s = useDisplaySettingsStore.getState();
+      if (!s.debugMode && !s.showResizers) return;
+      s.setDebugMode(false);
+      s.setShowResizers(false);
+    };
+    off();
+    useDisplaySettingsStore.subscribe(off);
+    const s = useDisplaySettingsStore.getState();
+    return { debugMode: s.debugMode, showResizers: s.showResizers };
+  `) as { debugMode: boolean; showResizers: boolean };
+  console.log("[signIn] debug", JSON.stringify(debug));
+  if (debug.debugMode || debug.showResizers) throw new Error(`Debug Mode is still on: ${JSON.stringify(debug)}`);
 }
 
 /**
@@ -335,8 +356,13 @@ export async function quietDesktop(page: Page) {
     const open = Object.values(useAppStore.getState().instances).filter((i) => i.isOpen);
     for (const inst of open) useAppStore.getState().closeAppInstance(inst.instanceId);
     document.querySelectorAll("[data-sonner-toast]").forEach((n) => n.remove());
+    const { useDisplaySettingsStore } = await import("/src/stores/useDisplaySettingsStore.ts");
+    const display = useDisplaySettingsStore.getState();
+    if (display.debugMode) display.setDebugMode(false);
+    if (display.showResizers) display.setShowResizers(false);
     const text = document.body?.innerText || "";
     const root = document.documentElement;
+    const debugButton = document.querySelector("[aria-label='Show console'], [aria-label='Hide console']");
     return {
       windows: Object.values(useAppStore.getState().instances).filter((i) => i.isOpen).length,
       version,
@@ -345,13 +371,30 @@ export async function quietDesktop(page: Page) {
       chrome: root.dataset.osMacChrome,
       material: root.dataset.osAquaMaterial,
       dark: root.classList.contains("dark") || root.dataset.osColorScheme === "dark",
+      debugMode: useDisplaySettingsStore.getState().debugMode,
+      showResizers: useDisplaySettingsStore.getState().showResizers,
+      debugChrome: Boolean(debugButton),
     };
-  `) as { windows: number; version: string | null; downloadBanner: boolean; theme: string; chrome: string; material: string; dark: boolean };
+  `) as {
+    windows: number;
+    version: string | null;
+    downloadBanner: boolean;
+    theme: string;
+    chrome: string;
+    material: string;
+    dark: boolean;
+    debugMode: boolean;
+    showResizers: boolean;
+    debugChrome: boolean;
+  };
   console.log("[desktop]", JSON.stringify(state));
   if (state.downloadBanner) throw new Error("Mac app download banner is still on screen");
   if (state.windows !== 0) throw new Error(`${state.windows} window(s) still open`);
   if (state.theme !== "macosx" || state.chrome !== "aqua" || state.material !== "glass" || state.dark) {
     throw new Error(`desktop is not Aqua Glass: ${JSON.stringify(state)}`);
+  }
+  if (state.debugMode || state.showResizers || state.debugChrome) {
+    throw new Error(`Debug Mode is on: ${JSON.stringify(state)}`);
   }
   await sleep(300);
 }
