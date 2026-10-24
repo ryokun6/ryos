@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Contents, Rendition } from "epubjs";
 import {
   BOOKS_HIGHLIGHT_COLOR_HEX,
+  normalizeBooksHighlightColor,
+  useBooksStore,
   type BookHighlight,
   type BooksHighlightColor,
 } from "@/stores/useBooksStore";
@@ -110,6 +112,11 @@ function makeHighlightId(): string {
  * iframe) and `markClicked` events (tap on an existing highlight), keeps the
  * rendition's SVG highlight marks in sync with the saved highlights, and
  * exposes the actions behind the selection toolbar (highlight color, copy).
+ *
+ * A settled text selection is committed immediately in the last-used highlight
+ * color (reader setting `lastHighlightColor`), so the next passage does not
+ * require another swatch tap. Tapping a swatch recolors that highlight and
+ * becomes the new default.
  */
 export function useBooksAnnotations({
   getRendition,
@@ -125,6 +132,20 @@ export function useBooksAnnotations({
 
   const highlightsRef = useRef(highlights);
   highlightsRef.current = highlights;
+
+  const lastHighlightColor = normalizeBooksHighlightColor(
+    useBooksStore((state) => state.settings.lastHighlightColor)
+  );
+  const lastHighlightColorRef = useRef(lastHighlightColor);
+  lastHighlightColorRef.current = lastHighlightColor;
+
+  const onAddHighlightRef = useRef(onAddHighlight);
+  onAddHighlightRef.current = onAddHighlight;
+
+  // Highlight just committed from a selection, before the saved list prop
+  // catches up. Stops a second `selected` for the same range from inserting
+  // another id.
+  const pendingHighlightRef = useRef<BookHighlight | null>(null);
 
   // cfiRanges currently registered on the rendition, so re-syncs (highlight
   // list or palette change) can remove exactly what was added.
@@ -149,6 +170,9 @@ export function useBooksAnnotations({
       }
     }
   }, [getRendition]);
+
+  const clearDocumentSelectionsRef = useRef(clearDocumentSelections);
+  clearDocumentSelectionsRef.current = clearDocumentSelections;
 
   // Selection tracking: epub.js emits `selected` (debounced selectionchange)
   // with the selection's CFI range; clearing is detected with our own
@@ -183,7 +207,49 @@ export function useBooksAnnotations({
         }
       }
       if (!text) return;
-      setActiveSelection({ kind: "selection", cfiRange, text });
+
+      const saved =
+        highlightsRef.current.find(
+          (highlight) => highlight.cfiRange === cfiRange
+        ) ??
+        (pendingHighlightRef.current?.cfiRange === cfiRange
+          ? pendingHighlightRef.current
+          : undefined);
+      if (saved) {
+        // Reselecting a passage that is already highlighted opens it. The
+        // stored color wins; this is not a new default.
+        setActiveSelection({
+          kind: "highlight",
+          cfiRange: saved.cfiRange,
+          text: saved.text || text,
+          highlightId: saved.id,
+          color: saved.color,
+        });
+        clearDocumentSelectionsRef.current();
+        return;
+      }
+
+      const color = lastHighlightColorRef.current;
+      const highlight: BookHighlight = {
+        id: makeHighlightId(),
+        cfiRange,
+        text,
+        color,
+        createdAt: Date.now(),
+      };
+      pendingHighlightRef.current = highlight;
+      onAddHighlightRef.current(highlight);
+      setActiveSelection({
+        kind: "highlight",
+        cfiRange,
+        text,
+        highlightId: highlight.id,
+        color,
+      });
+      // Drop the native selection so the committed highlight owns the toolbar.
+      // epub.js only emits `selected` once the selection has settled (~250ms),
+      // so this does not cut off an in-progress drag.
+      clearDocumentSelectionsRef.current();
     };
 
     const handleMarkClicked = (
@@ -286,6 +352,16 @@ export function useBooksAnnotations({
     };
   }, [getRendition, isReady]);
 
+  // Once the saved list includes the highlight we just inserted, the list
+  // itself dedupes a repeat selection of that range.
+  useEffect(() => {
+    const pending = pendingHighlightRef.current;
+    if (!pending) return;
+    if (highlights.some((highlight) => highlight.id === pending.id)) {
+      pendingHighlightRef.current = null;
+    }
+  }, [highlights]);
+
   // Keep the rendition's highlight marks in sync with the saved highlights
   // (re-tinted when the palette flips light/dark, and brightened while a
   // highlight is the active/tapped one).
@@ -346,6 +422,12 @@ export function useBooksAnnotations({
     (color: BooksHighlightColor) => {
       const active = activeSelection;
       if (!active) return;
+      const stored = normalizeBooksHighlightColor(
+        useBooksStore.getState().settings.lastHighlightColor
+      );
+      if (stored !== color) {
+        useBooksStore.getState().updateSettings({ lastHighlightColor: color });
+      }
       if (active.kind === "highlight" && active.highlightId) {
         onSetHighlightColor(active.highlightId, color);
       } else {
@@ -371,10 +453,14 @@ export function useBooksAnnotations({
   const removeActiveHighlight = useCallback(() => {
     const active = activeSelection;
     if (active?.kind === "highlight" && active.highlightId) {
+      if (pendingHighlightRef.current?.id === active.highlightId) {
+        pendingHighlightRef.current = null;
+      }
       onRemoveHighlight(active.highlightId);
     }
     setActiveSelection(null);
-  }, [activeSelection, onRemoveHighlight]);
+    clearDocumentSelections();
+  }, [activeSelection, clearDocumentSelections, onRemoveHighlight]);
 
   const copyActiveSelection = useCallback(async (): Promise<boolean> => {
     const text = activeSelection?.text;

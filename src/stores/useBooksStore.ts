@@ -91,6 +91,20 @@ export function isBooksHighlightColor(
   return (BOOKS_HIGHLIGHT_COLORS as readonly unknown[]).includes(value);
 }
 
+/**
+ * Swatch used when the reader has no saved highlight color. Matches the first
+ * color in the selection toolbar.
+ */
+export const DEFAULT_BOOKS_HIGHLIGHT_COLOR: BooksHighlightColor =
+  BOOKS_HIGHLIGHT_COLORS[0];
+
+/** Coerce a persisted highlight swatch, falling back to the toolbar default. */
+export function normalizeBooksHighlightColor(
+  value: unknown
+): BooksHighlightColor {
+  return isBooksHighlightColor(value) ? value : DEFAULT_BOOKS_HIGHLIGHT_COLOR;
+}
+
 export interface BookHighlight {
   id: string;
   /** EPUB CFI range of the highlighted passage. */
@@ -143,6 +157,12 @@ export interface BooksReaderSettings {
   gutterPx: number;
   /** Read-aloud (browser TTS) speaking rate multiplier. */
   speechRate: number;
+  /**
+   * Highlight color committed when a text selection settles, and the swatch
+   * shown as current for that new highlight. Tapping another swatch updates
+   * the passage and this preference.
+   */
+  lastHighlightColor: BooksHighlightColor;
 }
 
 export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
@@ -158,6 +178,7 @@ export const DEFAULT_BOOKS_SETTINGS: BooksReaderSettings = {
   lineHeight: 1.5,
   gutterPx: 24,
   speechRate: 1,
+  lastHighlightColor: DEFAULT_BOOKS_HIGHLIGHT_COLOR,
 };
 
 const HEX_COLOR_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -540,7 +561,8 @@ export const useBooksStore = create<BooksStoreState>()(
       // v8: device-local `openPath` for reader/shelf session restore.
       // v9: device-local `highlightsByPath` / `bookmarksByPath` annotations.
       // v10: `docMapByPath` for KOReader kosync document-id bridging.
-      version: 10,
+      // v11: `settings.lastHighlightColor` (last highlight swatch).
+      version: 11,
       migrate: (persistedState) => {
         const state = (persistedState ?? {}) as Partial<BooksStoreState>;
         const settings = {
@@ -549,6 +571,9 @@ export const useBooksStore = create<BooksStoreState>()(
         };
         // v6 raised the line-height floor from 1.1 to 1.5.
         settings.lineHeight = clampBooksLineHeight(settings.lineHeight);
+        settings.lastHighlightColor = normalizeBooksHighlightColor(
+          settings.lastHighlightColor
+        );
         return {
           ...state,
           settings,

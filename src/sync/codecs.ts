@@ -65,6 +65,7 @@ import {
   BOOKS_SPEECH_RATE_MIN,
   clampBooksLineHeight,
   isBooksCustomHexColor,
+  isBooksHighlightColor,
   isBooksThemeOverride,
   normalizeBooksCustomColor,
   useBooksStore,
@@ -2101,6 +2102,7 @@ const BOOKS_SETTINGS_KEYS = {
   lineHeight: "books-settings/lineHeight",
   gutterPx: "books-settings/gutterPx",
   speechRate: "books-settings/speechRate",
+  lastHighlightColor: "books-settings/lastHighlightColor",
 } as const satisfies Record<keyof BooksReaderSettings, string>;
 
 function collectBooksSettings(
@@ -2124,6 +2126,7 @@ function collectBooksSettings(
   add(BOOKS_SETTINGS_KEYS.lineHeight, settings.lineHeight);
   add(BOOKS_SETTINGS_KEYS.gutterPx, settings.gutterPx);
   add(BOOKS_SETTINGS_KEYS.speechRate, settings.speechRate);
+  add(BOOKS_SETTINGS_KEYS.lastHighlightColor, settings.lastHighlightColor);
   return docs;
 }
 
@@ -2221,6 +2224,11 @@ function applyBooksSettings(ops: AppliedSyncOp[]): void {
           updates = { ...updates, speechRate: op.v };
         }
         break;
+      case BOOKS_SETTINGS_KEYS.lastHighlightColor:
+        if (isBooksHighlightColor(op.v)) {
+          updates = { ...updates, lastHighlightColor: op.v };
+        }
+        break;
     }
   }
 
@@ -2281,6 +2289,11 @@ const booksSettingsCodec: SyncCodec = {
       }
       if (state.settings.speechRate !== prev.settings.speechRate) {
         keys.push(BOOKS_SETTINGS_KEYS.speechRate);
+      }
+      if (
+        state.settings.lastHighlightColor !== prev.settings.lastHighlightColor
+      ) {
+        keys.push(BOOKS_SETTINGS_KEYS.lastHighlightColor);
       }
       if (keys.length === 0 || !useBooksStore.persist.hasHydrated()) return;
       onChange(keys);

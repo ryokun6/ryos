@@ -237,11 +237,12 @@ const SPEECH_OVERLAY_BUTTON_CLASS =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors disabled:[&_svg]:opacity-40 disabled:hover:bg-transparent";
 const SPEECH_BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const SPEECH_BAR_EXPANDED = { width: 130, height: 36 } as const;
-// Selection toolbar (shown in place of the read-aloud controls while text is
-// selected): 5 color dots + divider + copy + ask-ryo (+ remove for saved
-// highlights). Content is centered at these fixed widths, so width = content
-// (195px / 225px) + 4px slack per side — matching the ~10px visual inset the
-// 4px vertical padding + 6px in-button space give the top edge.
+// Selection toolbar (shown in place of the read-aloud controls while a passage
+// is selected): 5 color dots + divider + copy + ask-ryo (+ remove once the
+// passage is a saved highlight). A settled selection is saved immediately, so
+// the bar opens at the wider width. Content is centered at these fixed widths,
+// so width = content (195px / 225px) + 4px slack per side — matching the ~10px
+// visual inset the 4px vertical padding + 6px in-button space give the top edge.
 const SELECTION_BAR_WIDTH = 203;
 const SELECTION_BAR_WIDTH_WITH_REMOVE = 233;
 
@@ -1821,8 +1822,9 @@ export const BooksReaderPane = forwardRef<
   });
   speechRelocatedRef.current = handleSpeechRelocated;
 
-  // Text selection + highlight annotations. The selection toolbar replaces
-  // the read-aloud controls in the bottom pill while a passage is selected.
+  // Text selection + highlight annotations. A settled selection is committed
+  // in the last-used highlight color, and the selection toolbar replaces the
+  // read-aloud controls in the bottom pill while that passage is active.
   const getRendition = useCallback(() => renditionRef.current, []);
   const {
     activeSelection,
