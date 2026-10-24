@@ -325,7 +325,8 @@ export async function fillPhoneWindow(page: Page, gap = 8) {
   const win = page.locator("[data-window-instance-id]").last();
   const id = await win.getAttribute("data-window-instance-id");
   const top = (await win.boundingBox())!.y;
-  const dockTop = (await page.locator("[data-dock-placement]").first().boundingBox())?.y ?? VIEWPORT.height - 100;
+  const dock = await page.locator("[data-dock-placement]").first().boundingBox({ timeout: 2500 }).catch(() => null);
+  const dockTop = dock?.y ?? VIEWPORT.height - 100;
   const height = Math.floor(dockTop - gap - top);
   await store(
     page,
