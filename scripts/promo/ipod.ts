@@ -227,17 +227,47 @@ export async function runIpod(page: Page, dir: string, phone: boolean) {
   rec.mark("playing", union([await win.boundingBox(), await boxOf(page, ".ipod-device-surface")]));
   await sleep(900);
 
-  // Reveal the YouTube picture on the LCD (a click on Now Playing toggles the video).
-  await clickLcd(page, rec);
+  // The cover hides the iframe until showVideo is on. A click on the artwork
+  // toggles it; the center button gets there in two short presses (normal → seek → video).
+  const readPlayback = () => store(page, `
+    const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+    const s = useIpodStore.getState();
+    return { playing: s.isPlaying, video: s.showVideo, id: s.currentSongId, lyrics: s.showLyrics };
+  `) as Promise<{ playing: boolean; video: boolean; id: string | null; lyrics: boolean }>;
+  const nowTitle = page.locator(".ipod-device-surface").getByText("Now Playing", { exact: true }).first();
+  const titleBox = (await nowTitle.count()) ? await nowTitle.boundingBox() : null;
+  if (titleBox) {
+    if (rec) await rec.pauseCaptures();
+    await page.mouse.click(titleBox.x + titleBox.width / 2, titleBox.y + titleBox.height + 70);
+    rec?.resumeCaptures();
+  } else {
+    await clickLcd(page, rec);
+  }
+  await sleep(400);
+  let playback = await readPlayback();
+  if (!playback.video) {
+    await clickCenter(page, rec);
+    await sleep(280);
+    await clickCenter(page, rec);
+    await sleep(400);
+    playback = await readPlayback();
+  }
+  if (!playback.video || !playback.playing) {
+    console.warn("[ipod] picture still covered, opening the video");
+    await store(page, `
+      const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+      const s = useIpodStore.getState();
+      s.setShowVideo(true);
+      if (!s.isPlaying) s.setIsPlaying(true);
+    `);
+    playback = await readPlayback();
+  }
   const frame = page.locator(".ipod-device-surface iframe").first();
-  await frame.waitFor({ state: "visible", timeout: 15000 }).catch(() => console.warn("[ipod] YouTube iframe did not become visible"));
-  const playback = await store(
-    page,
-    `const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
-     const s = useIpodStore.getState();
-     return { playing: s.isPlaying, video: s.showVideo, id: s.currentSongId, lyrics: s.showLyrics };`
-  );
+  await frame.waitFor({ state: "attached", timeout: 15000 }).catch(() => console.warn("[ipod] YouTube iframe did not attach"));
   console.log("[ipod] playback", JSON.stringify(playback));
+  if (!playback.video || !playback.playing || playback.id !== IPOD_HERO) {
+    throw new Error(`YouTube picture is not showing (${JSON.stringify(playback)})`);
+  }
   await sleep(1600);
   rec.mark("video", await win.boundingBox());
   await sleep(500);
