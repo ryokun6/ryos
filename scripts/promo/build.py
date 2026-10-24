@@ -745,9 +745,20 @@ def plan_ipod(L, dev, B, length=30):
         shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10 if length == 30 else 12, B))])
     covers = D("Flip through Cover Flow.", [
         shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("playing", -0.25), 10 if length == 30 else 12, B))])
-    playing = D("Now Playing.", [
-        shot(ipod, 0, ipod.t("playing", -0.1), span_rate(ipod.t("playing", -0.1), ipod.t("video", 1.0), 12, B))])
-    bed = clip("song-play.mp3")
+    if length == 30:
+        playing = D("Now Playing.", [
+            shot(ipod, 0, ipod.t("playing", -0.1), span_rate(ipod.t("playing", -0.1), ipod.t("video", 1.0), 12, B))])
+        bed_name = "song-play.mp3"
+    else:
+        # Land on the YouTube frame within 3 beats, then hold it until just before the lyrics UI. The next
+        # step is Add Song, so this scene must not play into that menu or keep the track running under it.
+        src0, src_v, src_end = ipod.t("playing", -0.1), ipod.t("video"), ipod.t("lyrics", -0.2)
+        playing = D("Now Playing.", [
+            shot(ipod, 0, src0, span_rate(src0, src_v, 3, B)),
+            shot(ipod, 3 * B, src_v, span_rate(src_v, src_end, 9, B)),
+        ])
+        bed_name = "song-play-60.mp3"
+    bed = clip(bed_name)
     if bed:
         playing["sfx"] = [(ipod, "video", bed)]
     lyrics = D("Lyrics, in time.", [shot(ipod, 0, ipod.t("lyrics", 0.2))], zoom="lyrics", zoom_beat=4)
@@ -769,7 +780,9 @@ def plan_ipod(L, dev, B, length=30):
     skip = D("Skip ahead with shuffle on.", [
         shot(ex, 0, ex.t("shuffle", -0.3), span_rate(ex.t("shuffle", -0.3), ex.t("skipped", 1.2), 12, B))])
     # One continuous full-screen hold, split only so the caption can roll. Rate 1 — lyrics should not be slowed.
-    full_src = ex.t("fullscreen", 0.35)
+    # Start on the fullscreen mark itself so the ducked track lines up with the shot (sfx mapping requires the mark
+    # to fall inside the shot's source range).
+    full_src = ex.t("fullscreen")
     full = D("Full Screen lyrics.", [shot(ex, 0, full_src)])
     # Furigana is on by default, but it often arrives after the line is already up. Don't caption it.
     furi = D("In time with the song.", [shot(ex, 0, full_src + 16 * B)], zoom="fullscreen", zoom_beat=4)
@@ -1455,7 +1468,6 @@ if __name__ == "__main__":
     ap.add_argument("--length", type=int, choices=(30, 60), default=int(os.environ.get("PROMO_LENGTH", "30")))
     ap.add_argument("--app", choices=("dictionary", "ipod"), default=os.environ.get("PROMO_APP", "dictionary"))
     args = ap.parse_args()
-    global APP
     APP = args.app
     start, bpm = BGM2_GRID[args.length]
     args.music_start = start if args.music_start is None else float(args.music_start)
