@@ -340,7 +340,10 @@ export async function runIpod(page: Page, dir: string, phone: boolean) {
   for (let i = 0; i < 4; i++) await spin(page, 1);
   await sleep(200);
   for (let i = 0; i < 4; i++) await spin(page, -1);
+  await sleep(250);
+  rec.mark("cover-end");
   // Land on the hero even if a detent was dropped, then play that cover.
+  // Selecting a cover turns the video on; Now Playing, volume, and seek stay on the artwork.
   await store(
     page,
     `const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
@@ -352,9 +355,21 @@ export async function runIpod(page: Page, dir: string, phone: boolean) {
   );
   await sleep(500);
   await clickCenter(page, rec);
+  await store(page, `
+    const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+    const s = useIpodStore.getState();
+    s.setShowVideo(false);
+    if (s.showLyrics) s.toggleLyrics();
+  `);
   let now = await screen(page);
-  for (let i = 0; i < 16 && (!now.playing || now.id !== plan.hero); i++) {
+  for (let i = 0; i < 16 && (!now.playing || now.id !== plan.hero || now.video); i++) {
     await sleep(250);
+    if (now.video) {
+      await store(page, `
+        const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+        useIpodStore.getState().setShowVideo(false);
+      `);
+    }
     now = await screen(page);
   }
   if (!now.playing || now.id !== plan.hero) {
@@ -372,7 +387,7 @@ export async function runIpod(page: Page, dir: string, phone: boolean) {
     now = await screen(page);
   }
   console.log("[ipod] now", JSON.stringify(now));
-  if (now.video || now.lyrics) throw new Error(`Now Playing opened into video or lyrics (${JSON.stringify(now)})`);
+  if (now.video || now.lyrics || !now.playing) throw new Error(`Now Playing is not the cover (${JSON.stringify(now)})`);
   rec.mark("playing", union([await win.boundingBox(), await boxOf(page, ".ipod-device-surface")]));
   await sleep(5600);
   rec.mark("play-end");

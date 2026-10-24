@@ -740,7 +740,7 @@ def plan_ipod(L, dev, B, length=30):
     browse = D("Browse with the click wheel.", [
         shot(ipod, 0, ipod.t("menu", 0.15), span_rate(ipod.t("menu", 0.15), ipod.t("songs", 0.4), 10, B))])
     covers = D("Flip through Cover Flow.", [
-        shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("playing", -0.25), 10, B))])
+        shot(ipod, 0, ipod.t("cover", 0.15), span_rate(ipod.t("cover", 0.15), ipod.t("cover-end", -0.1), 10, B))])
     playing = D("Now Playing.", [
         shot(ipod, 0, ipod.t("playing", 0.2), span_rate(ipod.t("playing", 0.2), ipod.t("play-end", -0.15), 12 if length == 30 else 10, B))])
     # The bed is bgm2. A ducked clip of the previous hero would play the wrong song under this picture.
