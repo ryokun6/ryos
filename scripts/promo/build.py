@@ -686,9 +686,8 @@ def plan_ipod(L, dev, B, length=30):
     """iPod. Both cuts end on lyrics that show a translation and a pronunciation guide.
     30 s: browse, Cover Flow, Now Playing, lyrics.
     60 s, in order: browse, Cover Flow, Now Playing, volume, seek, video, lyrics."""
-    home, ipod = Take(L, "desktop"), Take(L, "ipod")
-    for t in (home, ipod):
-        assert t.size == dev.screen[2:], f"{t.dir}: capture {t.size} != bezel screen {dev.screen[2:]} – re-shoot"
+    ipod = Take(L, "ipod")
+    assert ipod.size == dev.screen[2:], f"{ipod.dir}: capture {ipod.size} != bezel screen {dev.screen[2:]} – re-shoot"
     rest = dev.rest
     cb = lambda box: dev.from_capture(box)  # noqa: E731
 
@@ -737,19 +736,27 @@ def plan_ipod(L, dev, B, length=30):
     for key in ("move_at", "push_at"):
         if O.get(f"{key}_beats") is not None:
             O[f"{key}_s"] = O[f"{key}_beats"] * B
-    if L["key"] == "v" and O.get("v_title_push"):
-        s0, fx, fy = rest
-        below = (s0, fx, fy - (L["H"] + 8 - STYLE["layout"]["v"]["device_top"]) / s0)
-        opening = dict(kind="device", caption=title, title=True, cap_in=0, cap_out=None, cap_in_s=None,
-                       title_push=True, shots=[shot(home, 0, home.t("start", 0.3), cam=below,
-                                                    moves=[(O["push_at_s"], rest, STYLE["move"]["duration_s"])])])
-    else:
-        s0, fx, _ = rest
-        centred = (s0, fx, (dev.bbox[1] + dev.bbox[3]) / 2)
-        opening = D(title, [shot(home, 0, home.t("start", 0.3), cam=centred,
-                                 moves=[(O["move_at_s"], rest, O["move_s"])])],
-                    cap_in_s=O["move_at_s"], title=True)
-        opening["cap_dur_s"] = O["title_s"]
+    # The menu is already open and sits still for about a second before the first click.
+    # Playing that still span across the title holds the open iPod; it is not a slowed gesture.
+    # A fresh tuple stays centered: D() only parks the device beside a side caption when the
+    # shot's camera is the resting camera object itself.
+    open_beats = 12 if length == 60 else 8
+    menu_hold = 0.7
+    # A new tuple: tuple(rest) is rest itself, and D() would then slide the laptop aside.
+    centred = (rest[0], rest[1], rest[2])
+    opening = D(title, [shot(ipod, 0, ipod.t("menu", 0.3), menu_hold / (open_beats * B), cam=centred)],
+                cap_in_s=0.25, title=True)
+    opening["cap_dur_s"] = O["title_s"]
+    opening["clip_from_shot"] = True
+
+    def slide_center(scene, beats):
+        """Desktop ending: slide the iBook sideways back to center. Same scale, same vertical aim."""
+        move_beats = STYLE["move"]["duration_s"] / B
+        beat = max(1.5, beats - move_beats - 1.15 / B)
+        sh = scene["shots"][0]
+        scale, _fx, fy = sh["cam"]
+        sh["moves"].append((beat * B, (scale, rest[1], fy)))
+        scene["cap_out"] = beat
 
     icon = dict(kind="icon", icon="macosx/ipod.png", name="iPod")
     end = dict(kind="end", icon="mac-512.png", url="os.ryo.lu", enter="push")
@@ -762,7 +769,11 @@ def plan_ipod(L, dev, B, length=30):
     # The bed is bgm2. A ducked clip of the previous hero would play the wrong song under this picture.
     lyrics_src = ipod.t("lyrics")
     if length == 30:
-        lyrics = D("Meaning and reading.", [shot(ipod, 0, lyrics_src)], zoom="lyrics", zoom_beat=4)
+        if L["key"] == "h":
+            lyrics = D("Meaning and reading.", [shot(ipod, 0, lyrics_src)])
+            slide_center(lyrics, 12)
+        else:
+            lyrics = D("Meaning and reading.", [shot(ipod, 0, lyrics_src)], zoom="lyrics", zoom_beat=4)
         return [
             (0, 8, opening),
             (8, 12, icon),
@@ -798,7 +809,11 @@ def plan_ipod(L, dev, B, length=30):
     ly1 = cursor + lyric_beats / 2
     sung_out = (round(ly1 * B * FPS) - round(ly0 * B * FPS)) / FPS
     sung = D("Lyrics, in time.", [shot(ipod, 0, lyrics_src)])
-    reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + sung_out)], zoom="lyrics", zoom_beat=4)
+    if L["key"] == "h":
+        reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + sung_out)])
+        slide_center(reading, end_beat - ly1)
+    else:
+        reading = D("Meaning and reading.", [shot(ipod, 0, lyrics_src + sung_out)], zoom="lyrics", zoom_beat=4)
     return [
         (0, 12, opening),
         (12, 16, icon),
@@ -1242,7 +1257,10 @@ def render_device(L, dev, sc, B, n):
     t_gone = None if t_out is None else t_out + STYLE["caption"]["out_s"] + STYLE["caption"]["stagger_s"] * cap.n
     behind_mode = STYLE["caption_entrance"] == "behind"
     if side_cam:
-        edge = dev.left_edge_rows(side_cam, cy, cap.h)
+        # The title opens with the device centered, so the text tucks behind that laptop
+        # rather than behind the shifted step-caption framing.
+        clip_cam = sc["shots"][0]["cam"] if sc.get("clip_from_shot") else side_cam
+        edge = dev.left_edge_rows(clip_cam, cy, cap.h)
         clip0 = float(edge[np.isfinite(edge)].max())   # tucked: the ink starts behind the lid on every text row
     else:
         clip0 = dev.out_box(dev.rest)[3]
