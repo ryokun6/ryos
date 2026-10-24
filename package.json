@@ -240,7 +240,7 @@
     "browserslist": "4.29.4",
     "dompurify": "3.4.17",
     "electron-builder-squirrel-windows": "26.18.0",
-    "fast-uri": "3.1.2",
+    "fast-uri": "3.1.9",
     "fflate": "0.8.3",
     "flatted": "3.4.2",
     "form-data": "4.0.6",
