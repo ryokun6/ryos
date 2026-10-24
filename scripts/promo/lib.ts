@@ -120,7 +120,10 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
   await page.addInitScript((lang) => {
     try {
       sessionStorage.removeItem("ryos:nextBootMessage");
+      // Aqua Glass is the macosx chrome with the glass material (control-panel value "macosx:glass").
       localStorage.setItem("ryos:theme", "macosx");
+      localStorage.setItem("ryos:theme:aqua-material", "glass");
+      localStorage.setItem("ryos:theme:dark", JSON.stringify({ macosx: "light" }));
       localStorage.setItem("ryos:assistant", JSON.stringify({ state: { enabled: false }, version: 2 }));
       const wp = "/wallpapers/photos/aqua/0-leopard-aqua_blue.jpg";
       localStorage.setItem(
@@ -149,6 +152,39 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
     } catch {
       // storage unavailable – the app falls back to its defaults
     }
+    // A fresh profile reconciles local settings up to the signed-in account. Keep that
+    // account's theme on the server; the shoot only forces Aqua Glass in this browser.
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      try {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const method = (init?.method || (input instanceof Request ? input.method : "GET")).toUpperCase();
+        if (method === "POST" && url.includes("/api/sync/v2/ops") && init?.body && typeof init.body === "string") {
+          const payload = JSON.parse(init.body) as { ops?: { k?: string }[] };
+          if (Array.isArray(payload.ops)) {
+            const held = payload.ops.filter((op) => typeof op?.k === "string" && (op.k === "settings/theme" || op.k.startsWith("settings/theme/")));
+            if (held.length) {
+              const keep = payload.ops.filter((op) => !held.includes(op));
+              const fake = held.map((op) => ({ k: op.k, accepted: true }));
+              if (!keep.length) {
+                return new Response(JSON.stringify({ ok: true, seq: 0, results: fake }), {
+                  status: 200,
+                  headers: { "Content-Type": "application/json" },
+                });
+              }
+              const res = await nativeFetch(input, { ...init, body: JSON.stringify({ ...payload, ops: keep }) });
+              if (!res.ok) return res;
+              const data = (await res.json()) as { results?: unknown[] };
+              data.results = [...(data.results || []), ...fake];
+              return new Response(JSON.stringify(data), { status: 200, headers: { "Content-Type": "application/json" } });
+            }
+          }
+        }
+      } catch {
+        // a non-JSON body falls through to the real fetch
+      }
+      return nativeFetch(input, init);
+    };
     const attachQuiet = () => {
       if (!document.documentElement || document.getElementById("promo-quiet")) return;
       const style = document.createElement("style");
@@ -214,6 +250,53 @@ export async function signIn(page: Page) {
   `, username) as { username: string | null; auth: boolean };
   console.log("[signIn] session", JSON.stringify(who));
   if (!who.auth || who.username !== username) throw new Error(`session did not stick for ${username}`);
+  // Aqua Glass for the whole take. Setters stay locked so a later settings sync
+  // can't swap the chrome back; the upload of those keys is dropped in boot().
+  const theme = await store(page, `
+    const { useThemeStore } = await import("/src/stores/useThemeStore.ts");
+    const api = useThemeStore.getState();
+    const origTheme = api.setTheme;
+    const origMaterial = api.setAquaMaterial;
+    const origDark = api.setDarkMode;
+    const lock = () => {
+      const s = useThemeStore.getState();
+      if (s.current !== "macosx") origTheme("macosx");
+      if (s.aquaMaterial !== "glass") origMaterial("glass");
+      if (s.darkModeByTheme.macosx !== "light" || s.isDark) origDark("light", "macosx");
+    };
+    useThemeStore.setState({
+      setTheme: () => { lock(); },
+      setAquaMaterial: () => { lock(); },
+      setDarkMode: () => { lock(); },
+      toggleDarkMode: () => { lock(); },
+    });
+    lock();
+    const root = document.documentElement;
+    const s = useThemeStore.getState();
+    return {
+      theme: s.current,
+      material: s.aquaMaterial,
+      dark: s.isDark,
+      pref: s.darkModeByTheme.macosx,
+      domTheme: root.dataset.osTheme,
+      domChrome: root.dataset.osMacChrome,
+      domMaterial: root.dataset.osAquaMaterial,
+      domScheme: root.dataset.osColorScheme || "light",
+    };
+  `) as {
+    theme: string;
+    material: string;
+    dark: boolean;
+    pref: string;
+    domTheme: string;
+    domChrome: string;
+    domMaterial: string;
+    domScheme: string;
+  };
+  console.log("[signIn] theme", JSON.stringify(theme));
+  if (theme.theme !== "macosx" || theme.material !== "glass" || theme.dark || theme.domMaterial !== "glass" || theme.domChrome !== "aqua" || theme.domScheme === "dark") {
+    throw new Error(`Aqua Glass did not stick: ${JSON.stringify(theme)}`);
+  }
   // The account's synced language is applied for them, but the promo copy is English.
   // Swap i18n only — writing the store would upload English over their setting.
   const lang = await store(page, `
@@ -253,15 +336,23 @@ export async function quietDesktop(page: Page) {
     for (const inst of open) useAppStore.getState().closeAppInstance(inst.instanceId);
     document.querySelectorAll("[data-sonner-toast]").forEach((n) => n.remove());
     const text = document.body?.innerText || "";
+    const root = document.documentElement;
     return {
       windows: Object.values(useAppStore.getState().instances).filter((i) => i.isOpen).length,
       version,
       downloadBanner: /available as a|download mac/i.test(text),
+      theme: root.dataset.osTheme,
+      chrome: root.dataset.osMacChrome,
+      material: root.dataset.osAquaMaterial,
+      dark: root.classList.contains("dark") || root.dataset.osColorScheme === "dark",
     };
-  `) as { windows: number; version: string | null; downloadBanner: boolean };
+  `) as { windows: number; version: string | null; downloadBanner: boolean; theme: string; chrome: string; material: string; dark: boolean };
   console.log("[desktop]", JSON.stringify(state));
   if (state.downloadBanner) throw new Error("Mac app download banner is still on screen");
   if (state.windows !== 0) throw new Error(`${state.windows} window(s) still open`);
+  if (state.theme !== "macosx" || state.chrome !== "aqua" || state.material !== "glass" || state.dark) {
+    throw new Error(`desktop is not Aqua Glass: ${JSON.stringify(state)}`);
+  }
   await sleep(300);
 }
 
