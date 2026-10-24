@@ -90,6 +90,9 @@ async function launchDarwin(): Promise<{ browser: Browser; ctx: BrowserContext; 
       "--disable-background-timer-throttling",
       "--disable-renderer-backgrounding",
       "--disable-backgrounding-occluded-windows",
+      // The Mac display is 1x, so an emulated deviceScaleFactor alone leaves the compositor at CSS pixels.
+      // This flag makes the screencast bitmap the bezel's device pixels (2x desktop, 3x phone).
+      `--force-device-scale-factor=${DSF}`,
     ],
     ignoreDefaultArgs: ["--enable-automation"],
   });
@@ -146,10 +149,21 @@ export async function boot(page: Page, opts: { language?: string } = {}) {
     } catch {
       // storage unavailable – the app falls back to its defaults
     }
-    const style = document.createElement("style");
-    style.id = "promo-quiet";
-    style.textContent = "[data-sonner-toaster]{display:none!important}";
-    document.documentElement.appendChild(style);
+    const attachQuiet = () => {
+      if (!document.documentElement || document.getElementById("promo-quiet")) return;
+      const style = document.createElement("style");
+      style.id = "promo-quiet";
+      style.textContent = "[data-sonner-toaster]{display:none!important}";
+      document.documentElement.appendChild(style);
+    };
+    if (document.documentElement) attachQuiet();
+    else {
+      new MutationObserver((_, o) => {
+        if (!document.documentElement) return;
+        attachQuiet();
+        o.disconnect();
+      }).observe(document, { childList: true, subtree: true });
+    }
   }, opts.language ?? "en");
   await page.goto(`${BASE}/?_ryo=1`);
   await page.waitForTimeout(5000);
@@ -373,8 +387,9 @@ export class X11Recorder {
         this.cdp?.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
       }, 0);
       if (this.stopLoop || this.holdCaptures) return;
-      // Wall clock, same clock as marks. Chrome's metadata timestamp is not the same epoch.
-      const t = Date.now() / 1000;
+      // metadata.timestamp is unix seconds (same clock as marks). Fall back if Chrome omits it.
+      const stamp = ev.metadata?.timestamp;
+      const t = stamp && stamp > 1_700_000_000 ? stamp : Date.now() / 1000;
       const n = this.frameTimes.length + 1;
       const file = path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`);
       this.frameTimes.push(t);
@@ -396,7 +411,9 @@ export class X11Recorder {
       quality: 85,
       maxWidth: sw,
       maxHeight: sh,
-      everyFrame: true,
+      everyNthFrame: 1,
+      // Default of 3 drops frames while the ack is in flight. A wider window keeps the compositor's rate.
+      maxFramesInFlight: 8,
     });
     const arrived = await Promise.race([
       this.firstFrame.then(() => true),
@@ -485,7 +502,8 @@ export class X11Recorder {
     lines.push(`file '${path.join(this.framesDir, `${String(n).padStart(5, "0")}.jpg`)}'`);
     const list = path.join(this.dir, "frames.txt");
     await writeFile(list, lines.join("\n") + "\n");
-    console.log(`[rec] ${n} frames at ${sw}x${sh}`);
+    const span = n > 1 ? this.frameTimes[n - 1] - this.frameTimes[0] : 0;
+    console.log(`[rec] ${n} frames at ${sw}x${sh}${span > 0 ? `, ${(n / span).toFixed(1)} fps` : ""}`);
     const enc = Bun.spawnSync([
       "ffmpeg", "-hide_banner", "-loglevel", "warning", "-y",
       "-f", "concat", "-safe", "0", "-i", list,
