@@ -26,10 +26,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.environ.get("PROMO_WORK_DIR") or os.path.join(HERE, "..", "..", "tmp", "promo")
 CACHE = os.environ.get("PROMO_BEZEL_DIR") or os.path.join(ROOT, "bezels")
 CDN = "https://devimages-cdn.apple.com/design/resources/download/"
-# The attached iBook photo's black panel is 1114x730. A 972x729 window inside it is exactly 4:3;
-# the cache PNG scales that window to the desktop capture (1280x960 CSS at 2x).
+# The photo's black LCD is the whole glass. It is scaled onto the 4:3 desktop capture
+# (1280x960 CSS at 2x) so the bitmap is full-bleed — no side gutters inside the panel.
 IBOOK_SRC = os.path.join(HERE, "assets", "ibook-g4.png")
-IBOOK_HOLE = (243, 66, 972, 729)  # x, y, w, h in the source photo
 IBOOK_SCREEN = (2560, 1920)
 
 BEZELS = {
@@ -39,9 +38,12 @@ BEZELS = {
 
 
 def ibook_bezel_path():
-    """White iBook G4 bezel: photo background removed, 4:3 LCD punched out, chin label kept."""
+    """White iBook G4 bezel. The whole black LCD is the cut-out, scaled to the 4:3 capture."""
     out = os.path.join(CACHE, "iBook G4.png")
-    if os.path.exists(out) and os.path.getmtime(out) >= os.path.getmtime(IBOOK_SRC):
+    src_m = os.path.getmtime(IBOOK_SRC)
+    # Rebuild when this file changes too, so a mask fix is not stuck on a stale cache.
+    code_m = os.path.getmtime(os.path.abspath(__file__))
+    if os.path.exists(out) and os.path.getmtime(out) >= max(src_m, code_m):
         return out
     import cv2
     import numpy as np
@@ -61,31 +63,21 @@ def ibook_bezel_path():
     i = max(range(1, n), key=lambda k: int((lab == k).sum()))
     ys, xs = np.where(lab == i)
     sx0, sy0, sx1, sy1 = int(xs.min()), int(ys.min()), int(xs.max()), int(ys.max())
-    hx, hy, hw, hh = IBOOK_HOLE
-    if not (sx0 < hx and hy == sy0 and hx + hw < sx1 and hy + hh <= sy1 + 1):
-        raise SystemExit(f"iBook LCD {sx0, sy0, sx1, sy1} does not contain the 4:3 hole {IBOOK_HOLE}")
-    # The photo's panel is wider than 4:3. Paint the unused side strips as the surrounding plastic
-    # and keep the original inner shadow on the new edge. The chin label sits below this band.
-    plastic_x = sx0 - 12
-    for y in range(sy0, sy1 + 1):
-        rgb[y, sx0:hx] = rgb[y, plastic_x]
-        rgb[y, hx + hw:sx1 + 1] = rgb[y, plastic_x]
-    # Only the screen band: copying the whole column would paint the lid edge across the chin.
-    rgb[sy0:sy1 + 1, hx - 4:hx] = rgb[sy0:sy1 + 1, sx0 - 4:sx0]
-    rgb[sy0:sy1 + 1, hx + hw:hx + hw + 4] = rgb[sy0:sy1 + 1, sx1 + 1:sx1 + 5]
-    alpha[hy:hy + hh, hx:hx + hw] = 0
-    scale = IBOOK_SCREEN[0] / hw
-    out_w, out_h = int(round(w * scale)), int(round(h * scale))
-    im = Image.fromarray(rgb)
-    im.putalpha(Image.fromarray(alpha))
-    im = im.resize((out_w, out_h), Image.Resampling.LANCZOS)
-    arr = np.array(im)
-    ox, oy = int(round(hx * scale)), int(round(hy * scale))
-    sw, sh = IBOOK_SCREEN
-    arr[oy:oy + sh, ox:ox + sw, 3] = 0
+    sw, sh = sx1 - sx0 + 1, sy1 - sy0 + 1
+    # The photo's glass is a hair wider than 4:3. Scale X and Y so that entire
+    # black rectangle lands on the capture (2560x1920) with nothing left beside it.
+    dst_w, dst_h = IBOOK_SCREEN
+    sx, sy = dst_w / sw, dst_h / sh
+    pad_l, pad_t = int(round(sx0 * sx)), int(round(sy0 * sy))
+    out_w = pad_l + dst_w + int(round((w - sx1 - 1) * sx))
+    out_h = pad_t + dst_h + int(round((h - sy1 - 1) * sy))
+    rgba = np.dstack([rgb, alpha])
+    M = np.array([[sx, 0, pad_l - sx0 * sx], [0, sy, pad_t - sy0 * sy]], np.float32)
+    warped = cv2.warpAffine(rgba, M, (out_w, out_h), flags=cv2.INTER_LANCZOS4, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+    warped[pad_t:pad_t + dst_h, pad_l:pad_l + dst_w, 3] = 0
     os.makedirs(CACHE, exist_ok=True)
-    Image.fromarray(arr).save(out)
-    print(f"[bezel] iBook G4 {out_w}x{out_h}, screen {sw}x{sh} at ({ox}, {oy})", file=sys.stderr)
+    Image.fromarray(warped).save(out)
+    print(f"[bezel] iBook G4 {out_w}x{out_h}, screen {dst_w}x{dst_h} at ({pad_l}, {pad_t}) from LCD {sw}x{sh}", file=sys.stderr)
     return out
 
 
