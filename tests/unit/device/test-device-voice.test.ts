@@ -4,6 +4,7 @@ import { PcmResampler } from "../../../api/_utils/device-voice/audio";
 import {
   DeviceVoiceSession,
   SpeechChunker,
+  replyEmotion,
   spokenOffset,
   toTraditionalChinese,
   type DeviceSocket,
@@ -103,6 +104,17 @@ describe("Chinese replies", () => {
   test("caption progress moves slower through Chinese than English", () => {
     expect(spokenOffset("今天台北天氣不錯", 1000)).toBe(5);
     expect(spokenOffset("the weather is nice", 1000)).toBe(15);
+  });
+});
+
+describe("replyEmotion", () => {
+  test("picks a face from cues in the spoken line", () => {
+    expect(replyEmotion("haha that's so good")).toBe("laughing");
+    expect(replyEmotion("哈哈 你很好笑")).toBe("laughing");
+    expect(replyEmotion("sorry, I can't do that")).toBe("sad");
+    expect(replyEmotion("!!!! say that again")).toBe("angry");
+    expect(replyEmotion("晚安 明天見")).toBe("sleepy");
+    expect(replyEmotion("the weather is sunny today")).toBe("happy");
   });
 });
 
@@ -241,6 +253,7 @@ describe("DeviceVoiceSession", () => {
     const captions = device.texts.filter((m) => m.state === "sentence_start").map((m) => m.text);
     expect(captions.at(-1)).toBe("Sure thing, the weather is sunny and warm today. Bring sunglasses if you go out.");
     expect(device.texts.some((m) => m.state === "progress")).toBe(true);
+    expect(device.texts.filter((m) => m.type === "llm").map((m) => m.emotion)).toEqual(["happy", "happy"]);
     // 300ms of PCM per piece is five 60ms frames.
     expect(device.binary).toBe(10);
   });
