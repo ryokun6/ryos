@@ -20,6 +20,7 @@ import {
   CORE_PRIORITY_INSTRUCTIONS,
   MEMORY_INSTRUCTIONS,
   RYO_PERSONA_INSTRUCTIONS,
+  DEVICE_CHAT_INSTRUCTIONS,
   TELEGRAM_CHAT_INSTRUCTIONS,
   TOOL_USAGE_INSTRUCTIONS,
 } from "./_aiPrompts.js";
@@ -143,7 +144,7 @@ export interface RyoConversationSystemState {
   };
 }
 
-export type RyoConversationChannel = "chat" | "telegram" | "assistant";
+export type RyoConversationChannel = "chat" | "telegram" | "assistant" | "device";
 
 export interface SimpleConversationMessage {
   id?: string;
@@ -262,6 +263,13 @@ const CHANNEL_PROMPT_SECTIONS = {
     TELEGRAM_CHAT_INSTRUCTIONS,
     MEMORY_INSTRUCTIONS,
   ],
+  device: [
+    CORE_PRIORITY_INSTRUCTIONS,
+    ANSWER_STYLE_INSTRUCTIONS,
+    RYO_PERSONA_INSTRUCTIONS,
+    DEVICE_CHAT_INSTRUCTIONS,
+    MEMORY_INSTRUCTIONS,
+  ],
   // Desktop assistant character: full tool access, no Ryo persona.
   assistant: [
     ASSISTANT_CORE_PRIORITY_INSTRUCTIONS,
@@ -277,6 +285,7 @@ const CHANNEL_TOOL_PROFILES: Record<RyoConversationChannel, ChatToolProfile> = {
   chat: "all",
   telegram: "telegram",
   assistant: "all",
+  device: "telegram",
 };
 
 const CHANNEL_STATE_PROFILES = {
@@ -289,6 +298,14 @@ const CHANNEL_STATE_PROFILES = {
     includeChatRoomContext: true,
   },
   telegram: {
+    allowWithoutSystemState: true,
+    includeRunningApps: false,
+    includeMedia: false,
+    includeBrowser: false,
+    includeTextEdit: false,
+    includeChatRoomContext: false,
+  },
+  device: {
     allowWithoutSystemState: true,
     includeRunningApps: false,
     includeMedia: false,
@@ -504,9 +521,11 @@ export function buildContextAwarePrompts(channel: RyoConversationChannel): {
     loadedSections: [
       channel === "telegram"
         ? "TELEGRAM_STATIC_SYSTEM_PROMPT"
-        : channel === "assistant"
-          ? "ASSISTANT_STATIC_SYSTEM_PROMPT"
-          : "STATIC_SYSTEM_PROMPT",
+        : channel === "device"
+          ? "DEVICE_STATIC_SYSTEM_PROMPT"
+          : channel === "assistant"
+            ? "ASSISTANT_STATIC_SYSTEM_PROMPT"
+            : "STATIC_SYSTEM_PROMPT",
     ],
   };
 }
@@ -925,7 +944,9 @@ export async function prepareRyoConversationModelInput(
   const cursorSdkAddon = enableCursorRepoTool
     ? channel === "telegram"
       ? `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and do **not** cite \`agentDashboardUrl\`, agent ids, or run ids in your reply — they will receive a follow-up Telegram message with links when the run completes.`
-      : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and do **not** cite \`agentDashboardUrl\`, agent ids, or run ids — the inline Cursor agent card in web chat already exposes dashboard access, live progress, follow-up, and PR shortcuts.`
+      : channel === "device"
+        ? `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge in one short spoken sentence and do not cite dashboard URLs, agent ids, or run ids.`
+        : `\n\n## CURSOR CLOUD AGENT\nYou have access to \`cursorCloudAgent\` for substantive edits via Cursor Cloud against the GitHub repository ryokun6/ryos, and \`listCursorCloudAgentRuns\` to list recent runs. Do not use these for virtual filesystem paths (\`/Documents\`, \`/Applets\`, etc.). Use \`cursorCloudAgent\` only when the user wants changes to this product's source code on GitHub. The run is asynchronous: acknowledge briefly and do **not** cite \`agentDashboardUrl\`, agent ids, or run ids — the inline Cursor agent card in web chat already exposes dashboard access, live progress, follow-up, and PR shortcuts.`
     : "";
 
   const assistantCustomizationAddon =
