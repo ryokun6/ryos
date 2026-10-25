@@ -2,6 +2,8 @@ export const REALTIME_TRANSCRIBE_URL = "wss://api.openai.com/v1/realtime?intent=
 export const REALTIME_TRANSCRIBE_MODEL = "gpt-live-transcribe";
 /** Realtime transcription only takes 24 kHz PCM. */
 export const REALTIME_TRANSCRIBE_RATE = 24000;
+/** Languages Ryo speaks; hints only, other speech still transcribes. */
+export const REALTIME_TRANSCRIBE_LANGUAGES = ["en", "zh-tw", "ja", "fr"];
 const FINISH_TIMEOUT_MS = 8000;
 
 export interface TranscribeSocket {
@@ -58,6 +60,7 @@ export class RealtimeTranscription {
                 transcription: {
                   model: REALTIME_TRANSCRIBE_MODEL,
                   keywords: ["Ryo", "ryOS"],
+                  languages: REALTIME_TRANSCRIBE_LANGUAGES,
                   delay: "low",
                 },
                 turn_detection: null,

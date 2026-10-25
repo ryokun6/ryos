@@ -4,6 +4,8 @@ import { PcmResampler } from "../../../api/_utils/device-voice/audio";
 import {
   DeviceVoiceSession,
   SpeechChunker,
+  spokenOffset,
+  toTraditionalChinese,
   type DeviceSocket,
   type DeviceVoiceDeps,
   type Transcriber,
@@ -75,6 +77,32 @@ describe("SpeechChunker", () => {
     expect(pieces[0].start).toBe(0);
     expect(pieces[1].start).toBe(pieces[0].length);
     expect(pieces[1].start + pieces[1].length).toBe(Array.from(reply).length);
+  });
+});
+
+describe("Chinese replies", () => {
+  test("split at the spaces Ryo uses between Chinese sentences", () => {
+    const chunker = new SpeechChunker();
+    const reply = "今天台北天氣不錯 下午可能會下一點雨 記得帶傘 晚上溫度大概二十度左右 很舒服";
+    const pieces = Array.from(reply).flatMap((ch) => chunker.push(ch));
+    pieces.push(...chunker.flush());
+    expect(pieces.map((piece) => piece.text)).toEqual([
+      "今天台北天氣不錯 下午可能會下一點雨",
+      "記得帶傘 晚上溫度大概二十度左右",
+      "很舒服",
+    ]);
+  });
+
+  test("transcripts come out in traditional characters", () => {
+    expect(toTraditionalChinese("今天台北的天气怎么样？我想去公园散步。")).toBe(
+      "今天台北的天氣怎麼樣？我想去公園散步。"
+    );
+    expect(toTraditionalChinese("what's the weather")).toBe("what's the weather");
+  });
+
+  test("caption progress moves slower through Chinese than English", () => {
+    expect(spokenOffset("今天台北天氣不錯", 1000)).toBe(5);
+    expect(spokenOffset("the weather is nice", 1000)).toBe(15);
   });
 });
 
