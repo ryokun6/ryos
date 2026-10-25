@@ -63,6 +63,22 @@ describe("device conversation channel", () => {
     expect(prompt).not.toContain("<telegram_chat_instructions>");
   });
 
+  test("voice search wording stays off the other channels", () => {
+    const voiceOnly = "Do not name the source, the site, or where you read it.";
+    expect(buildStaticSystemPrompt("device")).toContain(voiceOnly);
+    expect(buildStaticSystemPrompt("chat")).toContain(
+      "cite sources as compact parenthesized markdown citations"
+    );
+    expect(buildStaticSystemPrompt("telegram")).toContain(
+      "mention the source name naturally in prose"
+    );
+    for (const channel of ["chat", "telegram", "assistant"] as const) {
+      const prompt = buildStaticSystemPrompt(channel);
+      expect(prompt).not.toContain("<device_chat_instructions>");
+      expect(prompt).not.toContain(voiceOnly);
+    }
+  });
+
   test("volatile state skips the desktop", () => {
     const prompt = buildVolatileStatePrompt({
       channel: "device",
