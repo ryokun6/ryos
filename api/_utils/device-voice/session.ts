@@ -134,14 +134,174 @@ export function replyEmotion(text: string): string {
   return "happy";
 }
 
-/** Strips what should never be spoken or captioned: emoji, links, and markdown. */
+const PROSE_KEYS = ["message", "snippet", "summary", "text", "content", "description", "answer"];
+const SKIP_KEYS =
+  /^(?:url|uri|href|link|links|source|sources|citation|citations|favicon|applemapsurl|id|placeid|type|success|error|query|action|lat|lng|lon|latitude|longitude|startindex|endindex|start_index|end_index|countrycode|category|weathercode)$/i;
+
+function stringField(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** A citation is a link with no answer attached: a url plus a title, or an explicit citation type. */
+function isCitation(obj: Record<string, unknown>): boolean {
+  const type = stringField(obj.type);
+  if (/citation/i.test(type)) return true;
+  const keys = Object.keys(obj);
+  const hasUrl = keys.some((key) => /^(?:url|uri|href)$/i.test(key));
+  const prose = keys.some(
+    (key) => PROSE_KEYS.includes(key) || /^(?:name|address|condition)$/i.test(key)
+  );
+  return hasUrl && !prose;
+}
+
+/** Reads the words out of a tool or search payload and drops its links and metadata. */
+function speechFromJson(value: unknown, key?: string): string {
+  if (key && SKIP_KEYS.test(key)) return "";
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed || /^(?:https?:\/\/|www\.)/i.test(trimmed)) return "";
+    return trimmed;
+  }
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  if (!value || typeof value !== "object") return "";
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => speechFromJson(item))
+      .filter(Boolean)
+      .join(". ");
+  }
+  const obj = value as Record<string, unknown>;
+  if (isCitation(obj)) return "";
+  const results = obj.results ?? obj.items ?? obj.places;
+  if (Array.isArray(results) && results.length > 0) return speechFromJson(results);
+  const prose = PROSE_KEYS.map((name) => stringField(obj[name])).find(Boolean);
+  if (prose) {
+    const title = stringField(obj.title) || stringField(obj.name);
+    return title && !prose.includes(title) ? `${title}. ${prose}` : prose;
+  }
+  return Object.entries(obj)
+    .map(([name, item]) => speechFromJson(item, name))
+    .filter(Boolean)
+    .join(", ");
+}
+
+/** End index of the JSON value starting at `start`, or -1 when it never closes. */
+function jsonEnd(text: string, start: number): number {
+  let depth = 0;
+  let quote = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') quote = false;
+      continue;
+    }
+    if (ch === '"') quote = true;
+    else if (ch === "{" || ch === "[") depth += 1;
+    else if (ch === "}" || ch === "]") {
+      depth -= 1;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+function jsonStart(text: string, from: number): number {
+  const match = /[[{]/.exec(text.slice(from));
+  if (!match || match.index === undefined) return -1;
+  const at = from + match.index;
+  const next = text.slice(at + 1).match(/\S/);
+  if (text[at] === "[" && next && !/[{["\d-]/.test(next[0])) return -1;
+  return at;
+}
+
+/** Replaces JSON values with the words inside them. Unclosed values are left as-is. */
+function replaceJson(text: string): string {
+  let out = "";
+  for (let i = 0; i < text.length; ) {
+    const start = jsonStart(text, i);
+    if (start < 0) return out + text.slice(i);
+    out += text.slice(i, start);
+    const end = jsonEnd(text, start);
+    if (end < 0) return out + text.slice(start);
+    let speech = "";
+    try {
+      speech = speechFromJson(JSON.parse(text.slice(start, end))).replace(/\s+/g, " ").trim();
+    } catch {
+      out += text[start];
+      i = start + 1;
+      continue;
+    }
+    if (speech) out += `${out.length > 0 && !/\s$/.test(out) ? " " : ""}${speech}`;
+    else out = out.replace(/\s+$/, "");
+    i = end;
+  }
+  return out;
+}
+
+/**
+ * True while a code fence or a JSON value is still open, so a sentence
+ * boundary inside it waits until the whole value can be read as speech.
+ */
+function structuredOpen(text: string): boolean {
+  if ((text.match(/```/g) ?? []).length % 2 === 1) return true;
+  let depth = 0;
+  let quote = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (depth === 0) {
+      if (ch !== "{" && ch !== "[") continue;
+      const next = text.slice(i + 1).match(/\S/);
+      if (ch === "[" && next && !/[{["\d-]/.test(next[0])) continue;
+      depth = 1;
+      continue;
+    }
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') quote = false;
+      continue;
+    }
+    if (ch === '"') quote = true;
+    else if (ch === "{" || ch === "[") depth += 1;
+    else if (ch === "}" || ch === "]") depth -= 1;
+  }
+  return depth > 0;
+}
+
+/** A markdown link label that is itself a source, and should not be spoken. */
+function spokenLabel(label: string): string {
+  const trimmed = label.trim();
+  if (/^(?:https?:\/\/|www\.)/i.test(trimmed) || /^[\w.-]+\.[a-z]{2,}$/i.test(trimmed)) return "";
+  return trimmed;
+}
+
+/** Strips what should never be spoken or captioned, and reads JSON as words. */
 export function speakable(text: string): string {
-  return text
-    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+  const withoutFences = text.replace(/```(?:json)?\s*([\s\S]*?)```/gi, (_fence, body: string) => {
+    const trimmed = body.trim();
+    try {
+      return ` ${speechFromJson(JSON.parse(trimmed))} `;
+    } catch {
+      return " ";
+    }
+  });
+  return replaceJson(withoutFences.replace(/\s*\(\s*(?:\[[^\]]*\]\([^)]*\)\s*)+\)/g, ""))
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, (_link, label: string) => spokenLabel(label))
     .replace(/(?:https?:\/\/|www\.)\S+/gi, "")
     .replace(EMOJI, "")
     .replace(/[*_`~]+/g, "")
     .replace(/^\s*(?:#+|[-•]|\d+\.)\s+/gm, "")
+    .replace(/\s*【[^】]*】/g, "")
+    .replace(/\s*\[\d{1,3}\]/g, "")
+    .replace(
+      /\s*\((?:https?:\/\/|www\.)?[a-z0-9][\w.-]*\.[a-z]{2,}(?:\/[^)\s]*)?\)/gi,
+      ""
+    )
+    .replace(/(?:^|\n)\s*(?:sources?|references|citations)\s*:[^\n]*/gi, "")
     .replace(/[ \t]{2,}/g, " ");
 }
 
@@ -196,8 +356,8 @@ export class SpeechChunker {
     for (let match = pattern.exec(this.pending); match; match = pattern.exec(this.pending)) {
       const end = match.index + match[0].length;
       const slice = this.pending.slice(0, end);
-      // Wait for a markdown link to close so it can be reduced to its label.
-      if (/\[[^\]]*$|\]\([^)]*$/.test(slice)) continue;
+      // Wait for a link or a JSON value to close so it can be turned into words.
+      if (/\[[^\]]*$|\]\([^)]*$/.test(slice) || structuredOpen(slice)) continue;
       if (speechWeight(speakable(slice).trim()) >= MIN_CHUNK_CHARS) return end;
     }
     return -1;

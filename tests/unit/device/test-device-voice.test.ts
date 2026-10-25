@@ -132,6 +132,35 @@ describe("mood emoji and clean speech", () => {
     expect(speakable("go to https://maps.apple.com/?q=x now")).toBe("go to now");
   });
 
+  test("drops search sources and reads JSON as speech", () => {
+    expect(speakable("It's sunny in Taipei. ([weather.com](https://weather.com/a))")).toBe(
+      "It's sunny in Taipei."
+    );
+    expect(
+      speakable(
+        'Taipei is warm. {"type":"url_citation","url":"https://cwa.gov.tw","title":"CWA","start_index":0,"end_index":4}'
+      )
+    ).toBe("Taipei is warm.");
+    expect(
+      speakable(
+        '{"message":"Found 1 place.","results":[{"name":"Ichiran","address":"Shibuya","appleMapsUrl":"https://maps.apple.com/x","latitude":35.66}]}'
+      )
+    ).toBe("Ichiran, Shibuya");
+    expect(
+      speakable('{"title":"France","url":"https://en.wikipedia.org","snippet":"A country in Europe."}')
+    ).toBe("France. A country in Europe.");
+  });
+
+  test("holds a sentence boundary inside a JSON value until it closes", () => {
+    const chunker = new SpeechChunker();
+    const reply = 'The short version is {"snippet":"A country in Europe. Really."} That is all.';
+    const pieces = Array.from(reply).flatMap((ch) => chunker.push(ch));
+    pieces.push(...chunker.flush());
+    expect(pieces.map((piece) => piece.text).join(" ")).toBe(
+      "The short version is A country in Europe. Really. That is all."
+    );
+  });
+
   test("a new mood emoji starts a new piece with its own face", () => {
     const chunker = new SpeechChunker();
     const reply = "🙂 That sounds like a really fun plan for the weekend honestly 😔 but I have to work all day on Saturday.";
