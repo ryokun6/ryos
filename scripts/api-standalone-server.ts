@@ -27,6 +27,10 @@ import {
 } from "../api/_utils/runtime-config.js";
 import { createOgShareResponse } from "../api/_utils/og-share.js";
 import {
+  DEVICE_VOICE_PATH,
+  DeviceVoiceSession,
+} from "../api/_utils/device-voice/session.js";
+import {
   isApiDebugLoggingEnabled,
   summarizeForApiLog,
 } from "../api/_utils/_logging.js";
@@ -365,6 +369,8 @@ const handlerCache = new Map<string, RouteHandler>();
 interface LocalRealtimeSocketData {
   connectedAt: number;
   username: string | null;
+  /** Set on voice terminal sockets, which never join realtime channels. */
+  deviceVoice?: DeviceVoiceSession | null;
 }
 
 function toUint8Array(chunk: unknown): Uint8Array | null {
@@ -1051,6 +1057,16 @@ async function bootstrap(): Promise<void> {
         return jsonResponse({ error: "WebSocket upgrade failed" }, 400);
       }
 
+      if (pathname === DEVICE_VOICE_PATH) {
+        const upgraded = server.upgrade(request, {
+          data: { connectedAt: Date.now(), username: null, deviceVoice: null },
+        });
+        if (upgraded) {
+          return undefined as unknown as Response;
+        }
+        return jsonResponse({ error: "WebSocket upgrade failed" }, 400);
+      }
+
       if (pathname === "/api/health") {
         return jsonResponse(
           {
@@ -1213,6 +1229,18 @@ async function bootstrap(): Promise<void> {
     },
     websocket: {
       open: (socket) => {
+        if (socket.data?.deviceVoice === null) {
+          socket.data.deviceVoice = new DeviceVoiceSession(
+            {
+              sendText: (text) => socket.send(text),
+              sendBinary: (data) => socket.send(data),
+              close: () => socket.close(),
+              isOpen: () => socket.readyState === WebSocket.OPEN,
+            },
+            { redis: createRedis() },
+          );
+          return;
+        }
         registerRealtimeSocket(socket);
         setRealtimeSocketUser(socket, socket.data?.username ?? null);
         standaloneDebug("Realtime websocket opened", {
@@ -1221,6 +1249,12 @@ async function bootstrap(): Promise<void> {
         });
       },
       message: (socket, message) => {
+        const deviceVoice = socket.data?.deviceVoice;
+        if (deviceVoice) {
+          if (typeof message === "string") deviceVoice.handleText(message);
+          else deviceVoice.handleBinary(message);
+          return;
+        }
         let payload: { type?: string; channel?: string };
         try {
           payload = JSON.parse(String(message)) as {
@@ -1284,6 +1318,10 @@ async function bootstrap(): Promise<void> {
         }
       },
       close: (socket) => {
+        if (socket.data?.deviceVoice) {
+          socket.data.deviceVoice.close();
+          return;
+        }
         standaloneDebug("Realtime websocket closed", {
           username: getRealtimeSocketUser(socket),
         });

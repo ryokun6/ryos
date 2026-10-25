@@ -156,6 +156,7 @@
     "motion": "^14.5.0",
     "openai": "^7.41.0",
     "opencc-js": "^1.4.2",
+    "opusscript": "0.0.8",
     "pako": "^3.0.2",
     "pinyin-pro": "^3.29.5",
     "pusher": "^5.3.4",
