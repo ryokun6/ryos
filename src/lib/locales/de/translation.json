@@ -662,6 +662,10 @@
         "progress": {
           "description": "Deine Leseposition wird automatisch gespeichert und beim nächsten Öffnen des Buches wiederhergestellt.",
           "title": "Lesefortschritt"
+        },
+        "handGestures": {
+          "description": "Aktiviere beim Lesen die Handgesten über die Symbolleiste oder das Menü „Darstellung“. Halte oder kneife die Finger zusammen und ziele nach links oder rechts, um umzublättern. Die Kamera bleibt auf diesem Gerät und wird ausgeschaltet, wenn du das Buch verlässt.",
+          "title": "Handgesten"
         }
       },
       "import": {
@@ -685,7 +689,9 @@
         "stopSpeaking": "Sprachausgabe stoppen",
         "textLayout": "Textrichtung",
         "textSize": "Textgröße",
-        "theme": "Design"
+        "theme": "Design",
+        "handGestures": "Handgesten",
+        "handGesturesOff": "Handgesten ausschalten"
       },
       "name": "Bücher",
       "reader": {
@@ -758,6 +764,16 @@
         "imported": "Buch importiert",
         "invalidFile": "Nicht unterstützte Datei",
         "invalidFileDesc": "Nur .epub-Bücher können importiert werden."
+      },
+      "gestures": {
+        "cameraBusy": "Kamera wird verwendet.",
+        "cameraDenied": "Kamerazugriff ist deaktiviert.",
+        "cameraMissing": "Keine Kamera gefunden.",
+        "cameraUnavailable": "Handgesten erfordern eine Kamera.",
+        "detectorFailed": "Handerkennung konnte nicht gestartet werden.",
+        "hint": "Halten oder zusammenkneifen, dann nach links oder rechts zielen.",
+        "preview": "Vorschau für Handgesten",
+        "starting": "Kamera wird gestartet …"
       }
     },
     "calculator": {

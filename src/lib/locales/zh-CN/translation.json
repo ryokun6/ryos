@@ -662,6 +662,10 @@
         "progress": {
           "description": "系统会自动保存阅读进度，并在下次打开书籍时恢复。",
           "title": "阅读进度"
+        },
+        "handGestures": {
+          "description": "阅读时，从工具栏或“显示”菜单中开启“手势”。保持手势或捏合，并指向左侧或右侧以翻页。摄像头仅在此设备上运行，并在你退出图书时关闭。",
+          "title": "手势"
         }
       },
       "import": {
@@ -685,7 +689,9 @@
         "stopSpeaking": "停止朗读",
         "textLayout": "文字方向",
         "textSize": "文字大小",
-        "theme": "主题"
+        "theme": "主题",
+        "handGestures": "手势",
+        "handGesturesOff": "关闭手势"
       },
       "name": "书籍",
       "reader": {
@@ -758,6 +764,16 @@
         "imported": "书籍已导入",
         "invalidFile": "不支持的文件",
         "invalidFileDesc": "只能导入 .epub 格式的书籍。"
+      },
+      "gestures": {
+        "cameraBusy": "摄像头正在使用中。",
+        "cameraDenied": "摄像头访问权限已关闭。",
+        "cameraMissing": "未找到摄像头。",
+        "cameraUnavailable": "手势功能需要摄像头。",
+        "detectorFailed": "无法启动手部检测。",
+        "hint": "保持手势或捏合，然后指向左侧或右侧。",
+        "preview": "手势预览",
+        "starting": "正在启动摄像头…"
       }
     },
     "calculator": {

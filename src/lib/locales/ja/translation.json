@@ -662,6 +662,10 @@
         "progress": {
           "description": "読書位置は自動的に保存され、次にブックを開いたときに復元されます。",
           "title": "読書の進捗"
+        },
+        "handGestures": {
+          "description": "読書中に、ツールバーまたは「表示」メニューから「ハンドジェスチャ」をオンにします。手をかざすかピンチして左右に向けると、ページをめくることができます。カメラの処理はこのデバイス上で行われ、ブックを閉じるとオフになります。",
+          "title": "ハンドジェスチャ"
         }
       },
       "import": {
@@ -685,7 +689,9 @@
         "stopSpeaking": "読み上げを停止",
         "textLayout": "文字方向",
         "textSize": "テキストサイズ",
-        "theme": "テーマ"
+        "theme": "テーマ",
+        "handGestures": "ハンドジェスチャ",
+        "handGesturesOff": "ハンドジェスチャをオフにする"
       },
       "name": "ブック",
       "reader": {
@@ -758,6 +764,16 @@
         "imported": "本をインポートしました",
         "invalidFile": "サポートされていないファイル",
         "invalidFileDesc": ".epub形式の本のみインポートできます。"
+      },
+      "gestures": {
+        "cameraBusy": "カメラが使用中です。",
+        "cameraDenied": "カメラへのアクセスがオフになっています。",
+        "cameraMissing": "カメラが見つかりません。",
+        "cameraUnavailable": "ハンドジェスチャを使用するにはカメラが必要です。",
+        "detectorFailed": "手の検出を開始できませんでした。",
+        "hint": "手をかざすかピンチして、左右に向けます。",
+        "preview": "ハンドジェスチャのプレビュー",
+        "starting": "カメラを起動中…"
       }
     },
     "calculator": {

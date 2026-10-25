@@ -664,6 +664,10 @@
         "progress": {
           "description": "Votre position est enregistrée automatiquement et restaurée à la prochaine ouverture du livre.",
           "title": "Progression de lecture"
+        },
+        "handGestures": {
+          "description": "Pendant la lecture, activez « Gestes de la main » depuis la barre d’outils ou le menu Présentation. Maintenez ou pincez et orientez vers la gauche ou la droite pour tourner la page. L’appareil photo reste sur cet appareil et s’éteint lorsque vous quittez le livre.",
+          "title": "Gestes de la main"
         }
       },
       "import": {
@@ -687,7 +691,9 @@
         "stopSpeaking": "Arrêter de parler",
         "textLayout": "Sens du texte",
         "textSize": "Taille du texte",
-        "theme": "Thème"
+        "theme": "Thème",
+        "handGestures": "Gestes de la main",
+        "handGesturesOff": "Désactiver les gestes de la main"
       },
       "name": "Livres",
       "reader": {
@@ -760,6 +766,16 @@
         "imported": "Livre importé",
         "invalidFile": "Fichier non pris en charge",
         "invalidFileDesc": "Seuls les livres au format .epub peuvent être importés."
+      },
+      "gestures": {
+        "cameraBusy": "L’appareil photo est en cours d’utilisation.",
+        "cameraDenied": "L’accès à l’appareil photo est désactivé.",
+        "cameraMissing": "Aucun appareil photo trouvé.",
+        "cameraUnavailable": "Les gestes de la main nécessitent un appareil photo.",
+        "detectorFailed": "Impossible de démarrer la détection de la main.",
+        "hint": "Maintenez ou pincez, puis orientez vers la gauche ou la droite.",
+        "preview": "Aperçu des gestes de la main",
+        "starting": "Démarrage de l’appareil photo…"
       }
     },
     "calculator": {

@@ -662,6 +662,10 @@
         "progress": {
           "description": "읽던 위치가 자동으로 저장되며 다음에 책을 열 때 복원됩니다.",
           "title": "독서 진행 상황"
+        },
+        "handGestures": {
+          "description": "책을 읽는 동안 도구 막대 또는 보기 메뉴에서 ‘손 제스처’를 켭니다. 손을 유지하거나 오므린 다음 왼쪽 또는 오른쪽을 가리켜 페이지를 넘깁니다. 카메라는 이 기기에서만 작동하며 책을 닫으면 꺼집니다.",
+          "title": "손 제스처"
         }
       },
       "import": {
@@ -685,7 +689,9 @@
         "stopSpeaking": "읽기 중단",
         "textLayout": "글자 방향",
         "textSize": "텍스트 크기",
-        "theme": "테마"
+        "theme": "테마",
+        "handGestures": "손 제스처",
+        "handGesturesOff": "손 제스처 끄기"
       },
       "name": "도서",
       "reader": {
@@ -758,6 +764,16 @@
         "imported": "도서를 가져왔습니다",
         "invalidFile": "지원되지 않는 파일",
         "invalidFileDesc": ".epub 도서만 가져올 수 있습니다."
+      },
+      "gestures": {
+        "cameraBusy": "카메라가 사용 중입니다.",
+        "cameraDenied": "카메라 접근이 꺼져 있습니다.",
+        "cameraMissing": "카메라를 찾을 수 없습니다.",
+        "cameraUnavailable": "손 제스처를 사용하려면 카메라가 필요합니다.",
+        "detectorFailed": "손 인식을 시작할 수 없습니다.",
+        "hint": "손을 유지하거나 오므린 다음 왼쪽 또는 오른쪽을 가리키십시오.",
+        "preview": "손 제스처 미리보기",
+        "starting": "카메라 시작 중…"
       }
     },
     "calculator": {
