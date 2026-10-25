@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Converter } from "opencc-js/cn2t";
 import type { Redis } from "../redis.js";
 import { validateAuth } from "../auth/_validate.js";
 import { checkDeviceTurnLimit, runDeviceTurn, type DeviceTurnLimit } from "../device-turn.js";
@@ -52,8 +53,41 @@ export interface DeviceVoiceDeps {
 
 const codePoints = (text: string) => Array.from(text).length;
 
+const simplifiedToTraditional = Converter({ from: "cn", to: "tw" });
+const HAN = /\p{Script=Han}/u;
+
+const WIDE = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u;
+/** Milliseconds to say one character: a CJK character is a whole syllable. */
+const charMs = (char: string) => (WIDE.test(char) ? 200 : 1000 / CHARS_PER_SECOND);
+
+/** Text length in Latin-character equivalents of speaking time. */
+function speechWeight(text: string): number {
+  let ms = 0;
+  for (const char of text) ms += charMs(char);
+  return (ms * CHARS_PER_SECOND) / 1000;
+}
+
+/** Code point offset reached after `elapsedMs` of speaking `text`. */
+export function spokenOffset(text: string, elapsedMs: number): number {
+  let offset = 0;
+  let ms = 0;
+  for (const char of text) {
+    ms += charMs(char);
+    if (ms > elapsedMs) break;
+    offset += 1;
+  }
+  return offset;
+}
+
+/** Speech models often write Chinese in simplified characters; Ryo uses traditional. */
+export function toTraditionalChinese(text: string): string {
+  return HAN.test(text) ? simplifiedToTraditional(text) : text;
+}
+
 export interface SpeechPiece {
   text: string;
+  /** Untrimmed text the offsets count over. */
+  raw: string;
   /** Code point offset of the piece in the whole reply. */
   start: number;
   length: number;
@@ -88,10 +122,11 @@ export class SpeechChunker {
 
   private boundary(): number {
     // A period only ends a sentence once whitespace follows, so "3.5" waits.
-    const pattern = /[.!?]+["')\]]*(?=\s)|[。！？]+|\n+/g;
+    // Ryo's Chinese separates sentences with spaces instead of 。.
+    const pattern = /[.!?]+["')\]]*(?=\s)|[。！？，；]+|(?<=\p{Script=Han})\s+(?=\p{Script=Han})|\n+/gu;
     for (let match = pattern.exec(this.pending); match; match = pattern.exec(this.pending)) {
       const end = match.index + match[0].length;
-      if (this.pending.slice(0, end).trim().length >= MIN_CHUNK_CHARS) return end;
+      if (speechWeight(this.pending.slice(0, end).trim()) >= MIN_CHUNK_CHARS) return end;
     }
     return -1;
   }
@@ -102,7 +137,7 @@ export class SpeechChunker {
     const start = this.emitted;
     const length = codePoints(raw);
     this.emitted += length;
-    return { text: raw.trim(), start, length };
+    return { text: raw.trim(), raw, start, length };
   }
 }
 
@@ -147,13 +182,13 @@ class Listening {
     this.decoder.close();
     if (this.transcriber) {
       try {
-        return await this.transcriber.finish();
+        return toTraditionalChinese(await this.transcriber.finish());
       } catch (error) {
         this.logError("[device-voice] streaming transcription failed, uploading instead", error);
       }
     }
     const wav = pcmToWav(Buffer.concat(this.pcm), this.inputRate);
-    return (await this.transcribeFile(wav)).trim();
+    return toTraditionalChinese((await this.transcribeFile(wav)).trim());
   }
 
   cancel(): void {
@@ -367,7 +402,7 @@ export class DeviceVoiceSession {
     const chunks = new AsyncQueue<SpeechChunk>();
     const frames = new AsyncQueue<Buffer>();
     frames.end();
-    chunks.push({ text, start: 0, length: codePoints(text), caption: text, frames });
+    chunks.push({ text, raw: text, start: 0, length: codePoints(text), caption: text, frames });
     chunks.end();
     await this.play(chunks, turnId);
   }
@@ -431,8 +466,7 @@ export class DeviceVoiceSession {
         }
         if (next > now) await sleep(next - now);
         if (index % PROGRESS_EVERY_FRAMES === 0) {
-          const said = Math.floor((index * FRAME_MS * CHARS_PER_SECOND) / 1000);
-          const offset = chunk.start + Math.min(chunk.length, said);
+          const offset = chunk.start + spokenOffset(chunk.raw, index * FRAME_MS);
           this.send({ type: "tts", state: "progress", offset, total, session_id: this.id });
         }
         this.socket.sendBinary(frame);
