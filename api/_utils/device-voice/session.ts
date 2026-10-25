@@ -79,17 +79,51 @@ export function spokenOffset(text: string, elapsedMs: number): number {
   return offset;
 }
 
+/** The xiaozhi emotion set, keyed by the emoji Ryo leads a sentence with. */
+const MOOD_EMOJI: Record<string, string> = {
+  "😶": "neutral",
+  "🙂": "happy",
+  "😆": "laughing",
+  "😂": "funny",
+  "😔": "sad",
+  "😠": "angry",
+  "😭": "crying",
+  "😍": "loving",
+  "😳": "embarrassed",
+  "😲": "surprised",
+  "😱": "shocked",
+  "🤔": "thinking",
+  "😉": "winking",
+  "😎": "cool",
+  "😌": "relaxed",
+  "🤤": "delicious",
+  "😘": "kissy",
+  "😏": "confident",
+  "😴": "sleepy",
+  "😜": "silly",
+  "🙄": "confused",
+};
+
+const EMOJI = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*\uFE0F?/gu;
+
+/** Mood from the last listed emoji in `text`, if Ryo used one. */
+export function moodFromEmoji(text: string): string | null {
+  let mood: string | null = null;
+  for (const match of text.matchAll(EMOJI)) {
+    mood = MOOD_EMOJI[match[0].replace(/\uFE0F/g, "")] ?? mood;
+  }
+  return mood;
+}
+
+// Fallback when a reply carries no mood emoji (e.g. the user asked for none).
 const EMOTION_CUES: Array<[string, RegExp]> = [
   ["angry", /^!!!!/],
-  ["laughing", /\b(?:haha+|lol|lmao)\b|哈哈|笑死|😂|🤣/i],
-  ["crying", /😭|哭/],
-  ["sad", /\b(?:sorry|sad|unfortunately|miss you)\b|抱歉|對不起|難過|可惜|😢/i],
-  ["loving", /\blove\b|❤|愛你|喜歡你|🥰/i],
-  ["surprised", /\b(?:wow|whoa|omg|no way)\b|哇|天啊|真的假的|😮/i],
-  ["sleepy", /\b(?:tired|sleepy|good ?night)\b|晚安|好睏|好累|😴/i],
-  ["winking", /;\)|😉/],
-  ["cool", /😎|\bcool\b|很酷/i],
-  ["confused", /\b(?:not sure|no idea)\b|不確定|不知道|🤔/i],
+  ["laughing", /\b(?:haha+|lol|lmao)\b|哈哈|笑死/i],
+  ["sad", /\b(?:sorry|sad|unfortunately|miss you)\b|抱歉|對不起|難過|可惜/i],
+  ["loving", /\blove\b|愛你|喜歡你/i],
+  ["surprised", /\b(?:wow|whoa|omg|no way)\b|哇|天啊|真的假的/i],
+  ["sleepy", /\b(?:tired|sleepy|good ?night)\b|晚安|好睏|好累/i],
+  ["confused", /\b(?:not sure|no idea)\b|不確定|不知道/i],
 ];
 
 /** A face for a spoken line, from cues in its text. */
@@ -100,6 +134,17 @@ export function replyEmotion(text: string): string {
   return "happy";
 }
 
+/** Strips what should never be spoken or captioned: emoji, links, and markdown. */
+export function speakable(text: string): string {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/(?:https?:\/\/|www\.)\S+/gi, "")
+    .replace(EMOJI, "")
+    .replace(/[*_`~]+/g, "")
+    .replace(/^\s*(?:#+|[-•]|\d+\.)\s+/gm, "")
+    .replace(/[ \t]{2,}/g, " ");
+}
+
 /** Speech models often write Chinese in simplified characters; Ryo uses traditional. */
 export function toTraditionalChinese(text: string): string {
   return HAN.test(text) ? simplifiedToTraditional(text) : text;
@@ -107,65 +152,75 @@ export function toTraditionalChinese(text: string): string {
 
 export interface SpeechPiece {
   text: string;
-  /** Untrimmed text the offsets count over. */
+  /** Untrimmed spoken text the offsets count over. */
   raw: string;
-  /** Code point offset of the piece in the whole reply. */
+  /** Code point offset of the piece in the spoken reply. */
   start: number;
   length: number;
+  emotion: string;
 }
 
 /**
  * Cuts streamed reply text into speakable pieces at sentence ends. Short
  * sentences are merged so each speech request carries a useful amount.
+ * Mood emoji set the face for their sentence and the ones after it.
  */
 export class SpeechChunker {
-  text = "";
+  /** Cleaned reply text handed out so far. */
+  spoken = "";
   private pending = "";
   private emitted = 0;
+  private mood: string | null = null;
 
   push(delta: string): SpeechPiece[] {
-    this.text += delta;
     this.pending += delta;
     const pieces: SpeechPiece[] = [];
     for (let end = this.boundary(); end > 0; end = this.boundary()) {
-      pieces.push(this.take(end));
+      const piece = this.take(end);
+      if (piece) pieces.push(piece);
     }
     return pieces;
   }
 
   flush(): SpeechPiece[] {
-    if (!this.pending.trim()) {
-      this.pending = "";
-      return [];
-    }
-    return [this.take(this.pending.length)];
+    const piece = this.take(this.pending.length);
+    return piece ? [piece] : [];
   }
 
   private boundary(): number {
     // A period only ends a sentence once whitespace follows, so "3.5" waits.
-    // Ryo's Chinese separates sentences with spaces instead of 。.
-    const pattern = /[.!?]+["')\]]*(?=\s)|[。！？，；]+|(?<=\p{Script=Han})\s+(?=\p{Script=Han})|\n+/gu;
+    // Ryo's Chinese separates sentences with spaces instead of 。, and a new
+    // mood emoji starts a new sentence.
+    const pattern =
+      /[.!?]+["')\]]*(?=\s)|[。！？，；]+|(?<=\p{Script=Han})\s+(?=\p{Script=Han})|\s+(?=\p{Extended_Pictographic})|\n+/gu;
     for (let match = pattern.exec(this.pending); match; match = pattern.exec(this.pending)) {
       const end = match.index + match[0].length;
-      if (speechWeight(this.pending.slice(0, end).trim()) >= MIN_CHUNK_CHARS) return end;
+      const slice = this.pending.slice(0, end);
+      // Wait for a markdown link to close so it can be reduced to its label.
+      if (/\[[^\]]*$|\]\([^)]*$/.test(slice)) continue;
+      if (speechWeight(speakable(slice).trim()) >= MIN_CHUNK_CHARS) return end;
     }
     return -1;
   }
 
-  private take(end: number): SpeechPiece {
-    const raw = this.pending.slice(0, end);
+  private take(end: number): SpeechPiece | null {
+    const source = this.pending.slice(0, end);
     this.pending = this.pending.slice(end);
+    this.mood = moodFromEmoji(source) ?? this.mood;
+    let raw = speakable(source);
+    if (!this.spoken.trim() || /\s$/.test(this.spoken)) raw = raw.trimStart();
+    if (!raw.trim()) return null;
     const start = this.emitted;
     const length = codePoints(raw);
     this.emitted += length;
-    return { text: raw.trim(), raw, start, length };
+    this.spoken += raw;
+    return { text: raw.trim(), raw, start, length, emotion: this.mood ?? replyEmotion(raw) };
   }
 }
 
 interface SpeechChunk extends SpeechPiece {
-  /** Reply text known when this piece was cut; shown while it plays. */
+  /** Spoken reply text up to this piece; shown while it plays. */
   caption: string;
-  emotion: string;
   frames: AsyncQueue<Buffer>;
 }
 
@@ -389,8 +444,7 @@ export class DeviceVoiceSession {
         spoken += 1;
         chunks.push({
           ...piece,
-          caption: chunker.text.trim(),
-          emotion: replyEmotion(piece.text),
+          caption: chunker.spoken.trim(),
           frames: this.synthesize(piece.text),
         });
       }
@@ -400,10 +454,11 @@ export class DeviceVoiceSession {
       firstAudio = Date.now();
     });
     let failure: unknown = null;
+    let reply = "";
     try {
-      await this.deps.runTurn(this.username, transcript, (delta) => {
+      ({ text: reply } = await this.deps.runTurn(this.username, transcript, (delta) => {
         if (this.live(turnId)) enqueue(chunker.push(delta));
-      });
+      }));
       enqueue(chunker.flush());
     } catch (error) {
       failure = error;
@@ -417,6 +472,8 @@ export class DeviceVoiceSession {
       if (spoken === 0) await this.showMessage("something went wrong.", turnId);
       return;
     }
+    // An emoji-only reply has nothing to say aloud; still show the mood.
+    if (spoken === 0) await this.showMessage("👍", turnId, moodFromEmoji(reply) ?? "happy");
     this.deps.log(
       `[device-voice] turn ${this.username} transcribe=${transcribed - started}ms ` +
         `first-audio=${firstAudio ? firstAudio - transcribed : -1}ms reply=${replied - transcribed}ms ` +
@@ -425,11 +482,12 @@ export class DeviceVoiceSession {
   }
 
   /** Caption without audio, for errors the user should still see. */
-  private async showMessage(text: string, turnId: number): Promise<void> {
+  private async showMessage(text: string, turnId: number, emotion = "sad"): Promise<void> {
     const chunks = new AsyncQueue<SpeechChunk>();
     const frames = new AsyncQueue<Buffer>();
     frames.end();
-    chunks.push({ text, raw: text, start: 0, length: codePoints(text), caption: text, emotion: "sad", frames });
+    const caption = speakable(text).trim();
+    chunks.push({ text: caption, raw: caption, start: 0, length: codePoints(caption), caption, emotion, frames });
     chunks.end();
     await this.play(chunks, turnId);
   }

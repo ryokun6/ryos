@@ -4,7 +4,9 @@ import { PcmResampler } from "../../../api/_utils/device-voice/audio";
 import {
   DeviceVoiceSession,
   SpeechChunker,
+  moodFromEmoji,
   replyEmotion,
+  speakable,
   spokenOffset,
   toTraditionalChinese,
   type DeviceSocket,
@@ -115,6 +117,42 @@ describe("replyEmotion", () => {
     expect(replyEmotion("!!!! say that again")).toBe("angry");
     expect(replyEmotion("晚安 明天見")).toBe("sleepy");
     expect(replyEmotion("the weather is sunny today")).toBe("happy");
+  });
+});
+
+describe("mood emoji and clean speech", () => {
+  test("maps the emoji Ryo leads with to the xiaozhi emotion", () => {
+    expect(moodFromEmoji("😆 that's hilarious")).toBe("laughing");
+    expect(moodFromEmoji("🙂 sure. 😔 but not today")).toBe("sad");
+    expect(moodFromEmoji("no emoji here")).toBeNull();
+  });
+
+  test("never speaks emoji, links, or markdown", () => {
+    expect(speakable("😎 check **this** [cool site](https://example.com) out")).toBe(" check this cool site out");
+    expect(speakable("go to https://maps.apple.com/?q=x now")).toBe("go to now");
+  });
+
+  test("a new mood emoji starts a new piece with its own face", () => {
+    const chunker = new SpeechChunker();
+    const reply = "🙂 That sounds like a really fun plan for the weekend honestly 😔 but I have to work all day on Saturday.";
+    const pieces = Array.from(reply).flatMap((ch) => chunker.push(ch));
+    pieces.push(...chunker.flush());
+    expect(pieces.map((piece) => [piece.emotion, piece.text])).toEqual([
+      ["happy", "That sounds like a really fun plan for the weekend honestly"],
+      ["sad", "but I have to work all day on Saturday."],
+    ]);
+    expect(chunker.spoken).toBe("That sounds like a really fun plan for the weekend honestly but I have to work all day on Saturday.");
+    expect(pieces[1].start).toBe(pieces[0].length);
+  });
+
+  test("waits for a markdown link to close before cutting", () => {
+    const chunker = new SpeechChunker();
+    const reply = "You can read all about it over at [the ryOS docs. They are great](https://os.ryo.lu/docs) whenever.";
+    const pieces = Array.from(reply).flatMap((ch) => chunker.push(ch));
+    pieces.push(...chunker.flush());
+    expect(pieces.map((piece) => piece.text).join(" ")).toBe(
+      "You can read all about it over at the ryOS docs. They are great whenever."
+    );
   });
 });
 
@@ -256,6 +294,33 @@ describe("DeviceVoiceSession", () => {
     expect(device.texts.filter((m) => m.type === "llm").map((m) => m.emotion)).toEqual(["happy", "happy"]);
     // 300ms of PCM per piece is five 60ms frames.
     expect(device.binary).toBe(10);
+  });
+
+  test("shows the mood of an emoji-only reply without speaking", async () => {
+    const device = new FakeDevice();
+    let spokenCount = 0;
+    const session = new DeviceVoiceSession(
+      device,
+      sessionDeps({
+        openTranscriber: () => ({ append: () => {}, finish: async () => "thanks", close: () => {} }),
+        runTurn: async (_username, _text, onText) => {
+          onText("😍");
+          return { text: "😍" };
+        },
+        speak: async () => {
+          spokenCount += 1;
+          return pcmStream(300);
+        },
+      })
+    );
+    session.handleText(JSON.stringify({ type: "hello", ryos: { username: "ryo", token: "good" } }));
+    await waitFor(() => device.texts.some((m) => m.type === "hello"));
+    session.handleText(JSON.stringify({ type: "listen", state: "start" }));
+    for (const packet of opusPackets(2)) session.handleBinary(packet);
+    session.handleText(JSON.stringify({ type: "listen", state: "stop" }));
+    await waitFor(() => device.texts.some((m) => m.type === "tts" && m.state === "stop"));
+    expect(spokenCount).toBe(0);
+    expect(device.texts.find((m) => m.type === "llm")).toMatchObject({ emotion: "loving" });
   });
 
   test("falls back to a file upload when streaming transcription fails", async () => {
