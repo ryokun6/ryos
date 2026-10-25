@@ -25,6 +25,7 @@ import {
   getIeProxyFrameAncestors,
 } from "./_security-headers.js";
 import { getIeProxyIsolatedOrigin } from "./runtime-config.js";
+import { ARCHIVED_NAVIGATION_RESOLVER_SOURCE } from "../../src/apps/internet-explorer/utils/waybackNavigation.js";
 
 export { getIeProxyIsolatedOrigin };
 
@@ -173,6 +174,10 @@ try { window.parent.postMessage(${message}, ${toInlineScriptJson(options.parentO
 /**
  * Navigation interceptor injected into every proxied HTML document. Reports
  * the page title / blank-SPA state and link navigations to the parent.
+ *
+ * Upstream scripts stay stripped (wombat included). Wayback replay hrefs are
+ * unwrapped here so a click still updates IE instead of following
+ * web.archive.org.
  */
 export function buildIeNavigationInterceptorScript(options: {
   nonce: string | null;
@@ -197,14 +202,24 @@ export function buildIeNavigationInterceptorScript(options: {
     } catch (e) {}
   }
 
-  // Helper to resolve and post navigation URL to real parent
+  ${ARCHIVED_NAVIGATION_RESOLVER_SOURCE}
+
+  // Helper to resolve and post navigation URL to real parent.
+  // Wayback replay links are reported as the captured original URL so the
+  // parent reloads that page through the proxy (same year) instead of
+  // navigating the iframe to web.archive.org.
   function postNavigation(url, source, openInNewWindow) {
     try {
-      var absoluteUrl = new URL(url, document.baseURI || window.location.href).href;
+      if (!url) return false;
+      var base = document.baseURI || window.location.href;
+      var absoluteUrl = resolveArchivedNavigationUrl(url, base);
+      var pageUrl = unwrapWaybackReplayUrl(base);
       if (absoluteUrl.startsWith('javascript:') ||
           absoluteUrl.startsWith('blob:') ||
           absoluteUrl.startsWith('data:') ||
-          (absoluteUrl.indexOf('#') !== -1 && absoluteUrl.split('#')[0] === window.location.href.split('#')[0])) {
+          (absoluteUrl.indexOf('#') !== -1 &&
+            (absoluteUrl.split('#')[0] === pageUrl.split('#')[0] ||
+             absoluteUrl.split('#')[0] === window.location.href.split('#')[0]))) {
         return false;
       }
       postToParent({
