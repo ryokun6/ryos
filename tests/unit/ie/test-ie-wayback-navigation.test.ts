@@ -234,8 +234,8 @@ describe("injected navigation interceptor", () => {
     // The interceptor aliases `window` globals. Evaluate against fakeWindow.
     const source = script
       .trim()
-      .replace(/^<script[^>]*>/, "")
-      .replace(/<\/script>\s*$/, "");
+      .replace(/^<script[^>]*>/i, "")
+      .replace(/<\/script>\s*$/i, "");
     const fn = new Function(
       "window",
       "document",
