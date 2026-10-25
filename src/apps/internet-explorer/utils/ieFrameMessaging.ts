@@ -6,6 +6,7 @@ import {
   isRyoSiteHost,
   type IeTrustContext,
 } from "./ieFirstParty";
+import { unwrapWaybackReplayUrl } from "./waybackNavigation";
 
 /**
  * Sandbox for IE iframes that render proxied (`/api/iframe-check`) content.
@@ -136,10 +137,17 @@ export function parseIeFrameMessage(
 
   switch (data.type) {
     case "iframeNavigation":
-    case "iframeOpenWindow":
-      return typeof data.url === "string" && /^https?:\/\//i.test(data.url)
-        ? { type: data.type, url: data.url }
-        : null;
+    case "iframeOpenWindow": {
+      // The injected script unwraps replay URLs before posting. Unwrap again
+      // so a message that still carries a web.archive.org replay URL (older
+      // injected script, or a link the page navigated by absolute href) stays
+      // inside IE as the captured original page.
+      if (typeof data.url !== "string" || !/^https?:\/\//i.test(data.url)) {
+        return null;
+      }
+      const url = unwrapWaybackReplayUrl(data.url);
+      return /^https?:\/\//i.test(url) ? { type: data.type, url } : null;
+    }
     case "goBack":
       return { type: "goBack" };
     case "iframeLoaded":
