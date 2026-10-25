@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  compareBookCfis,
   highlightRangesTouch,
   isHighlightRangeCfi,
   mergeTouchingHighlights,
@@ -113,5 +114,17 @@ describe("books highlight ranges", () => {
       text: "abcdefghijklmnopqr",
       createdAt: 5,
     });
+  });
+
+  test("compareBookCfis orders a chapter and sorts unparseable values last", () => {
+    const early = "epubcfi(/6/4!/4/2,/1:0,/1:8)";
+    const later = "epubcfi(/6/4!/4/2,/1:20,/1:28)";
+    const nextChapter = "epubcfi(/6/6!/4/2,/1:0,/1:4)";
+    expect(compareBookCfis(early, later)).toBeLessThan(0);
+    expect(compareBookCfis(later, early)).toBeGreaterThan(0);
+    expect(compareBookCfis(later, nextChapter)).toBeLessThan(0);
+    expect(compareBookCfis(early, early)).toBe(0);
+    expect(compareBookCfis("not-a-cfi", early)).toBeGreaterThan(0);
+    expect(compareBookCfis("also-bad", "not-a-cfi")).toBeLessThan(0);
   });
 });

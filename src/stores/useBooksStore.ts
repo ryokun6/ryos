@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { mergeTouchingHighlights } from "@/apps/books/utils/booksHighlightRanges";
+import { isSameReadingProgress } from "@/apps/books/utils/booksPageProgress";
 import { useCloudSyncStore } from "@/stores/useCloudSyncStore";
 import { createIndexedDBPersistStorage } from "@/utils/indexedDBPersistStorage";
 
@@ -365,9 +366,16 @@ export const useBooksStore = create<BooksStoreState>()(
       pinnedTop: [],
       pinnedBottom: [],
       setProgress: (path, progress) =>
-        set((state) => ({
-          progressByPath: { ...state.progressByPath, [path]: progress },
-        })),
+        set((state) => {
+          // Page flips republish the same place (relocated + the flip itself).
+          // Skip identical samples so `updatedAt` stays the last real move.
+          if (isSameReadingProgress(state.progressByPath[path], progress)) {
+            return state;
+          }
+          return {
+            progressByPath: { ...state.progressByPath, [path]: progress },
+          };
+        }),
       getProgress: (path) => get().progressByPath[path],
       clearProgress: (path) =>
         set((state) => {

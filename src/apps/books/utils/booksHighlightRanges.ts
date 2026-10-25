@@ -344,3 +344,24 @@ export function mergeTouchingHighlights<T extends MergeableHighlight>(
   }
   return merged;
 }
+
+/**
+ * Reading order for two EPUB CFIs. Unparseable values sort after real CFIs
+ * and fall back to string order so a highlights list stays stable.
+ */
+export function compareBookCfis(a: string, b: string): number {
+  const left = parseCfi(a);
+  const right = parseCfi(b);
+  if (!left || !right) {
+    if (left) return -1;
+    if (right) return 1;
+    if (a === b) return 0;
+    return a < b ? -1 : 1;
+  }
+  try {
+    return left.compare(a, b);
+  } catch {
+    if (a === b) return 0;
+    return a < b ? -1 : 1;
+  }
+}

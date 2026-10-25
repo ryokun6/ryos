@@ -601,6 +601,12 @@
         "remove": "Удалить закладку",
         "title": "Закладки"
       },
+      "highlights": {
+        "emptyHint": "Выделите отрывок во время чтения, и он появится здесь.",
+        "emptyTitle": "Нет выделений",
+        "title": "Выделения",
+        "untitled": "Выделение"
+      },
       "chineseScript": {
         "original": "Оригинал",
         "simplified": "简体",

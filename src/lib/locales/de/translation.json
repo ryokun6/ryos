@@ -597,6 +597,12 @@
         "remove": "Lesezeichen entfernen",
         "title": "Lesezeichen"
       },
+      "highlights": {
+        "emptyHint": "Wähle beim Lesen eine Textstelle aus, damit sie hier angezeigt wird.",
+        "emptyTitle": "Keine Markierungen",
+        "title": "Markierungen",
+        "untitled": "Markierung"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",

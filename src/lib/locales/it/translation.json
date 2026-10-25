@@ -599,6 +599,12 @@
         "remove": "Rimuovi segnalibro",
         "title": "Segnalibri"
       },
+      "highlights": {
+        "emptyHint": "Seleziona un brano mentre leggi e comparirà qui.",
+        "emptyTitle": "Nessuna evidenziazione",
+        "title": "Evidenziazioni",
+        "untitled": "Evidenziazione"
+      },
       "chineseScript": {
         "original": "Originale",
         "simplified": "简体",

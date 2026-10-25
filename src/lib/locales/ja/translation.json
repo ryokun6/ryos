@@ -597,6 +597,12 @@
         "remove": "ブックマークを削除",
         "title": "ブックマーク"
       },
+      "highlights": {
+        "emptyHint": "読書中に文章を選択すると、ここに表示されます。",
+        "emptyTitle": "ハイライトなし",
+        "title": "ハイライト",
+        "untitled": "ハイライト"
+      },
       "chineseScript": {
         "original": "オリジナル",
         "simplified": "简体",

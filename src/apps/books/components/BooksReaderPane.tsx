@@ -91,9 +91,16 @@ import {
 import { useBooksSpeech } from "../hooks/useBooksSpeech";
 import {
   BOOKS_HIGHLIGHT_CLASS,
+  BOOKS_HIGHLIGHT_UNDER_TEXT_CSS,
   BOOKS_SELECTION_CONTENT_CSS,
   useBooksAnnotations,
 } from "../hooks/useBooksAnnotations";
+import {
+  readVisiblePageCfi,
+  reportedCfiOnVisiblePage,
+  resolveSyncedPageProgress,
+  type SyncedPageProgress,
+} from "../utils/booksPageProgress";
 import {
   BOOKS_SPEECH_BAR_AUTO_REVEAL_MS,
   useBooksSpeechBarVisibility,
@@ -596,6 +603,70 @@ export const BooksReaderPane = forwardRef<
   // value with a transient 0 (epub.js reports 0 until locations are generated).
   const progressPctRef = useRef(progressPct);
   progressPctRef.current = progressPct;
+  // Latest page-flip sample. The rendition's `relocated` handler is created
+  // once per book and reads this so a flip can publish after epub.js reports
+  // the section start instead of the column on screen.
+  const publishReadingProgressRef = useRef<
+    (reported?: {
+      cfi?: string;
+      percentage?: number;
+      atStart?: boolean;
+    }) => SyncedPageProgress | null
+  >(() => null);
+  publishReadingProgressRef.current = (reported = {}) => {
+    const rendition = renditionRef.current;
+    const visibleCfi = rendition ? readVisiblePageCfi(rendition) : null;
+    const reportedCfi = reported.cfi?.trim() ?? "";
+    const reportedOnVisiblePage = Boolean(
+      rendition &&
+        reportedCfi &&
+        reportedCfiOnVisiblePage(rendition, reportedCfi)
+    );
+    const chosen = resolveSyncedPageProgress({
+      reportedCfi,
+      visibleCfi,
+      reportedOnVisiblePage,
+      reportedPercentage: reported.percentage,
+      atStart: reported.atStart,
+      seededPercentage: progressPctRef.current,
+    });
+    if (!chosen) return null;
+    let locationsPercentage: number | null = null;
+    const book = rendition?.book;
+    if (book) {
+      try {
+        const total = book.locations?.length?.() ?? 0;
+        if (total > 0) {
+          const pct = book.locations.percentageFromCfi(chosen.cfi);
+          if (typeof pct === "number" && Number.isFinite(pct)) {
+            locationsPercentage = pct;
+          }
+        }
+      } catch {
+        locationsPercentage = null;
+      }
+    }
+    const resolved =
+      locationsPercentage === null
+        ? chosen
+        : resolveSyncedPageProgress({
+            reportedCfi: chosen.cfi,
+            reportedOnVisiblePage: true,
+            reportedPercentage: reported.percentage,
+            locationsPercentage,
+            atStart: reported.atStart,
+            seededPercentage: progressPctRef.current,
+          }) ?? chosen;
+    if (!resolved) return null;
+    if (resolved.percentage > 0 || reported.atStart) {
+      setProgressPct(resolved.percentage);
+    }
+    const kosyncProgress = rendition
+      ? (cfiToKoXPath(rendition, resolved.cfi) ?? undefined)
+      : undefined;
+    onProgressRef.current(resolved.cfi, resolved.percentage, kosyncProgress);
+    return resolved;
+  };
   // Start/end CFIs of the visible page(s), for bookmark membership checks.
   const [pageCfis, setPageCfis] = useState<{
     startCfi: string;
@@ -1217,6 +1288,19 @@ export const BooksReaderPane = forwardRef<
                   );
                 }
 
+                try {
+                  contents.addStylesheetCss(
+                    BOOKS_HIGHLIGHT_UNDER_TEXT_CSS,
+                    "ryos-books-highlights"
+                  );
+                } catch {
+                  appendDebugEvent(
+                    "epubjs:contentHook:highlightCss:failed",
+                    undefined,
+                    "warn"
+                  );
+                }
+
                 // Keep passages selectable (iOS long-press + publisher CSS).
                 try {
                   contents.addStylesheetCss(
@@ -1339,9 +1423,6 @@ export const BooksReaderPane = forwardRef<
               const atEndNow = !!location?.atEnd;
               const activeHref = location?.start?.href;
               activeSectionHrefRef.current = activeHref;
-              setPageCfis(
-                cfi ? { startCfi: cfi, endCfi: location?.end?.cfi } : null
-              );
               setNavigationState((state) => ({
                 ...state,
                 canGoPreviousPage: !atStartNow,
@@ -1351,36 +1432,19 @@ export const BooksReaderPane = forwardRef<
                   activeHref
                 ),
               }));
-              if (!cfi) return;
-              let pct = location?.start?.percentage ?? 0;
-              try {
-                const total = activeBook.locations?.length?.() ?? 0;
-                if ((!pct || pct === 0) && total > 0) {
-                  pct = activeBook.locations.percentageFromCfi(cfi);
-                }
-              } catch {
-                // ignore
-              }
-              const computed = clamp01(pct || 0);
-              const renditionForKo = renditionRef.current;
-              const kosyncProgress =
-                renditionForKo && cfi
-                  ? (cfiToKoXPath(renditionForKo, cfi) ?? undefined)
-                  : undefined;
-              // A 0 that isn't genuinely the start of the book means epub.js
-              // hasn't generated locations yet — don't drop the seeded/known value
-              // to 0. Keep showing it and persist the cfi with the known percentage
-              // so the cache isn't clobbered either.
-              if (computed > 0 || atStartNow) {
-                setProgressPct(computed);
-                onProgressRef.current(cfi, computed, kosyncProgress);
-              } else {
-                onProgressRef.current(
-                  cfi,
-                  progressPctRef.current,
-                  kosyncProgress
-                );
-              }
+              // The visible column is the synced place. epub.js `location.start`
+              // is often the section start after an in-chapter page flip.
+              const saved = publishReadingProgressRef.current({
+                cfi,
+                percentage: location?.start?.percentage,
+                atStart: atStartNow,
+              });
+              const pageStartCfi = saved?.cfi || cfi;
+              setPageCfis(
+                pageStartCfi
+                  ? { startCfi: pageStartCfi, endCfi: location?.end?.cfi }
+                  : null
+              );
               speechRelocatedRef.current();
             }
           );
@@ -1545,12 +1609,15 @@ export const BooksReaderPane = forwardRef<
         activeBook.ready
           .then(() => activeBook.locations.generate(1600))
           .then(async () => {
+            if (cancelled) return;
             appendDebugEvent("epubjs:locations:generated");
             const pct = clamp01(initialPercentageRef.current ?? 0);
             const hasCfi = Boolean(initialCfiRef.current?.trim());
             const koProgress = initialKosyncProgressRef.current?.trim();
-            if (hasCfi || cancelled) return;
-            if (koProgress) {
+            // display() reports its own location when it lands. Publishing
+            // here would sample the page still on screen.
+            let navigating = false;
+            if (!hasCfi && koProgress) {
               try {
                 const cfiFromKo = await koXPathToCfi(activeBook, koProgress);
                 if (cfiFromKo && !cancelled) {
@@ -1560,7 +1627,7 @@ export const BooksReaderPane = forwardRef<
                     kosyncProgress: koProgress,
                   });
                   void rendition.display(cfiFromKo);
-                  return;
+                  navigating = true;
                 }
               } catch (error) {
                 appendDebugEvent(
@@ -1570,21 +1637,33 @@ export const BooksReaderPane = forwardRef<
                 );
               }
             }
-            if (pct <= 0) return;
-            try {
-              const cfiFromPct = activeBook.locations.cfiFromPercentage(pct);
-              if (!cfiFromPct || cancelled) return;
-              const rendition = renditionRef.current;
-              if (!rendition) return;
-              appendDebugEvent("epubjs:display:percentage", { percentage: pct });
-              void rendition.display(cfiFromPct);
-            } catch (error) {
-              appendDebugEvent(
-                "epubjs:display:percentage:failed",
-                { error, percentage: pct },
-                "warn"
-              );
+            if (!hasCfi && !navigating && pct > 0) {
+              try {
+                const cfiFromPct = activeBook.locations.cfiFromPercentage(pct);
+                if (cfiFromPct && !cancelled) {
+                  const rendition = renditionRef.current;
+                  if (!rendition) return;
+                  appendDebugEvent("epubjs:display:percentage", {
+                    percentage: pct,
+                  });
+                  void rendition.display(cfiFromPct);
+                  navigating = true;
+                }
+              } catch (error) {
+                appendDebugEvent(
+                  "epubjs:display:percentage:failed",
+                  { error, percentage: pct },
+                  "warn"
+                );
+              }
             }
+            if (navigating || cancelled || !renditionRef.current) return;
+            const located = renditionRef.current.location;
+            publishReadingProgressRef.current({
+              cfi: located?.start?.cfi,
+              percentage: located?.start?.percentage,
+              atStart: located?.atStart,
+            });
           })
           .catch((error) =>
             appendDebugEvent("epubjs:locations:failed", error, "warn")
@@ -1784,8 +1863,13 @@ export const BooksReaderPane = forwardRef<
     flipLockRef.current = true;
     setFlip({ dir, id: Date.now() });
     const action = dir === "next" ? rendition.next() : rendition.prev();
-    Promise.resolve(action).finally(() => {
-      // flip animation onComplete releases the lock
+    void Promise.resolve(action).finally(() => {
+      // The flip scrolls synchronously; read the visible column on the next
+      // frame so synced progress follows the page the reader just turned to,
+      // even when `relocated` still describes the section start.
+      requestAnimationFrame(() => {
+        publishReadingProgressRef.current({});
+      });
     });
   }, []);
 

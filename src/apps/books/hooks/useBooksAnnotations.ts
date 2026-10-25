@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Contents, Rendition } from "epubjs";
 import { mergeTouchingHighlights } from "@/apps/books/utils/booksHighlightRanges";
 import {
+  BOOKS_HIGHLIGHT_COLORS,
   BOOKS_HIGHLIGHT_COLOR_HEX,
   normalizeBooksHighlightColor,
   useBooksStore,
@@ -39,28 +40,189 @@ const SELECTION_CLEAR_DEBOUNCE_MS = 300;
  */
 export const HIGHLIGHT_APPLY_DELAY_MS = 300;
 
-/** SVG attributes for a highlight mark; blend mode keeps the text readable on
- * both light (multiply darkens ink under the tint) and dark (screen lightens
- * the tint over the page) reading palettes. The active (tapped) highlight gets
- * a moderately stronger tint — kept low enough that the blended ink underneath
- * still reads (screen especially washes light text out fast). */
-export function buildHighlightAnnotationStyles(
+/**
+ * How a highlight mark is painted.
+ * - `under-text`: CSS Highlight API draws the wash behind the glyphs. The
+ *   epub.js SVG rect stays invisible and is only a hit target.
+ * - `blend`: no Highlight API. Opaque SVG fills, with `mix-blend-mode` on the
+ *   overlay `<svg>` (multiply on light pages, screen on dark) so the wash
+ *   blends with the page instead of sitting on the letters. Descendants of an
+ *   SVG root cannot blend with the iframe behind it, so the mode belongs on
+ *   the `<svg>` element itself.
+ */
+export type HighlightPaintMode = "under-text" | "blend";
+
+/** Class on the section `<html>` while the reading page is a dark palette. */
+export const BOOKS_HIGHLIGHT_PAGE_DARK_CLASS = "ryos-books-page-dark";
+
+/** Registry name for one swatch. The active mark uses a stronger wash. */
+export function booksHighlightRegistryName(
+  color: BooksHighlightColor,
+  isActive: boolean
+): string {
+  return isActive ? `ryos-books-hl-${color}-active` : `ryos-books-hl-${color}`;
+}
+
+export const BOOKS_HIGHLIGHT_REGISTRY_NAMES: readonly string[] =
+  BOOKS_HIGHLIGHT_COLORS.flatMap((color) => [
+    booksHighlightRegistryName(color, false),
+    booksHighlightRegistryName(color, true),
+  ]);
+
+/** Alpha of the wash painted behind the glyphs. Active marks read stronger. */
+export function highlightUnderTextAlpha(
+  isDarkPage: boolean,
+  isActive: boolean
+): number {
+  if (isDarkPage) return isActive ? 0.7 : 0.5;
+  return isActive ? 0.78 : 0.58;
+}
+
+function highlightUnderTextBackground(
   color: BooksHighlightColor,
   isDarkPage: boolean,
-  isActive = false
+  isActive: boolean
+): string {
+  const percent = Math.round(highlightUnderTextAlpha(isDarkPage, isActive) * 100);
+  return `color-mix(in srgb, ${BOOKS_HIGHLIGHT_COLOR_HEX[color]} ${percent}%, transparent)`;
+}
+
+/**
+ * `::highlight()` background paints under the text ink (CSS highlight overlay),
+ * so the letters stay the page color. `color` is intentionally unset.
+ */
+export function booksHighlightUnderTextCss(): string {
+  const rules: string[] = [];
+  for (const color of BOOKS_HIGHLIGHT_COLORS) {
+    for (const isActive of [false, true]) {
+      const name = booksHighlightRegistryName(color, isActive);
+      rules.push(
+        `::highlight(${name}){background-color:${highlightUnderTextBackground(color, false, isActive)};}`
+      );
+      rules.push(
+        `html.${BOOKS_HIGHLIGHT_PAGE_DARK_CLASS} ::highlight(${name}){background-color:${highlightUnderTextBackground(color, true, isActive)};}`
+      );
+    }
+  }
+  return rules.join("\n");
+}
+
+export const BOOKS_HIGHLIGHT_UNDER_TEXT_CSS = booksHighlightUnderTextCss();
+
+/** Blend mode for the annotation SVG when CSS highlights are unavailable. */
+export function highlightOverlayBlendMode(
+  isDarkPage: boolean
+): "multiply" | "screen" {
+  return isDarkPage ? "screen" : "multiply";
+}
+
+/** SVG attributes for the epub.js mark. Visual color is not this rect when
+ * `paintMode` is `under-text` (fill is fully transparent). */
+export function buildHighlightAnnotationStyles(
+  color: BooksHighlightColor,
+  _isDarkPage: boolean,
+  _isActive = false,
+  paintMode: HighlightPaintMode = "under-text"
 ): Record<string, string> {
-  const fillOpacity = isDarkPage
-    ? isActive
-      ? "0.55"
-      : "0.45"
-    : isActive
-      ? "0.65"
-      : "0.5";
   return {
     fill: BOOKS_HIGHLIGHT_COLOR_HEX[color],
-    "fill-opacity": fillOpacity,
-    "mix-blend-mode": isDarkPage ? "screen" : "multiply",
+    "fill-opacity": paintMode === "under-text" ? "0" : "1",
+    "mix-blend-mode": "normal",
   };
+}
+
+interface HighlightCapableWindow extends Window {
+  Highlight?: new (...ranges: Range[]) => Highlight;
+  CSS?: typeof CSS;
+}
+
+function highlightWindow(doc: Document | null | undefined) {
+  const win = doc?.defaultView as HighlightCapableWindow | null | undefined;
+  if (!win || typeof win.Highlight !== "function" || !win.CSS?.highlights) {
+    return null;
+  }
+  return win as HighlightCapableWindow & {
+    Highlight: new (...ranges: Range[]) => Highlight;
+    CSS: typeof CSS & { highlights: HighlightRegistry };
+  };
+}
+
+function listAnnotationContents(rendition: Rendition): Contents[] {
+  const raw = rendition.getContents() as unknown;
+  if (!raw) return [];
+  return (Array.isArray(raw) ? raw : [raw]) as Contents[];
+}
+
+/** True when at least one section document can paint CSS highlights. */
+export function renditionPaintsHighlightsUnderText(rendition: Rendition): boolean {
+  const contents = listAnnotationContents(rendition);
+  const docs = contents
+    .map((item) => item.document)
+    .filter((doc): doc is Document => !!doc?.documentElement);
+  if (docs.length === 0) {
+    return (
+      typeof globalThis.Highlight === "function" && !!globalThis.CSS?.highlights
+    );
+  }
+  return docs.some((doc) => highlightWindow(doc) !== null);
+}
+
+/** Put multiply/screen on the annotation `<svg>`, which sits over the iframe. */
+export function applyHighlightOverlayBlend(
+  rendition: Rendition,
+  mode: "multiply" | "screen" | "normal"
+): void {
+  for (const contents of listAnnotationContents(rendition)) {
+    const frame = contents.window?.frameElement;
+    if (!(frame instanceof HTMLElement)) continue;
+    const svg = frame.parentElement?.querySelector(":scope > svg");
+    if (!(svg instanceof SVGElement)) continue;
+    svg.style.mixBlendMode = mode;
+  }
+}
+
+function clearHighlightRegistry(doc: Document): void {
+  const win = highlightWindow(doc);
+  if (!win) return;
+  for (const name of BOOKS_HIGHLIGHT_REGISTRY_NAMES) {
+    win.CSS.highlights.delete(name);
+  }
+}
+
+/** Paint saved ranges behind the glyphs in one section document. */
+export function paintUnderTextHighlights(
+  doc: Document,
+  highlights: readonly BookHighlight[],
+  activeId: string | null,
+  isDarkPage: boolean,
+  rangeFor: (cfiRange: string) => Range | null
+): void {
+  const root = doc.documentElement;
+  root?.classList.toggle(BOOKS_HIGHLIGHT_PAGE_DARK_CLASS, isDarkPage);
+  const win = highlightWindow(doc);
+  if (!win) return;
+  clearHighlightRegistry(doc);
+  const groups = new Map<string, Range[]>();
+  for (const highlight of highlights) {
+    let range: Range | null = null;
+    try {
+      range = rangeFor(highlight.cfiRange);
+    } catch {
+      range = null;
+    }
+    if (!range || range.startContainer?.ownerDocument !== doc) continue;
+    const name = booksHighlightRegistryName(
+      highlight.color,
+      highlight.id === activeId
+    );
+    const list = groups.get(name);
+    if (list) list.push(range);
+    else groups.set(name, [range]);
+  }
+  for (const [name, ranges] of groups) {
+    if (ranges.length === 0) continue;
+    win.CSS.highlights.set(name, new win.Highlight(...ranges));
+  }
 }
 
 /**
@@ -522,9 +684,11 @@ export function useBooksAnnotations({
     }
   }, [highlights]);
 
-  // Keep the rendition's highlight marks in sync with the saved highlights
-  // (re-tinted when the palette flips light/dark, and brightened while a
-  // highlight is the active/tapped one).
+  // Keep the rendition's highlight marks in sync with the saved highlights.
+  // The visible wash is a CSS highlight behind the glyphs when the section
+  // document supports it; otherwise the SVG overlay blends with the page.
+  // Tapped highlights use a stronger wash. `rendered` repaints after a
+  // section swap, because CSS highlights live in the iframe document.
   const activeHighlightId =
     activeSelection?.kind === "highlight" ? activeSelection.highlightId : null;
   useEffect(() => {
@@ -532,33 +696,77 @@ export function useBooksAnnotations({
     const rendition = getRendition();
     if (!rendition) return;
 
-    for (const cfiRange of registeredCfiRangesRef.current) {
-      try {
-        rendition.annotations.remove(cfiRange, "highlight");
-      } catch {
-        // ignore
+    const syncMarks = () => {
+      for (const cfiRange of registeredCfiRangesRef.current) {
+        try {
+          rendition.annotations.remove(cfiRange, "highlight");
+        } catch {
+          // ignore
+        }
       }
-    }
-    registeredCfiRangesRef.current = [];
+      registeredCfiRangesRef.current = [];
 
-    for (const highlight of highlights) {
-      try {
-        rendition.annotations.highlight(
-          highlight.cfiRange,
-          { id: highlight.id },
-          undefined,
-          BOOKS_HIGHLIGHT_CLASS,
-          buildHighlightAnnotationStyles(
-            highlight.color,
-            isDarkPage,
-            highlight.id === activeHighlightId
-          )
-        );
-        registeredCfiRangesRef.current.push(highlight.cfiRange);
-      } catch {
-        // Skip highlights whose CFI can't be resolved in this book build.
+      const underText = renditionPaintsHighlightsUnderText(rendition);
+      const paintMode: HighlightPaintMode = underText ? "under-text" : "blend";
+
+      for (const highlight of highlights) {
+        try {
+          rendition.annotations.highlight(
+            highlight.cfiRange,
+            { id: highlight.id },
+            undefined,
+            BOOKS_HIGHLIGHT_CLASS,
+            buildHighlightAnnotationStyles(
+              highlight.color,
+              isDarkPage,
+              highlight.id === activeHighlightId,
+              paintMode
+            )
+          );
+          registeredCfiRangesRef.current.push(highlight.cfiRange);
+        } catch {
+          // Skip highlights whose CFI can't be resolved in this book build.
+        }
       }
-    }
+
+      applyHighlightOverlayBlend(
+        rendition,
+        underText ? "normal" : highlightOverlayBlendMode(isDarkPage)
+      );
+
+      const contents = listAnnotationContents(rendition);
+      for (const item of contents) {
+        const doc = item.document;
+        if (!doc?.documentElement) continue;
+        paintUnderTextHighlights(
+          doc,
+          highlights,
+          activeHighlightId ?? null,
+          isDarkPage,
+          (cfiRange) => {
+            try {
+              return rendition.getRange(cfiRange) ?? null;
+            } catch {
+              return null;
+            }
+          }
+        );
+      }
+    };
+
+    syncMarks();
+    rendition.on("rendered", syncMarks);
+    return () => {
+      try {
+        rendition.off("rendered", syncMarks);
+      } catch {
+        // rendition may already be destroyed
+      }
+      for (const item of listAnnotationContents(rendition)) {
+        const doc = item.document;
+        if (doc) clearHighlightRegistry(doc);
+      }
+    };
   }, [getRendition, isReady, highlights, isDarkPage, activeHighlightId]);
 
   // Reset transient selection state when the book changes/unmounts.
