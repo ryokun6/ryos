@@ -253,6 +253,8 @@ export const redisKeys = {
       redisKey("integration", "telegram", "account", "user", username),
     telegramHistory: (chatId: string) =>
       redisKey("integration", "telegram", "history", chatId),
+    deviceHistory: (username: string) =>
+      redisKey("integration", "device", "history", username),
     telegramUpdate: (updateId: string | number) =>
       redisKey("integration", "telegram", "update", updateId),
     telegramHeartbeat: (username: string, slot: string) =>
