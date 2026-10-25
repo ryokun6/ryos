@@ -79,6 +79,27 @@ export function spokenOffset(text: string, elapsedMs: number): number {
   return offset;
 }
 
+const EMOTION_CUES: Array<[string, RegExp]> = [
+  ["angry", /^!!!!/],
+  ["laughing", /\b(?:haha+|lol|lmao)\b|哈哈|笑死|😂|🤣/i],
+  ["crying", /😭|哭/],
+  ["sad", /\b(?:sorry|sad|unfortunately|miss you)\b|抱歉|對不起|難過|可惜|😢/i],
+  ["loving", /\blove\b|❤|愛你|喜歡你|🥰/i],
+  ["surprised", /\b(?:wow|whoa|omg|no way)\b|哇|天啊|真的假的|😮/i],
+  ["sleepy", /\b(?:tired|sleepy|good ?night)\b|晚安|好睏|好累|😴/i],
+  ["winking", /;\)|😉/],
+  ["cool", /😎|\bcool\b|很酷/i],
+  ["confused", /\b(?:not sure|no idea)\b|不確定|不知道|🤔/i],
+];
+
+/** A face for a spoken line, from cues in its text. */
+export function replyEmotion(text: string): string {
+  for (const [emotion, cue] of EMOTION_CUES) {
+    if (cue.test(text)) return emotion;
+  }
+  return "happy";
+}
+
 /** Speech models often write Chinese in simplified characters; Ryo uses traditional. */
 export function toTraditionalChinese(text: string): string {
   return HAN.test(text) ? simplifiedToTraditional(text) : text;
@@ -144,6 +165,7 @@ export class SpeechChunker {
 interface SpeechChunk extends SpeechPiece {
   /** Reply text known when this piece was cut; shown while it plays. */
   caption: string;
+  emotion: string;
   frames: AsyncQueue<Buffer>;
 }
 
@@ -365,7 +387,12 @@ export class DeviceVoiceSession {
       for (const piece of pieces) {
         if (!piece.text) continue;
         spoken += 1;
-        chunks.push({ ...piece, caption: chunker.text.trim(), frames: this.synthesize(piece.text) });
+        chunks.push({
+          ...piece,
+          caption: chunker.text.trim(),
+          emotion: replyEmotion(piece.text),
+          frames: this.synthesize(piece.text),
+        });
       }
     };
     let firstAudio = 0;
@@ -402,7 +429,7 @@ export class DeviceVoiceSession {
     const chunks = new AsyncQueue<SpeechChunk>();
     const frames = new AsyncQueue<Buffer>();
     frames.end();
-    chunks.push({ text, raw: text, start: 0, length: codePoints(text), caption: text, frames });
+    chunks.push({ text, raw: text, start: 0, length: codePoints(text), caption: text, emotion: "sad", frames });
     chunks.end();
     await this.play(chunks, turnId);
   }
@@ -450,9 +477,9 @@ export class DeviceVoiceSession {
       if (!this.live(turnId)) break;
       if (!started) {
         started = true;
-        this.send({ type: "llm", emotion: "neutral", session_id: this.id });
         this.send({ type: "tts", state: "start", session_id: this.id });
       }
+      this.send({ type: "llm", emotion: chunk.emotion, session_id: this.id });
       this.send({ type: "tts", state: "sentence_start", text: chunk.caption, session_id: this.id });
       const total = codePoints(chunk.caption);
       let index = 0;
