@@ -666,7 +666,7 @@
           "title": "Progressi di lettura"
         },
         "handGestures": {
-          "description": "Durante la lettura, attiva “Gesti delle mani” dalla barra degli strumenti o dal menu Vista. Tieni premuto o pizzica e punta a sinistra o a destra per voltare pagina. La fotocamera rimane su questo dispositivo e si disattiva quando chiudi il libro.",
+          "description": "Durante la lettura, attiva “Gesti delle mani” dalla barra degli strumenti o dal menu Vista. Pizzica e trascina a sinistra o a destra per voltare pagina, oppure pizzica per andare alla pagina successiva. La fotocamera rimane su questo dispositivo e si disattiva quando chiudi il libro.",
           "title": "Gesti delle mani"
         }
       },
@@ -773,7 +773,7 @@
         "cameraMissing": "Nessuna fotocamera trovata.",
         "cameraUnavailable": "I gesti delle mani richiedono una fotocamera.",
         "detectorFailed": "Impossibile avviare il rilevamento delle mani.",
-        "hint": "Tieni premuto o pizzica, quindi punta a sinistra o a destra.",
+        "hint": "Pizzica e trascina a sinistra o a destra. Un pizzico passa alla pagina successiva.",
         "preview": "Anteprima gesti delle mani",
         "starting": "Avvio fotocamera…"
       }

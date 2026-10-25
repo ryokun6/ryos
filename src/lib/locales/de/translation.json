@@ -664,7 +664,7 @@
           "title": "Lesefortschritt"
         },
         "handGestures": {
-          "description": "Aktiviere beim Lesen die Handgesten über die Symbolleiste oder das Menü „Darstellung“. Halte oder kneife die Finger zusammen und ziele nach links oder rechts, um umzublättern. Die Kamera bleibt auf diesem Gerät und wird ausgeschaltet, wenn du das Buch verlässt.",
+          "description": "Aktiviere beim Lesen die Handgesten über die Symbolleiste oder das Menü „Darstellung“. Kneife und ziehe nach links oder rechts, um umzublättern, oder kneife, um zur nächsten Seite zu blättern. Die Kamera bleibt auf diesem Gerät und wird ausgeschaltet, wenn du das Buch verlässt.",
           "title": "Handgesten"
         }
       },
@@ -771,7 +771,7 @@
         "cameraMissing": "Keine Kamera gefunden.",
         "cameraUnavailable": "Handgesten erfordern eine Kamera.",
         "detectorFailed": "Handerkennung konnte nicht gestartet werden.",
-        "hint": "Halten oder zusammenkneifen, dann nach links oder rechts zielen.",
+        "hint": "Zusammenkneifen und nach links oder rechts ziehen. Kneifen blättert zur nächsten Seite.",
         "preview": "Vorschau für Handgesten",
         "starting": "Kamera wird gestartet …"
       }

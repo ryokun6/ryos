@@ -666,7 +666,7 @@
           "title": "Progression de lecture"
         },
         "handGestures": {
-          "description": "Pendant la lecture, activez « Gestes de la main » depuis la barre d’outils ou le menu Présentation. Maintenez ou pincez et orientez vers la gauche ou la droite pour tourner la page. L’appareil photo reste sur cet appareil et s’éteint lorsque vous quittez le livre.",
+          "description": "Pendant la lecture, activez « Gestes de la main » depuis la barre d’outils ou le menu Présentation. Pincez et faites glisser vers la gauche ou la droite pour tourner la page, ou pincez pour passer à la page suivante. L’appareil photo reste sur cet appareil et s’éteint lorsque vous quittez le livre.",
           "title": "Gestes de la main"
         }
       },
@@ -773,7 +773,7 @@
         "cameraMissing": "Aucun appareil photo trouvé.",
         "cameraUnavailable": "Les gestes de la main nécessitent un appareil photo.",
         "detectorFailed": "Impossible de démarrer la détection de la main.",
-        "hint": "Maintenez ou pincez, puis orientez vers la gauche ou la droite.",
+        "hint": "Pincez et faites glisser vers la gauche ou la droite. Une pincée passe à la page suivante.",
         "preview": "Aperçu des gestes de la main",
         "starting": "Démarrage de l’appareil photo…"
       }

@@ -666,7 +666,7 @@
           "title": "Progresso de Leitura"
         },
         "handGestures": {
-          "description": "Ao ler, ative os Gestos com as Mãos na barra de ferramentas ou no menu Visualizar. Segure ou junte os dedos e aponte para a esquerda ou direita para virar a página. A câmera permanece neste dispositivo e é desligada quando você sai do livro.",
+          "description": "Ao ler, ative os Gestos com as Mãos na barra de ferramentas ou no menu Visualizar. Junte os dedos e arraste para a esquerda ou direita para virar a página, ou junte os dedos para ir à página seguinte. A câmera permanece neste dispositivo e é desligada quando você sai do livro.",
           "title": "Gestos com as Mãos"
         }
       },
@@ -773,7 +773,7 @@
         "cameraMissing": "Nenhuma câmera encontrada.",
         "cameraUnavailable": "Os Gestos com as Mãos precisam de uma câmera.",
         "detectorFailed": "Não foi possível iniciar a detecção de mãos.",
-        "hint": "Segure ou junte os dedos e aponte para a esquerda ou direita.",
+        "hint": "Junte os dedos e arraste para a esquerda ou direita. Juntar os dedos avança para a página seguinte.",
         "preview": "Pré-visualização de gestos com as mãos",
         "starting": "Iniciando câmera…"
       }

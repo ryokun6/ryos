@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
-import { resolveBooksEdgeTapDirection } from "../../../src/apps/books/utils/booksEdgeTap";
+import { resolveBooksSwipeDirection } from "../../../src/apps/books/utils/booksSwipe";
 import {
   BOOKS_HAND_GESTURE_COOLDOWN_MS,
   BOOKS_HAND_GESTURE_MIN_STREAK,
+  BOOKS_HAND_PINCH_TAP_STREAK,
   BOOKS_HAND_RELEASE_STREAK,
   booksHandGestureCameraErrorKey,
   chooseBooksGestureHand,
@@ -82,6 +83,22 @@ function pointingHand(centerX = 0.5): HandLandmark[] {
   return hand;
 }
 
+/** Thumb meets the middle finger. The index stays extended. */
+function middlePinchHand(centerX = 0.5): HandLandmark[] {
+  const hand = openHand(centerX);
+  place(hand, 4, centerX + 0.01, 0.32);
+  place(hand, 12, centerX - 0.01, 0.32);
+  return hand;
+}
+
+function fistWithThumbOnFinger(centerX = 0.5): HandLandmark[] {
+  const hand = fistHand(centerX);
+  const indexTip = hand[8];
+  if (!indexTip) return hand;
+  place(hand, 4, indexTip.x, indexTip.y);
+  return hand;
+}
+
 function pushPose(
   tracker: BooksHandGestureTracker,
   hand: HandLandmark[] | null,
@@ -102,10 +119,27 @@ function pushPose(
   return results;
 }
 
+function pushDrag(
+  tracker: BooksHandGestureTracker,
+  centers: number[],
+  startAt: number,
+  isVerticalText = false
+) {
+  return centers.map((centerX, index) =>
+    tracker.push({
+      landmarks: pinchHand(centerX),
+      timestamp: startAt + index * FRAME_MS,
+      isVerticalText,
+    })
+  );
+}
+
 describe("Books hand pose", () => {
   test("recognizes a pinch, a fist hold, and an open palm", () => {
     expect(classifyBooksHandPose(pinchHand())).toBe("pinch");
+    expect(classifyBooksHandPose(middlePinchHand())).toBe("pinch");
     expect(classifyBooksHandPose(fistHand())).toBe("hold");
+    expect(classifyBooksHandPose(fistWithThumbOnFinger())).toBe("hold");
     expect(classifyBooksHandPose(openHand())).toBe("open");
   });
 
@@ -115,79 +149,50 @@ describe("Books hand pose", () => {
     expect(classifyBooksHandPose([])).toBe("none");
   });
 
-  test("prefers an active hand over a larger open hand", () => {
+  test("prefers a pinch over a larger open hand", () => {
     const pinch = pinchHand(0.2);
     const open = openHand(0.8);
     // Stretch the open hand so its palm is larger.
     place(open, 0, 0.8, 0.95);
     expect(chooseBooksGestureHand([open, pinch])).toEqual(pinch);
+    expect(chooseBooksGestureHand([fistHand(0.8), pinch])).toEqual(pinch);
     expect(chooseBooksGestureHand([openHand().slice(0, 4)])).toBeNull();
   });
 });
 
+function swipeDirection(deltaX: number, isVerticalText: boolean) {
+  return resolveBooksSwipeDirection({
+    deltaX,
+    deltaY: 0,
+    isVerticalText,
+    hasSelection: false,
+  });
+}
+
 describe("Books hand gesture direction", () => {
-  test("maps aimed left and right like page-edge taps", () => {
+  test("maps a pinch drag like a page swipe, and a still pinch to the next page", () => {
     for (const isVerticalText of [false, true]) {
       expect(
-        resolveBooksHandGestureDirection({
-          mirroredX: 0.12,
-          deltaX: 0,
-          isVerticalText,
-        })
-      ).toBe(
-        resolveBooksEdgeTapDirection({
-          clientX: 0,
-          viewportWidth: 100,
-          isVerticalText,
-          hasSelection: false,
-          isInteractiveTarget: false,
-        })
-      );
+        resolveBooksHandGestureDirection({ deltaX: -0.2, isVerticalText })
+      ).toBe(swipeDirection(-80, isVerticalText));
       expect(
-        resolveBooksHandGestureDirection({
-          mirroredX: 0.88,
-          deltaX: 0,
-          isVerticalText,
-        })
-      ).toBe(
-        resolveBooksEdgeTapDirection({
-          clientX: 99,
-          viewportWidth: 100,
-          isVerticalText,
-          hasSelection: false,
-          isInteractiveTarget: false,
-        })
-      );
+        resolveBooksHandGestureDirection({ deltaX: 0.2, isVerticalText })
+      ).toBe(swipeDirection(80, isVerticalText));
+      expect(
+        resolveBooksHandGestureDirection({ deltaX: 0, isVerticalText })
+      ).toBe("next");
     }
-  });
-
-  test("drops a move that disagrees with the aim, and ignores the center", () => {
     expect(
       resolveBooksHandGestureDirection({
-        mirroredX: 0.3,
-        deltaX: 0.2,
+        deltaX: Number.NaN,
         isVerticalText: false,
       })
     ).toBeNull();
-    expect(
-      resolveBooksHandGestureDirection({
-        mirroredX: 0.5,
-        deltaX: 0.02,
-        isVerticalText: false,
-      })
-    ).toBeNull();
-    expect(
-      resolveBooksHandGestureDirection({
-        mirroredX: 0.5,
-        deltaX: -0.2,
-        isVerticalText: false,
-      })
-    ).toBe("prev");
   });
 });
 
 describe("Books hand gesture tracker", () => {
-  test("requires a deliberate streak, then will not repeat until release and cooldown", () => {
+  test("a still pinch turns to the next page once, then waits for an open hand and the cooldown", () => {
     const tracker = createBooksHandGestureTracker();
     const first = pushPose(
       tracker,
@@ -198,7 +203,7 @@ describe("Books hand gesture tracker", () => {
     expect(first.slice(0, -1).every((frame) => frame.direction == null)).toBe(
       true
     );
-    expect(first.at(-1)?.direction).toBe("prev");
+    expect(first.at(-1)?.direction).toBe("next");
     expect(first.at(-1)?.pose).toBe("pinch");
 
     const held = pushPose(tracker, pinchHand(0.2), 4, 400);
@@ -215,62 +220,132 @@ describe("Books hand gesture tracker", () => {
     ).toBeLessThan(cooldownEnd);
     const blocked = pushPose(
       tracker,
-      pinchHand(0.2),
+      pinchHand(0.5),
       BOOKS_HAND_GESTURE_MIN_STREAK,
       blockedStart
     );
     expect(blocked.every((frame) => frame.direction == null)).toBe(true);
 
-    pushPose(tracker, null, BOOKS_HAND_RELEASE_STREAK, cooldownEnd);
+    const blockedEnd =
+      blockedStart + (BOOKS_HAND_GESTURE_MIN_STREAK - 1) * FRAME_MS;
+    const abandonAt = blockedEnd + FRAME_MS;
+    expect(abandonAt).toBeLessThan(cooldownEnd);
+    pushPose(tracker, openHand(0.5), BOOKS_HAND_RELEASE_STREAK, abandonAt);
     const again = pushPose(
       tracker,
-      fistHand(0.84),
+      pinchHand(0.5),
       BOOKS_HAND_GESTURE_MIN_STREAK,
-      cooldownEnd + BOOKS_HAND_RELEASE_STREAK * FRAME_MS + 20
+      abandonAt + BOOKS_HAND_RELEASE_STREAK * FRAME_MS + FRAME_MS
     );
     expect(again.slice(0, -1).every((frame) => frame.direction == null)).toBe(
       true
     );
     expect(again.at(-1)?.direction).toBe("next");
-    expect(again.at(-1)?.pose).toBe("hold");
+    expect(again.at(-1)?.pose).toBe("pinch");
   });
 
-  test("a gap in the pose restarts the streak", () => {
+  test("a short pinch turns to the next page when the hand opens", () => {
     const tracker = createBooksHandGestureTracker();
-    pushPose(tracker, pinchHand(0.2), BOOKS_HAND_GESTURE_MIN_STREAK - 1, 0);
-    tracker.push({ landmarks: null, timestamp: 400, isVerticalText: false });
+    const tap = pushPose(
+      tracker,
+      pinchHand(0.5),
+      BOOKS_HAND_PINCH_TAP_STREAK,
+      0
+    );
+    expect(tap.every((frame) => frame.direction == null)).toBe(true);
+    const released = tracker.push({
+      landmarks: openHand(0.5),
+      timestamp: BOOKS_HAND_PINCH_TAP_STREAK * FRAME_MS,
+      isVerticalText: true,
+    });
+    expect(released.direction).toBe("next");
+
+    const tooShort = createBooksHandGestureTracker();
+    pushPose(tooShort, pinchHand(0.5), BOOKS_HAND_PINCH_TAP_STREAK - 1, 0);
+    const missed = tooShort.push({
+      landmarks: openHand(0.5),
+      timestamp: 400,
+      isVerticalText: false,
+    });
+    expect(missed.direction).toBeNull();
+  });
+
+  test("a pinch drag matches a swipe, including when the hand ends on the other side", () => {
+    const tracker = createBooksHandGestureTracker();
+    const toTheLeft = pushDrag(tracker, [0.75, 0.55, 0.35], 0);
+    expect(toTheLeft.at(-1)?.direction).toBe("next");
+    expect(toTheLeft.slice(0, -1).every((frame) => frame.direction == null)).toBe(
+      true
+    );
+
+    pushPose(tracker, openHand(0.5), BOOKS_HAND_RELEASE_STREAK, 2000);
+    const toTheRight = pushDrag(tracker, [0.25, 0.45, 0.65], 2500);
+    expect(toTheRight.at(-1)?.direction).toBe("prev");
+
+    const vertical = createBooksHandGestureTracker();
+    expect(pushDrag(vertical, [0.75, 0.55, 0.35], 0, true).at(-1)?.direction).toBe(
+      "prev"
+    );
+    pushPose(vertical, null, BOOKS_HAND_RELEASE_STREAK, 2000);
+    expect(pushDrag(vertical, [0.25, 0.45, 0.65], 2500, true).at(-1)?.direction).toBe(
+      "next"
+    );
+  });
+
+  test("a gap before the pinch is long enough restarts the streak", () => {
+    const tracker = createBooksHandGestureTracker();
+    pushPose(tracker, pinchHand(0.5), BOOKS_HAND_PINCH_TAP_STREAK - 1, 0);
+    const gap = tracker.push({
+      landmarks: null,
+      timestamp: 400,
+      isVerticalText: false,
+    });
+    expect(gap.direction).toBeNull();
     const retry = pushPose(
       tracker,
-      pinchHand(0.2),
+      pinchHand(0.5),
       BOOKS_HAND_GESTURE_MIN_STREAK - 1,
       480
     );
     expect(retry.every((frame) => frame.direction == null)).toBe(true);
     const fired = tracker.push({
-      landmarks: pinchHand(0.2),
+      landmarks: pinchHand(0.5),
       timestamp: 480 + (BOOKS_HAND_GESTURE_MIN_STREAK - 1) * FRAME_MS,
       isVerticalText: false,
     });
-    expect(fired.direction).toBe("prev");
+    expect(fired.direction).toBe("next");
   });
 
-  test("an open palm aimed to the side does not turn the page", () => {
+  test("an open palm or a closed fist does not turn the page", () => {
     const tracker = createBooksHandGestureTracker();
-    const frames = pushPose(tracker, openHand(0.15), 8, 0);
-    expect(frames.every((frame) => frame.direction == null)).toBe(true);
-    expect(frames.at(-1)?.pose).toBe("open");
+    const open = pushPose(tracker, openHand(0.15), 8, 0);
+    expect(open.every((frame) => frame.direction == null)).toBe(true);
+    expect(open.at(-1)?.pose).toBe("open");
+
+    const fist = pushPose(tracker, fistHand(0.84), 8, 800);
+    expect(fist.every((frame) => frame.direction == null)).toBe(true);
+    expect(fist.at(-1)?.pose).toBe("hold");
   });
 
-  test("vertical text reverses the same aim", () => {
+  test("a fist does not re-arm the next pinch", () => {
     const tracker = createBooksHandGestureTracker();
-    const frames = pushPose(
+    const flip = pushPose(
       tracker,
-      pinchHand(0.2),
+      pinchHand(0.5),
       BOOKS_HAND_GESTURE_MIN_STREAK,
-      0,
-      true
+      0
     );
-    expect(frames.at(-1)?.direction).toBe("next");
+    expect(flip.at(-1)?.direction).toBe("next");
+
+    const fist = pushPose(tracker, fistHand(0.2), BOOKS_HAND_RELEASE_STREAK, 800);
+    expect(fist.every((frame) => frame.direction == null)).toBe(true);
+    const blocked = pushPose(
+      tracker,
+      pinchHand(0.5),
+      BOOKS_HAND_GESTURE_MIN_STREAK,
+      1200
+    );
+    expect(blocked.every((frame) => frame.direction == null)).toBe(true);
   });
 
   test("mirrors camera x so the reader's left stays left", () => {

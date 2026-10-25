@@ -666,7 +666,7 @@
           "title": "Progreso de lectura"
         },
         "handGestures": {
-          "description": "Mientras lees, activa «Gestos con las manos» desde la barra de herramientas o el menú Visualización. Mantén la mano abierta o pellizca y apunta a la izquierda o a la derecha para pasar de página. La cámara permanece en este dispositivo y se desactiva al salir del libro.",
+          "description": "Mientras lees, activa «Gestos con las manos» desde la barra de herramientas o el menú Visualización. Pellizca y arrastra a la izquierda o a la derecha para pasar de página, o pellizca para ir a la página siguiente. La cámara permanece en este dispositivo y se desactiva al salir del libro.",
           "title": "Gestos con las manos"
         }
       },
@@ -773,7 +773,7 @@
         "cameraMissing": "No se ha encontrado ninguna cámara.",
         "cameraUnavailable": "Los gestos con las manos requieren una cámara.",
         "detectorFailed": "No se ha podido iniciar la detección de manos.",
-        "hint": "Mantén la mano abierta o pellizca y, después, apunta a la izquierda o a la derecha.",
+        "hint": "Pellizca y arrastra a la izquierda o a la derecha. Un pellizco pasa a la página siguiente.",
         "preview": "Previsualización de gestos con las manos",
         "starting": "Iniciando cámara…"
       }

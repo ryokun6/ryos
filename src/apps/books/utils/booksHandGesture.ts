@@ -13,8 +13,13 @@ export interface HandLandmark {
 export type BooksHandPose = "pinch" | "hold" | "open" | "none";
 export type BooksHandAimSide = "left" | "center" | "right";
 
-/** Consecutive active frames before a pose can turn a page (~350ms at 70ms). */
+/** Still pinch frames before a pinch with no drag turns to the next page. */
 export const BOOKS_HAND_GESTURE_MIN_STREAK = 5;
+/**
+ * Shortest pinch that can turn a page: a quick pinch on release, or a drag
+ * that has already crossed the movement threshold.
+ */
+export const BOOKS_HAND_PINCH_TAP_STREAK = 3;
 /** Open / missing-hand frames required before another flip can arm. */
 export const BOOKS_HAND_RELEASE_STREAK = 3;
 /** Ignore further flips after one lands, so a held pose cannot spam. */
@@ -36,6 +41,7 @@ const WRIST = 0;
 const THUMB_TIP = 4;
 const INDEX_TIP = 8;
 const MIDDLE_MCP = 9;
+const FINGERTIPS = [8, 12, 16, 20] as const;
 const FINGERS = [
   { mcp: 5, tip: 8 },
   { mcp: 9, tip: 12 },
@@ -99,6 +105,8 @@ interface TrackerState {
   armed: boolean;
   cooldownUntil: number;
   originX: number | null;
+  /** Mirrored-x travel of the current pinch. Kept so a release can see it. */
+  lastDeltaX: number;
 }
 
 function finitePoint(
@@ -147,18 +155,17 @@ export function mirrorHandLandmarks(landmarks: HandLandmark[]): HandLandmark[] {
 }
 
 /**
- * Pinch: thumb and index tips meet. Hold: a closed fist (index curled, and
- * at least three fingers curled) so a pointing hand does not turn pages.
+ * Pinch: the thumb tip meets any fingertip. Hold: a closed fist (index
+ * curled, and at least three fingers curled). A fist wins over an incidental
+ * pinch so a closed hand does not turn the page.
  */
 export function classifyBooksHandPose(landmarks: HandLandmark[]): BooksHandPose {
   if (landmarks.length < 21) return "none";
   const wrist = finitePoint(landmarks, WRIST);
   const thumbTip = finitePoint(landmarks, THUMB_TIP);
-  const indexTip = finitePoint(landmarks, INDEX_TIP);
   const size = palmSize(landmarks);
-  if (!wrist || !thumbTip || !indexTip || size < BOOKS_HAND_MIN_PALM) {
-    return "none";
-  }
+  if (!wrist || !thumbTip || size < BOOKS_HAND_MIN_PALM) return "none";
+  if (!FINGERTIPS.every((index) => finitePoint(landmarks, index))) return "none";
 
   let curledCount = 0;
   let indexCurled = false;
@@ -169,20 +176,24 @@ export function classifyBooksHandPose(landmarks: HandLandmark[]): BooksHandPose 
     if (finger.tip === INDEX_TIP) indexCurled = true;
   }
 
-  const pinchRatio = distance(thumbTip, indexTip) / size;
   const isHold = indexCurled && curledCount >= 3;
   if (isHold) return "hold";
-  if (pinchRatio < BOOKS_HAND_PINCH_RATIO) return "pinch";
+  const pinching = FINGERTIPS.some((index) => {
+    const tip = finitePoint(landmarks, index);
+    return tip != null && distance(thumbTip, tip) / size < BOOKS_HAND_PINCH_RATIO;
+  });
+  if (pinching) return "pinch";
   return "open";
 }
 
+/** Only a pinch turns pages. A fist, an open palm, or a missing hand does not. */
 export function isBooksHandPoseActive(pose: BooksHandPose): boolean {
-  return pose === "pinch" || pose === "hold";
+  return pose === "pinch";
 }
 
 /**
- * Prefer a hand that is already pinching or holding. Otherwise keep the
- * largest hand so the preview still has a silhouette.
+ * Prefer a hand that is pinching. Otherwise keep the largest hand so the
+ * preview still has a silhouette.
  */
 export function chooseBooksGestureHand(
   hands: HandLandmark[][]
@@ -231,34 +242,23 @@ function sideFromX(mirroredX: number): BooksHandAimSide {
 }
 
 /**
- * Left/right in the mirrored preview match the page-edge taps: left is the
- * previous page for horizontal text, and vertical writing reverses that.
- * A move and an aim that disagree are dropped.
+ * A pinch drag uses the same direction as a finger swipe on the page.
+ * Mirrored x grows toward the reader's right, so a left-to-right drag is a
+ * positive delta: previous page for horizontal text, and the reverse for
+ * vertical text. A pinch that does not travel far enough is a tap and always
+ * advances to the next page.
  */
 export function resolveBooksHandGestureDirection({
-  mirroredX,
   deltaX,
   isVerticalText,
 }: {
-  mirroredX: number;
   deltaX: number;
   isVerticalText: boolean;
 }): BooksPageTurnDirection | null {
-  if (!Number.isFinite(mirroredX) || !Number.isFinite(deltaX)) return null;
-
-  const aim = aimSide(mirroredX);
-  const move =
-    deltaX <= -BOOKS_HAND_MOVE_MIN
-      ? "left"
-      : deltaX >= BOOKS_HAND_MOVE_MIN
-        ? "right"
-        : null;
-  if (aim && move && aim !== move) return null;
-
-  const side = move ?? aim;
-  if (!side) return null;
-  if (side === "left") return isVerticalText ? "next" : "prev";
-  return isVerticalText ? "prev" : "next";
+  if (!Number.isFinite(deltaX)) return null;
+  if (Math.abs(deltaX) < BOOKS_HAND_MOVE_MIN) return "next";
+  if (deltaX < 0) return isVerticalText ? "prev" : "next";
+  return isVerticalText ? "next" : "prev";
 }
 
 function emptyTrackerState(): TrackerState {
@@ -268,6 +268,18 @@ function emptyTrackerState(): TrackerState {
     armed: true,
     cooldownUntil: 0,
     originX: null,
+    lastDeltaX: 0,
+  };
+}
+
+function firedTrackerState(timestamp: number): TrackerState {
+  return {
+    streak: 0,
+    inactiveStreak: 0,
+    armed: false,
+    cooldownUntil: timestamp + BOOKS_HAND_GESTURE_COOLDOWN_MS,
+    originX: null,
+    lastDeltaX: 0,
   };
 }
 
@@ -283,51 +295,68 @@ export function createBooksHandGestureTracker(): BooksHandGestureTracker {
       const pose = landmarks ? classifyBooksHandPose(landmarks) : "none";
       const centerX = landmarks ? palmCenterX(landmarks) : null;
       const side = centerX == null ? "center" : sideFromX(centerX);
-      const active = isBooksHandPoseActive(pose) && centerX != null;
+      const pinching = pose === "pinch" && centerX != null;
+      const released =
+        !landmarks || pose === "open" || pose === "none" || centerX == null;
       let direction: BooksPageTurnDirection | null = null;
 
-      if (!active || centerX == null) {
-        state = {
-          ...state,
-          streak: 0,
-          originX: null,
-          inactiveStreak: state.inactiveStreak + 1,
-          armed:
-            state.armed ||
-            state.inactiveStreak + 1 >= BOOKS_HAND_RELEASE_STREAK,
-        };
-      } else {
-        const originX = state.streak === 0 || state.originX == null
-          ? centerX
-          : state.originX;
+      if (pinching && centerX != null) {
+        const originX =
+          state.streak === 0 || state.originX == null ? centerX : state.originX;
         const streak = state.streak + 1;
+        const deltaX = centerX - originX;
+        const dragged = Math.abs(deltaX) >= BOOKS_HAND_MOVE_MIN;
         const ready =
           state.armed &&
           frame.timestamp >= state.cooldownUntil &&
-          streak >= BOOKS_HAND_GESTURE_MIN_STREAK;
+          ((dragged && streak >= BOOKS_HAND_PINCH_TAP_STREAK) ||
+            (!dragged && streak >= BOOKS_HAND_GESTURE_MIN_STREAK));
 
         if (ready) {
           direction = resolveBooksHandGestureDirection({
-            mirroredX: centerX,
-            deltaX: centerX - originX,
+            deltaX,
             isVerticalText: frame.isVerticalText,
           });
         }
 
         state = direction
-          ? {
-              streak: 0,
-              inactiveStreak: 0,
-              armed: false,
-              cooldownUntil: frame.timestamp + BOOKS_HAND_GESTURE_COOLDOWN_MS,
-              originX: null,
-            }
+          ? firedTrackerState(frame.timestamp)
           : {
               ...state,
               streak,
               originX,
+              lastDeltaX: deltaX,
               inactiveStreak: 0,
             };
+      } else if (released) {
+        const shortPinch =
+          state.armed &&
+          frame.timestamp >= state.cooldownUntil &&
+          state.streak >= BOOKS_HAND_PINCH_TAP_STREAK &&
+          Math.abs(state.lastDeltaX) < BOOKS_HAND_MOVE_MIN;
+        if (shortPinch) {
+          direction = "next";
+          state = firedTrackerState(frame.timestamp);
+        } else {
+          const inactiveStreak = state.inactiveStreak + 1;
+          state = {
+            ...state,
+            streak: 0,
+            originX: null,
+            lastDeltaX: 0,
+            inactiveStreak,
+            armed: state.armed || inactiveStreak >= BOOKS_HAND_RELEASE_STREAK,
+          };
+        }
+      } else {
+        // A fist is neither a pinch nor the open hand that re-arms the next flip.
+        state = {
+          ...state,
+          streak: 0,
+          originX: null,
+          lastDeltaX: 0,
+          inactiveStreak: 0,
+        };
       }
 
       return { pose, side, direction };

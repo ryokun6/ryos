@@ -4956,7 +4956,7 @@
         "handGesturesOff": "Turn Off Hand Gestures"
       },
       "gestures": {
-        "hint": "Hold or pinch, then aim left or right.",
+        "hint": "Pinch and drag left or right. A pinch turns to the next page.",
         "starting": "Starting camera…",
         "cameraDenied": "Camera access is turned off.",
         "cameraMissing": "No camera found.",
@@ -5094,7 +5094,7 @@
         },
         "handGestures": {
           "title": "Hand Gestures",
-          "description": "While reading, turn on Hand Gestures from the toolbar or the View menu. Hold or pinch and aim left or right to turn the page. The camera stays on this device and turns off when you leave the book."
+          "description": "While reading, turn on Hand Gestures from the toolbar or the View menu. Pinch and drag left or right to turn the page, or pinch to go to the next page. The camera stays on this device and turns off when you leave the book."
         },
         "progress": {
           "title": "Reading Progress",

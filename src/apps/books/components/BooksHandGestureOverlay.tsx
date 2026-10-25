@@ -72,7 +72,7 @@ function drawBooksHandSilhouette(
   ctx.clearRect(0, 0, width, height);
   if (!landmarks) return;
 
-  const active = pose === "pinch" || pose === "hold";
+  const active = pose === "pinch";
   ctx.lineWidth = active ? 3.5 * dpr : 2.5 * dpr;
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
@@ -334,7 +334,7 @@ export function BooksHandGestureOverlay({
             )
           : "";
 
-  const poseActive = pose === "pinch" || pose === "hold";
+  const poseActive = pose === "pinch";
 
   return (
     <div className="pointer-events-none absolute bottom-14 left-3 z-30 w-[108px]">

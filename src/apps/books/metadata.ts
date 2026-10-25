@@ -21,7 +21,7 @@ export const helpItems = [
     icon: "✋",
     title: "Hand Gestures",
     description:
-      "While reading, turn on Hand Gestures from the toolbar or the View menu. Hold or pinch and aim left or right to turn the page. The camera stays on this device and turns off when you leave the book.",
+      "While reading, turn on Hand Gestures from the toolbar or the View menu. Pinch and drag left or right to turn the page, or pinch to go to the next page. The camera stays on this device and turns off when you leave the book.",
   },
   {
     icon: "🔖",
