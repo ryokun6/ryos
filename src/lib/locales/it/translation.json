@@ -664,6 +664,10 @@
         "progress": {
           "description": "La posizione viene salvata automaticamente e ripristinata alla successiva apertura del libro.",
           "title": "Progressi di lettura"
+        },
+        "handGestures": {
+          "description": "Durante la lettura, attiva “Gesti delle mani” dalla barra degli strumenti o dal menu Vista. Tieni premuto o pizzica e punta a sinistra o a destra per voltare pagina. La fotocamera rimane su questo dispositivo e si disattiva quando chiudi il libro.",
+          "title": "Gesti delle mani"
         }
       },
       "import": {
@@ -687,7 +691,9 @@
         "stopSpeaking": "Interrompi lettura",
         "textLayout": "Direzione del testo",
         "textSize": "Dimensione testo",
-        "theme": "Tema"
+        "theme": "Tema",
+        "handGestures": "Gesti delle mani",
+        "handGesturesOff": "Disattiva gesti delle mani"
       },
       "name": "Libri",
       "reader": {
@@ -760,6 +766,16 @@
         "imported": "Libro importato",
         "invalidFile": "File non supportato",
         "invalidFileDesc": "È possibile importare solo libri .epub."
+      },
+      "gestures": {
+        "cameraBusy": "La fotocamera è in uso.",
+        "cameraDenied": "L'accesso alla fotocamera è disattivato.",
+        "cameraMissing": "Nessuna fotocamera trovata.",
+        "cameraUnavailable": "I gesti delle mani richiedono una fotocamera.",
+        "detectorFailed": "Impossibile avviare il rilevamento delle mani.",
+        "hint": "Tieni premuto o pizzica, quindi punta a sinistra o a destra.",
+        "preview": "Anteprima gesti delle mani",
+        "starting": "Avvio fotocamera…"
       }
     },
     "calculator": {

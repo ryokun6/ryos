@@ -46,6 +46,8 @@ interface BooksMenuBarProps {
   isCurrentPageBookmarked: boolean;
   onToggleBookmark: () => void;
   onGoToBookmark: (cfi: string) => void;
+  handGesturesEnabled: boolean;
+  onHandGesturesChange: (enabled: boolean) => void;
 }
 
 export function BooksMenuBar({
@@ -70,6 +72,8 @@ export function BooksMenuBar({
   isCurrentPageBookmarked,
   onToggleBookmark,
   onGoToBookmark,
+  handGesturesEnabled,
+  onHandGesturesChange,
 }: BooksMenuBarProps) {
   const { t } = useTranslation();
   const isCompactMenu = useMediaQuery("(max-width: 768px)");
@@ -220,6 +224,14 @@ export function BooksMenuBar({
           type: "action",
           label: t("apps.books.menu.customizeTheme"),
           onClick: onShowCustomize,
+        },
+        { type: "separator" },
+        {
+          type: "checkbox",
+          label: t("apps.books.menu.handGestures"),
+          checked: handGesturesEnabled,
+          disabled: !isReading,
+          onChange: (checked) => onHandGesturesChange(checked === true),
         },
       ],
     };

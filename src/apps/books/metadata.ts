@@ -18,6 +18,12 @@ export const helpItems = [
       "Click the page edges, use the arrow keys, or swipe to flip through the book.",
   },
   {
+    icon: "✋",
+    title: "Hand Gestures",
+    description:
+      "While reading, turn on Hand Gestures from the toolbar or the View menu. Hold or pinch and aim left or right to turn the page. The camera stays on this device and turns off when you leave the book.",
+  },
+  {
     icon: "🔖",
     title: "Reading Progress",
     description:

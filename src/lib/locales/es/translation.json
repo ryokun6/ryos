@@ -664,6 +664,10 @@
         "progress": {
           "description": "Tu posición se guarda automáticamente y se recupera la próxima vez que abras el libro.",
           "title": "Progreso de lectura"
+        },
+        "handGestures": {
+          "description": "Mientras lees, activa «Gestos con las manos» desde la barra de herramientas o el menú Visualización. Mantén la mano abierta o pellizca y apunta a la izquierda o a la derecha para pasar de página. La cámara permanece en este dispositivo y se desactiva al salir del libro.",
+          "title": "Gestos con las manos"
         }
       },
       "import": {
@@ -687,7 +691,9 @@
         "stopSpeaking": "Detener lectura",
         "textLayout": "Dirección del texto",
         "textSize": "Tamaño del texto",
-        "theme": "Tema"
+        "theme": "Tema",
+        "handGestures": "Gestos con las manos",
+        "handGesturesOff": "Desactivar gestos con las manos"
       },
       "name": "Libros",
       "reader": {
@@ -760,6 +766,16 @@
         "imported": "Libro importado",
         "invalidFile": "Archivo no compatible",
         "invalidFileDesc": "Solo se pueden importar libros .epub."
+      },
+      "gestures": {
+        "cameraBusy": "La cámara está en uso.",
+        "cameraDenied": "El acceso a la cámara está desactivado.",
+        "cameraMissing": "No se ha encontrado ninguna cámara.",
+        "cameraUnavailable": "Los gestos con las manos requieren una cámara.",
+        "detectorFailed": "No se ha podido iniciar la detección de manos.",
+        "hint": "Mantén la mano abierta o pellizca y, después, apunta a la izquierda o a la derecha.",
+        "preview": "Previsualización de gestos con las manos",
+        "starting": "Iniciando cámara…"
       }
     },
     "calculator": {

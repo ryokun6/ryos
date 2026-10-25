@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "motion/react";
-import { BookmarkSimple, SquaresFour } from "@phosphor-icons/react";
+import { BookmarkSimple, Hand, SquaresFour } from "@phosphor-icons/react";
 import type {
   AppProps,
   BooksInitialData,
@@ -10,6 +10,7 @@ import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AppHelpAboutDialogs } from "@/components/shared/AppHelpAboutDialogs";
+import { useAppStore } from "@/stores/useAppStore";
 import { appMetadata } from "../../metadata";
 import { useBooksLogic } from "../../hooks/useBooksLogic";
 import { BooksMenuBar } from "../BooksMenuBar";
@@ -22,6 +23,15 @@ import {
 } from "../BooksReaderPane";
 import { BookCloseZoom } from "../BookCloseZoom";
 import { BooksCustomizePanel } from "../BooksCustomizePanel";
+import { resolveEffectiveTextLayout } from "../../utils/booksLanguage";
+import { shouldRunBooksHandCamera } from "../../utils/booksHandGesture";
+import type { BooksPageTurnDirection } from "../../utils/booksEdgeTap";
+
+const BooksHandGestureOverlay = lazy(() =>
+  import("../BooksHandGestureOverlay").then((module) => ({
+    default: module.BooksHandGestureOverlay,
+  }))
+);
 
 export function BooksAppComponent({
   isWindowOpen,
@@ -99,15 +109,31 @@ export function BooksAppComponent({
   const handleBookLanguageChange = useCallback((language: string | null) => {
     setBookLanguage(language);
   }, []);
-  // Drop language capability flags when returning to the shelf.
-  useEffect(() => {
-    if (viewMode !== "reader") setBookLanguage(null);
-  }, [viewMode]);
-
   // Whether the visible page holds a bookmark (reported by the reader pane;
   // drives the Go menu label and the titlebar ribbon state).
   const [isCurrentPageBookmarked, setIsCurrentPageBookmarked] =
     useState(false);
+  // Session-only. Off until the reader explicitly turns it on, and cleared
+  // when the book closes so the next book does not reopen the camera.
+  const [handGesturesEnabled, setHandGesturesEnabled] = useState(false);
+  const [pageVisible, setPageVisible] = useState(
+    () => typeof document === "undefined" || !document.hidden
+  );
+  const isMinimized = useAppStore(
+    (state) => state.instances[instanceId]?.isMinimized ?? false
+  );
+  // Drop language capability flags when returning to the shelf.
+  useEffect(() => {
+    if (viewMode !== "reader") setBookLanguage(null);
+  }, [viewMode]);
+  useEffect(() => {
+    if (viewMode !== "reader") setHandGesturesEnabled(false);
+  }, [viewMode]);
+  useEffect(() => {
+    const onVisibility = () => setPageVisible(!document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
   const handleBookmarkStateChange = useCallback(
     (bookmarked: boolean) => setIsCurrentPageBookmarked(bookmarked),
     []
@@ -156,6 +182,11 @@ export function BooksAppComponent({
     ]
   );
 
+  const handleGestureFlip = useCallback((direction: BooksPageTurnDirection) => {
+    if (direction === "next") readerRef.current?.goToNextPage();
+    else readerRef.current?.goToPreviousPage();
+  }, []);
+
   const menuBar = (
     <BooksMenuBar
       onClose={onClose}
@@ -179,6 +210,8 @@ export function BooksAppComponent({
       isCurrentPageBookmarked={isCurrentPageBookmarked}
       onToggleBookmark={() => readerRef.current?.toggleBookmark()}
       onGoToBookmark={(cfi) => readerRef.current?.goToCfi(cfi)}
+      handGesturesEnabled={handGesturesEnabled}
+      onHandGesturesChange={setHandGesturesEnabled}
     />
   );
 
@@ -188,6 +221,53 @@ export function BooksAppComponent({
   // macOS X notitlebar uses a dark glass titlebar: light icon + shadow.
   // Classic/Windows themes use a dark icon with no shadow.
   const isDarkTitlebar = isMacOSTheme;
+  const isVerticalText =
+    resolveEffectiveTextLayout(settings.textLayout, bookLanguage) === "vertical";
+  const handCameraActive = shouldRunBooksHandCamera({
+    enabled: handGesturesEnabled,
+    isReading,
+    isWindowOpen: !!isWindowOpen,
+    isMinimized,
+    pageVisible,
+  });
+  const handGestureButton = isReading ? (
+    <button
+      type="button"
+      aria-pressed={handGesturesEnabled}
+      aria-label={
+        handGesturesEnabled
+          ? t("apps.books.menu.handGesturesOff")
+          : t("apps.books.menu.handGestures")
+      }
+      title={
+        handGesturesEnabled
+          ? t("apps.books.menu.handGesturesOff")
+          : t("apps.books.menu.handGestures")
+      }
+      onClick={(e) => {
+        e.stopPropagation();
+        setHandGesturesEnabled((enabled) => !enabled);
+      }}
+      onMouseDown={(e) => e.stopPropagation()}
+      onTouchStart={(e) => e.stopPropagation()}
+      className={`shrink-0 w-5 h-5 min-h-5 max-h-5 flex items-center justify-center rounded-sm transition-colors cursor-pointer ${
+        handGesturesEnabled
+          ? isDarkTitlebar
+            ? "bg-white/25 text-white"
+            : "bg-black/10 text-neutral-900"
+          : isDarkTitlebar
+            ? "text-white/80 hover:text-white"
+            : "text-neutral-600 hover:text-neutral-800"
+      }`}
+      style={{
+        filter: isDarkTitlebar
+          ? "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6))"
+          : undefined,
+      }}
+    >
+      <Hand size={14} weight={handGesturesEnabled ? "fill" : "bold"} />
+    </button>
+  ) : null;
   const bookmarkTitleBarButton = isReading ? (
     <button
       type="button"
@@ -277,6 +357,7 @@ export function BooksAppComponent({
         onNavigatePrevious,
         titleBarRightContent: (
           <div className="flex items-center gap-1">
+            {handGestureButton}
             {bookmarkTitleBarButton}
             {shelfButton}
           </div>
@@ -354,6 +435,14 @@ export function BooksAppComponent({
             onMoveToTop={moveBookToTop}
             onMoveToBottom={moveBookToBottom}
           />
+        )}
+        {handCameraActive && (
+          <Suspense fallback={null}>
+            <BooksHandGestureOverlay
+              isVerticalText={isVerticalText}
+              onFlip={handleGestureFlip}
+            />
+          </Suspense>
         )}
         {/* Floating reading-appearance customization panel (View ▸ Theme ▸ Customize…). */}
         <AnimatePresence>

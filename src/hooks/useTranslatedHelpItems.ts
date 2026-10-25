@@ -206,6 +206,7 @@ export const APP_HELP_I18N_KEYS: Record<AppId, readonly string[]> = {
     "bookshelf",
     "import",
     "pageTurn",
+    "handGestures",
     "progress",
     "kosync",
     "fonts",
