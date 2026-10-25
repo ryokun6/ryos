@@ -599,6 +599,12 @@
         "remove": "Remover Marcador",
         "title": "Marcadores"
       },
+      "highlights": {
+        "emptyHint": "Selecione um trecho enquanto lê e ele aparecerá aqui.",
+        "emptyTitle": "Nenhum Destaque",
+        "title": "Destaques",
+        "untitled": "Destaque"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",

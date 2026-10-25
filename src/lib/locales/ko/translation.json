@@ -597,6 +597,12 @@
         "remove": "책갈피 제거",
         "title": "책갈피"
       },
+      "highlights": {
+        "emptyHint": "읽는 동안 구절을 선택하면 여기에 표시됩니다.",
+        "emptyTitle": "하이라이트 없음",
+        "title": "하이라이트",
+        "untitled": "하이라이트"
+      },
       "chineseScript": {
         "original": "원본",
         "simplified": "简体",

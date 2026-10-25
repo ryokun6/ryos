@@ -599,6 +599,12 @@
         "remove": "Supprimer le signet",
         "title": "Signets"
       },
+      "highlights": {
+        "emptyHint": "Sélectionnez un passage pendant votre lecture pour qu’il s’affiche ici.",
+        "emptyTitle": "Aucun surlignage",
+        "title": "Surlignages",
+        "untitled": "Surlignage"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",

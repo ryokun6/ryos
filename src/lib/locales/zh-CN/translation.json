@@ -597,6 +597,12 @@
         "remove": "移除书签",
         "title": "书签"
       },
+      "highlights": {
+        "emptyHint": "阅读时选择一段文字，它将显示在这里。",
+        "emptyTitle": "无高亮",
+        "title": "高亮",
+        "untitled": "高亮"
+      },
       "chineseScript": {
         "original": "原文",
         "simplified": "简体",

@@ -1,6 +1,11 @@
 import "../../helpers/local-storage-stub";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { buildHighlightAnnotationStyles } from "../../../src/apps/books/hooks/useBooksAnnotations";
+import {
+  BOOKS_HIGHLIGHT_UNDER_TEXT_CSS,
+  buildHighlightAnnotationStyles,
+  highlightOverlayBlendMode,
+  highlightUnderTextAlpha,
+} from "../../../src/apps/books/hooks/useBooksAnnotations";
 import { useCloudSyncStore } from "../../../src/stores/useCloudSyncStore";
 import {
   useBooksStore,
@@ -256,29 +261,63 @@ describe("books annotations lifecycle", () => {
     expect(state.highlightsByPath[OTHER]).toHaveLength(1);
     expect(state.bookmarksByPath[OTHER]).toHaveLength(1);
   });
+
+  test("setProgress keeps updatedAt when the page did not move", () => {
+    const s = useBooksStore.getState();
+    s.setProgress(PATH, {
+      cfi: "epubcfi(/6/8!/4/2/1:40)",
+      percentage: 0.4,
+      updatedAt: 10,
+      kosyncProgress: "/body/DocFragment[2]/p",
+    });
+    s.setProgress(PATH, {
+      cfi: "epubcfi(/6/8!/4/2/1:40)",
+      percentage: 0.4002,
+      updatedAt: 99,
+      kosyncProgress: "/body/DocFragment[2]/p",
+    });
+    expect(useBooksStore.getState().progressByPath[PATH]?.updatedAt).toBe(10);
+
+    s.setProgress(PATH, {
+      cfi: "epubcfi(/6/10!/4/2/1:2)",
+      percentage: 0.55,
+      updatedAt: 20,
+      kosyncProgress: "/body/DocFragment[3]/p",
+    });
+    expect(useBooksStore.getState().progressByPath[PATH]).toMatchObject({
+      cfi: "epubcfi(/6/10!/4/2/1:2)",
+      percentage: 0.55,
+      updatedAt: 20,
+    });
+  });
 });
 
 describe("highlight annotation styles", () => {
-  test("light pages multiply the tint; dark pages screen it", () => {
-    const light = buildHighlightAnnotationStyles("yellow", false);
-    expect(light["mix-blend-mode"]).toBe("multiply");
-    expect(light.fill).toBe("#facc15");
-
-    const dark = buildHighlightAnnotationStyles("yellow", true);
-    expect(dark["mix-blend-mode"]).toBe("screen");
+  test("the visible wash is a CSS highlight behind the glyphs", () => {
+    const css = BOOKS_HIGHLIGHT_UNDER_TEXT_CSS;
+    expect(css).toContain("::highlight(ryos-books-hl-yellow)");
+    expect(css).toContain("background-color:");
+    expect(css).not.toMatch(/(^|[;{])\s*color:/);
+    expect(highlightUnderTextAlpha(false, true)).toBeGreaterThan(
+      highlightUnderTextAlpha(false, false)
+    );
+    expect(highlightUnderTextAlpha(true, true)).toBeGreaterThan(
+      highlightUnderTextAlpha(true, false)
+    );
   });
 
-  test("the active highlight renders brighter than inactive ones", () => {
-    const inactiveLight = buildHighlightAnnotationStyles("yellow", false);
-    const activeLight = buildHighlightAnnotationStyles("yellow", false, true);
-    expect(Number(activeLight["fill-opacity"])).toBeGreaterThan(
-      Number(inactiveLight["fill-opacity"])
-    );
+  test("under-text marks keep the SVG rect as an invisible hit target", () => {
+    const styles = buildHighlightAnnotationStyles("yellow", false, true, "under-text");
+    expect(styles.fill).toBe("#facc15");
+    expect(styles["fill-opacity"]).toBe("0");
+    expect(styles["mix-blend-mode"]).toBe("normal");
+  });
 
-    const inactiveDark = buildHighlightAnnotationStyles("yellow", true);
-    const activeDark = buildHighlightAnnotationStyles("yellow", true, true);
-    expect(Number(activeDark["fill-opacity"])).toBeGreaterThan(
-      Number(inactiveDark["fill-opacity"])
-    );
+  test("the blend fallback multiplies on light pages and screens on dark pages", () => {
+    expect(highlightOverlayBlendMode(false)).toBe("multiply");
+    expect(highlightOverlayBlendMode(true)).toBe("screen");
+    const styles = buildHighlightAnnotationStyles("blue", true, false, "blend");
+    expect(styles["fill-opacity"]).toBe("1");
+    expect(styles["mix-blend-mode"]).toBe("normal");
   });
 });

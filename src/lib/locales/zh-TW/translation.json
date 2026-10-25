@@ -597,6 +597,12 @@
         "remove": "移除書籤",
         "title": "書籤"
       },
+      "highlights": {
+        "emptyHint": "閱讀時選取一段文字，該段文字便會顯示在此處。",
+        "emptyTitle": "沒有螢光標示",
+        "title": "螢光標示",
+        "untitled": "螢光標示"
+      },
       "chineseScript": {
         "original": "原文",
         "simplified": "简体",

@@ -5001,6 +5001,12 @@
         "add": "Add Bookmark",
         "remove": "Remove Bookmark"
       },
+      "highlights": {
+        "title": "Highlights",
+        "emptyTitle": "No Highlights",
+        "emptyHint": "Select a passage while you read and it will show up here.",
+        "untitled": "Highlight"
+      },
       "columns": {
         "auto": "Auto",
         "single": "Single",

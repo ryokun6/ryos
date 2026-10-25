@@ -599,6 +599,12 @@
         "remove": "Eliminar marcador",
         "title": "Marcadores"
       },
+      "highlights": {
+        "emptyHint": "Selecciona un fragmento mientras lees y aparecerá aquí.",
+        "emptyTitle": "Sin resaltados",
+        "title": "Resaltados",
+        "untitled": "Resaltado"
+      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
