@@ -14,11 +14,15 @@ import {
 } from "./_utils/speech-permit.js";
 import {
   DEFAULT_ELEVENLABS_MODEL_ID,
+  DEFAULT_ELEVENLABS_OUTPUT_FORMAT,
   DEFAULT_ELEVENLABS_VOICE_ID,
   DEFAULT_OPENAI_TTS_SPEED,
   DEFAULT_OPENAI_TTS_VOICE,
   DEFAULT_TTS_MODEL,
+  STREAMING_ELEVENLABS_MODEL_ID,
+  elevenLabsMimeType,
   generateElevenLabsSpeech,
+  streamElevenLabsSpeech,
   type ElevenLabsOutputFormat,
   type ElevenLabsVoiceSettings,
 } from "./_utils/voice.js";
@@ -46,6 +50,11 @@ interface SpeechRequest {
   permitId?: string | null;
   /** Optional SHA-256 of the cleaned permit text. */
   contentHash?: string | null;
+  /**
+   * ElevenLabs only: write audio as it is synthesized instead of buffering
+   * the whole clip. Defaults to the flash model when `model_id` is unset.
+   */
+  stream?: boolean;
 }
 
 export default apiHandler<SpeechRequest>(
@@ -164,6 +173,7 @@ export default apiHandler<SpeechRequest>(
         source,
         permitId,
         contentHash,
+        stream,
       } = body ?? {};
 
       logger.info("Parsed request body", {
@@ -263,6 +273,42 @@ export default apiHandler<SpeechRequest>(
         }
 
         const elevenlabsVoiceId = voice_id || DEFAULT_ELEVENLABS_VOICE_ID;
+        if (stream === true) {
+          const outputFormat = output_format || DEFAULT_ELEVENLABS_OUTPUT_FORMAT;
+          const audioStream = await streamElevenLabsSpeech({
+            text: synthesisText,
+            voiceId: elevenlabsVoiceId,
+            modelId: model_id || STREAMING_ELEVENLABS_MODEL_ID,
+            outputFormat,
+            voiceSettings: voice_settings,
+          });
+          res.setHeader("Content-Type", elevenLabsMimeType(outputFormat));
+          res.setHeader("Cache-Control", "no-store");
+          res.status(200);
+          let bytes = 0;
+          const reader = audioStream.getReader();
+          try {
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value && value.length > 0) {
+                bytes += value.length;
+                res.write(Buffer.from(value));
+              }
+            }
+          } catch (streamError) {
+            logger.error("ElevenLabs speech stream interrupted", streamError);
+          } finally {
+            res.end();
+          }
+          logger.info("ElevenLabs speech streamed", {
+            bytes,
+            voice_id: elevenlabsVoiceId,
+            output_format: outputFormat,
+          });
+          logger.response(200, Date.now() - startTime);
+          return;
+        }
         audioData = await generateElevenLabsSpeech({
           text: synthesisText,
           voiceId: elevenlabsVoiceId,

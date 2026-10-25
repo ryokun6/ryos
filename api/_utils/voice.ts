@@ -80,6 +80,67 @@ export async function transcribeAudioBuffer({
   return transcription.text;
 }
 
+/** Lowest-latency ElevenLabs model; used when a caller streams speech. */
+export const STREAMING_ELEVENLABS_MODEL_ID = "eleven_flash_v2_5";
+
+export function elevenLabsMimeType(outputFormat: ElevenLabsOutputFormat): string {
+  if (outputFormat.startsWith("pcm_")) return "audio/pcm";
+  if (outputFormat.startsWith("ulaw_")) return "audio/basic";
+  return "audio/mpeg";
+}
+
+type ElevenLabsSpeechOptions = {
+  text: string;
+  voiceId?: string;
+  modelId?: string;
+  outputFormat?: ElevenLabsOutputFormat;
+  voiceSettings?: ElevenLabsVoiceSettings;
+  apiKey?: string;
+  fetchImpl?: typeof fetch;
+};
+
+/**
+ * Opens an ElevenLabs stream and returns the upstream body as it arrives, so
+ * the caller can start playback before the whole clip is synthesized.
+ */
+export async function streamElevenLabsSpeech({
+  text,
+  voiceId = DEFAULT_ELEVENLABS_VOICE_ID,
+  modelId = STREAMING_ELEVENLABS_MODEL_ID,
+  outputFormat = DEFAULT_ELEVENLABS_OUTPUT_FORMAT,
+  voiceSettings = DEFAULT_ELEVENLABS_VOICE_SETTINGS,
+  apiKey = process.env.ELEVENLABS_API_KEY,
+  fetchImpl = fetch,
+}: ElevenLabsSpeechOptions): Promise<ReadableStream<Uint8Array>> {
+  if (!apiKey) {
+    throw new Error("ElevenLabs API key not configured");
+  }
+
+  // ElevenLabs reads output_format from the query string.
+  const url = new URL(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`);
+  url.searchParams.set("output_format", outputFormat);
+  const response = await fetchImpl(url.toString(), {
+    method: "POST",
+    headers: {
+      Accept: elevenLabsMimeType(outputFormat),
+      "Content-Type": "application/json",
+      "xi-api-key": apiKey,
+    },
+    body: JSON.stringify({
+      text,
+      model_id: modelId,
+      voice_settings: voiceSettings,
+    }),
+  });
+
+  if (!response.ok || !response.body) {
+    const errorText = await response.text();
+    throw new Error(`ElevenLabs API error (${response.status}): ${errorText}`);
+  }
+
+  return response.body;
+}
+
 export async function generateElevenLabsSpeech({
   text,
   voiceId = DEFAULT_ELEVENLABS_VOICE_ID,
@@ -88,15 +149,7 @@ export async function generateElevenLabsSpeech({
   voiceSettings = DEFAULT_ELEVENLABS_VOICE_SETTINGS,
   apiKey = process.env.ELEVENLABS_API_KEY,
   fetchImpl = fetch,
-}: {
-  text: string;
-  voiceId?: string;
-  modelId?: string;
-  outputFormat?: ElevenLabsOutputFormat;
-  voiceSettings?: ElevenLabsVoiceSettings;
-  apiKey?: string;
-  fetchImpl?: typeof fetch;
-}): Promise<ArrayBuffer> {
+}: ElevenLabsSpeechOptions): Promise<ArrayBuffer> {
   if (!apiKey) {
     throw new Error("ElevenLabs API key not configured");
   }
