@@ -58,6 +58,10 @@ import {
 } from "./_utils.js";
 
 import { startLyricsSseResponse } from "./_streaming.js";
+import {
+  allowLyricsGeneration,
+  claimAnonymousKaraokeSong,
+} from "./_anon-generation.js";
 
 import {
   searchKugou,
@@ -393,13 +397,21 @@ export default apiHandler<Record<string, unknown>>(
       const requestIp = getClientIp(req);
       const rateLimitUser = username?.toLowerCase() || requestIp;
 
-      // Cache misses call a paid model, so generation needs a signed-in user
-      // plus a daily per-IP budget (accounts are free to create). Returns a
-      // response when generation is not allowed, otherwise null.
+      // Cache misses call a paid model. Signed-in users use the daily per-IP
+      // budget. Anonymous clients may generate 3 distinct songs (stable
+      // `anonClientId` from localStorage); further songs require sign-in.
+      // Returns a response when generation is not allowed, otherwise null.
       const gateLyricsGeneration = async (
         kind: "translation" | "furigana" | "soramimi"
       ) => {
-        if (!username) {
+        const anonymousAllowed = await allowLyricsGeneration({
+          username,
+          body: bodyObj,
+          songId,
+          claim: (clientId, id) =>
+            claimAnonymousKaraokeSong(redis, clientId, id),
+        });
+        if (!anonymousAllowed) {
           logger.info(`Blocked anonymous ${kind} generation`);
           return jsonResponse(
             {
@@ -410,7 +422,7 @@ export default apiHandler<Record<string, unknown>>(
             401
           );
         }
-        if (username.toLowerCase() === "ryo") return null;
+        if (username?.toLowerCase() === "ryo") return null;
         const dailyResult = await RateLimit.checkCounterLimit({
           key: RateLimit.makeKey(["rl", "song", "ai-generate", "ip", requestIp]),
           windowSeconds: LYRICS_GENERATION_DAILY_IP_LIMIT.windowSeconds,
@@ -1359,7 +1371,8 @@ export default apiHandler<Record<string, unknown>>(
             totalLines, 
             successCount: completedLines, 
             translations: allTranslations, 
-            success: true 
+            success: true,
+            generated: true,
           });
           res.end();
         } catch (err) {
@@ -1571,7 +1584,8 @@ export default apiHandler<Record<string, unknown>>(
             totalLines, 
             successCount: completedLines, 
             furigana: allFurigana, 
-            success: true 
+            success: true,
+            generated: true,
           });
           res.end();
         } catch (err) {
@@ -1857,7 +1871,8 @@ export default apiHandler<Record<string, unknown>>(
             totalLines, 
             successCount: completedLines, 
             soramimi: allSoramimi, 
-            success: true 
+            success: true,
+            generated: true,
           });
           res.end();
         } catch (err) {

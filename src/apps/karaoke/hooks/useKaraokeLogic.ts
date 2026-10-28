@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useMediaAppDialogs } from "@/hooks/useMediaAppDialogs";
 import type ReactPlayer from "react-player";
 import { toast } from "sonner";
+import { requestSignIn } from "@/utils/requestSignIn";
 import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import {
@@ -715,7 +716,13 @@ export function useKaraokeLogic({
       placement: "end" | "next"
     ): Promise<boolean> => {
       if (!canQueueSongs) {
-        toast.error(t("apps.karaoke.queue.signIn"));
+        toast.error(t("apps.karaoke.queue.signIn"), {
+          duration: 8000,
+          action: {
+            label: t("common.auth.logIn"),
+            onClick: () => requestSignIn(),
+          },
+        });
         return false;
       }
       const result = await updateListenQueue({
@@ -1542,6 +1549,11 @@ export function useKaraokeLogic({
     if (!username) {
       toast.error("Login required", {
         description: "Set a username in Chats to start a session.",
+        duration: 8000,
+        action: {
+          label: t("common.auth.logIn"),
+          onClick: () => requestSignIn(),
+        },
       });
       return;
     }
@@ -1553,7 +1565,7 @@ export function useKaraokeLogic({
       return;
     }
     setIsListenInviteOpen(true);
-  }, [createListenSession, username]);
+  }, [createListenSession, t, username]);
 
   const handleJoinListenSession = useCallback(
     async (sessionId: string) => {

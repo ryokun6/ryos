@@ -34,6 +34,7 @@ import { MediaCoreRunner } from "@/hooks/MediaCoreRunner";
 import { DesktopCornerMask } from "@/components/layout/desktop/DesktopCornerMask";
 import { installNativeToastNotifications } from "@/utils/nativeToastNotifications";
 import { createClientLogger } from "@/utils/logger";
+import { SignInRequestHost } from "@/components/auth/SignInRequestHost";
 
 // Code-split: the debug overlay (console/network panels + live dashboard) is
 // a large component tree that only renders while Debug Mode is enabled, so
@@ -305,6 +306,7 @@ export function App() {
         <AppManager apps={apps} />
       </DesktopErrorBoundary>
       <Toaster position={toastConfig.position} offset={toastConfig.offset} />
+      <SignInRequestHost />
       <DeferredAirDropListener />
       <DeferredAutoCloudSync />
       <DeferredBackgroundChatNotifications />
