@@ -11,7 +11,7 @@ import { useListenSessionStore } from "@/stores/useListenSessionStore";
 import {
   DisplayMode,
   getLyricsFontClassName,
-  LyricsFont as LyricsFontEnum,
+  resolveLyricsFont,
 } from "@/types/lyrics";
 import { useLyrics } from "@/hooks/useLyrics";
 import { useFurigana } from "@/hooks/useFurigana";
@@ -190,7 +190,7 @@ export function useNowPlayingLyrics(): NowPlayingLyrics {
   });
 
   const lyricsFontClassName = getLyricsFontClassName(
-    lyricsFont ?? LyricsFontEnum.GoldGlow
+    resolveLyricsFont(lyricsFont)
   );
 
   const displayMode =

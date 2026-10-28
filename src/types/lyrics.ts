@@ -29,6 +29,19 @@ export enum LyricsFont {
 }
 
 /**
+ * Lyrics style used when the user has not saved a preference.
+ * Rounded is the old-school outline treatment (white fill, dark stroke).
+ */
+export const DEFAULT_LYRICS_FONT = LyricsFont.Rounded;
+
+/** Saved styles win; missing or empty preferences use {@link DEFAULT_LYRICS_FONT}. */
+export function resolveLyricsFont(
+  font: LyricsFont | null | undefined
+): LyricsFont {
+  return font ?? DEFAULT_LYRICS_FONT;
+}
+
+/**
  * Gets the CSS class name for a lyrics font setting.
  * Pure function - no memoization needed.
  */
