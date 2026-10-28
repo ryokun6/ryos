@@ -18,7 +18,7 @@ import { getEffectiveTranslationLanguage } from "@/stores/useIpodStore";
 import type { Track } from "@/shared/media/library";
 import {
   getLyricsFontClassName,
-  LyricsFont as LyricsFontEnum,
+  resolveLyricsFont,
   type LyricsFont,
   type RomanizationSettings,
 } from "@/types/lyrics";
@@ -84,7 +84,7 @@ export function KaraokeLyricsPlaybackProvider({
     setListenLyricOffsetMs(currentTrack?.lyricOffset ?? 0);
   }, [currentTrack?.id, currentTrack?.lyricOffset]);
 
-  const lyricsFontClassName = getLyricsFontClassName(lyricsFont ?? LyricsFontEnum.GoldGlow);
+  const lyricsFontClassName = getLyricsFontClassName(resolveLyricsFont(lyricsFont));
 
   const selectedMatchForLyrics = useMemo(() => {
     if (!lyricsSourceOverride) return undefined;

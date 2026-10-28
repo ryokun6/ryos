@@ -416,6 +416,55 @@ describe("POST /api/songs/{id} AI generation gate", () => {
     const data = await res.json();
     expect(data.code).toBe("lyrics_generation_requires_auth");
   }, 30_000);
+
+  test("anonymous generation past the free song allowance requires sign-in", async () => {
+    const { createRedis } = await import("../../../api/_utils/redis");
+    const {
+      anonKaraokeGenerationKey,
+      claimAnonymousKaraokeSong,
+    } = await import("../../../api/songs/_anon-generation");
+    const redis = createRedis();
+    const clientId = "quotatestclient01";
+    const key = anonKaraokeGenerationKey(clientId);
+    try {
+      await redis.del(key);
+      for (const id of ["quotaSongA01", "quotaSongB02", "quotaSongC03"]) {
+        expect(await claimAnonymousKaraokeSong(redis, clientId, id)).toBe(true);
+      }
+      if (!cachedLyricsSource) {
+        const searchRes = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "search-lyrics",
+            query: `${TEST_SONG_TITLE} ${TEST_SONG_ARTIST}`,
+          }),
+        });
+        if (searchRes.status === 200) {
+          const searchData = await searchRes.json();
+          cachedLyricsSource = searchData.results?.[0] ?? null;
+        }
+      }
+      if (!(await ensureLyrics())) return;
+      const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...makeRateLimitBypassHeaders(),
+        },
+        body: JSON.stringify({
+          action: "translate-stream",
+          language: uncachedLanguage,
+          anonClientId: clientId,
+        }),
+      });
+      expect(res.status).toBe(401);
+      const data = await res.json();
+      expect(data.code).toBe("lyrics_generation_requires_auth");
+    } finally {
+      await redis.del(key);
+    }
+  }, 30_000);
 });
 
 describe("POST /api/songs/{id} action: furigana", () => {

@@ -9,6 +9,12 @@ import { createClientLogger } from "@/utils/logger";
 import { shouldSkipLyricCreditLine } from "@/shared/media/lyricCreditSkip";
 import i18n from "@/lib/i18n";
 import { toast } from "@/hooks/useToast";
+import {
+  attachAnonKaraokeClient,
+  isSignedInForLyrics,
+  recordAnonGeneratedSong,
+} from "@/utils/anonKaraokeGeneration";
+import { requestSignIn } from "@/utils/requestSignIn";
 
 // =============================================================================
 // Constants
@@ -38,6 +44,32 @@ export class LyricsGenerationBlockedError extends Error {
 const GENERATION_BLOCKED_NOTICE_INTERVAL_MS = 10 * 60 * 1000;
 const lastGenerationBlockedNoticeAt = new Map<string, number>();
 
+type LyricsAuth = {
+  username?: string | null;
+  isAuthenticated?: boolean;
+} | null | undefined;
+
+/** Toast options for a blocked lyrics generation, including Sign In when auth is required. */
+export function lyricsGenerationBlockedToastOptions(
+  err: LyricsGenerationBlockedError
+): {
+  id: string;
+  duration?: number;
+  action?: { label: string; onClick: () => void };
+} {
+  if (err.reason !== "auth_required") {
+    return { id: `lyrics-generation-${err.reason}` };
+  }
+  return {
+    id: `lyrics-generation-${err.reason}`,
+    duration: 8000,
+    action: {
+      label: i18n.t("common.auth.logIn"),
+      onClick: () => requestSignIn(),
+    },
+  };
+}
+
 /**
  * Show (at most every few minutes per reason) why translation / furigana /
  * soramimi could not be generated. Returns true when `err` was a blocked
@@ -50,9 +82,26 @@ export function notifyLyricsGenerationBlocked(err: unknown): boolean {
   const last = lastGenerationBlockedNoticeAt.get(err.reason) ?? 0;
   if (now - last >= GENERATION_BLOCKED_NOTICE_INTERVAL_MS) {
     lastGenerationBlockedNoticeAt.set(err.reason, now);
-    toast(err.message, { id: `lyrics-generation-${err.reason}` });
+    toast(err.message, lyricsGenerationBlockedToastOptions(err));
   }
   return true;
+}
+
+function rememberAnonKaraokeGeneration(songId: string, auth: LyricsAuth): void {
+  if (isSignedInForLyrics(auth)) return;
+  const result = recordAnonGeneratedSong(songId);
+  if (result.recorded && result.reachedLimit) {
+    notifyLyricsGenerationBlocked(new LyricsGenerationBlockedError("auth_required"));
+  }
+}
+
+function noteGeneratedSong(
+  songId: string,
+  auth: LyricsAuth,
+  eventData: { generated?: unknown; success?: unknown }
+): void {
+  if (eventData.generated !== true || eventData.success === false) return;
+  rememberAnonKaraokeGeneration(songId, auth);
 }
 
 function throwIfGenerationBlocked(response: Response): void {
@@ -209,11 +258,16 @@ export async function processTranslationSSE(
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          action: "translate-stream",
-          language,
-          force,
-        }),
+        body: JSON.stringify(
+          attachAnonKaraokeClient(
+            {
+              action: "translate-stream",
+              language,
+              force,
+            },
+            auth
+          )
+        ),
         signal: controller.signal,
         timeout: 300000,
         throwOnHttpError: false,
@@ -311,6 +365,7 @@ export async function processTranslationSSE(
                   data: eventData.translations,
                   success: eventData.success,
                 };
+                noteGeneratedSong(songId, auth, eventData);
                 try {
                   onProgress?.({
                     completedLines: eventData.totalLines,
@@ -489,10 +544,15 @@ export async function processFuriganaSSE(
       const response = await abortableFetch(getApiUrl(`/api/songs/${songId}`), {
         method: "POST",
         headers: furiganaHeaders,
-        body: JSON.stringify({
-          action: "furigana-stream",
-          force,
-        }),
+        body: JSON.stringify(
+          attachAnonKaraokeClient(
+            {
+              action: "furigana-stream",
+              force,
+            },
+            auth
+          )
+        ),
         signal: controller.signal,
         timeout: 300000,
         throwOnHttpError: false,
@@ -582,6 +642,7 @@ export async function processFuriganaSSE(
                   data: eventData.furigana,
                   success: eventData.success,
                 };
+                noteGeneratedSong(songId, auth, eventData);
                 try {
                   onProgress?.({
                     completedLines: eventData.totalLines,
@@ -806,6 +867,7 @@ export async function processSoramimiSSE(
       if (furigana && furigana.length > 0 && furigana.some(line => line.some(seg => seg.reading))) {
         requestBody.furigana = furigana;
       }
+      Object.assign(requestBody, attachAnonKaraokeClient(requestBody, auth));
       
       const soramimiHeaders: Record<string, string> = { "Content-Type": "application/json" };
 
@@ -913,6 +975,7 @@ export async function processSoramimiSSE(
                   data: eventData.soramimi,
                   success: eventData.success,
                 };
+                noteGeneratedSong(songId, auth, eventData);
                 try {
                   onProgress?.({
                     completedLines: eventData.totalLines,

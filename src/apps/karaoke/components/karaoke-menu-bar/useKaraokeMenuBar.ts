@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useIpodStoreShallow } from "@/stores/useIpodStore";
 import { useDisplaySettingsStore } from "@/stores/useDisplaySettingsStore";
 import { useKaraokeStore } from "@/stores/useKaraokeStore";
-import { LyricsAlignment, LyricsFont, DisplayMode } from "@/types/lyrics";
+import { LyricsAlignment, DisplayMode, resolveLyricsFont } from "@/types/lyrics";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { useTranslatedLyricsLanguages } from "@/hooks/useTranslatedLyricsLanguages";
 import { useIpodLibraryJsonImportExport } from "@/hooks/useIpodLibraryJsonImportExport";
@@ -81,7 +81,7 @@ export function useKaraokeMenuBar(props: KaraokeMenuBarProps) {
     exportLibrary,
   } = useIpodStoreShallow((s) => ({
     lyricsAlignment: s.lyricsAlignment ?? LyricsAlignment.FocusThree,
-    lyricsFont: s.lyricsFont ?? LyricsFont.GoldGlow,
+    lyricsFont: resolveLyricsFont(s.lyricsFont),
     romanization: s.romanization,
     lyricsTranslationLanguage: s.lyricsTranslationLanguage,
     setLyricsAlignment: s.setLyricsAlignment,

@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import {
   LyricsAlignment,
   LyricsFont,
+  DEFAULT_LYRICS_FONT,
   RomanizationSettings,
   DisplayMode,
   areRomanizationSettingsEqual,
@@ -543,7 +544,7 @@ const initialIpodData: IpodData = {
   lcdFilterOn: true,
   showLyrics: true,
   lyricsAlignment: LyricsAlignment.Alternating,
-  lyricsFont: LyricsFont.GoldGlow,
+  lyricsFont: DEFAULT_LYRICS_FONT,
   romanization: {
     enabled: true,
     japaneseFurigana: true,
