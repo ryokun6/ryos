@@ -7,6 +7,10 @@ struct ShellView: View {
     @ObservedObject var shell: ShellViewModel
 
     var body: some View {
+        // The reader has to be the full screen. Laid out inside the safe
+        // area, the webview stops at the Duo status strip and that band
+        // stays black. Insets are still reported, so the page can clear
+        // the bar and the dock.
         GeometryReader { geo in
             let topIsClearanceEdge = Self.isTopClearanceEdge(geo.safeAreaInsets)
             let sideTruth = Self.sideStatusBarTruth(
@@ -22,6 +26,7 @@ struct ShellView: View {
                 sideStatusBarHasCamera: sideTruth.hasCamera
             )
         }
+        .ignoresSafeArea()
     }
 
     /// A vertical status bar shows up as a large side safe-area inset; when
@@ -44,24 +49,25 @@ struct ShellView: View {
     /// cluster — camera dot, clock, wi-fi chip — occupies the top 150pt
     /// (pixel-scanned off the live simulator 2026-10-03: camera ~30–67,
     /// clock ~84–99, chip+dots ending at 150). On the open inner display
-    /// (951×669, same 84pt trailing strip) the cluster is clock + wi-fi
-    /// only. The first cut reserved 88pt — the wi-fi glyphs' depth — but
-    /// the chip's glass circle runs deeper: pixel-scanned 2026-10-03 the
-    /// circle's fade reaches ~100–102pt and kissed the dock pill placed at
-    /// extent+12. Reserve 104pt, which restores the closed pose's ~13pt
-    /// gap between cluster content and the dock. Geometry-keyed
-    /// measurements, not pose names.
+    /// the cluster is clock + wi-fi only, and it is 104pt whether that
+    /// display is held tall or turned sideways. Height versus width cannot
+    /// choose: the inner display held tall is tall too, and it has no camera.
     static let sideStatusBarExtentMeasured: CGFloat = 150
     static let sideStatusBarExtentOpenMeasured: CGFloat = 104
 
+    /// Shorter side of the cover display is 466pt; the inner display's is
+    /// 669pt in both orientations. The cover is the one with the camera.
+    /// 560 sits in the gap either way the safe area is or isn't included.
+    static let coverShortSideMaximum: CGFloat = 560
+
     /// One contract everywhere (always reported, 0 where meaningless): a
     /// nonzero extent only where the Duo side bar exists (side inset ≥ 70,
-    /// checked by the caller via isTopClearanceEdge). The extent is the
-    /// cluster's depth in that strip: 150 with the camera dot (closed), 104
-    /// without (open).
+    /// checked by the caller). The extent is the cluster's depth in that
+    /// strip: 150 on the cover (camera), 104 on the inner display.
     static func sideStatusBarTruth(isVerticalBar: Bool, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
         guard isVerticalBar else { return (0, false) }
-        if viewSize.height > viewSize.width { return (sideStatusBarExtentMeasured, true) }
+        let cover = min(viewSize.width, viewSize.height) < coverShortSideMaximum
+        if cover { return (sideStatusBarExtentMeasured, true) }
         return (sideStatusBarExtentOpenMeasured, false)
     }
 

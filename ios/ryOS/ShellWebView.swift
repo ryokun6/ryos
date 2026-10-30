@@ -36,25 +36,9 @@ struct ShellWebView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let config = WKWebViewConfiguration()
         let userContent = config.userContentController
-        // Seed the bridge before any page script, so the dock never sees a
-        // 0-to-measured jump. The injected script reads this; without it the
-        // values stay 0 (contract test, other shells).
-        let prelude = "window.__ryosInitialSideStatusBar="
-            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
-        userContent.addUserScript(
-            WKUserScript(
-                source: prelude,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true
-            )
-        )
-        userContent.addUserScript(
-            WKUserScript(
-                source: DesktopBridge.injectedJavaScript,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true
-            )
-        )
+        // Scripts are installed at the first real safe-area measurement, so
+        // the document-start seed is the dock offset, not a zero that the
+        // page would paint before the correction arrived.
         userContent.add(context.coordinator, name: "ryosBridge")
         config.websiteDataStore = .default()
         config.allowsInlineMediaPlayback = true
@@ -74,6 +58,8 @@ struct ShellWebView: UIViewControllerRepresentable {
         webView.scrollView.contentInsetAdjustmentBehavior = .never
 
         let holder = ShellWebHolderController()
+        holder.edgesForExtendedLayout = .all
+        holder.extendedLayoutIncludesOpaqueBars = true
         holder.onLayout = { [weak holder] in
             guard let root = holder?.view.window?.rootViewController else { return }
             StatusBarStyleController.shared.installIfNeeded(on: root)
@@ -86,7 +72,9 @@ struct ShellWebView: UIViewControllerRepresentable {
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
         ShellRouter.shared.attach(webView)
-        webView.load(URLRequest(url: ShellViewModel.origin))
+        holder.onMeasuredGeometry = { [weak coordinator = context.coordinator] extent, camera in
+            coordinator?.applyMeasuredSideStatus(extent, hasCamera: camera)
+        }
         return holder
     }
 
@@ -96,7 +84,10 @@ struct ShellWebView: UIViewControllerRepresentable {
         if let holder = holder as? ShellWebHolderController {
             holder.minimumTopInset = virtualTopInset
         }
-        context.coordinator.reportSideStatusBarExtent(sideStatusBarExtent, hasCamera: sideStatusBarHasCamera)
+        // The side-dock offset is measured from the holder's own safe area.
+        // This view's GeometryReader ignores that area so the wallpaper can
+        // reach the edge, and the insets it reports are 0 — pushing them
+        // would pull the dock up through the camera.
     }
 }
 
@@ -105,16 +96,26 @@ struct ShellWebView: UIViewControllerRepresentable {
 /// the representable can see.
 final class ShellWebHolderController: UIViewController {
     var onLayout: (() -> Void)?
+    /// Side-dock extent and camera flag, from this view's own safe area.
+    var onMeasuredGeometry: ((CGFloat, Bool) -> Void)?
     /// Geometry inset (the Duo band, or an iPad status bar the system did not
     /// report). The window controls can only raise it.
     var minimumTopInset: CGFloat = 0 {
         didSet { if oldValue != minimumTopInset { applyTopInset() } }
     }
     private var lastSize: CGSize = .zero
+    /// The system has delivered safe-area insets for the window. A layout
+    /// before that reports a zero side inset and would bake the wrong dock.
+    private var safeAreaReady = false
+    private var appeared = false
     /// Bottom of the window controls in the view, latched from a measurement
     /// taken before our own inset was added, so it cannot feed back.
     private var latchedControlBottom: CGFloat = 0
     private var applying = false
+    /// ignoresSafeArea clears the strip a frame after it is measured.
+    /// Remember it for this display so that 0 does not pull the dock up.
+    private var latchedStrip: CGFloat = 0
+    private var latchedShortSide: CGFloat = 0
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
@@ -124,8 +125,16 @@ final class ShellWebHolderController: UIViewController {
 
     override func viewSafeAreaInsetsDidChange() {
         super.viewSafeAreaInsetsDidChange()
+        if view.window != nil { safeAreaReady = true }
         if !applying { applyTopInset() }
         onLayout?()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        appeared = true
+        safeAreaReady = true
+        applyTopInset()
     }
 
     /// One top inset for everything. The page already starts the menubar at
@@ -139,10 +148,22 @@ final class ShellWebHolderController: UIViewController {
         // pass. Read it again here, on every layout, and only when the system
         // itself reported no top inset (iPad full screen). A reported inset
         // (iPhone) is left alone so it is not added twice.
-        let side = max(view.safeAreaInsets.left, view.safeAreaInsets.right)
-        let floor = (systemTop < 1 && side < 20)
-            ? max(minimumTopInset, ShellView.currentStatusBarHeight())
-            : minimumTopInset
+        let side = resolvedSideInset()
+        let systemBottom = max(0, view.safeAreaInsets.bottom - additionalSafeAreaInsets.bottom)
+        let measuredTop = ShellView.virtualTopInset(
+            insets: EdgeInsets(
+                top: systemTop,
+                leading: view.safeAreaInsets.left,
+                bottom: systemBottom,
+                trailing: view.safeAreaInsets.right
+            ),
+            statusBarHeight: ShellView.currentStatusBarHeight()
+        )
+        // SwiftUI's reader is full-bleed and reports no insets, so its
+        // requested top can be 0 on the cover. The view's own insets are
+        // the ones the page will see.
+        let floor = max(minimumTopInset, measuredTop)
+        publishSideStatus(side: side)
         if view.bounds.size != lastSize {
             lastSize = view.bounds.size
             latchedControlBottom = 0
@@ -167,6 +188,54 @@ final class ShellWebHolderController: UIViewController {
         additionalSafeAreaInsets.top = needed
         applying = false
     }
+
+    /// The holder sits in a reader that ignores the safe area, so its own
+    /// insets stay 0 while the webview and the window still have the Duo
+    /// strip. The page lays the side dock out from those, so a 0 here
+    /// pulls the dock up to the top of the strip.
+    private func resolvedSideInset() -> CGFloat {
+        func side(_ insets: UIEdgeInsets) -> CGFloat {
+            max(insets.left, insets.right)
+        }
+        var best = side(view.safeAreaInsets)
+        if let window = view.window {
+            best = max(best, side(window.safeAreaInsets))
+        }
+        for subview in view.subviews {
+            best = max(best, side(subview.safeAreaInsets))
+        }
+        return best
+    }
+
+    /// Dock offset for the status strip. A zero side inset before the
+    /// system has installed the strip is ignored until the view appears,
+    /// so an iPad (no side strip) still loads and the cover does not bake
+    /// a dock that starts on top of the camera.
+    /// The cluster belongs to the display. The holder's bounds can be the
+    /// safe-area rect; use the screen, whose shorter side stays 466 on the
+    /// cover and 669 on the inner display either way it is held.
+    private func publishSideStatus(side: CGFloat) {
+        guard safeAreaReady, view.bounds.width > 0 else { return }
+        if side < 1, !appeared { return }
+        let display = view.window?.windowScene?.screen.bounds.size ?? view.bounds.size
+        let shortSide = min(display.width, display.height)
+        var strip = side
+        if strip >= ShellView.sideBarMinimumInset {
+            latchedStrip = strip
+            latchedShortSide = shortSide
+        } else if latchedStrip >= ShellView.sideBarMinimumInset,
+                  abs(shortSide - latchedShortSide) < 40 {
+            strip = latchedStrip
+        } else {
+            latchedStrip = 0
+            latchedShortSide = 0
+        }
+        let truth = ShellView.sideStatusBarTruth(
+            isVerticalBar: strip >= ShellView.sideBarMinimumInset,
+            viewSize: display
+        )
+        onMeasuredGeometry?(truth.extent, truth.hasCamera)
+    }
 }
 
 final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, ASWebAuthenticationPresentationContextProviding {
@@ -188,12 +257,40 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         super.init()
     }
 
-    func reportSideStatusBarExtent(_ extent: CGFloat, hasCamera: Bool) {
+    private var didStartLoad = false
+
+    /// First measurement installs the document-start seed and loads. Later
+    /// ones (a fold, a rotation) push the same contract to the live page.
+    func applyMeasuredSideStatus(_ extent: CGFloat, hasCamera: Bool) {
         let changed = extent != sideStatusBarExtent || hasCamera != sideStatusBarHasCamera
         sideStatusBarExtent = extent
         sideStatusBarHasCamera = hasCamera
+        if !didStartLoad {
+            didStartLoad = true
+            installPreludeAndLoad()
+            return
+        }
         guard changed else { return }
         pushSideStatusBarExtent()
+    }
+
+    private func installPreludeAndLoad() {
+        guard let webView else { return }
+        let content = webView.configuration.userContentController
+        content.removeAllUserScripts()
+        let prelude = "window.__ryosInitialSideStatusBar="
+            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
+        content.addUserScript(
+            WKUserScript(source: prelude, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        )
+        content.addUserScript(
+            WKUserScript(
+                source: DesktopBridge.injectedJavaScript,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        )
+        webView.load(URLRequest(url: ShellViewModel.origin))
     }
 
     private func pushSideStatusBarExtent() {
@@ -402,6 +499,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     /// boot-slow never counts, boot-broken does).
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         shell?.bootResourcesArrived()
+        pushSideStatusBarExtent()
     }
 
     func webView(
