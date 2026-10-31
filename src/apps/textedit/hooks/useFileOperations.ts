@@ -232,38 +232,49 @@ export function useFileOperations({
   );
 
   const handleLoadFromDatabase = useCallback(
-    async (filePath: string): Promise<boolean> => {
+    async (
+      filePath: string,
+      options?: {
+        /** Skip applying once the read finishes (user typed, or the effect was cancelled). */
+        shouldApply?: () => boolean;
+        /** A miss before the file catalog has this path is retried, so stay quiet. */
+        warnIfMissing?: boolean;
+      }
+    ): Promise<boolean> => {
       if (!editor) return false;
 
       try {
         const contentStr = await readDocumentTextContent(filePath);
-        if (contentStr) {
-          let editorContent;
-
-          if (filePath.endsWith(".md")) {
-            const parsed = parseRichMarkdown(contentStr);
-            if (parsed.editorJson) {
-              editorContent = parsed.editorJson;
-            } else {
-              editorContent = markdownToSafeHtml(parsed.markdown);
-            }
-          } else {
-            try {
-              editorContent = JSON.parse(contentStr);
-            } catch {
-              editorContent = `<p>${contentStr}</p>`;
-            }
+        if (contentStr == null) {
+          if (options?.warnIfMissing !== false) {
+            console.warn("Document not found:", filePath);
           }
+          return false;
+        }
 
-          if (editorContent) {
-            editor.commands.setContent(editorContent, { emitUpdate: false });
-            onLoadSuccess?.(filePath);
-            log.debug("Loaded content from file", { path: filePath });
-            return true;
+        let editorContent: string | object;
+
+        if (filePath.endsWith(".md")) {
+          const parsed = parseRichMarkdown(contentStr);
+          if (parsed.editorJson) {
+            editorContent = parsed.editorJson as object;
+          } else {
+            editorContent = markdownToSafeHtml(parsed.markdown);
           }
         } else {
-          console.warn("Document not found or empty:", filePath);
+          try {
+            editorContent = JSON.parse(contentStr) as object;
+          } catch {
+            editorContent = `<p>${contentStr}</p>`;
+          }
         }
+
+        if (options?.shouldApply && !options.shouldApply()) return false;
+
+        editor.commands.setContent(editorContent || "", { emitUpdate: false });
+        onLoadSuccess?.(filePath);
+        log.debug("Loaded content from file", { path: filePath });
+        return true;
       } catch (err) {
         console.error("Error loading file content from DB:", err);
       }

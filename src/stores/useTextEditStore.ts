@@ -33,6 +33,23 @@ export interface TextEditStoreState {
 
 type TextEditPersistedState = Pick<TextEditStoreState, "instances">;
 
+/**
+ * Saved, clean documents are re-read from the virtual file system on restore.
+ * Untitled documents and unsaved edits keep their editor JSON so a reload
+ * doesn't discard a draft.
+ */
+export function contentJsonForPersist(
+  instance: Pick<
+    TextEditInstance,
+    "filePath" | "contentJson" | "hasUnsavedChanges"
+  >
+): JSONContent | null {
+  if (!instance.filePath || instance.hasUnsavedChanges) {
+    return instance.contentJson;
+  }
+  return null;
+}
+
 const splitTextEditState = (
   state: TextEditPersistedState
 ): SplitPersistSnapshot<TextEditPersistedState> => ({
@@ -149,16 +166,13 @@ export const useTextEditStore = create<TextEditStoreState>()(
       }),
       partialize: (state) => ({
         instances: Object.fromEntries(
-          Object.entries(state.instances).map(([id, inst]) => {
-            const shouldKeepContent = !inst.filePath || inst.hasUnsavedChanges;
-            return [
-              id,
-              {
-                ...inst,
-                contentJson: shouldKeepContent ? inst.contentJson : null,
-              },
-            ];
-          })
+          Object.entries(state.instances).map(([id, inst]) => [
+            id,
+            {
+              ...inst,
+              contentJson: contentJsonForPersist(inst),
+            },
+          ])
         ),
       }),
     }
