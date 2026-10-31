@@ -27,20 +27,31 @@ export function useTextEditState({ instanceId }: UseTextEditStateProps) {
     (state) => state.instances[instanceId] || null
   );
 
-  // IndexedDB hydrates asynchronously. Do not create or remove an instance
-  // until restoration finishes, or a default instance can overwrite its draft.
+  // IndexedDB hydrates asynchronously. Do not create an instance until
+  // restoration finishes, or a default instance can overwrite its draft.
+  // Removal is tied to the app window actually closing. Effect cleanup also
+  // runs on Strict Mode remount and on a fast reload's simulated unmount;
+  // deleting there drops the saved path and the editor comes back blank.
   useEffect(() => {
     if (!hasHydrated) return;
     createTextEditInstance(instanceId);
-    return () => {
-      removeTextEditInstance(instanceId);
+  }, [hasHydrated, instanceId, createTextEditInstance]);
+
+  useEffect(() => {
+    const handleInstanceClose = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ instanceId?: string; isOpen?: boolean }>
+      ).detail;
+      if (detail?.instanceId === instanceId && detail.isOpen === false) {
+        removeTextEditInstance(instanceId);
+      }
     };
-  }, [
-    hasHydrated,
-    instanceId,
-    createTextEditInstance,
-    removeTextEditInstance,
-  ]);
+
+    window.addEventListener("instanceStateChange", handleInstanceClose);
+    return () => {
+      window.removeEventListener("instanceStateChange", handleInstanceClose);
+    };
+  }, [instanceId, removeTextEditInstance]);
 
   // Instance state
   const currentFilePath = currentInstance?.filePath || null;
