@@ -221,58 +221,52 @@ function readWindowConstraintContext(): WindowConstraintContext | null {
   }
 }
 
+function readInstanceWindowConfig(appId: AppInstance["appId"]) {
+  try {
+    return getWindowConfig(appId);
+  } catch {
+    return null;
+  }
+}
+
 /** Fit one saved window to the viewport. Returns the same instance when nothing moves. */
 function constrainInstanceGeometry(
   inst: AppInstance,
   ctx: WindowConstraintContext,
 ): AppInstance {
-  if (!inst.position || !inst.size) return inst;
-  const config = getWindowConfig(inst.appId);
+  if (!inst?.position || !inst.size) return inst;
+  const config = readInstanceWindowConfig(inst.appId);
   const before = {
     x: inst.position.x,
     y: inst.position.y,
     width: inst.size.width,
     height: inst.size.height,
   };
-  const next = constrainWindowToViewport({
-    ...before,
-    viewportWidth: ctx.viewportWidth,
-    viewportHeight: ctx.viewportHeight,
-    bounds: ctx.bounds,
-    topInset: ctx.topInset,
-    bottomInset: ctx.bottomInset,
-    minHeight: config.minSize?.height,
-    maxHeight: config.maxSize?.height,
-    maxWidth: config.maxSize?.width,
-    defaultSize: config.defaultSize,
-    mobileDefaultSize: config.mobileDefaultSize,
-    mobileSquare: config.mobileSquare,
-  });
+  let next: ReturnType<typeof constrainWindowToViewport>;
+  try {
+    next = constrainWindowToViewport({
+      ...before,
+      viewportWidth: ctx.viewportWidth,
+      viewportHeight: ctx.viewportHeight,
+      bounds: ctx.bounds,
+      topInset: ctx.topInset,
+      bottomInset: ctx.bottomInset,
+      minHeight: config?.minSize?.height,
+      maxHeight: config?.maxSize?.height,
+      maxWidth: config?.maxSize?.width,
+      defaultSize: config?.defaultSize,
+      mobileDefaultSize: config?.mobileDefaultSize,
+      mobileSquare: config?.mobileSquare,
+    });
+  } catch {
+    return inst;
+  }
   if (!windowRectChanged(before, next)) return inst;
   return {
     ...inst,
     position: { x: next.x, y: next.y },
     size: { width: next.width, height: next.height },
   };
-}
-
-/**
- * One pass over every saved window. The same record comes back when every
- * rect already fits, so hydration can skip a second store write.
- */
-function constrainInstances(
-  instances: Record<string, AppInstance>,
-): Record<string, AppInstance> {
-  const ctx = readWindowConstraintContext();
-  if (!ctx) return instances;
-  let changed = false;
-  const next: Record<string, AppInstance> = {};
-  for (const id of Object.keys(instances)) {
-    const fitted = constrainInstanceGeometry(instances[id], ctx);
-    next[id] = fitted;
-    if (fitted !== instances[id]) changed = true;
-  }
-  return changed ? next : instances;
 }
 
 export const selectIsInstanceForeground = (
@@ -914,14 +908,9 @@ const createUseAppStore = () =>
         name: "ryos:app-store",
         version: CURRENT_APP_STORE_VERSION,
         storage: createJSONStorage(() => localStorage),
-        merge: (persistedState, currentState) => {
-          const persisted = (persistedState ?? {}) as Partial<AppStoreState>;
-          const merged = { ...currentState, ...persisted };
-          if (merged.instances) {
-            merged.instances = constrainInstances(merged.instances);
-          }
-          return merged;
-        },
+        // Clamp rects in onRehydrateStorage, after persist has committed the
+        // saved instances. Doing it in `merge` runs before `set`; a throw
+        // there aborts hydration and leaves the in-memory map empty.
         partialize: (state): Partial<AppStoreState> => ({
         version: state.version,
         
@@ -1012,31 +1001,39 @@ const createUseAppStore = () =>
             inst.createdAt = !isNaN(numericId) ? numericId : Date.now();
           }
           if (!inst.position || !inst.size) {
-            const cfg = getWindowConfig(inst.appId);
-            const isMobile = window.innerWidth < 768;
-            if (!inst.position)
-              inst.position = {
-                x: isMobile ? 0 : 16,
-                y: (isMobile ? 28 : 40) + measureMenubarSafeTop(),
-              };
-            if (!inst.size)
-              inst.size = isMobile
-                ? getMobileWindowSize(inst.appId)
-                : cfg.defaultSize;
+            try {
+              const cfg = getWindowConfig(inst.appId);
+              const isMobile = window.innerWidth < 768;
+              if (!inst.position)
+                inst.position = {
+                  x: isMobile ? 0 : 16,
+                  y: (isMobile ? 28 : 40) + measureMenubarSafeTop(),
+                };
+              if (!inst.size)
+                inst.size = isMobile
+                  ? getMobileWindowSize(inst.appId)
+                  : cfg.defaultSize;
+            } catch {
+              // An unknown app id must not abort restoration of the others.
+            }
           }
         });
-        // Defaults filled above still have to sit inside the current viewport.
-        // Mutate the instances already published by hydration so this stays one
-        // store update.
-        const ctx = readWindowConstraintContext();
-        if (ctx) {
-          for (const id of Object.keys(state.instances)) {
-            const inst = state.instances[id];
-            const fitted = constrainInstanceGeometry(inst, ctx);
-            if (fitted === inst) continue;
-            inst.position = fitted.position;
-            inst.size = fitted.size;
+        // Saved instances are already in the store. Fit rects in place so a
+        // clamp failure cannot drop the restored session.
+        try {
+          const ctx = readWindowConstraintContext();
+          if (ctx && state.instances) {
+            for (const id of Object.keys(state.instances)) {
+              const inst = state.instances[id];
+              if (!inst) continue;
+              const fitted = constrainInstanceGeometry(inst, ctx);
+              if (fitted === inst) continue;
+              inst.position = fitted.position;
+              inst.size = fitted.size;
+            }
           }
+        } catch {
+          // Keep the restored session even if viewport measurement fails.
         }
         },
       }
