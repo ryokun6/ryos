@@ -13,10 +13,17 @@ import { useTextEditState } from "../hooks/useTextEditState";
 import { useFileOperations } from "../hooks/useFileOperations";
 import { useDragAndDrop } from "../hooks/useDragAndDrop";
 import {
-  removeFileExtension,
+  formatTextEditWindowTitle,
   TextEditInitialData,
 } from "../utils/textEditUtils";
+import {
+  planTextEditRestore,
+  shouldMirrorEditorContent,
+} from "../utils/restoreDocument";
+import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 import { useAppStore } from "@/stores/useAppStore";
+import { useFilesStore } from "@/stores/useFilesStore";
+import { useTextEditStore } from "@/stores/useTextEditStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
 import { useLaunchApp } from "@/hooks/useLaunchApp";
 import { useTranslation } from "react-i18next";
@@ -61,8 +68,8 @@ function TextEditContent({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingImportRef = useRef<File | null>(null);
   const launchApp = useLaunchApp();
-  const clearInstanceInitialData = useAppStore(
-    (state) => state.clearInstanceInitialData
+  const updateInstanceInitialData = useAppStore(
+    (state) => state.updateInstanceInitialData
   );
   const launchAppInstance = useAppStore((state) => state.launchApp);
   const { isWindowsTheme, currentTheme } = useThemeFlags();
@@ -93,6 +100,43 @@ function TextEditContent({
     currentInstance,
   } = useTextEditState({ instanceId: instanceId! });
   const isInstanceReady = currentInstance !== null;
+  const filesHydrated = usePersistHydrated(useFilesStore.persist);
+  const textEditHydrated = usePersistHydrated(useTextEditStore.persist);
+  const launchData = initialData as TextEditInitialData | undefined;
+  const catalogPath = currentFilePath || launchData?.path || null;
+  const fileInCatalog = useFilesStore((state) => {
+    if (!catalogPath) return false;
+    const item = state.items[catalogPath];
+    return Boolean(item?.uuid && !item.isDirectory);
+  });
+  const [restoreScope, setRestoreScope] = useState(
+    `${instanceId ?? ""}:${currentFilePath ?? ""}`
+  );
+  const [completedRestoreKey, setCompletedRestoreKey] = useState<string | null>(
+    null
+  );
+  const userEditedDuringRestoreRef = useRef(false);
+  const nextRestoreScope = `${instanceId ?? ""}:${currentFilePath ?? ""}`;
+  if (restoreScope !== nextRestoreScope) {
+    // A different file (Save As, or another window's instance) starts a new read.
+    userEditedDuringRestoreRef.current = false;
+    setRestoreScope(nextRestoreScope);
+    setCompletedRestoreKey(null);
+  }
+
+  const restorePlan = planTextEditRestore({
+    editorReady: Boolean(editor),
+    instanceReady: isInstanceReady && textEditHydrated,
+    filesHydrated,
+    fileInCatalog,
+    filePath: currentFilePath,
+    contentJson,
+    hasUnsavedChanges,
+    initialData: launchData,
+    completedAttemptKey: completedRestoreKey,
+  });
+  const restorePlanRef = useRef(restorePlan);
+  restorePlanRef.current = restorePlan;
 
   // Mirror editor content into the persisted store on a short debounce, with a
   // max wait so a long uninterrupted typing burst still snapshots for crash
@@ -109,6 +153,14 @@ function TextEditContent({
       persistTimerRef.current = null;
     }
     if (!editor) return;
+    if (
+      !shouldMirrorEditorContent({
+        plan: restorePlanRef.current,
+        userEditedDuringRestore: userEditedDuringRestoreRef.current,
+      })
+    ) {
+      return;
+    }
     const json = editor.getJSON();
     lastWrittenJsonRef.current = json;
     lastPersistAtRef.current = Date.now();
@@ -155,21 +207,43 @@ function TextEditContent({
     editor,
     currentFilePath,
     customTitle,
-    onSaveSuccess: useCallback(
+      onSaveSuccess: useCallback(
       (filePath: string) => {
         setCurrentFilePath(filePath);
         setContentJson(editor?.getJSON() || null);
         setHasUnsavedChanges(false);
+        // Keep the window pointed at the file without storing a second copy of
+        // the document in the app-store snapshot.
+        if (instanceId) {
+          updateInstanceInitialData(instanceId, { path: filePath });
+        }
       },
-      [editor, setCurrentFilePath, setContentJson, setHasUnsavedChanges]
+      [
+        editor,
+        instanceId,
+        setCurrentFilePath,
+        setContentJson,
+        setHasUnsavedChanges,
+        updateInstanceInitialData,
+      ]
     ),
     onLoadSuccess: useCallback(
       (filePath: string) => {
         setCurrentFilePath(filePath);
         setHasUnsavedChanges(false);
         setContentJson(editor?.getJSON() || null);
+        if (instanceId) {
+          updateInstanceInitialData(instanceId, { path: filePath });
+        }
       },
-      [editor, setCurrentFilePath, setHasUnsavedChanges, setContentJson]
+      [
+        editor,
+        instanceId,
+        setCurrentFilePath,
+        setHasUnsavedChanges,
+        setContentJson,
+        updateInstanceInitialData,
+      ]
     ),
   });
 
@@ -200,6 +274,18 @@ function TextEditContent({
       // "external" meta. Ignore them here so merging cloud/sync/AI updates does
       // not mark the document dirty or fight the user's edits.
       if (transaction?.getMeta("external")) return;
+      // The editor mounts empty. Ignore that seed until a saved file has been
+      // read back; otherwise it is stored as the document and the file is never
+      // loaded. Real typing during the read is kept and wins over the file.
+      if (
+        !shouldMirrorEditorContent({
+          plan: restorePlanRef.current,
+          userEditedDuringRestore: userEditedDuringRestoreRef.current,
+        })
+      ) {
+        if (editor.isEmpty) return;
+        userEditedDuringRestoreRef.current = true;
+      }
       // Mirror the latest content into the persisted store for recovery. The
       // unsaved flag is still flipped immediately so the title indicator and
       // close confirmation react without delay.
@@ -227,66 +313,56 @@ function TextEditContent({
     currentFilePath,
   ]);
 
-  // Initial load - use initialData if provided
+  // Fill the editor from a launch payload or from the saved file. Saved files
+  // wait until the virtual file system has hydrated; a miss is retried when
+  // that file shows up in the catalog (cloud sync can land metadata later).
+  const restoreAction = restorePlan.action;
+  const restoreAttemptKey =
+    restorePlan.action === "load-file" || restorePlan.action === "load-initial"
+      ? restorePlan.attemptKey
+      : null;
   useEffect(() => {
-    if (!editor || !instanceId || !isInstanceReady) return;
+    if (!editor || !instanceId) return;
+    const plan = restorePlanRef.current;
+    if (plan.action !== "load-file" && plan.action !== "load-initial") return;
 
-    const loadContent = async () => {
-      // Prioritize initialData passed from launch event
-      const typedInitialData = initialData as TextEditInitialData;
-      if (typedInitialData?.path && typedInitialData?.content !== undefined) {
+    let cancelled = false;
+    const shouldApply = () =>
+      !cancelled && !userEditedDuringRestoreRef.current;
+
+    void (async () => {
+      if (plan.action === "load-initial") {
+        if (!shouldApply()) return;
         log.debug("Loading content from initialData", {
-          path: typedInitialData.path,
+          path: plan.path,
           hasInlineContent: true,
         });
-        await handleLoadFromPath(
-          typedInitialData.path,
-          typedInitialData.content
-        );
-
-        // Clear the initialData from the store now that we've consumed it
-        clearInstanceInitialData(instanceId);
-        return;
-      } else if (
-        typedInitialData?.path &&
-        typedInitialData?.content === undefined
-      ) {
-        // If a path was provided but no inline content, try loading from DB
-        log.debug("Loading content from database via initialData path", {
-          path: typedInitialData.path,
-        });
-        await handleLoadFromDatabase(typedInitialData.path);
-        clearInstanceInitialData(instanceId);
+        await handleLoadFromPath(plan.path, plan.content);
+        if (!shouldApply()) return;
+        setCompletedRestoreKey(plan.attemptKey);
         return;
       }
-    };
 
-    loadContent();
-  }, [
-    editor,
-    initialData,
-    instanceId,
-    isInstanceReady,
-    handleLoadFromPath,
-    handleLoadFromDatabase,
-    clearInstanceInitialData,
-  ]);
-
-  // Instance restore: if we have a file path but no content yet after reload, load from DB
-  useEffect(() => {
-    if (!editor || !instanceId || !isInstanceReady) return;
-    if (!contentJson && currentFilePath) {
-      log.debug("Restoring instance content from DB", {
-        path: currentFilePath,
+      log.debug("Restoring instance content from DB", { path: plan.path });
+      const loaded = await handleLoadFromDatabase(plan.path, {
+        shouldApply,
+        warnIfMissing: plan.warnIfMissing,
       });
-      handleLoadFromDatabase(currentFilePath);
-    }
+      if (cancelled) return;
+      if (loaded || userEditedDuringRestoreRef.current || plan.warnIfMissing) {
+        setCompletedRestoreKey(plan.attemptKey);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     editor,
     instanceId,
-    isInstanceReady,
-    contentJson,
-    currentFilePath,
+    restoreAction,
+    restoreAttemptKey,
+    handleLoadFromPath,
     handleLoadFromDatabase,
   ]);
 
@@ -387,6 +463,9 @@ function TextEditContent({
   // Sync editor when contentJson is externally updated (e.g. AI edit tool)
   useEffect(() => {
     if (!editor || !contentJson) return;
+    // Typing that won the race against a file read must not be replaced by the
+    // document we were about to load, or by an older snapshot of this draft.
+    if (userEditedDuringRestoreRef.current) return;
     // Skip our own debounced user-originated writes (matched by reference) so a
     // slightly-stale persisted snapshot can never be merged back over newer
     // keystrokes. Genuinely external updates arrive as different objects.
@@ -619,13 +698,14 @@ function TextEditContent({
         />
       }
       windowFrameProps={{
-        title:
-          customTitle ||
-          (currentFilePath
-            ? `${removeFileExtension(currentFilePath.split("/").pop() || "")}${
-                hasUnsavedChanges ? " •" : ""
-              }`
-            : `${t("apps.textedit.untitled")}${showUnsavedIndicator ? " •" : ""}`),
+        title: formatTextEditWindowTitle({
+          customTitle,
+          filePath: currentFilePath,
+          dirty: currentFilePath
+            ? hasUnsavedChanges
+            : Boolean(showUnsavedIndicator),
+          untitledLabel: t("apps.textedit.untitled"),
+        }),
         onClose: handleClose,
         isForeground,
         appId: "textedit",

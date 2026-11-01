@@ -4,6 +4,28 @@ export const removeFileExtension = (filename: string): string => {
   return filename.replace(/\.[^/.]+$/, "");
 };
 
+/**
+ * Window title for a TextEdit instance. A saved path wins over a launch title
+ * such as "Untitled", so Save and Save As rename the window to the file.
+ */
+export function formatTextEditWindowTitle({
+  customTitle,
+  filePath,
+  dirty,
+  untitledLabel,
+}: {
+  customTitle?: string;
+  filePath: string | null;
+  dirty: boolean;
+  untitledLabel: string;
+}): string {
+  const fileName = filePath?.split("/").pop() || "";
+  const base = filePath
+    ? removeFileExtension(fileName) || untitledLabel
+    : customTitle?.trim() || untitledLabel;
+  return dirty ? `${base} •` : base;
+}
+
 export const getContentAsString = async (
   content: string | Blob | undefined
 ): Promise<string> => {
