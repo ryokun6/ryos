@@ -33,6 +33,7 @@ import { useVideoStore, type Video } from "@/stores/useVideoStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import { useDockStore } from "@/stores/useDockStore";
 import { useDashboardStore } from "@/stores/useDashboardStore";
+import { reconcileMobileOrder } from "@/stores/dashboardLayout";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import { useCalendarStore } from "@/stores/useCalendarStore";
@@ -627,7 +628,31 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
         field: "widgets",
         read: () => useDashboardStore.getState().widgets,
         write: (v) => {
-          if (Array.isArray(v)) useDashboardStore.setState({ widgets: v as never });
+          if (!Array.isArray(v)) return;
+          const widgets = v as ReturnType<typeof useDashboardStore.getState>["widgets"];
+          useDashboardStore.setState((state) => ({
+            widgets,
+            // A desktop-coordinate sync must not replace the phone order.
+            // New ids are appended; removed ids drop out.
+            mobileOrder: reconcileMobileOrder(
+              state.mobileOrder,
+              widgets.map((widget) => widget.id),
+            ),
+          }));
+        },
+      },
+      {
+        field: "mobileOrder",
+        read: () => useDashboardStore.getState().mobileOrder,
+        write: (v) => {
+          if (!Array.isArray(v)) return;
+          const orderedIds = v.filter((id): id is string => typeof id === "string");
+          useDashboardStore.setState((state) => ({
+            mobileOrder: reconcileMobileOrder(
+              orderedIds,
+              state.widgets.map((widget) => widget.id),
+            ),
+          }));
         },
       },
     ],

@@ -3,6 +3,7 @@ import {
   Suspense,
   useEffect,
   useCallback,
+  useMemo,
   useState,
   useRef,
   type ComponentType,
@@ -21,6 +22,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTranslation } from "react-i18next";
 import { Plus } from "@phosphor-icons/react";
 import { useDashboardStore, type WidgetType } from "@/stores/useDashboardStore";
+import { orderWidgetsForMobile } from "@/stores/dashboardLayout";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   WIDGET_ICONS,
@@ -413,12 +415,18 @@ export function DashboardAppComponent({
     setIsAboutDialogOpen,
     isWindowsTheme,
     widgets,
+    mobileOrder,
     handleAddWidget,
     removeWidget,
     moveWidget,
     bringToFront,
     resetToDefaults,
   } = useDashboardLogic();
+
+  const visibleWidgets = useMemo(
+    () => (isMobile ? orderWidgetsForMobile(widgets, mobileOrder) : widgets),
+    [isMobile, mobileOrder, widgets],
+  );
 
   const handleClose = useCallback(() => {
     if (isClosing) return;
@@ -480,12 +488,12 @@ export function DashboardAppComponent({
 
   useEffect(() => {
     if (!isMobile) {
-      prevWidgetCountRef.current = widgets.length;
+      prevWidgetCountRef.current = visibleWidgets.length;
       return;
     }
     const prev = prevWidgetCountRef.current;
-    prevWidgetCountRef.current = widgets.length;
-    if (widgets.length <= prev) return;
+    prevWidgetCountRef.current = visibleWidgets.length;
+    if (visibleWidgets.length <= prev) return;
     const container = mobileScrollRef.current;
     if (!container) return;
     // Defer to next frame so the new widget has been laid out.
@@ -498,7 +506,7 @@ export function DashboardAppComponent({
       }
     });
     return () => cancelAnimationFrame(raf);
-  }, [widgets.length, isMobile]);
+  }, [visibleWidgets.length, isMobile]);
 
   useEffect(() => {
     if (!showOverlay) return;
@@ -608,7 +616,7 @@ export function DashboardAppComponent({
                     style={{ gap: 16, width: "100%" }}
                   >
                     <AnimatePresence initial={false}>
-                      {widgets.map((widget) => {
+                      {visibleWidgets.map((widget) => {
                         const maxAvailable = Math.max(0, window.innerWidth - 32);
                         const renderWidth = Math.min(widget.size.width, maxAvailable);
                         return (
@@ -658,7 +666,7 @@ export function DashboardAppComponent({
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
                   <AnimatePresence>
-                    {widgets.map((widget) => (
+                    {visibleWidgets.map((widget) => (
                       <motion.div
                         key={widget.id}
                         initial={{ opacity: 0, scale: 0.8 }}

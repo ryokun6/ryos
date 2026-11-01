@@ -1,6 +1,12 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type { EventColor } from "./useCalendarStore";
+import {
+  deriveMobileOrder,
+  migrateDashboardLayout,
+  reconcileMobileOrder,
+  sameIdOrder,
+} from "./dashboardLayout";
 import {
   LEGACY_STORAGE_KEYS,
   migrateLocalStorageKey,
@@ -92,7 +98,10 @@ export interface DashboardWidget {
 }
 
 interface DashboardStoreState {
+  /** Desktop layout: 2D position, size, and stacking. */
   widgets: DashboardWidget[];
+  /** Mobile layout: widget ids from top to bottom. */
+  mobileOrder: string[];
 
   // Actions
   addWidget: (widget: Omit<DashboardWidget, "id">) => string;
@@ -100,6 +109,8 @@ interface DashboardStoreState {
   updateWidget: (id: string, updates: Partial<DashboardWidget>) => void;
   updateWidgetConfig: (id: string, config: WidgetConfig | undefined) => void;
   moveWidget: (id: string, position: { x: number; y: number }) => void;
+  /** Replace the mobile order. Desktop coordinates are left as they are. */
+  reorderMobileWidgets: (orderedIds: string[]) => void;
   bringToFront: (id: string) => void;
   resetToDefaults: () => void;
 }
@@ -125,18 +136,31 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
   },
 ];
 
-const DASHBOARD_STORE_VERSION = 1;
+const DASHBOARD_STORE_VERSION = 2;
+const DEFAULT_MOBILE_ORDER = deriveMobileOrder(DEFAULT_WIDGETS);
+
+function dashboardPersistStorage(): Storage {
+  if (typeof window !== "undefined" && window.localStorage) {
+    return window.localStorage;
+  }
+  return localStorage;
+}
 
 export const useDashboardStore = create<DashboardStoreState>()(
   persist(
     (set, _get) => ({
       widgets: DEFAULT_WIDGETS,
+      mobileOrder: DEFAULT_MOBILE_ORDER,
 
       addWidget: (widgetData) => {
         const id = crypto.randomUUID();
         const newWidget: DashboardWidget = { ...widgetData, id };
         set((state) => ({
           widgets: [...state.widgets, newWidget],
+          mobileOrder: reconcileMobileOrder(
+            [...state.mobileOrder, id],
+            [...state.widgets.map((widget) => widget.id), id],
+          ),
         }));
         return id;
       },
@@ -144,6 +168,7 @@ export const useDashboardStore = create<DashboardStoreState>()(
       removeWidget: (id) => {
         set((state) => ({
           widgets: state.widgets.filter((w) => w.id !== id),
+          mobileOrder: state.mobileOrder.filter((widgetId) => widgetId !== id),
         }));
       },
 
@@ -171,6 +196,17 @@ export const useDashboardStore = create<DashboardStoreState>()(
         }));
       },
 
+      reorderMobileWidgets: (orderedIds) => {
+        set((state) => {
+          const mobileOrder = reconcileMobileOrder(
+            orderedIds,
+            state.widgets.map((widget) => widget.id),
+          );
+          if (sameIdOrder(mobileOrder, state.mobileOrder)) return state;
+          return { mobileOrder };
+        });
+      },
+
       bringToFront: (id) => {
         set((state) => {
           const maxZ = Math.max(0, ...state.widgets.map((w) => w.zIndex ?? 0));
@@ -183,12 +219,19 @@ export const useDashboardStore = create<DashboardStoreState>()(
       },
 
       resetToDefaults: () => {
-        set({ widgets: DEFAULT_WIDGETS });
+        set({ widgets: DEFAULT_WIDGETS, mobileOrder: DEFAULT_MOBILE_ORDER });
       },
     }),
     {
       name: STORAGE_KEYS.dashboard,
       version: DASHBOARD_STORE_VERSION,
+      storage: createJSONStorage(dashboardPersistStorage),
+      migrate: (persistedState, version) =>
+        migrateDashboardLayout(persistedState, version) as unknown as DashboardStoreState,
+      partialize: (state) => ({
+        widgets: state.widgets,
+        mobileOrder: state.mobileOrder,
+      }),
     }
   )
 );
