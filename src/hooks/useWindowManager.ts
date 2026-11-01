@@ -16,7 +16,6 @@ import { useEventListener } from "@/hooks/useEventListener";
 import {
   clampWindowToContentBounds,
   getDesktopContentBounds,
-  hasHorizontalContentInset,
   mobileFullWidthFrame,
   windowDragLimits,
   windowResizeMaxWidth,
@@ -176,47 +175,6 @@ export const useWindowManager = ({
     [windowWidthMotionValue, windowHeightMotionValue]
   );
 
-  // Reclamp only when a status-bar inset exists (unfolding Duo). Desktop
-  // resize behavior stays unchanged when both insets are 0.
-  useEffect(() => {
-    const reclamp = () => {
-      const width = window.innerWidth;
-      const bounds = getDesktopContentBounds();
-      if (!hasHorizontalContentInset(bounds, width)) return;
-      const pos = latestWindowPositionRef.current;
-      const size = latestWindowSizeRef.current;
-      const next = clampWindowToContentBounds({
-        x: pos.x,
-        width: size.width,
-        viewportWidth: width,
-        bounds,
-        mobile: width < 768,
-      });
-      if (next.x !== pos.x) {
-        const nextPos = { ...pos, x: next.x };
-        latestWindowPositionRef.current = nextPos;
-        setWindowPosition(nextPos);
-        windowLeftMotionValue.set(nextPos.x);
-      }
-      if (next.width !== size.width) {
-        const nextSize = { ...size, width: next.width };
-        latestWindowSizeRef.current = nextSize;
-        setWindowSize(nextSize);
-        windowWidthMotionValue.set(nextSize.width);
-      }
-    };
-    reclamp();
-    window.addEventListener("resize", reclamp);
-    window.visualViewport?.addEventListener("resize", reclamp);
-    const media = window.matchMedia("(hover: none) and (pointer: coarse)");
-    media.addEventListener("change", reclamp);
-    return () => {
-      window.removeEventListener("resize", reclamp);
-      window.visualViewport?.removeEventListener("resize", reclamp);
-      media.removeEventListener("change", reclamp);
-    };
-  }, [windowLeftMotionValue, windowWidthMotionValue]);
-
   const updateSnapZone = useCallback((zone: "left" | "right" | null) => {
     if (snapZoneRef.current === zone) return;
     snapZoneRef.current = zone;
@@ -288,8 +246,16 @@ export const useWindowManager = ({
     ) {
       setWindowPosition(storePosition);
       latestWindowPositionRef.current = storePosition;
+      windowLeftMotionValue.set(storePosition.x);
+      windowTopMotionValue.set(Math.max(0, storePosition.y));
     }
-  }, [instanceStateFromStore?.position, isDragging, resizeType]);
+  }, [
+    instanceStateFromStore?.position,
+    isDragging,
+    resizeType,
+    windowLeftMotionValue,
+    windowTopMotionValue,
+  ]);
 
   useEffect(() => {
     latestWindowPositionRef.current = windowPosition;

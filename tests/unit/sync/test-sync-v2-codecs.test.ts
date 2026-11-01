@@ -22,6 +22,7 @@ import {
 } from "../../../src/stores/useBooksStore";
 import { stripImageDataUrlForSync } from "../../../src/apps/stuff/utils/stuffCoverBlobs";
 import { useAudioSettingsStore } from "../../../src/stores/useAudioSettingsStore";
+import { useDashboardStore } from "../../../src/stores/useDashboardStore";
 import { useAssistantStore } from "../../../src/stores/useAssistantStore";
 import { DEFAULT_ASSISTANT_CHARACTER_ID } from "../../../src/components/assistant/characters";
 import {
@@ -1104,6 +1105,72 @@ describe("settings codec", () => {
       ctx
     );
     expect(useAudioSettingsStore.getState().masterVolume).toBe(0.25);
+  });
+
+  test("dashboard mobile order syncs without replacing desktop coordinates", async () => {
+    useDashboardStore.setState({
+      widgets: [
+        {
+          id: "a",
+          type: "clock",
+          position: { x: 10, y: 20 },
+          size: { width: 100, height: 100 },
+        },
+        {
+          id: "b",
+          type: "weather",
+          position: { x: 40, y: 80 },
+          size: { width: 120, height: 90 },
+        },
+      ],
+      mobileOrder: ["b", "a"],
+    });
+
+    const docs = SYNC_CODECS.settings.collect(ctx) as Map<string, unknown>;
+    expect(docs.get("settings/dashboard/mobileOrder")).toEqual(["b", "a"]);
+    expect(docs.get("settings/dashboard/widgets")).toEqual(
+      useDashboardStore.getState().widgets,
+    );
+
+    await SYNC_CODECS.settings.apply(
+      [{ k: "settings/dashboard/mobileOrder", v: ["a", "b"], t }],
+      ctx,
+    );
+    expect(useDashboardStore.getState().mobileOrder).toEqual(["a", "b"]);
+    expect(useDashboardStore.getState().widgets[0].position).toEqual({
+      x: 10,
+      y: 20,
+    });
+
+    await SYNC_CODECS.settings.apply(
+      [
+        {
+          k: "settings/dashboard/widgets",
+          v: [
+            {
+              id: "a",
+              type: "clock",
+              position: { x: 1, y: 2 },
+              size: { width: 100, height: 100 },
+            },
+            {
+              id: "c",
+              type: "stocks",
+              position: { x: 5, y: 6 },
+              size: { width: 80, height: 80 },
+            },
+          ],
+          t,
+        },
+      ],
+      ctx,
+    );
+    const after = useDashboardStore.getState();
+    expect(after.widgets.map((widget) => widget.position)).toEqual([
+      { x: 1, y: 2 },
+      { x: 5, y: 6 },
+    ]);
+    expect(after.mobileOrder).toEqual(["a", "c"]);
   });
 
   test("concurrent edits to different fields both survive", async () => {

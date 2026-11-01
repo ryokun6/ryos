@@ -34,17 +34,21 @@ export function useDashboardLogic() {
 
   const {
     widgets,
+    mobileOrder,
     addWidget,
     removeWidget,
     moveWidget,
+    reorderMobileWidgets,
     bringToFront,
     resetToDefaults,
   } = useDashboardStore(
     useShallow((state) => ({
       widgets: state.widgets,
+      mobileOrder: state.mobileOrder,
       addWidget: state.addWidget,
       removeWidget: state.removeWidget,
       moveWidget: state.moveWidget,
+      reorderMobileWidgets: state.reorderMobileWidgets,
       bringToFront: state.bringToFront,
       resetToDefaults: state.resetToDefaults,
     }))
@@ -130,9 +134,11 @@ export function useDashboardLogic() {
     isAboutDialogOpen,
     setIsAboutDialogOpen,
     widgets,
+    mobileOrder,
     handleAddWidget,
     removeWidget,
     moveWidget,
+    reorderMobileWidgets,
     bringToFront,
     resetToDefaults,
   };

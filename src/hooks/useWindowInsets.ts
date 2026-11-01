@@ -5,15 +5,13 @@ import { useThemeFlags } from "./useThemeFlags";
 import { hasDesktopWindowChrome } from "@/utils/platform";
 import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import { getDockLayout } from "@/components/layout/dock/dockPlacement";
+import {
+  computeWindowChromeInsets,
+  readSafeAreaBottom,
+  type WindowInsets,
+} from "@/utils/windowInsets";
 
-export interface WindowInsets {
-  menuBarHeight: number;
-  taskbarHeight: number;
-  safeAreaBottom: number;
-  topInset: number;
-  bottomInset: number;
-  dockHeight: number;
-}
+export type { WindowInsets };
 
 /**
  * Hook that computes window insets based on current theme and platform.
@@ -37,60 +35,27 @@ export function useWindowInsets() {
 
   const themeMetaTyped = themeMetadata as ThemeMetadata;
 
-  const getSafeAreaBottomInset = useCallback(() => {
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    // Get the env(safe-area-inset-bottom) value or fallback to 0
-    const safeAreaInset = parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue(
-        "--sat-safe-area-bottom"
-      )
-    );
-    // On iPadOS, the home indicator height is typically 20px
-    return !isNaN(safeAreaInset) ? safeAreaInset : isMobile ? 20 : 0;
-  }, []);
+  const getSafeAreaBottomInset = useCallback(() => readSafeAreaBottom(), []);
 
   const computeInsets = useCallback((): WindowInsets => {
-    const safeAreaBottom = getSafeAreaBottomInset();
     // In a desktop window shell, menubar is 32px for mac themes; otherwise use theme defaults
     const needsDesktopMenubar = hasDesktopWindowChrome() && isMacTheme;
     const menuBarHeight = needsDesktopMenubar
       ? 32
       : themeMetaTyped.menuBarHeight;
 
-    const taskbarHeight = themeMetaTyped.taskbarHeight;
-
-    // Use scaled dock height for accurate constraints (0 if dock hiding is
-    // enabled, or when the dock sits in a side safe-area strip instead).
-    let dockHeight =
-      themeMetaTyped.hasDock &&
-      !dockHiding &&
-      getDockLayout().placement === "bottom"
-        ? Math.round(themeMetaTyped.baseDockHeight * dockScale)
-        : 0;
-
-    // The Aqua glass dock is taller than the classic dock (8px vertical padding
-    // per side vs 4px, see MacDock.tsx) and is lifted 6px off the screen edge
-    // (margin-bottom in aqua-glass.css). Reserve that extra space so maximized
-    // / resized windows don't overlap the glass dock.
-    if (dockHeight > 0 && isAquaGlass) {
-      const GLASS_DOCK_LIFT = 6;
-      const glassExtraBarHeight =
-        (Math.round(8 * dockScale) - Math.round(4 * dockScale)) * 2;
-      dockHeight += glassExtraBarHeight + GLASS_DOCK_LIFT;
-    }
-
-    const topInset = menuBarHeight + measureMenubarSafeTop();
-    // bottomInset includes dock for resize/maximize constraints
-    const bottomInset = taskbarHeight + dockHeight + safeAreaBottom;
-
-    return {
+    return computeWindowChromeInsets({
       menuBarHeight,
-      taskbarHeight,
-      safeAreaBottom,
-      topInset,
-      bottomInset,
-      dockHeight,
-    };
+      taskbarHeight: themeMetaTyped.taskbarHeight,
+      hasDock: themeMetaTyped.hasDock,
+      baseDockHeight: themeMetaTyped.baseDockHeight,
+      dockScale,
+      dockHiding,
+      dockPlacement: getDockLayout().placement,
+      isAquaGlass,
+      safeAreaBottom: getSafeAreaBottomInset(),
+      safeTop: measureMenubarSafeTop(),
+    });
   }, [
     themeMetaTyped,
     isMacTheme,

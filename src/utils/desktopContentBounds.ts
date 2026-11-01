@@ -191,6 +191,45 @@ export function mobileFullWidthFrame(
   return { x: bounds.x, width: bounds.width };
 }
 
+/**
+ * Mobile size used when a window is first opened. `mobileDefaultSize` keeps
+ * its height and a clamped width; `mobileSquare` uses the content width for
+ * both axes; otherwise the frame is full width and the app's default height.
+ */
+export function resolveMobileWindowFrame(input: {
+  viewportWidth: number;
+  bounds: DesktopContentBounds;
+  defaultSize: { width: number; height: number };
+  mobileDefaultSize?: { width: number; height: number };
+  mobileSquare?: boolean;
+  /** Height to keep when the app has no mobile-specific size. */
+  persistedHeight?: number;
+}): { x: number; width: number; height: number } {
+  const frame = mobileFullWidthFrame(input.viewportWidth, input.bounds);
+  if (input.mobileDefaultSize) {
+    const fitted = clampWindowToContentBounds({
+      x: 0,
+      width: input.mobileDefaultSize.width,
+      viewportWidth: input.viewportWidth,
+      bounds: input.bounds,
+      mobile: true,
+    });
+    return {
+      x: fitted.x,
+      width: fitted.width,
+      height: input.mobileDefaultSize.height,
+    };
+  }
+  if (input.mobileSquare) {
+    return { x: frame.x, width: frame.width, height: frame.width };
+  }
+  return {
+    x: frame.x,
+    width: frame.width,
+    height: input.persistedHeight ?? input.defaultSize.height,
+  };
+}
+
 export function maximizedWindowFrame(input: {
   viewportWidth: number;
   bounds: DesktopContentBounds;
