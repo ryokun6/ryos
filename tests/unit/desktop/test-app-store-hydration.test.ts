@@ -33,7 +33,7 @@ class MemoryStorage implements Storage {
   }
 }
 
-function installViewport() {
+function installViewport(width = 390, height = 800) {
   const documentElement = {
     style: {} as Record<string, string>,
     appendChild(child: { style: Record<string, string> }) {
@@ -53,8 +53,8 @@ function installViewport() {
     },
   };
   const windowStub = {
-    innerWidth: 390,
-    innerHeight: 800,
+    innerWidth: width,
+    innerHeight: height,
     document: documentStub,
     dispatchEvent() {
       return true;
@@ -186,8 +186,112 @@ describe("app store hydration", () => {
     expect(finder.position.y).toBe(120);
     expect(finder.size.width).toBe(390);
     expect(finder.size.height).toBe(480);
+    expect(finder.desktopRect).toEqual({
+      position: { x: 900, y: 120 },
+      size: { width: 640, height: 480 },
+    });
     expect(state.instances["4"].position).toEqual({ x: 0, y: 80 });
+    expect(state.instances["4"].desktopRect).toEqual({
+      position: { x: 40, y: 80 },
+      size: { width: 500, height: 360 },
+    });
     expect(state.instances["5"].isOpen).toBe(true);
+
+    useAppStore.setState({
+      instances: {},
+      instanceOrder: [],
+      foregroundInstanceId: null,
+      nextInstanceId: 0,
+    });
+  });
+
+  test("refresh on a desktop viewport restores the saved desktop rect after a mobile session", async () => {
+    installViewport(1440, 900);
+    const desktopRect = {
+      position: { x: 220, y: 64 },
+      size: { width: 680, height: 400 },
+    };
+    const storage = new MemoryStorage();
+    storage.setItem(
+      "ryos:app-store",
+      JSON.stringify({
+        state: {
+          version: 6,
+          instances: {
+            "7": {
+              instanceId: "7",
+              appId: "finder",
+              isOpen: true,
+              isMinimized: false,
+              position: { x: 0, y: 240 },
+              size: { width: 390, height: 400 },
+              desktopRect,
+              createdAt: 7,
+            },
+          },
+          instanceOrder: ["7"],
+          foregroundInstanceId: "7",
+          nextInstanceId: 8,
+        },
+        version: 6,
+      }),
+    );
+
+    const { useAppStore } = (await import(
+      "../../../src/stores/useAppStore"
+    )) as { useAppStore: typeof UseAppStoreHook };
+    useAppStore.persist.setOptions({
+      storage: createJSONStorage(() => storage),
+    });
+    await useAppStore.persist.rehydrate();
+
+    const restored = useAppStore.getState().instances["7"];
+    expect(restored.isOpen).toBe(true);
+    expect(restored.position).toEqual(desktopRect.position);
+    expect(restored.size).toEqual(desktopRect.size);
+    expect(restored.desktopRect).toEqual(desktopRect);
+
+    useAppStore.setState({
+      instances: {},
+      instanceOrder: [],
+      foregroundInstanceId: null,
+      nextInstanceId: 0,
+    });
+  });
+
+  test("moving a window on mobile does not change its desktop rect", async () => {
+    installViewport(390, 800);
+    const desktopRect = {
+      position: { x: 220, y: 64 },
+      size: { width: 680, height: 400 },
+    };
+    const { useAppStore } = (await import(
+      "../../../src/stores/useAppStore"
+    )) as { useAppStore: typeof UseAppStoreHook };
+    useAppStore.setState({
+      instances: {
+        "9": {
+          instanceId: "9",
+          appId: "finder",
+          isOpen: true,
+          isMinimized: false,
+          position: { x: 0, y: 64 },
+          size: { width: 390, height: 400 },
+          desktopRect,
+          createdAt: 9,
+        },
+      },
+      instanceOrder: ["9"],
+      foregroundInstanceId: "9",
+    });
+
+    useAppStore
+      .getState()
+      .updateInstanceWindowState("9", { x: 0, y: 300 }, { width: 390, height: 400 });
+
+    const moved = useAppStore.getState().instances["9"];
+    expect(moved.position).toEqual({ x: 0, y: 300 });
+    expect(moved.desktopRect).toEqual(desktopRect);
 
     useAppStore.setState({
       instances: {},

@@ -157,3 +157,94 @@ export function windowRectChanged(
     before.height !== after.height
   );
 }
+
+export type StoredWindowRect = {
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+};
+
+export function toWindowRect(stored: StoredWindowRect): WindowRect {
+  return {
+    x: stored.position.x,
+    y: stored.position.y,
+    width: stored.size.width,
+    height: stored.size.height,
+  };
+}
+
+export function toStoredRect(rect: WindowRect): StoredWindowRect {
+  return {
+    position: { x: rect.x, y: rect.y },
+    size: { width: rect.width, height: rect.height },
+  };
+}
+
+/**
+ * A phone frame is pinned to the content origin and narrower than the
+ * desktop breakpoint. Staggered or wide rects are desktop layouts.
+ */
+export function persistedRectIsDesktopLayout(rect: WindowRect): boolean {
+  return rect.width >= MOBILE_VIEWPORT_BREAKPOINT || rect.x > 0;
+}
+
+export function resolveDesktopRect(input: {
+  current: WindowRect;
+  desktop?: WindowRect | null;
+  defaultDesktop: WindowRect;
+}): WindowRect {
+  if (
+    input.desktop &&
+    Number.isFinite(input.desktop.x) &&
+    Number.isFinite(input.desktop.y) &&
+    Number.isFinite(input.desktop.width) &&
+    Number.isFinite(input.desktop.height)
+  ) {
+    return input.desktop;
+  }
+  if (persistedRectIsDesktopLayout(input.current)) return input.current;
+  return input.defaultDesktop;
+}
+
+/**
+ * Current rect follows the viewport. The desktop rect is chosen once and
+ * then left alone, including while the phone frame is applied.
+ */
+export function layoutForViewport(
+  input: ConstrainWindowInput & {
+    desktop?: WindowRect | null;
+    defaultDesktop: WindowRect;
+  },
+): { current: WindowRect; desktop: WindowRect } {
+  const current = {
+    x: input.x,
+    y: input.y,
+    width: input.width,
+    height: input.height,
+  };
+  const desktop = resolveDesktopRect({
+    current,
+    desktop: input.desktop,
+    defaultDesktop: input.defaultDesktop,
+  });
+  const mobile = input.viewportWidth < MOBILE_VIEWPORT_BREAKPOINT;
+  const source = mobile ? current : desktop;
+  return {
+    desktop,
+    current: constrainWindowToViewport({
+      ...input,
+      ...source,
+    }),
+  };
+}
+
+/** Desktop drags replace the desktop rect. Phone drags only move the current rect. */
+export function applyUserWindowMove(input: {
+  mobile: boolean;
+  desktop: WindowRect;
+  next: WindowRect;
+}): { current: WindowRect; desktop: WindowRect } {
+  if (input.mobile) {
+    return { current: input.next, desktop: input.desktop };
+  }
+  return { current: input.next, desktop: input.next };
+}

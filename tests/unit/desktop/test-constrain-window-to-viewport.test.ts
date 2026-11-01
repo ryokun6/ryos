@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { constrainWindowToViewport } from "../../../src/utils/constrainWindowToViewport";
+import {
+  applyUserWindowMove,
+  constrainWindowToViewport,
+  layoutForViewport,
+  type WindowRect,
+} from "../../../src/utils/constrainWindowToViewport";
 import { desktopContentBounds } from "../../../src/utils/desktopContentBounds";
 
 const full = (width: number, height: number) =>
@@ -179,6 +184,78 @@ describe("constrainWindowToViewport", () => {
     expect(fitted.width).toBe(100);
     expect(fitted.y + fitted.height).toBeLessThanOrEqual(900 - 56);
     expect(fitted.y).toBeGreaterThanOrEqual(25);
+  });
+
+  test("desktop to mobile to desktop restores the exact desktop rect", () => {
+    const desktop: WindowRect = { x: 220, y: 64, width: 680, height: 400 };
+    const phoneBounds = full(390, 800);
+    const desktopBounds = full(1440, 900);
+    const onPhone = layoutForViewport({
+      ...desktop,
+      desktop: null,
+      defaultDesktop: { x: 16, y: 40, width: 730, height: 475 },
+      viewportWidth: 390,
+      viewportHeight: 800,
+      bounds: phoneBounds,
+      topInset: 48,
+      bottomInset: 90,
+    });
+    expect(onPhone.desktop).toEqual(desktop);
+    expect(onPhone.current).toEqual({ x: 0, y: 64, width: 390, height: 400 });
+
+    const back = layoutForViewport({
+      ...onPhone.current,
+      desktop: onPhone.desktop,
+      defaultDesktop: { x: 16, y: 40, width: 730, height: 475 },
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      bounds: desktopBounds,
+      topInset: 25,
+      bottomInset: 56,
+    });
+    expect(back.current).toEqual(desktop);
+    expect(back.desktop).toEqual(desktop);
+  });
+
+  test("moving on mobile does not change the desktop rect", () => {
+    const desktop: WindowRect = { x: 220, y: 64, width: 680, height: 400 };
+    const mobileCurrent: WindowRect = { x: 0, y: 64, width: 390, height: 400 };
+    const moved = applyUserWindowMove({
+      mobile: true,
+      desktop,
+      next: { ...mobileCurrent, y: 240 },
+    });
+    expect(moved.desktop).toEqual(desktop);
+    expect(moved.current).toEqual({ x: 0, y: 240, width: 390, height: 400 });
+
+    const back = layoutForViewport({
+      ...moved.current,
+      desktop: moved.desktop,
+      defaultDesktop: { x: 16, y: 40, width: 730, height: 475 },
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      bounds: full(1440, 900),
+      topInset: 25,
+      bottomInset: 56,
+    });
+    expect(back.current).toEqual(desktop);
+  });
+
+  test("refresh on desktop after a mobile session restores the desktop rect", () => {
+    const desktop: WindowRect = { x: 220, y: 64, width: 680, height: 400 };
+    const persistedMobile: WindowRect = { x: 0, y: 240, width: 390, height: 400 };
+    const refreshed = layoutForViewport({
+      ...persistedMobile,
+      desktop,
+      defaultDesktop: { x: 16, y: 40, width: 730, height: 475 },
+      viewportWidth: 1440,
+      viewportHeight: 900,
+      bounds: full(1440, 900),
+      topInset: 25,
+      bottomInset: 56,
+    });
+    expect(refreshed.current).toEqual(desktop);
+    expect(refreshed.desktop).toEqual(desktop);
   });
 
   test("a phone with a side status bar uses the content width, not the full viewport", () => {

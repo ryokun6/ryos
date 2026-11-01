@@ -13,10 +13,14 @@ export function subscribeWindowViewportConstraints(
   }
 
   let frame = 0;
+  let lastViewportKey = "";
   const schedule = () => {
     if (frame) return;
     frame = window.requestAnimationFrame(() => {
       frame = 0;
+      const key = `${window.innerWidth}|${window.innerHeight}`;
+      if (key === lastViewportKey) return;
+      lastViewportKey = key;
       onChange();
     });
   };

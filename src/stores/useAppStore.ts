@@ -14,8 +14,12 @@ import { playHaptic } from "@/utils/nativeShellBridge";
 import { getRestorablePreviewInitialData } from "@/types/appInitialData";
 import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import {
-  constrainWindowToViewport,
+  applyUserWindowMove,
+  layoutForViewport,
+  toStoredRect,
+  toWindowRect,
   windowRectChanged,
+  type WindowRect,
 } from "@/utils/constrainWindowToViewport";
 import {
   getDesktopContentBounds,
@@ -42,6 +46,11 @@ export interface AppInstance extends AppState {
   isLoading?: boolean;
   isMinimized?: boolean;
   launchOrigin?: LaunchOriginRect; // Position of the icon that launched this instance
+  /** Desktop position and size. Phone clamping never writes this. */
+  desktopRect?: {
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+  };
 }
 
 export interface RecentApp {
@@ -229,30 +238,42 @@ function readInstanceWindowConfig(appId: AppInstance["appId"]) {
   }
 }
 
+function defaultDesktopWindowRect(
+  appId: AppInstance["appId"],
+  index: number,
+): WindowRect {
+  const config = readInstanceWindowConfig(appId);
+  const safeTop =
+    typeof document === "undefined" ? 0 : measureMenubarSafeTop();
+  return {
+    x: 16 + index * 32,
+    y: 40 + safeTop + index * 20,
+    width: config?.defaultSize.width ?? 730,
+    height: config?.defaultSize.height ?? 475,
+  };
+}
+
 /** Fit one saved window to the viewport. Returns the same instance when nothing moves. */
 function constrainInstanceGeometry(
   inst: AppInstance,
   ctx: WindowConstraintContext,
+  index = 0,
 ): AppInstance {
   if (!inst?.position || !inst.size) return inst;
   const config = readInstanceWindowConfig(inst.appId);
-  const before = {
-    x: inst.position.x,
-    y: inst.position.y,
-    width: inst.size.width,
-    height: inst.size.height,
-  };
-  let next: ReturnType<typeof constrainWindowToViewport>;
+  const current = toWindowRect({ position: inst.position, size: inst.size });
+  const desktop = inst.desktopRect ? toWindowRect(inst.desktopRect) : null;
+  let layout: { current: WindowRect; desktop: WindowRect };
   try {
-    next = constrainWindowToViewport({
-      ...before,
+    layout = layoutForViewport({
+      ...current,
+      desktop,
+      defaultDesktop: defaultDesktopWindowRect(inst.appId, index),
       viewportWidth: ctx.viewportWidth,
       viewportHeight: ctx.viewportHeight,
       bounds: ctx.bounds,
       topInset: ctx.topInset,
       bottomInset: ctx.bottomInset,
-      minHeight: config?.minSize?.height,
-      maxHeight: config?.maxSize?.height,
       maxWidth: config?.maxSize?.width,
       defaultSize: config?.defaultSize,
       mobileDefaultSize: config?.mobileDefaultSize,
@@ -261,11 +282,15 @@ function constrainInstanceGeometry(
   } catch {
     return inst;
   }
-  if (!windowRectChanged(before, next)) return inst;
+  const currentChanged = windowRectChanged(current, layout.current);
+  const desktopChanged =
+    !desktop || windowRectChanged(desktop, layout.desktop);
+  if (!currentChanged && !desktopChanged) return inst;
   return {
     ...inst,
-    position: { x: next.x, y: next.y },
-    size: { width: next.width, height: next.height },
+    position: { x: layout.current.x, y: layout.current.y },
+    size: { width: layout.current.width, height: layout.current.height },
+    desktopRect: desktopChanged ? toStoredRect(layout.desktop) : inst.desktopRect,
   };
 }
 
@@ -398,16 +423,12 @@ const createUseAppStore = () =>
           const isMobile =
             typeof window !== "undefined" && window.innerWidth < 768;
           const safeTop = measureMenubarSafeTop();
-          const position = {
-            x: isMobile ? 0 : baseOffset + openInstances * offsetStep,
-            y: isMobile
-              ? 28 + safeTop + openInstances * offsetStep
-              : 40 + safeTop + openInstances * 20,
-          };
           const cfg = getWindowConfig(appId);
-          let size = isMobile
-            ? getMobileWindowSize(appId)
-            : cfg.defaultSize;
+          const desktopPosition = {
+            x: baseOffset + openInstances * offsetStep,
+            y: 40 + safeTop + openInstances * 20,
+          };
+          let desktopSize = cfg.defaultSize;
 
           // If creating an Applet Viewer window and we have a path, prefer saved size
           if (appId === "applet-viewer") {
@@ -417,12 +438,20 @@ const createUseAppStore = () =>
                 const saved = useAppletStore
                   .getState()
                   .getAppletWindowSize(path);
-                if (saved) size = saved;
+                if (saved) desktopSize = saved;
               }
             } catch {
               // ignore and fall back to default size
             }
           }
+
+          const position = isMobile
+            ? {
+                x: 0,
+                y: 28 + safeTop + openInstances * offsetStep,
+              }
+            : desktopPosition;
+          const size = isMobile ? getMobileWindowSize(appId) : desktopSize;
 
           const instances = {
             ...state.instances,
@@ -435,6 +464,7 @@ const createUseAppStore = () =>
               title,
               position,
               size,
+              desktopRect: { position: desktopPosition, size: desktopSize },
               createdAt: Date.now(),
               launchOrigin, // Store the position of the icon that launched this instance
             },
@@ -636,19 +666,42 @@ const createUseAppStore = () =>
       updateInstanceWindowState: (instanceId, position, size) =>
         set((state) => {
           const inst = state.instances[instanceId];
+          if (!inst) return state;
+          const mobile =
+            typeof window !== "undefined" && window.innerWidth < 768;
+          const next = {
+            x: position.x,
+            y: position.y,
+            width: size.width,
+            height: size.height,
+          };
+          const current = {
+            x: inst.position?.x ?? next.x,
+            y: inst.position?.y ?? next.y,
+            width: inst.size?.width ?? next.width,
+            height: inst.size?.height ?? next.height,
+          };
+          const desktop = inst.desktopRect
+            ? toWindowRect(inst.desktopRect)
+            : current;
+          const moved = applyUserWindowMove({ mobile, desktop, next });
           if (
-            !inst ||
-            (inst.position?.x === position.x &&
-              inst.position?.y === position.y &&
-              inst.size?.width === size.width &&
-              inst.size?.height === size.height)
+            !windowRectChanged(current, moved.current) &&
+            !windowRectChanged(desktop, moved.desktop)
           ) {
             return state;
           }
           return {
             instances: {
               ...state.instances,
-              [instanceId]: { ...inst, position, size },
+              [instanceId]: {
+                ...inst,
+                position: { x: moved.current.x, y: moved.current.y },
+                size: { width: moved.current.width, height: moved.current.height },
+                desktopRect: windowRectChanged(desktop, moved.desktop)
+                  ? toStoredRect(moved.desktop)
+                  : inst.desktopRect,
+              },
             },
           };
         }),
@@ -1023,13 +1076,16 @@ const createUseAppStore = () =>
         try {
           const ctx = readWindowConstraintContext();
           if (ctx && state.instances) {
-            for (const id of Object.keys(state.instances)) {
+            const ids = Object.keys(state.instances);
+            for (let index = 0; index < ids.length; index++) {
+              const id = ids[index];
               const inst = state.instances[id];
               if (!inst) continue;
-              const fitted = constrainInstanceGeometry(inst, ctx);
+              const fitted = constrainInstanceGeometry(inst, ctx, index);
               if (fitted === inst) continue;
               inst.position = fitted.position;
               inst.size = fitted.size;
+              inst.desktopRect = fitted.desktopRect;
             }
           }
         } catch {
@@ -1062,13 +1118,15 @@ export function constrainOpenWindowsToViewport(): void {
   useAppStore.setState((state) => {
     let changed = false;
     const instances: Record<string, AppInstance> = {};
-    for (const id of Object.keys(state.instances)) {
+    const ids = Object.keys(state.instances);
+    for (let index = 0; index < ids.length; index++) {
+      const id = ids[index];
       const inst = state.instances[id];
       if (!inst?.isOpen) {
         instances[id] = inst;
         continue;
       }
-      const fitted = constrainInstanceGeometry(inst, ctx);
+      const fitted = constrainInstanceGeometry(inst, ctx, index);
       instances[id] = fitted;
       if (fitted !== inst) changed = true;
     }
