@@ -1052,6 +1052,31 @@ if (import.meta.hot) {
 }
 export { useAppStore };
 
+/**
+ * Fit every open window to the current viewport in one store write.
+ * Returns without notifying when every rect is already inside.
+ */
+export function constrainOpenWindowsToViewport(): void {
+  const ctx = readWindowConstraintContext();
+  if (!ctx) return;
+  useAppStore.setState((state) => {
+    let changed = false;
+    const instances: Record<string, AppInstance> = {};
+    for (const id of Object.keys(state.instances)) {
+      const inst = state.instances[id];
+      if (!inst?.isOpen) {
+        instances[id] = inst;
+        continue;
+      }
+      const fitted = constrainInstanceGeometry(inst, ctx);
+      instances[id] = fitted;
+      if (fitted !== inst) changed = true;
+    }
+    if (!changed) return state;
+    return { instances };
+  });
+}
+
 // Global helpers ---------------------------------------------------------------
 export const clearAllAppStates = (): void => {
   try {

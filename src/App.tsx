@@ -13,6 +13,7 @@ import { useThemeFlags } from "./hooks/useThemeFlags";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useDockLayout } from "./hooks/useDockLayout";
 import { useOffline } from "./hooks/useOffline";
+import { useWindowViewportConstraints } from "./hooks/useWindowViewportConstraints";
 import { useTranslation } from "react-i18next";
 import { getDesktopCapabilities } from "./utils/platform";
 import {
@@ -100,6 +101,7 @@ export function App() {
   const dockPlacement = useDockLayout().placement;
   // Initialize offline detection
   useOffline();
+  useWindowViewportConstraints();
 
   // Determine toast position and offset based on theme and device
   const toastConfig = useMemo(() => {

@@ -36,45 +36,32 @@ function finite(value: number, fallback: number): number {
   return Number.isFinite(value) ? value : fallback;
 }
 
-function clampVertical(input: {
+/**
+ * Keep the saved vertical position. Move it only when the window top sits
+ * above the menubar, or the whole window is below the dock / visible area.
+ * A window that still shows its top and hangs over the dock stays put.
+ */
+function clampKeptY(input: {
   y: number;
   height: number;
   top: number;
   bottomLimit: number;
-  minHeight?: number;
-  maxHeight?: number;
-}): { y: number; height: number } {
-  const available = Math.max(0, input.bottomLimit - input.top);
-  let height = finite(input.height, 0);
-  if (input.maxHeight != null && Number.isFinite(input.maxHeight)) {
-    height = Math.min(height, input.maxHeight);
-  }
-  if (height > available) height = available;
-  if (
-    input.minHeight != null &&
-    Number.isFinite(input.minHeight) &&
-    input.minHeight <= available &&
-    height < input.minHeight
-  ) {
-    height = input.minHeight;
-  }
-  if (height < 0) height = 0;
-
+}): number {
   let y = finite(input.y, input.top);
   if (y < input.top) y = input.top;
-  if (y + height > input.bottomLimit) {
-    y = Math.max(input.top, input.bottomLimit - height);
+  if (y >= input.bottomLimit) {
+    y = Math.max(input.top, input.bottomLimit - Math.max(0, input.height));
   }
-  return { y, height };
+  return y;
 }
 
 /**
- * Fit a saved window rect to the viewport it is being restored into.
+ * Fit a saved window rect to the viewport it is being restored or resized into.
  *
- * Mobile uses the same frame helpers as a newly opened window (full content
- * width, or the app's mobile size) and keeps the rect below the menubar and
- * above the dock. Desktop reuses the horizontal content clamp and only pulls
- * a window that is fully outside the content rect, or taller than the safe area.
+ * Mobile takes x and width from the mobile frame helpers and keeps y, unless
+ * the top is above the menubar or the window is fully below the dock.
+ * Desktop reuses the horizontal content clamp and only pulls a window that
+ * is fully outside the content rect.
  */
 export function constrainWindowToViewport(
   input: ConstrainWindowInput,
@@ -104,7 +91,8 @@ export function constrainWindowToViewport(
     });
     x = frame.x;
     width = frame.width;
-    height = frame.height;
+    // Keep the saved height. Mobile frame helpers still choose x and width
+    // (full content width, or the app's mobile size).
     // A mobile default wider than the content rect still has to stay on screen.
     const contentRight = x + Math.max(0, bounds.width || viewportWidth);
     if (width > bounds.width && bounds.width > 0) {
@@ -148,16 +136,14 @@ export function constrainWindowToViewport(
     }
   }
 
-  const vertical = clampVertical({
+  const y = clampKeptY({
     y: input.y,
     height,
     top,
     bottomLimit,
-    minHeight: input.minHeight,
-    maxHeight: input.maxHeight,
   });
 
-  return { x, y: vertical.y, width, height: vertical.height };
+  return { x, y, width, height };
 }
 
 export function windowRectChanged(
