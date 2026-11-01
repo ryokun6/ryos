@@ -13,6 +13,15 @@ import { createClientLogger } from "@/utils/logger";
 import { playHaptic } from "@/utils/nativeShellBridge";
 import { getRestorablePreviewInitialData } from "@/types/appInitialData";
 import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
+import {
+  constrainWindowToViewport,
+  windowRectChanged,
+} from "@/utils/constrainWindowToViewport";
+import {
+  getDesktopContentBounds,
+  type DesktopContentBounds,
+} from "@/utils/desktopContentBounds";
+import { readLiveWindowInsets } from "@/utils/windowInsets";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -176,6 +185,94 @@ function withDerivedForeground(
 function stripInstanceForeground(instance: AppInstance): AppInstance {
   const { isForeground: _isForeground, ...rest } = instance;
   return rest as AppInstance;
+}
+
+type WindowConstraintContext = {
+  viewportWidth: number;
+  viewportHeight: number;
+  bounds: DesktopContentBounds;
+  topInset: number;
+  bottomInset: number;
+};
+
+function readWindowConstraintContext(): WindowConstraintContext | null {
+  if (typeof window === "undefined") return null;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  if (
+    !Number.isFinite(viewportWidth) ||
+    !Number.isFinite(viewportHeight) ||
+    viewportWidth <= 0 ||
+    viewportHeight <= 0
+  ) {
+    return null;
+  }
+  try {
+    const insets = readLiveWindowInsets();
+    return {
+      viewportWidth,
+      viewportHeight,
+      bounds: getDesktopContentBounds(),
+      topInset: insets.topInset,
+      bottomInset: insets.bottomInset,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Fit one saved window to the viewport. Returns the same instance when nothing moves. */
+function constrainInstanceGeometry(
+  inst: AppInstance,
+  ctx: WindowConstraintContext,
+): AppInstance {
+  if (!inst.position || !inst.size) return inst;
+  const config = getWindowConfig(inst.appId);
+  const before = {
+    x: inst.position.x,
+    y: inst.position.y,
+    width: inst.size.width,
+    height: inst.size.height,
+  };
+  const next = constrainWindowToViewport({
+    ...before,
+    viewportWidth: ctx.viewportWidth,
+    viewportHeight: ctx.viewportHeight,
+    bounds: ctx.bounds,
+    topInset: ctx.topInset,
+    bottomInset: ctx.bottomInset,
+    minHeight: config.minSize?.height,
+    maxHeight: config.maxSize?.height,
+    maxWidth: config.maxSize?.width,
+    defaultSize: config.defaultSize,
+    mobileDefaultSize: config.mobileDefaultSize,
+    mobileSquare: config.mobileSquare,
+  });
+  if (!windowRectChanged(before, next)) return inst;
+  return {
+    ...inst,
+    position: { x: next.x, y: next.y },
+    size: { width: next.width, height: next.height },
+  };
+}
+
+/**
+ * One pass over every saved window. The same record comes back when every
+ * rect already fits, so hydration can skip a second store write.
+ */
+function constrainInstances(
+  instances: Record<string, AppInstance>,
+): Record<string, AppInstance> {
+  const ctx = readWindowConstraintContext();
+  if (!ctx) return instances;
+  let changed = false;
+  const next: Record<string, AppInstance> = {};
+  for (const id of Object.keys(instances)) {
+    const fitted = constrainInstanceGeometry(instances[id], ctx);
+    next[id] = fitted;
+    if (fitted !== instances[id]) changed = true;
+  }
+  return changed ? next : instances;
 }
 
 export const selectIsInstanceForeground = (
@@ -636,9 +733,11 @@ const createUseAppStore = () =>
           const inst = state.instances[instanceId];
           if (!inst || !inst.isMinimized) return state;
 
+          const ctx = readWindowConstraintContext();
+          const fitted = ctx ? constrainInstanceGeometry(inst, ctx) : inst;
           const instances = {
             ...state.instances,
-            [instanceId]: { ...inst, isMinimized: false },
+            [instanceId]: { ...fitted, isMinimized: false },
           };
 
           // Move to end of order
@@ -815,6 +914,14 @@ const createUseAppStore = () =>
         name: "ryos:app-store",
         version: CURRENT_APP_STORE_VERSION,
         storage: createJSONStorage(() => localStorage),
+        merge: (persistedState, currentState) => {
+          const persisted = (persistedState ?? {}) as Partial<AppStoreState>;
+          const merged = { ...currentState, ...persisted };
+          if (merged.instances) {
+            merged.instances = constrainInstances(merged.instances);
+          }
+          return merged;
+        },
         partialize: (state): Partial<AppStoreState> => ({
         version: state.version,
         
@@ -918,6 +1025,19 @@ const createUseAppStore = () =>
                 : cfg.defaultSize;
           }
         });
+        // Defaults filled above still have to sit inside the current viewport.
+        // Mutate the instances already published by hydration so this stays one
+        // store update.
+        const ctx = readWindowConstraintContext();
+        if (ctx) {
+          for (const id of Object.keys(state.instances)) {
+            const inst = state.instances[id];
+            const fitted = constrainInstanceGeometry(inst, ctx);
+            if (fitted === inst) continue;
+            inst.position = fitted.position;
+            inst.size = fitted.size;
+          }
+        }
         },
       }
     )

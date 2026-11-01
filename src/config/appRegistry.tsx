@@ -1,8 +1,7 @@
 import { resolveAppId, type AppId } from "./appRegistryData";
 import {
-  clampWindowToContentBounds,
   getDesktopContentBounds,
-  mobileFullWidthFrame,
+  resolveMobileWindowFrame,
 } from "@/utils/desktopContentBounds";
 import type {
   BaseApp,
@@ -743,31 +742,12 @@ export const getWindowConfig = (appId: AppId): WindowConstraints => {
 // Helper function to get mobile window size
 export const getMobileWindowSize = (appId: AppId): WindowSize => {
   const config = getWindowConfig(appId);
-  const viewportWidth = window.innerWidth;
-  const bounds = getDesktopContentBounds();
-  const frame = mobileFullWidthFrame(viewportWidth, bounds);
-  if (config.mobileDefaultSize) {
-    const fitted = clampWindowToContentBounds({
-      x: 0,
-      width: config.mobileDefaultSize.width,
-      viewportWidth,
-      bounds,
-      mobile: true,
-    });
-    return {
-      width: fitted.width,
-      height: config.mobileDefaultSize.height,
-    };
-  }
-  // Square aspect ratio: height = width of the content rect.
-  if (config.mobileSquare) {
-    return {
-      width: frame.width,
-      height: frame.width,
-    };
-  }
-  return {
-    width: frame.width,
-    height: config.defaultSize.height,
-  };
+  const frame = resolveMobileWindowFrame({
+    viewportWidth: window.innerWidth,
+    bounds: getDesktopContentBounds(),
+    defaultSize: config.defaultSize,
+    mobileDefaultSize: config.mobileDefaultSize,
+    mobileSquare: config.mobileSquare,
+  });
+  return { width: frame.width, height: frame.height };
 };
