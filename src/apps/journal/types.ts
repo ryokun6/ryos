@@ -8,7 +8,7 @@ export const JOURNAL_FEATURES = [
 
 export type JournalFeatureId = (typeof JOURNAL_FEATURES)[number];
 
-/** Toolbar tabs. Compare is a drawer preset, not a tab. */
+/** Pages and Freeform are always in the toolbar. Combined appears while that view is open. */
 export const JOURNAL_TOOLBAR_VIEWS = ["daily", "freeform"] as const;
 
 export type JournalToolbarView = (typeof JOURNAL_TOOLBAR_VIEWS)[number];
@@ -17,7 +17,7 @@ export const JOURNAL_VIEWS = ["daily", "freeform", "compare"] as const;
 
 export type JournalView = (typeof JOURNAL_VIEWS)[number];
 
-export const JOURNAL_PRESETS = ["complete", "compare"] as const;
+export const JOURNAL_PRESETS = ["journal", "freeform", "compare"] as const;
 
 export type JournalPreset = (typeof JOURNAL_PRESETS)[number];
 
@@ -58,6 +58,10 @@ export interface JournalState {
   texts: Record<string, JournalDoc>;
   /** Mood overrides, keyed by day id. Absent means the sample score. */
   moods: Record<string, number>;
+  /** Blank pages that are not tied to a date. */
+  undatedPages: string[];
+  /** Selected undated page while the date feature is off. */
+  selectedUndatedId: string | null;
   positions: Record<string, FragmentPosition>;
   selectedDayId: string;
 }
@@ -68,6 +72,8 @@ export type JournalAction =
   | { type: "applyPreset"; preset: JournalPreset }
   | { type: "moveFragment"; id: string; position: FragmentPosition }
   | { type: "selectDay"; dayId: string }
+  | { type: "selectUndated"; id: string }
+  | { type: "addUndatedPage"; id: string }
   | { type: "setReminderTime"; time: string }
   | { type: "setMood"; dayId: string; mood: number }
   | { type: "setEntryText"; id: string; doc: JournalDoc }

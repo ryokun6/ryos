@@ -5561,7 +5561,7 @@
         "reset": "데모 재설정"
       },
       "views": {
-        "compare": "두 가지 구조",
+        "compare": "나란히",
         "generated": "완성된 답",
         "daily": "페이지",
         "freeform": "자유"
@@ -5572,7 +5572,13 @@
         "presets": "프리셋"
       },
       "sidebar": {
-        "days": "날짜"
+        "days": "날짜",
+        "newPage": "새 페이지"
+      },
+      "presets": {
+        "journal": "일기",
+        "freeform": "자유",
+        "compare": "두 구조"
       }
     }
   },

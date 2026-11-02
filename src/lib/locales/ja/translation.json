@@ -5561,7 +5561,7 @@
         "reset": "デモをリセット"
       },
       "views": {
-        "compare": "二つの構造",
+        "compare": "並べる",
         "generated": "完全な答え",
         "daily": "ページ",
         "freeform": "フリー"
@@ -5572,7 +5572,13 @@
         "presets": "プリセット"
       },
       "sidebar": {
-        "days": "日"
+        "days": "日",
+        "newPage": "新しいページ"
+      },
+      "presets": {
+        "journal": "日記",
+        "freeform": "フリー",
+        "compare": "二つの構造"
       }
     }
   },

@@ -1,14 +1,15 @@
 import type { ReactNode } from "react";
-import { BookOpen, Note, SidebarSimple } from "@phosphor-icons/react";
+import { BookOpen, Columns, Note, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
-import { JOURNAL_TOOLBAR_VIEWS, type JournalToolbarView } from "../types";
+import { JOURNAL_TOOLBAR_VIEWS, type JournalView } from "../types";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 
-const VIEW_ICONS: Record<JournalToolbarView, ReactNode> = {
+const VIEW_ICONS: Record<JournalView, ReactNode> = {
   daily: <BookOpen size={14} />,
   freeform: <Note size={14} />,
+  compare: <Columns size={14} />,
 };
 
 function ToolbarButton({
@@ -77,6 +78,8 @@ export function JournalToolbar({
 }) {
   const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme, journal } = l;
   const group = isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0.5";
+  const tabs: JournalView[] =
+    journal.view === "compare" ? [...JOURNAL_TOOLBAR_VIEWS, "compare"] : [...JOURNAL_TOOLBAR_VIEWS];
   return (
     <div
       className={cn(
@@ -89,7 +92,7 @@ export function JournalToolbar({
       )}
     >
       <div className={group} role="toolbar" aria-label={t("common.menu.view")}>
-        {JOURNAL_TOOLBAR_VIEWS.map((view) => (
+        {tabs.map((view) => (
           <ToolbarButton
             key={view}
             l={l}

@@ -1,4 +1,4 @@
-import { DEFAULT_DAY_ID, JOURNAL_DAYS } from "./sampleContent";
+import { DEFAULT_DAY_ID, fragmentsForDay, JOURNAL_DAYS } from "./sampleContent";
 import type {
   JournalAction,
   JournalDoc,
@@ -19,7 +19,9 @@ export const ALL_FEATURES_ON: JournalToggles = {
 };
 
 const VIEWS = new Set<JournalView>(["daily", "freeform", "compare"]);
-const PRESETS = new Set<JournalPreset>(["complete", "compare"]);
+const PRESETS = new Set<JournalPreset>(["journal", "freeform", "compare"]);
+export const UPCOMING_DAY_COUNT = 7;
+const DAY_ID = /^\d{4}-\d{2}-\d{2}$/;
 const FEATURES = new Set<JournalFeatureId>([
   "date",
   "mood",
@@ -43,9 +45,53 @@ export function createInitialJournalState(): JournalState {
     reminderTime: "21:00",
     texts: {},
     moods: {},
+    undatedPages: [],
+    selectedUndatedId: null,
     positions: {},
     selectedDayId: DEFAULT_DAY_ID,
   };
+}
+
+export function entryDocId(dayId: string): string {
+  return `entry:${dayId}`;
+}
+
+export function undatedDocId(pageId: string): string {
+  return `page:${pageId}`;
+}
+
+export function addDays(dayId: string, days: number): string {
+  const date = new Date(`${dayId}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function todayDayId(now = new Date()): string {
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function sidebarDates(today: string): string[] {
+  const first = JOURNAL_DAYS[0]?.id;
+  const lastSample = JOURNAL_DAYS[JOURNAL_DAYS.length - 1]?.id;
+  if (!first || !lastSample || !DAY_ID.test(today)) return JOURNAL_DAYS.map((day) => day.id);
+  const anchor = today > lastSample ? today : lastSample;
+  const end = addDays(anchor, UPCOMING_DAY_COUNT);
+  const dates: string[] = [];
+  let cursor = first;
+  while (cursor <= end) {
+    dates.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return dates;
+}
+
+export function dayHasEntry(state: JournalState, dayId: string): boolean {
+  if (fragmentsForDay(dayId).length > 0) return true;
+  const doc = state.texts[entryDocId(dayId)];
+  return Boolean(doc && plainTextFromDoc(doc).length > 0);
 }
 
 export function isReminderTime(value: unknown): value is string {
@@ -84,16 +130,23 @@ export function normalizeJournalState(value: unknown): JournalState {
       };
     }
   }
-  const dayIds = new Set(JOURNAL_DAYS.map((day) => day.id));
   const view = LEGACY_VIEWS[raw.view ?? ""] ?? initial.view;
+  const undatedPages = Array.isArray(raw.undatedPages)
+    ? raw.undatedPages.filter((id): id is string => typeof id === "string" && id.length > 0)
+    : [];
   return {
     view: VIEWS.has(view) ? view : initial.view,
     toggles: cloneToggles(raw.toggles, initial.toggles),
     reminderTime: isReminderTime(raw.reminderTime) ? raw.reminderTime : initial.reminderTime,
     texts: cloneTexts(raw.texts),
-    moods: cloneMoods(raw.moods, dayIds),
+    moods: cloneMoods(raw.moods),
+    undatedPages,
+    selectedUndatedId:
+      typeof raw.selectedUndatedId === "string" && undatedPages.includes(raw.selectedUndatedId)
+        ? raw.selectedUndatedId
+        : null,
     positions,
-    selectedDayId: dayIds.has(raw.selectedDayId ?? "")
+    selectedDayId: DAY_ID.test(raw.selectedDayId ?? "")
       ? raw.selectedDayId!
       : initial.selectedDayId,
   };
@@ -109,11 +162,11 @@ function cloneTexts(value: unknown): Record<string, JournalDoc> {
   return texts;
 }
 
-function cloneMoods(value: unknown, dayIds: Set<string>): Record<string, number> {
+function cloneMoods(value: unknown): Record<string, number> {
   if (!value || typeof value !== "object") return {};
   const moods: Record<string, number> = {};
   for (const [id, mood] of Object.entries(value)) {
-    if (!dayIds.has(id) || typeof mood !== "number" || !Number.isFinite(mood)) continue;
+    if (typeof mood !== "number" || !Number.isFinite(mood)) continue;
     moods[id] = clamp(Math.round(mood), 1, 5);
   }
   return moods;
@@ -204,6 +257,9 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
       if (action.preset === "compare") {
         return state.view === "compare" ? state : { ...state, view: "compare" };
       }
+      if (action.preset === "freeform") {
+        return state.view === "freeform" ? state : { ...state, view: "freeform" };
+      }
       if (state.view === "daily" && allFeaturesOn(state.toggles)) return state;
       return {
         ...state,
@@ -222,16 +278,29 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
       };
     }
     case "selectDay": {
-      if (!JOURNAL_DAYS.some((day) => day.id === action.dayId)) return state;
-      if (state.selectedDayId === action.dayId) return state;
-      return { ...state, selectedDayId: action.dayId };
+      if (!DAY_ID.test(action.dayId)) return state;
+      if (state.selectedDayId === action.dayId && state.selectedUndatedId === null) return state;
+      return { ...state, selectedDayId: action.dayId, selectedUndatedId: null };
+    }
+    case "selectUndated": {
+      if (!state.undatedPages.includes(action.id)) return state;
+      if (state.selectedUndatedId === action.id) return state;
+      return { ...state, selectedUndatedId: action.id };
+    }
+    case "addUndatedPage": {
+      if (!action.id || state.undatedPages.includes(action.id)) return state;
+      return {
+        ...state,
+        undatedPages: [...state.undatedPages, action.id],
+        selectedUndatedId: action.id,
+      };
     }
     case "setReminderTime": {
       if (!isReminderTime(action.time) || state.reminderTime === action.time) return state;
       return { ...state, reminderTime: action.time };
     }
     case "setMood": {
-      if (!JOURNAL_DAYS.some((day) => day.id === action.dayId)) return state;
+      if (!action.dayId) return state;
       const mood = clamp(Math.round(action.mood), 1, 5);
       if (state.moods[action.dayId] === mood) return state;
       return { ...state, moods: { ...state.moods, [action.dayId]: mood } };

@@ -4,12 +4,14 @@ import {
   averageMood,
   consecutiveDayStreak,
   createInitialJournalState,
+  dayHasEntry,
   moodForDay,
   normalizeJournalState,
   plainTextFromDoc,
   reduceJournal,
   sampleAverageMood,
   sampleStreak,
+  sidebarDates,
 } from "../../../src/apps/journal/logic";
 import { JOURNAL_DAYS, journalText } from "../../../src/apps/journal/sampleContent";
 
@@ -48,7 +50,7 @@ describe("journal demo", () => {
   test("the complete preset restores every feature and the daily pages", () => {
     let next = reduceJournal(state(), { type: "toggleFeature", feature: "mood" });
     next = reduceJournal(next, { type: "setView", view: "freeform" });
-    next = reduceJournal(next, { type: "applyPreset", preset: "complete" });
+    next = reduceJournal(next, { type: "applyPreset", preset: "journal" });
     expect(next.view).toBe("daily");
     expect(allFeaturesOn(next.toggles)).toBe(true);
   });
@@ -132,6 +134,39 @@ describe("journal demo", () => {
     expect(reset.texts).toEqual({});
     expect(reset.moods).toEqual({});
     expect(moodForDay(reset, "2026-10-30")).toBe(5);
+  });
+
+  test("the date list includes the next week and empty days stay empty until written", () => {
+    const dates = sidebarDates("2026-11-02");
+    expect(dates[0]).toBe("2026-10-27");
+    expect(dates.at(-1)).toBe("2026-11-09");
+    expect(dates).toContain("2026-11-02");
+    expect(dayHasEntry(state(), "2026-10-30")).toBe(true);
+    expect(dayHasEntry(state(), "2026-11-02")).toBe(false);
+
+    const opened = reduceJournal(state(), { type: "selectDay", dayId: "2026-11-05" });
+    expect(opened.selectedDayId).toBe("2026-11-05");
+    const written = reduceJournal(opened, {
+      type: "setEntryText",
+      id: "entry:2026-11-05",
+      doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "明天" }] }] },
+    });
+    expect(dayHasEntry(written, "2026-11-05")).toBe(true);
+  });
+
+  test("an undated page is added without turning the date list back on", () => {
+    const next = reduceJournal(state(), { type: "addUndatedPage", id: "page-1" });
+    expect(next.undatedPages).toEqual(["page-1"]);
+    expect(next.selectedUndatedId).toBe("page-1");
+    expect(next.toggles.date).toBe(true);
+    const reset = reduceJournal(next, { type: "reset" });
+    expect(reset.undatedPages).toEqual([]);
+  });
+
+  test("freeform is its own preset", () => {
+    const next = reduceJournal(state(), { type: "applyPreset", preset: "freeform" });
+    expect(next.view).toBe("freeform");
+    expect(allFeaturesOn(next.toggles)).toBe(true);
   });
 
   test("streak counts only consecutive sample days", () => {

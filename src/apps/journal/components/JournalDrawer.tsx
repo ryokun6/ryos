@@ -36,7 +36,8 @@ export function JournalDrawer({
   const changes = keptChangeLabels(l);
   const joiner = l.language.startsWith("zh") ? "、" : ", ";
   const presetSelected = {
-    complete: journal.view === "daily" && allFeaturesOn(journal.toggles),
+    journal: journal.view === "daily" && allFeaturesOn(journal.toggles),
+    freeform: journal.view === "freeform",
     compare: journal.view === "compare",
   };
 
@@ -62,7 +63,7 @@ export function JournalDrawer({
               !presetSelected[preset] && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
             )}
           >
-            {t(preset === "complete" ? "apps.journal.views.generated" : "apps.journal.views.compare")}
+            {t(`apps.journal.presets.${preset}`)}
           </button>
         ))}
 

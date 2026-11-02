@@ -5561,7 +5561,7 @@
         "reset": "還原示範"
       },
       "views": {
-        "compare": "兩種結構",
+        "compare": "合併",
         "generated": "完整答案",
         "daily": "頁面",
         "freeform": "自由"
@@ -5572,7 +5572,13 @@
         "presets": "預設"
       },
       "sidebar": {
-        "days": "日子"
+        "days": "日子",
+        "newPage": "新頁面"
+      },
+      "presets": {
+        "journal": "日記",
+        "freeform": "自由",
+        "compare": "兩種結構"
       }
     }
   },

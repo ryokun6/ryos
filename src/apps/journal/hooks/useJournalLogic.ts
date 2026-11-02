@@ -19,6 +19,8 @@ export function useJournalLogic() {
       applyPreset: state.applyPreset,
       moveFragment: state.moveFragment,
       selectDay: state.selectDay,
+      selectUndated: state.selectUndated,
+      addUndatedPage: state.addUndatedPage,
       setReminderTime: state.setReminderTime,
       setMood: state.setMood,
       setEntryText: state.setEntryText,

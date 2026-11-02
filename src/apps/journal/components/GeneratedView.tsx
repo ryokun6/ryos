@@ -2,11 +2,21 @@ import { Star } from "@phosphor-icons/react";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader";
 import { cn } from "@/lib/utils";
-import { averageMood, moodForDay, sampleStreak } from "../logic";
+import {
+  averageMood,
+  dayHasEntry,
+  entryDocId,
+  moodForDay,
+  sampleStreak,
+  sidebarDates,
+  todayDayId,
+  undatedDocId,
+} from "../logic";
 import {
   formatJournalDay,
   fragmentsForDay,
   JOURNAL_DAYS,
+  type JournalFragment,
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { JournalEntryEditor } from "./JournalEntryEditor";
@@ -29,12 +39,50 @@ export function DailyJournal({
   isMobileLayout: boolean;
 }) {
   const { t, language, journal, isMacOSTheme, isSystem7Theme } = l;
-  const selected = JOURNAL_DAYS.find((day) => day.id === journal.selectedDayId) ?? JOURNAL_DAYS[0];
-  const selectedIndex = JOURNAL_DAYS.findIndex((day) => day.id === selected.id);
-  const fragments = fragmentsForDay(selected.id);
   const features = journal.toggles;
+  const showingUndated =
+    !features.date &&
+    journal.selectedUndatedId !== null &&
+    journal.undatedPages.includes(journal.selectedUndatedId);
+  const pageItems = [
+    ...JOURNAL_DAYS.map((day) => ({ kind: "day" as const, id: day.id })),
+    ...journal.undatedPages.map((id) => ({ kind: "page" as const, id })),
+  ];
+  const selectedDayId = journal.selectedDayId;
+  const selectedPageIndex = showingUndated
+    ? JOURNAL_DAYS.length + journal.undatedPages.indexOf(journal.selectedUndatedId!)
+    : Math.max(0, pageItems.findIndex((item) => item.kind === "day" && item.id === selectedDayId));
+  const activeDayId = showingUndated ? null : selectedDayId;
+  const fragments = activeDayId ? fragmentsForDay(activeDayId) : [];
+  const textFragments = fragments.filter((fragment) => fragment.kind === "text");
+  const blankFragment: JournalFragment | null = showingUndated
+    ? {
+        id: undatedDocId(journal.selectedUndatedId!),
+        dayId: "",
+        kind: "text",
+        text: null,
+        photo: null,
+        x: 0,
+        y: 0,
+        w: 40,
+        rotate: 0,
+      }
+    : textFragments.length === 0 && activeDayId
+      ? {
+          id: entryDocId(activeDayId),
+          dayId: activeDayId,
+          kind: "text",
+          text: null,
+          photo: null,
+          x: 0,
+          y: 0,
+          w: 40,
+          rotate: 0,
+        }
+      : null;
   const useGeneva = isMacOSTheme || isSystem7Theme;
-  const mood = moodForDay(journal, selected.id);
+  const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
+  const mood = moodForDay(journal, moodKey);
   const moodAverage = averageMood(JOURNAL_DAYS.map((day) => moodForDay(journal, day.id)));
   const statCard =
     "flex min-h-10 items-center justify-between gap-3 rounded-os border border-os-window bg-os-panel-bg px-3 py-2 text-sm os-theme-win98:rounded-none";
@@ -50,41 +98,76 @@ export function DailyJournal({
         style={!isMacOSTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
       >
         <PanelHeader
-          title={t("apps.journal.sidebar.days")}
+          title={features.date ? t("apps.journal.sidebar.days") : t("apps.journal.views.daily")}
           useGeneva={useGeneva}
           bordered={isMacOSTheme}
         />
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {JOURNAL_DAYS.map((day, index) => {
-            const label = features.date
-              ? formatJournalDay(day.id, language)
-              : t("apps.journal.pageNumber", { count: index + 1 });
-            const active = day.id === selected.id;
-            return (
-              <button
-                key={day.id}
-                type="button"
-                aria-current={active ? "page" : undefined}
-                onClick={() => l.api.selectDay(day.id)}
-                data-selected={active ? "true" : undefined}
-                className={cn(
-                  "flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight",
-                  !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-                )}
-              >
-                <span className="truncate">{label}</span>
-              </button>
-            );
-          })}
+          {features.date
+            ? sidebarDates(todayDayId()).map((dayId) => {
+                const active = dayId === selectedDayId;
+                const hasEntry = dayHasEntry(journal, dayId);
+                return (
+                  <button
+                    key={dayId}
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => l.api.selectDay(dayId)}
+                    data-selected={active ? "true" : undefined}
+                    className={cn(
+                      "flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight",
+                      !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                    )}
+                  >
+                    <span className={cn("truncate", !hasEntry && "opacity-40")}>
+                      {formatJournalDay(dayId, language)}
+                    </span>
+                  </button>
+                );
+              })
+            : pageItems.map((item, index) => {
+                const active =
+                  item.kind === "page"
+                    ? item.id === journal.selectedUndatedId
+                    : !showingUndated && item.id === selectedDayId;
+                return (
+                  <button
+                    key={`${item.kind}:${item.id}`}
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    onClick={() =>
+                      item.kind === "page" ? l.api.selectUndated(item.id) : l.api.selectDay(item.id)
+                    }
+                    data-selected={active ? "true" : undefined}
+                    className={cn(
+                      "flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight",
+                      !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                    )}
+                  >
+                    <span className="truncate">
+                      {t("apps.journal.pageNumber", { count: index + 1 })}
+                    </span>
+                  </button>
+                );
+              })}
+          {features.date ? null : (
+            <button
+              type="button"
+              onClick={() => l.api.addUndatedPage()}
+              className="flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight text-os-link transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              {t("apps.journal.sidebar.newPage")}
+            </button>
+          )}
         </div>
       </AppSidebarPanel>
       <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-medium leading-tight">
-              {features.date
-                ? formatJournalDay(selected.id, language)
-                : t("apps.journal.pageNumber", { count: selectedIndex + 1 })}
+              {features.date && activeDayId
+                ? formatJournalDay(activeDayId, language)
+                : t("apps.journal.pageNumber", { count: selectedPageIndex + 1 })}
             </h2>
             {features.mood ? (
               <div className="mt-2 flex items-center gap-2">
@@ -96,7 +179,7 @@ export function DailyJournal({
                       type="button"
                       aria-label={t("apps.journal.mood.set", { score })}
                       aria-pressed={mood === score}
-                      onClick={() => l.api.setMood(selected.id, score)}
+                      onClick={() => l.api.setMood(moodKey, score)}
                       className="p-0.5 text-os-text-primary"
                     >
                       <Star size={18} weight={score <= mood ? "fill" : "regular"} />
@@ -150,6 +233,15 @@ export function DailyJournal({
               />
             )
           )}
+          {blankFragment ? (
+            <JournalEntryEditor
+              key={blankFragment.id}
+              fragment={blankFragment}
+              saved={journal.texts[blankFragment.id]}
+              language={language}
+              onChange={l.api.setEntryText}
+            />
+          ) : null}
         </div>
         {features.weeklyReport ? (
           <section className="mt-5 max-w-xl rounded-os border border-os-window bg-os-panel-bg p-3 os-theme-win98:rounded-none">

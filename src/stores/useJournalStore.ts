@@ -20,6 +20,8 @@ interface JournalStore {
   applyPreset: (preset: JournalPreset) => void;
   moveFragment: (id: string, position: FragmentPosition) => void;
   selectDay: (dayId: string) => void;
+  selectUndated: (id: string) => void;
+  addUndatedPage: () => void;
   setReminderTime: (time: string) => void;
   setMood: (dayId: string, mood: number) => void;
   setEntryText: (id: string, doc: JournalDoc) => void;
@@ -52,6 +54,9 @@ export const useJournalStore = create<JournalStore>()(
       moveFragment: (id, position) =>
         commit(get, set, { type: "moveFragment", id, position }, null),
       selectDay: (dayId) => commit(get, set, { type: "selectDay", dayId }, null),
+      selectUndated: (id) => commit(get, set, { type: "selectUndated", id }, null),
+      addUndatedPage: () =>
+        commit(get, set, { type: "addUndatedPage", id: crypto.randomUUID() }, null),
       setReminderTime: (time) =>
         commit(get, set, { type: "setReminderTime", time }, null),
       setMood: (dayId, mood) => commit(get, set, { type: "setMood", dayId, mood }, null),

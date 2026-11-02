@@ -5574,7 +5574,7 @@
         "reset": "Ripristina la demo"
       },
       "views": {
-        "compare": "Due strutture",
+        "compare": "Combinato",
         "generated": "Risposta completa",
         "daily": "Pagine",
         "freeform": "Libero"
@@ -5585,7 +5585,13 @@
         "presets": "Predefiniti"
       },
       "sidebar": {
-        "days": "Giorni"
+        "days": "Giorni",
+        "newPage": "Nuova pagina"
+      },
+      "presets": {
+        "journal": "Diario",
+        "freeform": "Libero",
+        "compare": "Due strutture"
       }
     }
   },

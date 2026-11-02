@@ -5963,7 +5963,7 @@
         "reset": "Reset Demo"
       },
       "views": {
-        "compare": "Two Structures",
+        "compare": "Combined",
         "generated": "Complete Answer",
         "daily": "Pages",
         "freeform": "Freeform"
@@ -5974,7 +5974,13 @@
         "presets": "Presets"
       },
       "sidebar": {
-        "days": "Days"
+        "days": "Days",
+        "newPage": "New Page"
+      },
+      "presets": {
+        "journal": "Journal",
+        "freeform": "Freeform",
+        "compare": "Two Structures"
       }
     }
   },
