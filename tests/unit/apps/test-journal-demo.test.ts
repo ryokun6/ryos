@@ -5,6 +5,8 @@ import {
   consecutiveDayStreak,
   clampSidebarWidth,
   createInitialJournalState,
+  isReminderTime,
+  reminderTimeOptions,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   dayHasEntry,
@@ -73,6 +75,16 @@ describe("journal demo", () => {
   test("rejects a bad reminder time and clamps a dragged scrap", () => {
     const initial = state();
     expect(reduceJournal(initial, { type: "setReminderTime", time: "25:99" })).toBe(initial);
+    const times = reminderTimeOptions();
+    expect(times).toHaveLength(48);
+    expect(times[0]).toBe("00:00");
+    expect(times[1]).toBe("00:30");
+    expect(times.at(-1)).toBe("23:30");
+    expect(times.every(isReminderTime)).toBe(true);
+    expect(reminderTimeOptions("21:15")).toContain("21:15");
+    expect(reduceJournal(initial, { type: "setReminderTime", time: "09:00" }).reminderTime).toBe(
+      "09:00"
+    );
     const moved = reduceJournal(initial, {
       type: "moveFragment",
       id: "oct27-note",

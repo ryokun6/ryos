@@ -2,6 +2,13 @@ import { useRef } from "react";
 import { Star } from "@phosphor-icons/react";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   averageMood,
@@ -11,6 +18,7 @@ import {
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
+  reminderTimeOptions,
   sampleStreak,
   sidebarDates,
   todayDayId,
@@ -94,6 +102,7 @@ export function DailyJournal({
     "flex min-h-[4.75rem] flex-col items-start justify-center gap-1 rounded-os border border-os-window bg-os-panel-bg px-3 py-2.5 os-theme-win98:rounded-none";
   const statLabel = "whitespace-nowrap text-[11px] leading-none text-os-text-secondary";
   const statValue = "w-full bg-transparent p-0 text-2xl font-medium leading-none text-os-text-primary";
+  const reminderTimes = reminderTimeOptions(journal.reminderTime);
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -244,16 +253,47 @@ export function DailyJournal({
               </div>
             ) : null}
             {features.reminder ? (
-              <label className={statCard}>
+              <div className={statCard}>
                 <span className={statLabel}>{t("apps.journal.reminder.label")}</span>
-                <input
-                  type="time"
+                <Select
                   value={journal.reminderTime}
-                  aria-label={t("apps.journal.reminder.timeLabel")}
-                  onChange={(event) => l.api.setReminderTime(event.target.value)}
-                  className={statValue}
-                />
-              </label>
+                  onValueChange={(value) => l.api.setReminderTime(value)}
+                >
+                  <SelectTrigger
+                    aria-label={t("apps.journal.reminder.timeLabel")}
+                    className={cn(
+                      statValue,
+                      "no-chevron h-auto min-h-0 w-full justify-start rounded-none border-0 px-0 py-0 text-left shadow-none",
+                      "!h-auto !min-h-0 !min-w-0 !overflow-visible !rounded-none !border-0 !bg-transparent !p-0 !shadow-none",
+                      "!text-2xl !font-medium !leading-none !text-os-text-primary ![background:transparent] ![text-shadow:none]",
+                      "before:!hidden [&_svg]:hidden [border-image:none]"
+                    )}
+                    style={{
+                      height: "auto",
+                      minHeight: 0,
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      boxShadow: "none",
+                      textShadow: "none",
+                      fontFamily: "var(--os-font-ui)",
+                      fontSize: "1.5rem",
+                      fontWeight: 500,
+                      lineHeight: 1,
+                      color: "var(--os-color-text-primary)",
+                    }}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="item-aligned" className="max-h-64">
+                    {reminderTimes.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : null}
           </div>
         ) : null}

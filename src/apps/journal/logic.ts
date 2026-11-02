@@ -108,6 +108,20 @@ export function isReminderTime(value: unknown): value is string {
   return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 }
 
+/** Half-hour choices for the daily reminder. An already-saved off-grid time stays selectable. */
+export function reminderTimeOptions(current?: string): string[] {
+  const options: string[] = [];
+  for (let hour = 0; hour < 24; hour += 1) {
+    options.push(`${String(hour).padStart(2, "0")}:00`);
+    options.push(`${String(hour).padStart(2, "0")}:30`);
+  }
+  if (current && isReminderTime(current) && !options.includes(current)) {
+    options.push(current);
+    options.sort();
+  }
+  return options;
+}
+
 function cloneToggles(
   value: Partial<JournalToggles> | undefined,
   fallback: JournalToggles
