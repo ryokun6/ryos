@@ -1,11 +1,15 @@
+import { useRef } from "react";
 import { Star } from "@phosphor-icons/react";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader";
 import { cn } from "@/lib/utils";
 import {
   averageMood,
+  clamp,
   dayHasEntry,
   entryDocId,
+  JOURNAL_SIDEBAR_MAX_WIDTH,
+  JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
   sampleStreak,
   sidebarDates,
@@ -38,7 +42,9 @@ export function DailyJournal({
   l: JournalLogic;
   isMobileLayout: boolean;
 }) {
-  const { t, language, journal, isMacOSTheme, isSystem7Theme } = l;
+  const { t, language, journal, isMacOSTheme, isSystem7Theme, sidebarWidth } = l;
+  const sidebarWidthRef = useRef(sidebarWidth);
+  sidebarWidthRef.current = sidebarWidth;
   const features = journal.toggles;
   const showingUndated =
     !features.date &&
@@ -85,16 +91,19 @@ export function DailyJournal({
   const mood = moodForDay(journal, moodKey);
   const moodAverage = averageMood(JOURNAL_DAYS.map((day) => moodForDay(journal, day.id)));
   const statCard =
-    "flex min-h-10 items-center justify-between gap-3 rounded-os border border-os-window bg-os-panel-bg px-3 py-2 text-sm os-theme-win98:rounded-none";
+    "flex min-h-[4.75rem] flex-col items-start justify-center gap-1 rounded-os border border-os-window bg-os-panel-bg px-3 py-2.5 os-theme-win98:rounded-none";
+  const statLabel = "whitespace-nowrap text-[11px] leading-none text-os-text-secondary";
+  const statValue = "w-full bg-transparent p-0 text-2xl font-medium leading-none text-os-text-primary";
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
+      <div
+        className={cn("relative flex min-h-0 shrink-0", isMobileLayout && "max-h-[150px] w-full")}
+        style={isMobileLayout ? undefined : { width: sidebarWidth }}
+      >
       <AppSidebarPanel
         bordered={isMacOSTheme}
-        className={cn(
-          "flex min-h-0 shrink-0 flex-col",
-          isMobileLayout ? "max-h-[150px] w-full" : "w-[210px]"
-        )}
+        className="flex min-h-0 w-full flex-col"
         style={!isMacOSTheme ? { borderRight: "1px solid rgba(0,0,0,0.08)" } : undefined}
       >
         <PanelHeader
@@ -161,6 +170,37 @@ export function DailyJournal({
           )}
         </div>
       </AppSidebarPanel>
+      {isMobileLayout ? null : (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("apps.journal.sidebar.days")}
+          className="absolute -right-1 top-0 z-10 h-full w-2 cursor-col-resize touch-none"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            const startX = event.clientX;
+            const startWidth = sidebarWidthRef.current;
+            const move = (pointerEvent: PointerEvent) => {
+              l.api.setSidebarWidth(
+                clamp(
+                  startWidth + pointerEvent.clientX - startX,
+                  JOURNAL_SIDEBAR_MIN_WIDTH,
+                  JOURNAL_SIDEBAR_MAX_WIDTH
+                )
+              );
+            };
+            const stop = () => {
+              window.removeEventListener("pointermove", move);
+              window.removeEventListener("pointerup", stop);
+              window.removeEventListener("pointercancel", stop);
+            };
+            window.addEventListener("pointermove", move);
+            window.addEventListener("pointerup", stop);
+            window.addEventListener("pointercancel", stop);
+          }}
+        />
+      )}
+      </div>
       <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -180,7 +220,10 @@ export function DailyJournal({
                       aria-label={t("apps.journal.mood.set", { score })}
                       aria-pressed={mood === score}
                       onClick={() => l.api.setMood(moodKey, score)}
-                      className="p-0.5 text-os-text-primary"
+                      className={cn(
+                        "p-0.5",
+                        score <= mood ? "text-os-link" : "text-os-text-secondary"
+                      )}
                     >
                       <Star size={18} weight={score <= mood ? "fill" : "regular"} />
                     </button>
@@ -194,21 +237,21 @@ export function DailyJournal({
           <div className={cn("mt-4 grid gap-2", isMobileLayout ? "grid-cols-1" : "grid-cols-2")}>
             {features.streak ? (
               <div className={statCard}>
-                <span>{t("apps.journal.streak.label")}</span>
-                <span className="font-medium">
+                <span className={statLabel}>{t("apps.journal.streak.label")}</span>
+                <span className={statValue}>
                   {t("apps.journal.streak.value", { count: sampleStreak() })}
                 </span>
               </div>
             ) : null}
             {features.reminder ? (
               <label className={statCard}>
-                <span>{t("apps.journal.reminder.label")}</span>
+                <span className={statLabel}>{t("apps.journal.reminder.label")}</span>
                 <input
                   type="time"
                   value={journal.reminderTime}
                   aria-label={t("apps.journal.reminder.timeLabel")}
                   onChange={(event) => l.api.setReminderTime(event.target.value)}
-                  className="bg-transparent text-sm text-os-text-primary"
+                  className={statValue}
                 />
               </label>
             ) : null}

@@ -21,6 +21,16 @@ export const ALL_FEATURES_ON: JournalToggles = {
 const VIEWS = new Set<JournalView>(["daily", "freeform", "compare"]);
 const PRESETS = new Set<JournalPreset>(["journal", "freeform", "compare"]);
 export const UPCOMING_DAY_COUNT = 7;
+export const JOURNAL_SIDEBAR_DEFAULT_WIDTH = 148;
+export const JOURNAL_SIDEBAR_MIN_WIDTH = 112;
+export const JOURNAL_SIDEBAR_MAX_WIDTH = 280;
+
+export function clampSidebarWidth(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return JOURNAL_SIDEBAR_DEFAULT_WIDTH;
+  }
+  return clamp(value, JOURNAL_SIDEBAR_MIN_WIDTH, JOURNAL_SIDEBAR_MAX_WIDTH);
+}
 const DAY_ID = /^\d{4}-\d{2}-\d{2}$/;
 const FEATURES = new Set<JournalFeatureId>([
   "date",

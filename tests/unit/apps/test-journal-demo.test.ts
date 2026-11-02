@@ -3,7 +3,10 @@ import {
   allFeaturesOn,
   averageMood,
   consecutiveDayStreak,
+  clampSidebarWidth,
   createInitialJournalState,
+  JOURNAL_SIDEBAR_MAX_WIDTH,
+  JOURNAL_SIDEBAR_MIN_WIDTH,
   dayHasEntry,
   moodForDay,
   normalizeJournalState,
@@ -167,6 +170,13 @@ describe("journal demo", () => {
     const next = reduceJournal(state(), { type: "applyPreset", preset: "freeform" });
     expect(next.view).toBe("freeform");
     expect(allFeaturesOn(next.toggles)).toBe(true);
+  });
+
+  test("sidebar width stays inside the drag limits", () => {
+    expect(clampSidebarWidth(undefined)).toBe(148);
+    expect(clampSidebarWidth(40)).toBe(JOURNAL_SIDEBAR_MIN_WIDTH);
+    expect(clampSidebarWidth(900)).toBe(JOURNAL_SIDEBAR_MAX_WIDTH);
+    expect(clampSidebarWidth(180)).toBe(180);
   });
 
   test("streak counts only consecutive sample days", () => {

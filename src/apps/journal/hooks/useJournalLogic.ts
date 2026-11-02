@@ -11,6 +11,7 @@ export function useJournalLogic() {
   const translatedHelpItems = useTranslatedHelpItems("journal", helpItems);
   const { isWindowsTheme, isMacOSTheme, isSystem7Theme } = useThemeFlags();
   const journal = useJournalStore((state) => state.journal);
+  const sidebarWidth = useJournalStore((state) => state.sidebarWidth);
   const notice = useJournalStore((state) => state.notice);
   const api = useJournalStore(
     useShallow((state) => ({
@@ -25,6 +26,7 @@ export function useJournalLogic() {
       setMood: state.setMood,
       setEntryText: state.setEntryText,
       resetDemo: state.resetDemo,
+      setSidebarWidth: state.setSidebarWidth,
       dismissNotice: state.dismissNotice,
     }))
   );
@@ -39,6 +41,7 @@ export function useJournalLogic() {
     isSystem7Theme,
     ...dialogs,
     journal,
+    sidebarWidth,
     notice,
     api,
   };

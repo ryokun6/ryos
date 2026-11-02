@@ -1,6 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { normalizeJournalState, reduceJournal } from "@/apps/journal/logic";
+import {
+  clampSidebarWidth,
+  JOURNAL_SIDEBAR_DEFAULT_WIDTH,
+  normalizeJournalState,
+  reduceJournal,
+} from "@/apps/journal/logic";
 import type {
   FragmentPosition,
   JournalAction,
@@ -14,6 +19,7 @@ import type {
 
 interface JournalStore {
   journal: JournalState;
+  sidebarWidth: number;
   notice: JournalNotice | null;
   setView: (view: JournalView) => void;
   toggleFeature: (feature: JournalFeatureId) => void;
@@ -26,6 +32,7 @@ interface JournalStore {
   setMood: (dayId: string, mood: number) => void;
   setEntryText: (id: string, doc: JournalDoc) => void;
   resetDemo: () => void;
+  setSidebarWidth: (width: number) => void;
   dismissNotice: () => void;
 }
 
@@ -46,6 +53,7 @@ export const useJournalStore = create<JournalStore>()(
   persist(
     (set, get) => ({
       journal: normalizeJournalState(undefined),
+      sidebarWidth: JOURNAL_SIDEBAR_DEFAULT_WIDTH,
       notice: null,
       setView: (view) => commit(get, set, { type: "setView", view }, null),
       toggleFeature: (feature) =>
@@ -66,18 +74,23 @@ export const useJournalStore = create<JournalStore>()(
         commit(get, set, { type: "setEntryText", id, doc }, null);
       },
       resetDemo: () => commit(get, set, { type: "reset" }, "restored"),
+      setSidebarWidth: (width) => set({ sidebarWidth: clampSidebarWidth(width) }),
       dismissNotice: () => set({ notice: null }),
     }),
     {
       name: "ryos:journal",
       version: STORE_VERSION,
-      partialize: (state) => ({ journal: state.journal }),
+      partialize: (state) => ({
+        journal: state.journal,
+        sidebarWidth: state.sidebarWidth,
+      }),
       migrate: (persisted) => persisted,
       merge: (persisted, current) => {
-        const saved = persisted as { journal?: unknown } | undefined;
+        const saved = persisted as { journal?: unknown; sidebarWidth?: unknown } | undefined;
         return {
           ...current,
           journal: normalizeJournalState(saved?.journal),
+          sidebarWidth: clampSidebarWidth(saved?.sidebarWidth),
           notice: null,
         };
       },
