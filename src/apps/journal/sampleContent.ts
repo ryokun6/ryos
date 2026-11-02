@@ -1,3 +1,5 @@
+import type { JournalDoc } from "./types";
+
 export type JournalCopy = {
   "zh-TW": string;
   "zh-CN": string;
@@ -162,18 +164,6 @@ export const JOURNAL_FRAGMENTS: readonly JournalFragment[] = [
   },
 ];
 
-export const TRIAL_FRAGMENT: JournalFragment = {
-  id: "trial-photo",
-  dayId: "2026-11-01",
-  kind: "photo",
-  text: null,
-  photo: "/journal/trial.jpg",
-  x: 46,
-  y: 58,
-  w: 24,
-  rotate: 4,
-};
-
 export const DEFAULT_DAY_ID = JOURNAL_DAYS[JOURNAL_DAYS.length - 1].id;
 
 export function journalLocale(language: string | undefined): keyof JournalCopy {
@@ -198,17 +188,20 @@ export function journalText(
   return text[journalLocale(language)];
 }
 
-export function visibleFragments(trialPhoto: boolean): JournalFragment[] {
-  return trialPhoto
-    ? [...JOURNAL_FRAGMENTS, TRIAL_FRAGMENT]
-    : [...JOURNAL_FRAGMENTS];
+export function fragmentsForDay(dayId: string): JournalFragment[] {
+  return JOURNAL_FRAGMENTS.filter((fragment) => fragment.dayId === dayId);
 }
 
-export function fragmentsForDay(
-  dayId: string,
-  trialPhoto: boolean
-): JournalFragment[] {
-  return visibleFragments(trialPhoto).filter((fragment) => fragment.dayId === dayId);
+export function sampleDoc(text: string): JournalDoc {
+  return {
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: text ? [{ type: "text", text }] : [],
+      },
+    ],
+  };
 }
 
 export function formatJournalDay(dayId: string, language: string | undefined): string {

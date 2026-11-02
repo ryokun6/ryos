@@ -5487,25 +5487,6 @@
         "notebook": "Notizbuch"
       },
       "description": "Dieselben Tage in zwei Formen behalten",
-      "diff": {
-        "after": "Nachher",
-        "before": "Vorher",
-        "dailyPages": "Eine Seite pro Tag",
-        "freeform": "Freie Fragmente",
-        "note": "Dieses Vorher und Nachher folgt nur dem Plan oben.",
-        "off": "Entfernt",
-        "on": "Behalten",
-        "photo": "Foto",
-        "photoNo": "Kein Probefoto",
-        "photoYes": "Probefoto hinzugefügt",
-        "structure": "Struktur",
-        "title": "Vorher und nachher"
-      },
-      "edits": {
-        "disableReminder": "Erinnerung ausschalten",
-        "removeStreak": "Serie entfernen",
-        "switchToFreeform": "Zu freien Fragmenten wechseln"
-      },
       "features": {
         "date": "Datum",
         "dateHint": "Ein Datum an jedem Eintrag.",
@@ -5521,66 +5502,52 @@
         "weeklyReportHint": "Eine Wochenzusammenfassung zum Nachdenken."
       },
       "generated": {
-        "freeformBanner": "Diese Änderung wechselt zu freien Fragmenten. Eine Seite pro Tag bleibt.",
-        "kicker": "Eine vollständige Antwort, bevor du entschieden hast.",
-        "openCompare": "Zwei Strukturen zeigen",
         "question": "Welche würdest du entfernen?",
         "ryoPick": "Ich würde diese entfernen"
       },
       "help": {
         "completeAnswer": {
-          "description": "Beginnt mit dem Tagebuch, das ein Werkzeug liefern würde: Datum, Stimmungswert, Serie, tägliche Erinnerung und Wochenbericht.",
+          "description": "Beginnt mit dem Tagebuch, das ein Werkzeug liefern würde: Datum, Stimmungswert, Serie, tägliche Erinnerung und Wochenbericht. Der Text nutzt den TextEdit-Editor.",
           "title": "Vollständige Antwort"
         },
         "featureToggles": {
-          "description": "Jede Funktion hat einen eigenen Schalter. Entferne zuerst die Serie, wenn ein Tag ohne Eintrag sich nicht wie eine Schuld anfühlen soll.",
+          "description": "Jede Funktion hat einen Schalter in der Demo-Schublade. Entferne zuerst die Serie, wenn ein Tag ohne Eintrag sich nicht wie eine Schuld anfühlen soll.",
           "title": "Funktionen entfernen"
         },
         "photos": {
-          "description": "Beispielfotos sind schon in den Einträgen. Füge ein weiteres hinzu, um das Layout zu sehen, und widerrufe es.",
+          "description": "Beispielfotos sind schon in den Einträgen. Sie erscheinen auf der Tagesseite und zwischen den Fragmenten.",
           "title": "Fotos"
         },
         "resetDemo": {
-          "description": "Demo zurücksetzen setzt Beispiel, Schalter und Plan auf den Anfang.",
+          "description": "Demo zurücksetzen setzt Beispiel, Schalter und bearbeitete Einträge auf den Anfang.",
           "title": "Demo zurücksetzen"
         },
         "twoStructures": {
-          "description": "Dieselben Beispieltage können eine Seite pro Tag sein oder Fragmente auf einer Seite. Beide bleiben verfügbar.",
+          "description": "Wähle Zwei Strukturen in der Schublade, um dieselben Tage als eine Seite pro Tag und als Fragmente auf einer Seite zu sehen.",
           "title": "Zwei Strukturen"
         },
-        "workbench": {
-          "description": "Dieselbe Bitte zeigt einen Plan, den du einzeln behalten oder anwenden kannst, mit Vorher und Nachher, einem Probefoto und Widerrufen. Es ist ein lokales Bild. Nichts wird live erzeugt.",
-          "title": "Werkbank"
+        "drawer": {
+          "title": "Demo-Schublade",
+          "description": "Funktionsschalter, die Voreinstellung Zwei Strukturen und Demo zurücksetzen liegen in der Schublade neben dem Fenster."
         }
       },
       "menu": {
         "about": "Über Tagebuch",
         "help": "Tagebuch-Hilfe",
-        "reset": "Demo zurücksetzen",
-        "revert": "Zum Plan zurück",
-        "undo": "Widerrufen"
+        "reset": "Demo zurücksetzen"
       },
       "mood": {
         "label": "Stimmungswert",
-        "outOf": "{{score}} / 5"
+        "outOf": "{{score}} / 5",
+        "set": "Stimmung {{score}} von 5"
       },
       "name": "Tagebuch",
       "notice": {
-        "nothing": "Nichts zum Widerrufen",
-        "photo": "Beispielfoto hinzugefügt. Du kannst es widerrufen.",
-        "restored": "Demo-Beispiel wiederhergestellt",
-        "reverted": "Der Plan ist wieder am Anfang",
-        "undone": "Letzten Schritt widerrufen"
+        "restored": "Demo-Beispiel wiederhergestellt"
       },
       "pageNumber": "Seite {{count}}",
       "photo": {
-        "add": "Ein Foto ausprobieren",
-        "alt": "Beispielfoto",
-        "remove": "Probefoto entfernen",
-        "trialAlt": "Ein Foto, um das Layout auszuprobieren"
-      },
-      "prompt": {
-        "removeStreak": "Nimm die Serie heraus, damit es sich nicht wie Druck anfühlt."
+        "alt": "Beispielfoto"
       },
       "reminder": {
         "label": "Tägliche Erinnerung",
@@ -5591,21 +5558,6 @@
         "blurb": "Die Gründe klingen vollständig. Die Tage selbst wurden nicht bewertet.",
         "days": "{{count}} Tage geschrieben",
         "title": "Wochenbericht"
-      },
-      "service": {
-        "acceptAll": "Alle annehmen",
-        "accepted": "Das würde alle drei auf einmal anwenden. Das Bild ändert die Werkbank nicht.",
-        "askAgain": "Erneut fragen",
-        "askedAgain": "Es hat dieselbe vollständige Version zurückgegeben.",
-        "changedDesign": "Layout ebenfalls geändert",
-        "kicker": "Ein Ablaufbild. Kein Vergleich der Geschwindigkeit.",
-        "onlyWhole": "Mit nur der fertigen Version bleiben annehmen, ablehnen oder erneut fragen.",
-        "rejectAll": "Alle ablehnen",
-        "rejected": "Die ursprüngliche vollständige Version bleibt.",
-        "removedReminder": "Tägliche Erinnerung ebenfalls ausgeschaltet",
-        "removedStreak": "Serie entfernt",
-        "resultTitle": "Neue Version",
-        "title": "Schalter"
       },
       "status": {
         "complete": "Vollständige Version",
@@ -5621,18 +5573,17 @@
       },
       "views": {
         "compare": "Zwei Strukturen",
-        "counter": "Schalter und Werkbank",
-        "generated": "Vollständige Antwort"
+        "generated": "Vollständige Antwort",
+        "daily": "Eine Seite pro Tag",
+        "freeform": "Verstreute Fragmente"
       },
-      "workbench": {
-        "applied": "Wird geändert",
-        "apply": "Anwenden",
-        "keep": "Behalten",
-        "kept": "Behalten",
-        "kicker": "Derselbe Satz. Du kannst anfassen, was sich ändert.",
-        "pending": "Geplant",
-        "plan": "Das will es ändern",
-        "title": "Werkbank"
+      "drawer": {
+        "title": "Demo",
+        "open": "Demo-Steuerung",
+        "presets": "Voreinstellungen"
+      },
+      "sidebar": {
+        "days": "Tage"
       }
     }
   },

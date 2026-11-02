@@ -5889,25 +5889,6 @@
         "notebook": "Notebook"
       },
       "description": "Keep the same days in two shapes",
-      "diff": {
-        "after": "After",
-        "before": "Before",
-        "dailyPages": "One Page a Day",
-        "freeform": "Freeform Scraps",
-        "note": "This before and after follows the plan above.",
-        "off": "Removed",
-        "on": "Kept",
-        "photo": "Photo",
-        "photoNo": "No trial photo",
-        "photoYes": "Trial photo added",
-        "structure": "Structure",
-        "title": "Before and After"
-      },
-      "edits": {
-        "disableReminder": "Turn off the reminder",
-        "removeStreak": "Remove the streak",
-        "switchToFreeform": "Switch to freeform scraps"
-      },
       "features": {
         "date": "Date",
         "dateHint": "A date on each entry.",
@@ -5923,66 +5904,52 @@
         "weeklyReportHint": "A weekly summary meant to help you reflect."
       },
       "generated": {
-        "freeformBanner": "This edit switches the layout to freeform scraps. One page a day is still here.",
-        "kicker": "A complete answer, before you have decided.",
-        "openCompare": "Show Two Structures",
         "question": "If it were you, which one would you remove?",
         "ryoPick": "I would remove this"
       },
       "help": {
         "completeAnswer": {
-          "description": "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report.",
+          "description": "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report. Entries use the TextEdit editor.",
           "title": "Complete Answer"
         },
         "featureToggles": {
-          "description": "Each feature has its own switch. The streak is the one to remove first if a day without writing should not feel like a debt.",
+          "description": "Each feature has its own switch in the demo drawer. The streak is the one to remove first if a day without writing should not feel like a debt.",
           "title": "Turn Features Off"
         },
         "photos": {
-          "description": "Sample photos are already in the entries. Add one more to see how a picture sits in the layout, then undo it.",
+          "description": "Sample photos are already in the entries. They show on that day's page and among the scraps.",
           "title": "Photos"
         },
         "resetDemo": {
-          "description": "Reset Demo puts the sample journal, the switches, and the plan back to the start.",
+          "description": "Reset Demo puts the sample journal and the switches back to the start. Edited entries return to the sample too.",
           "title": "Reset the Demo"
         },
         "twoStructures": {
-          "description": "The same sample days can be one page per day, or scraps scattered on a page. Both stay available.",
+          "description": "Choose Two Structures in the demo drawer to see the same days as one page a day and as scraps on one page.",
           "title": "Two Structures"
         },
-        "workbench": {
-          "description": "The same request shows a plan you can keep or apply one edit at a time, with a before and after, a trial photo, and undo. It is a local illustration. Nothing is generated live.",
-          "title": "Workbench"
+        "drawer": {
+          "title": "Demo Drawer",
+          "description": "Feature switches, the Two Structures preset, and Reset Demo live in the drawer beside the window."
         }
       },
       "menu": {
         "about": "About Journal",
         "help": "Journal Help",
-        "reset": "Reset Demo",
-        "revert": "Revert Plan",
-        "undo": "Undo"
+        "reset": "Reset Demo"
       },
       "mood": {
         "label": "Mood Score",
-        "outOf": "{{score}} / 5"
+        "outOf": "{{score}} / 5",
+        "set": "Mood {{score}} of 5"
       },
       "name": "Journal",
       "notice": {
-        "nothing": "Nothing to undo",
-        "photo": "Added a sample photo. You can undo it.",
-        "restored": "Demo sample restored",
-        "reverted": "The plan is back to where it started",
-        "undone": "Undid the last step"
+        "restored": "Demo sample restored"
       },
       "pageNumber": "Page {{count}}",
       "photo": {
-        "add": "Try a Photo",
-        "alt": "Sample photo",
-        "remove": "Remove Trial Photo",
-        "trialAlt": "A photo added to try the layout"
-      },
-      "prompt": {
-        "removeStreak": "Take out the streak, so it does not feel like pressure."
+        "alt": "Sample photo"
       },
       "reminder": {
         "label": "Daily Reminder",
@@ -5993,21 +5960,6 @@
         "blurb": "The reasons sound complete. The days themselves were not scored.",
         "days": "{{count}} days written",
         "title": "Weekly Report"
-      },
-      "service": {
-        "acceptAll": "Accept All",
-        "accepted": "This would apply all three at once. The illustration does not change the workbench.",
-        "askAgain": "Ask Again",
-        "askedAgain": "It handed back the same complete version.",
-        "changedDesign": "Also changed the layout",
-        "kicker": "An illustrated flow. Not a comparison of speed.",
-        "onlyWhole": "With only the finished version, the choices are accept, reject, or ask again.",
-        "rejectAll": "Reject All",
-        "rejected": "The original complete version stays.",
-        "removedReminder": "Also turned off the daily reminder",
-        "removedStreak": "Removed the streak",
-        "resultTitle": "New Version",
-        "title": "Service Window"
       },
       "status": {
         "complete": "Complete version",
@@ -6023,18 +5975,17 @@
       },
       "views": {
         "compare": "Two Structures",
-        "counter": "Service Window and Workbench",
-        "generated": "Complete Answer"
+        "generated": "Complete Answer",
+        "daily": "One Page a Day",
+        "freeform": "Scattered Fragments"
       },
-      "workbench": {
-        "applied": "Will Change",
-        "apply": "Apply This",
-        "keep": "Keep This",
-        "kept": "Keeping",
-        "kicker": "The same sentence. You can touch what is changing.",
-        "pending": "Planned",
-        "plan": "It plans to change these",
-        "title": "Workbench"
+      "drawer": {
+        "title": "Demo",
+        "open": "Demo Controls",
+        "presets": "Presets"
+      },
+      "sidebar": {
+        "days": "Days"
       }
     }
   },

@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 import { appMetadata } from "../metadata";
 import { useJournalLogic } from "../hooks/useJournalLogic";
 import { CompareView } from "./CompareView";
-import { CounterView } from "./CounterView";
+import { FreeformCanvas } from "./FreeformCanvas";
 import { GeneratedView } from "./GeneratedView";
+import { JournalDrawer } from "./JournalDrawer";
 import { JournalMenuBar } from "./JournalMenuBar";
 import { JournalToolbar } from "./JournalToolbar";
 
@@ -25,6 +26,7 @@ export function JournalAppComponent({
   const { t, isWindowsTheme, isMacOSTheme, isSystem7Theme, journal } = l;
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(1120);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useResizeObserverWithRef(containerRef, (entry) => {
     setContainerWidth(entry.contentRect.width);
   });
@@ -44,6 +46,13 @@ export function JournalAppComponent({
         appId: "journal",
         skipInitialSound,
         instanceId,
+        drawer: (
+          <JournalDrawer
+            l={l}
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+          />
+        ),
       }}
     >
       <div
@@ -53,14 +62,24 @@ export function JournalAppComponent({
           isMacOSTheme ? "bg-transparent" : isSystem7Theme ? "bg-white" : "bg-os-window-bg"
         )}
       >
-        <JournalToolbar l={l} isMobileLayout={isMobileLayout} />
-        <div className="min-h-0 flex-1">
-          {journal.view === "generated" ? (
-            <GeneratedView l={l} isMobileLayout={isMobileLayout} />
-          ) : journal.view === "counter" ? (
-            <CounterView l={l} isMobileLayout={isMobileLayout} />
-          ) : (
+        <JournalToolbar
+          l={l}
+          isMobileLayout={isMobileLayout}
+          drawerOpen={drawerOpen}
+          onToggleDrawer={() => setDrawerOpen((open) => !open)}
+        />
+        <div className="flex min-h-0 flex-1 flex-col">
+          {journal.view === "compare" ? (
             <CompareView l={l} isMobileLayout={isMobileLayout} />
+          ) : journal.view === "freeform" ? (
+            <FreeformCanvas
+              positions={journal.positions}
+              texts={journal.texts}
+              interactive
+              onMove={l.api.moveFragment}
+            />
+          ) : (
+            <GeneratedView l={l} isMobileLayout={isMobileLayout} />
           )}
         </div>
       </div>

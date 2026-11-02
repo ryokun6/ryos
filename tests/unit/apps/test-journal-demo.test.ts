@@ -1,42 +1,27 @@
 import { describe, expect, test } from "bun:test";
 import {
+  allFeaturesOn,
   averageMood,
-  buildPlanDiff,
   consecutiveDayStreak,
   createInitialJournalState,
+  moodForDay,
   normalizeJournalState,
+  plainTextFromDoc,
   reduceJournal,
   sampleAverageMood,
   sampleStreak,
-  servicePicture,
-  SERVICE_PICTURE,
-  visibleJournal,
 } from "../../../src/apps/journal/logic";
-import { JOURNAL_DAYS } from "../../../src/apps/journal/sampleContent";
-import { journalText } from "../../../src/apps/journal/sampleContent";
+import { JOURNAL_DAYS, journalText } from "../../../src/apps/journal/sampleContent";
 
 function state() {
   return createInitialJournalState();
 }
 
 describe("journal demo", () => {
-  test("starts as the complete answer", () => {
+  test("starts as the complete daily journal", () => {
     const initial = state();
-    const visible = visibleJournal(initial);
-    expect(visible.features).toEqual({
-      date: true,
-      mood: true,
-      streak: true,
-      reminder: true,
-      weeklyReport: true,
-    });
-    expect(visible.structure).toBe("dailyPages");
-    expect(visible.trialPhoto).toBe(false);
-    expect(initial.decisions).toEqual({
-      removeStreak: "pending",
-      disableReminder: "pending",
-      switchToFreeform: "pending",
-    });
+    expect(initial.view).toBe("daily");
+    expect(allFeaturesOn(initial.toggles)).toBe(true);
     expect(sampleStreak()).toBe(6);
     expect(JOURNAL_DAYS).toHaveLength(6);
     expect(sampleAverageMood()).toBe(averageMood(JOURNAL_DAYS.map((day) => day.mood)));
@@ -44,114 +29,33 @@ describe("journal demo", () => {
 
   test("turns one feature off without touching the others", () => {
     const next = reduceJournal(state(), { type: "toggleFeature", feature: "streak" });
-    const visible = visibleJournal(next);
-    expect(visible.features.streak).toBe(false);
-    expect(visible.features.reminder).toBe(true);
-    expect(visible.features.mood).toBe(true);
-    expect(visible.features.date).toBe(true);
-    expect(visible.features.weeklyReport).toBe(true);
-    expect(next.decisions.removeStreak).toBe("pending");
-    expect(next.baselineToggles.streak).toBe(false);
+    expect(next.toggles.streak).toBe(false);
+    expect(next.toggles.reminder).toBe(true);
+    expect(next.toggles.mood).toBe(true);
+    expect(next.toggles.date).toBe(true);
+    expect(next.toggles.weeklyReport).toBe(true);
+    expect(next.view).toBe("daily");
   });
 
-  test("keeps the reminder and removes the streak as separate plan edits", () => {
-    let next = reduceJournal(state(), {
-      type: "setDecision",
-      edit: "removeStreak",
-      decision: "accepted",
-    });
-    next = reduceJournal(next, {
-      type: "setDecision",
-      edit: "disableReminder",
-      decision: "rejected",
-    });
-    const visible = visibleJournal(next);
-    expect(visible.features.streak).toBe(false);
-    expect(visible.features.reminder).toBe(true);
-    expect(visible.structure).toBe("dailyPages");
-
-    const diff = buildPlanDiff(next.decisions, next.trialPhoto);
-    expect(diff.before.streak).toBe(true);
-    expect(diff.before.reminder).toBe(true);
-    expect(diff.before.structure).toBe("dailyPages");
-    expect(diff.after.streak).toBe(false);
-    expect(diff.after.reminder).toBe(true);
-    expect(diff.after.structure).toBe("dailyPages");
-    expect(diff.after.mood).toBe(true);
-    expect(diff.after.trialPhoto).toBe(false);
+  test("two structures is a preset and leaves the feature switches alone", () => {
+    const toggled = reduceJournal(state(), { type: "toggleFeature", feature: "streak" });
+    const compared = reduceJournal(toggled, { type: "applyPreset", preset: "compare" });
+    expect(compared.view).toBe("compare");
+    expect(compared.toggles.streak).toBe(false);
+    expect(compared.toggles.reminder).toBe(true);
   });
 
-  test("switches the plan to freeform scraps without dropping the daily sample", () => {
-    const next = reduceJournal(state(), {
-      type: "setDecision",
-      edit: "switchToFreeform",
-      decision: "accepted",
-    });
-    expect(visibleJournal(next).structure).toBe("freeform");
-    expect(JOURNAL_DAYS.length).toBeGreaterThan(1);
-    expect(buildPlanDiff(next.decisions, false).after.structure).toBe("freeform");
-    expect(buildPlanDiff(next.decisions, false).after.streak).toBe(true);
+  test("the complete preset restores every feature and the daily pages", () => {
+    let next = reduceJournal(state(), { type: "toggleFeature", feature: "mood" });
+    next = reduceJournal(next, { type: "setView", view: "freeform" });
+    next = reduceJournal(next, { type: "applyPreset", preset: "complete" });
+    expect(next.view).toBe("daily");
+    expect(allFeaturesOn(next.toggles)).toBe(true);
   });
 
-  test("adds a trial photo to the after picture and undoes it", () => {
-    const added = reduceJournal(state(), { type: "addTrialPhoto" });
-    expect(added.trialPhoto).toBe(true);
-    expect(buildPlanDiff(added.decisions, added.trialPhoto).after.trialPhoto).toBe(true);
-    expect(buildPlanDiff(added.decisions, added.trialPhoto).before.trialPhoto).toBe(false);
-
-    const undone = reduceJournal(added, { type: "undo" });
-    expect(undone.trialPhoto).toBe(false);
-    expect(undone.past).toHaveLength(0);
-  });
-
-  test("reverts the plan and keeps a direct feature switch", () => {
-    let next = reduceJournal(state(), { type: "toggleFeature", feature: "streak" });
-    next = reduceJournal(next, {
-      type: "setDecision",
-      edit: "disableReminder",
-      decision: "accepted",
-    });
-    next = reduceJournal(next, { type: "addTrialPhoto" });
-    next = reduceJournal(next, {
-      type: "setDecision",
-      edit: "switchToFreeform",
-      decision: "accepted",
-    });
-
-    const reverted = reduceJournal(next, { type: "revertPlan" });
-    const visible = visibleJournal(reverted);
-    expect(visible.features.streak).toBe(false);
-    expect(visible.features.reminder).toBe(true);
-    expect(visible.structure).toBe("dailyPages");
-    expect(visible.trialPhoto).toBe(false);
-    expect(reverted.decisions.disableReminder).toBe("pending");
-    expect(reverted.decisions.switchToFreeform).toBe("pending");
-  });
-
-  test("service window acceptance does not change the journal", () => {
-    const next = reduceJournal(state(), { type: "serviceAccept" });
-    expect(next.servicePhase).toBe("accepted");
-    expect(visibleJournal(next).features).toEqual(visibleJournal(state()).features);
-    expect(next.decisions.removeStreak).toBe("pending");
-    expect(servicePicture("accepted")).toEqual(SERVICE_PICTURE);
-    expect(servicePicture("rejected").streak).toBe(true);
-    expect(servicePicture("rejected").reminder).toBe(true);
-    expect(servicePicture("delivered").reminder).toBe(false);
-  });
-
-  test("asking again counts another identical result", () => {
-    const next = reduceJournal(state(), { type: "serviceAskAgain" });
-    expect(next.servicePhase).toBe("askedAgain");
-    expect(next.serviceAsks).toBe(1);
-    expect(servicePicture(next.servicePhase).structure).toBe("freeform");
-  });
-
-  test("undo of an empty history is a no-op and reset restores the sample", () => {
-    const initial = state();
-    expect(reduceJournal(initial, { type: "undo" })).toBe(initial);
-
-    let next = reduceJournal(initial, { type: "toggleFeature", feature: "mood" });
-    next = reduceJournal(next, { type: "setView", view: "compare" });
+  test("freeform is its own view and reset restores the sample", () => {
+    let next = reduceJournal(state(), { type: "setView", view: "freeform" });
+    next = reduceJournal(next, { type: "toggleFeature", feature: "weeklyReport" });
     next = reduceJournal(next, {
       type: "moveFragment",
       id: "oct30-note",
@@ -159,29 +63,6 @@ describe("journal demo", () => {
     });
     const reset = reduceJournal(next, { type: "reset" });
     expect(reset).toEqual(createInitialJournalState());
-  });
-
-  test("pressing the same plan choice again returns it to pending via clear", () => {
-    const accepted = reduceJournal(state(), {
-      type: "setDecision",
-      edit: "removeStreak",
-      decision: "accepted",
-    });
-    const cleared = reduceJournal(accepted, { type: "clearDecision", edit: "removeStreak" });
-    expect(cleared.decisions.removeStreak).toBe("pending");
-    expect(visibleJournal(cleared).features.streak).toBe(true);
-  });
-
-  test("a direct switch clears a settled plan edit", () => {
-    const accepted = reduceJournal(state(), {
-      type: "setDecision",
-      edit: "removeStreak",
-      decision: "accepted",
-    });
-    const toggled = reduceJournal(accepted, { type: "toggleFeature", feature: "streak" });
-    expect(toggled.decisions.removeStreak).toBe("pending");
-    expect(visibleJournal(toggled).features.streak).toBe(true);
-    expect(toggled.baselineToggles.streak).toBe(true);
   });
 
   test("rejects a bad reminder time and clamps a dragged scrap", () => {
@@ -193,44 +74,64 @@ describe("journal demo", () => {
       position: { x: -20, y: 140 },
     });
     expect(moved.positions["oct27-note"]).toEqual({ x: 0, y: 100 });
-    expect(moved.past).toHaveLength(0);
   });
 
-  test("normalizes a partial saved demo", () => {
+  test("normalizes a saved service-window demo back to the daily journal", () => {
     const normalized = normalizeJournalState({
-      view: "compare",
+      view: "counter",
       toggles: { streak: false },
-      decisions: { removeStreak: "accepted", disableReminder: "nope" },
+      decisions: { removeStreak: "accepted" },
+      trialPhoto: true,
+      servicePhase: "accepted",
       selectedDayId: "not-a-day",
       positions: { "oct30-note": { x: 4, y: 9 }, bad: { x: "no" } },
-      past: [{ trialPhoto: true }],
     });
-    expect(normalized.view).toBe("compare");
+    expect(normalized.view).toBe("daily");
     expect(normalized.toggles.streak).toBe(false);
     expect(normalized.toggles.mood).toBe(true);
-    expect(normalized.decisions.removeStreak).toBe("accepted");
-    expect(normalized.decisions.disableReminder).toBe("pending");
     expect(normalized.selectedDayId).toBe("2026-11-01");
     expect(normalized.positions["oct30-note"]).toEqual({ x: 4, y: 9 });
     expect(normalized.positions.bad).toBeUndefined();
-    expect(normalized.past[0].trialPhoto).toBe(true);
-    expect(normalized.past[0].toggles.date).toBe(true);
+    expect("decisions" in normalized).toBe(false);
   });
 
   test("sample prose follows Traditional Chinese, then Simplified, then English", () => {
-    const text = JOURNAL_DAYS.length
-      ? {
-          "zh-TW": "茶館",
-          "zh-CN": "茶馆",
-          en: "Tea house",
-        }
-      : { "zh-TW": "", "zh-CN": "", en: "" };
+    const text = {
+      "zh-TW": "茶館",
+      "zh-CN": "茶馆",
+      en: "Tea house",
+    };
     expect(journalText(text, "zh-TW")).toBe("茶館");
     expect(journalText(text, "zh-Hant-HK")).toBe("茶館");
     expect(journalText(text, "zh-CN")).toBe("茶馆");
     expect(journalText(text, "zh")).toBe("茶馆");
     expect(journalText(text, "en")).toBe("Tea house");
     expect(journalText(text, "fr")).toBe("Tea house");
+  });
+
+  test("mood stars and entry text persist until reset restores the sample", () => {
+    let next = reduceJournal(state(), {
+      type: "setMood",
+      dayId: "2026-10-30",
+      mood: 2,
+    });
+    next = reduceJournal(next, { type: "setMood", dayId: "2026-10-30", mood: 9 });
+    expect(moodForDay(next, "2026-10-30")).toBe(5);
+    next = reduceJournal(next, { type: "setMood", dayId: "2026-10-30", mood: 2 });
+    expect(moodForDay(next, "2026-10-30")).toBe(2);
+    expect(moodForDay(next, "2026-10-27")).toBe(3);
+
+    const doc = {
+      type: "doc" as const,
+      content: [{ type: "paragraph", content: [{ type: "text", text: "改過的一句" }] }],
+    };
+    next = reduceJournal(next, { type: "setEntryText", id: "oct30-note", doc });
+    expect(plainTextFromDoc(next.texts["oct30-note"])).toBe("改過的一句");
+
+    const reset = reduceJournal(next, { type: "reset" });
+    expect(reset.texts).toEqual({});
+    expect(reset.moods).toEqual({});
+    expect(moodForDay(reset, "2026-10-30")).toBe(5);
   });
 
   test("streak counts only consecutive sample days", () => {

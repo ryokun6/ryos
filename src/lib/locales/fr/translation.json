@@ -5500,25 +5500,6 @@
         "notebook": "Carnet"
       },
       "description": "Garder les mêmes jours sous deux formes",
-      "diff": {
-        "after": "Après",
-        "before": "Avant",
-        "dailyPages": "Une page par jour",
-        "freeform": "Fragments libres",
-        "note": "Cet avant et après suit seulement le plan ci-dessus.",
-        "off": "Retiré",
-        "on": "Conservé",
-        "photo": "Photo",
-        "photoNo": "Pas de photo d’essai",
-        "photoYes": "Photo d’essai ajoutée",
-        "structure": "Structure",
-        "title": "Avant et après"
-      },
-      "edits": {
-        "disableReminder": "Désactiver le rappel",
-        "removeStreak": "Retirer la série",
-        "switchToFreeform": "Passer aux fragments libres"
-      },
       "features": {
         "date": "Date",
         "dateHint": "Une date sur chaque entrée.",
@@ -5534,66 +5515,52 @@
         "weeklyReportHint": "Un résumé hebdomadaire destiné à la réflexion."
       },
       "generated": {
-        "freeformBanner": "Cette modification passe aux fragments libres. Une page par jour reste là.",
-        "kicker": "Une réponse complète, avant que vous ayez décidé.",
-        "openCompare": "Voir les deux structures",
         "question": "À votre place, lequel retireriez-vous ?",
         "ryoPick": "Je retirerais celui-ci"
       },
       "help": {
         "completeAnswer": {
-          "description": "Commence par le journal qu’un outil rendrait : date, note d’humeur, série, rappel quotidien et rapport hebdomadaire.",
+          "description": "Commence par le journal qu’un outil rendrait : date, note d’humeur, série, rappel quotidien et rapport hebdomadaire. Le texte utilise l’éditeur de TextEdit.",
           "title": "Réponse complète"
         },
         "featureToggles": {
-          "description": "Chaque fonction a son interrupteur. Retirez d’abord la série si un jour sans écriture ne doit pas ressembler à une dette.",
+          "description": "Chaque fonction a son interrupteur dans le tiroir. Retirez d’abord la série si un jour sans écriture ne doit pas ressembler à une dette.",
           "title": "Retirer des fonctions"
         },
         "photos": {
-          "description": "Les photos d’exemple sont déjà dans les entrées. Ajoutez-en une pour voir la mise en page, puis annulez.",
+          "description": "Les photos d’exemple sont déjà dans les entrées. Elles apparaissent sur la page du jour et parmi les fragments.",
           "title": "Photos"
         },
         "resetDemo": {
-          "description": "Réinitialiser la démo remet l’exemple, les interrupteurs et le plan au début.",
+          "description": "Réinitialiser la démo remet le journal d’exemple, les interrupteurs et les textes modifiés au début.",
           "title": "Réinitialiser la démo"
         },
         "twoStructures": {
-          "description": "Les mêmes jours d’exemple peuvent être une page par jour, ou des fragments dispersés. Les deux restent disponibles.",
+          "description": "Choisissez Deux structures dans le tiroir pour voir les mêmes jours en une page par jour et en fragments sur une page.",
           "title": "Deux structures"
         },
-        "workbench": {
-          "description": "La même demande montre un plan à garder ou à appliquer une modification à la fois, avec un avant et après, une photo d’essai et l’annulation. C’est un schéma local. Rien n’est généré sur le moment.",
-          "title": "Établi"
+        "drawer": {
+          "title": "Tiroir de démo",
+          "description": "Les interrupteurs, le préréglage Deux structures et Réinitialiser la démo sont dans le tiroir à côté de la fenêtre."
         }
       },
       "menu": {
         "about": "À propos de Journal",
         "help": "Aide Journal",
-        "reset": "Réinitialiser la démo",
-        "revert": "Revenir au plan",
-        "undo": "Annuler"
+        "reset": "Réinitialiser la démo"
       },
       "mood": {
         "label": "Note d’humeur",
-        "outOf": "{{score}} / 5"
+        "outOf": "{{score}} / 5",
+        "set": "Humeur {{score}} sur 5"
       },
       "name": "Journal",
       "notice": {
-        "nothing": "Rien à annuler",
-        "photo": "Photo d’exemple ajoutée. Vous pouvez annuler.",
-        "restored": "Exemple de démo rétabli",
-        "reverted": "Le plan est revenu au départ",
-        "undone": "Dernière étape annulée"
+        "restored": "Exemple de démo rétabli"
       },
       "pageNumber": "Page {{count}}",
       "photo": {
-        "add": "Essayer une photo",
-        "alt": "Photo d’exemple",
-        "remove": "Retirer la photo d’essai",
-        "trialAlt": "Une photo ajoutée pour essayer la mise en page"
-      },
-      "prompt": {
-        "removeStreak": "Retire la série, pour que cela ne fasse pas pression."
+        "alt": "Photo d’exemple"
       },
       "reminder": {
         "label": "Rappel quotidien",
@@ -5604,21 +5571,6 @@
         "blurb": "Les raisons semblent complètes. Les jours eux-mêmes n’ont pas été notés.",
         "days": "{{count}} jours écrits",
         "title": "Rapport hebdomadaire"
-      },
-      "service": {
-        "acceptAll": "Tout accepter",
-        "accepted": "Cela appliquerait les trois d’un coup. Le schéma ne change pas l’établi.",
-        "askAgain": "Redemander",
-        "askedAgain": "Il a rendu la même version complète.",
-        "changedDesign": "Mise en page aussi changée",
-        "kicker": "Un schéma du flux. Pas une comparaison de vitesse.",
-        "onlyWhole": "Avec seulement la version finie, il reste accepter, refuser ou redemander.",
-        "rejectAll": "Tout refuser",
-        "rejected": "La version complète d’origine reste.",
-        "removedReminder": "Rappel quotidien aussi désactivé",
-        "removedStreak": "Série retirée",
-        "resultTitle": "Nouvelle version",
-        "title": "Guichet"
       },
       "status": {
         "complete": "Version complète",
@@ -5634,18 +5586,17 @@
       },
       "views": {
         "compare": "Deux structures",
-        "counter": "Guichet et établi",
-        "generated": "Réponse complète"
+        "generated": "Réponse complète",
+        "daily": "Une page par jour",
+        "freeform": "Fragments dispersés"
       },
-      "workbench": {
-        "applied": "Sera changé",
-        "apply": "Appliquer",
-        "keep": "Garder",
-        "kept": "Conservé",
-        "kicker": "La même phrase. Vous pouvez toucher ce qui change.",
-        "pending": "Prévu",
-        "plan": "Voici ce qu’il compte changer",
-        "title": "Établi"
+      "drawer": {
+        "title": "Démo",
+        "open": "Commandes de la démo",
+        "presets": "Préréglages"
+      },
+      "sidebar": {
+        "days": "Jours"
       }
     }
   },

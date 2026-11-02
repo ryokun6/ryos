@@ -35,8 +35,8 @@ export function CompareView({
             <p className="text-xs text-os-text-secondary">{t("apps.journal.compare.freeformHint")}</p>
           </header>
           <FreeformCanvas
-            trialPhoto={l.journal.trialPhoto}
             positions={l.journal.positions}
+            texts={l.journal.texts}
             interactive
             onMove={l.api.moveFragment}
           />

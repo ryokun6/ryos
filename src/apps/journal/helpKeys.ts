@@ -1,7 +1,7 @@
 export const JOURNAL_HELP_I18N_KEYS = [
   "completeAnswer",
   "featureToggles",
-  "workbench",
+  "drawer",
   "twoStructures",
   "photos",
   "resetDemo",

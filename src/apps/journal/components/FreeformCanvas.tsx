@@ -1,13 +1,13 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { clamp } from "../logic";
+import { clamp, plainTextFromDoc } from "../logic";
 import {
   journalText,
-  visibleFragments,
+  JOURNAL_FRAGMENTS,
   type JournalFragment,
 } from "../sampleContent";
-import type { FragmentPosition } from "../types";
+import type { FragmentPosition, JournalDoc } from "../types";
 
 interface DragState {
   id: string;
@@ -22,13 +22,13 @@ interface DragState {
 }
 
 export function FreeformCanvas({
-  trialPhoto,
   positions,
+  texts,
   interactive,
   onMove,
 }: {
-  trialPhoto: boolean;
   positions: Record<string, FragmentPosition>;
+  texts: Record<string, JournalDoc>;
   interactive: boolean;
   onMove?: (id: string, position: FragmentPosition) => void;
 }) {
@@ -37,7 +37,7 @@ export function FreeformCanvas({
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const [livePositions, setLivePositions] = useState<Record<string, FragmentPosition>>({});
-  const fragments = visibleFragments(trialPhoto);
+  const fragments = JOURNAL_FRAGMENTS;
 
   function positionFor(fragment: JournalFragment): FragmentPosition {
     return (
@@ -104,7 +104,12 @@ export function FreeformCanvas({
       >
         {fragments.map((fragment) => {
           const position = positionFor(fragment);
-          const text = fragment.text ? journalText(fragment.text, language) : "";
+          const saved = texts[fragment.id];
+          const text = saved
+            ? plainTextFromDoc(saved)
+            : fragment.text
+              ? journalText(fragment.text, language)
+              : "";
           return (
             <article
               key={fragment.id}
@@ -127,11 +132,7 @@ export function FreeformCanvas({
               {fragment.kind === "photo" && fragment.photo ? (
                 <img
                   src={fragment.photo}
-                  alt={
-                    fragment.id === "trial-photo"
-                      ? t("apps.journal.photo.trialAlt")
-                      : t("apps.journal.photo.alt")
-                  }
+                  alt={t("apps.journal.photo.alt")}
                   draggable={false}
                   className="aspect-[4/3] w-full rounded-sm object-cover"
                 />

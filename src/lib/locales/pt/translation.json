@@ -5500,25 +5500,6 @@
         "notebook": "Caderno"
       },
       "description": "Guardar os mesmos dias em duas formas",
-      "diff": {
-        "after": "Depois",
-        "before": "Antes",
-        "dailyPages": "Uma página por dia",
-        "freeform": "Fragmentos livres",
-        "note": "Este antes e depois segue só o plano acima.",
-        "off": "Removido",
-        "on": "Mantido",
-        "photo": "Foto",
-        "photoNo": "Sem foto de teste",
-        "photoYes": "Foto de teste adicionada",
-        "structure": "Estrutura",
-        "title": "Antes e depois"
-      },
-      "edits": {
-        "disableReminder": "Desligar o lembrete",
-        "removeStreak": "Remover a sequência",
-        "switchToFreeform": "Mudar para fragmentos livres"
-      },
       "features": {
         "date": "Data",
         "dateHint": "Uma data em cada entrada.",
@@ -5534,66 +5515,52 @@
         "weeklyReportHint": "Um resumo semanal para refletir."
       },
       "generated": {
-        "freeformBanner": "Esta mudança passa para fragmentos livres. Uma página por dia continua aqui.",
-        "kicker": "Uma resposta completa, antes de você decidir.",
-        "openCompare": "Ver as duas estruturas",
         "question": "Se fosse você, qual tiraria?",
         "ryoPick": "Eu tiraria esta"
       },
       "help": {
         "completeAnswer": {
-          "description": "Começa pelo diário que uma ferramenta entregaria: data, nota de humor, sequência, lembrete diário e relatório semanal.",
+          "description": "Começa pelo diário que uma ferramenta entregaria: data, nota de humor, sequência, lembrete diário e relatório semanal. O texto usa o editor do TextEdit.",
           "title": "Resposta completa"
         },
         "featureToggles": {
-          "description": "Cada recurso tem o próprio interruptor. Remova primeiro a sequência se um dia sem escrever não deve parecer uma dívida.",
+          "description": "Cada recurso tem o próprio interruptor na gaveta. Remova primeiro a sequência se um dia sem escrever não deve parecer uma dívida.",
           "title": "Remover recursos"
         },
         "photos": {
-          "description": "As fotos de exemplo já estão nas entradas. Adicione mais uma para ver o layout e depois desfaça.",
+          "description": "As fotos de exemplo já estão nas entradas. Elas aparecem na página do dia e entre os fragmentos.",
           "title": "Fotos"
         },
         "resetDemo": {
-          "description": "Redefinir a demo devolve a amostra, os interruptores e o plano ao início.",
+          "description": "Redefinir a demo devolve o diário de exemplo, os interruptores e os textos editados ao início.",
           "title": "Redefinir a demo"
         },
         "twoStructures": {
-          "description": "Os mesmos dias de exemplo podem ser uma página por dia ou fragmentos espalhados. As duas formas continuam disponíveis.",
+          "description": "Escolha Duas estruturas na gaveta para ver os mesmos dias como uma página por dia e como fragmentos numa página.",
           "title": "Duas estruturas"
         },
-        "workbench": {
-          "description": "O mesmo pedido mostra um plano que você pode manter ou aplicar um a um, com antes e depois, uma foto de teste e desfazer. É um esquema local. Nada é gerado na hora.",
-          "title": "Bancada"
+        "drawer": {
+          "title": "Gaveta da demo",
+          "description": "Os interruptores, a predefinição Duas estruturas e Redefinir a demo ficam na gaveta ao lado da janela."
         }
       },
       "menu": {
         "about": "Sobre o Diário",
         "help": "Ajuda do Diário",
-        "reset": "Redefinir a demo",
-        "revert": "Voltar ao plano",
-        "undo": "Desfazer"
+        "reset": "Redefinir a demo"
       },
       "mood": {
         "label": "Nota de humor",
-        "outOf": "{{score}} / 5"
+        "outOf": "{{score}} / 5",
+        "set": "Humor {{score}} de 5"
       },
       "name": "Diário",
       "notice": {
-        "nothing": "Nada para desfazer",
-        "photo": "Foto de exemplo adicionada. Você pode desfazer.",
-        "restored": "Amostra da demo restaurada",
-        "reverted": "O plano voltou ao início",
-        "undone": "Último passo desfeito"
+        "restored": "Amostra da demo restaurada"
       },
       "pageNumber": "Página {{count}}",
       "photo": {
-        "add": "Experimentar uma foto",
-        "alt": "Foto de exemplo",
-        "remove": "Remover a foto de teste",
-        "trialAlt": "Uma foto adicionada para testar o layout"
-      },
-      "prompt": {
-        "removeStreak": "Tire a sequência, para que não pareça pressão."
+        "alt": "Foto de exemplo"
       },
       "reminder": {
         "label": "Lembrete diário",
@@ -5604,21 +5571,6 @@
         "blurb": "Os motivos soam completos. Os dias em si não foram avaliados.",
         "days": "{{count}} dias escritos",
         "title": "Relatório semanal"
-      },
-      "service": {
-        "acceptAll": "Aceitar tudo",
-        "accepted": "Isso aplicaria as três de uma vez. O esquema não muda a bancada.",
-        "askAgain": "Pedir de novo",
-        "askedAgain": "Devolveu a mesma versão completa.",
-        "changedDesign": "Também mudou o layout",
-        "kicker": "Um esquema do fluxo. Não é uma comparação de velocidade.",
-        "onlyWhole": "Com só a versão pronta, resta aceitar, recusar ou pedir de novo.",
-        "rejectAll": "Recusar tudo",
-        "rejected": "A versão completa original fica.",
-        "removedReminder": "Também desligou o lembrete diário",
-        "removedStreak": "Removeu a sequência",
-        "resultTitle": "Nova versão",
-        "title": "Balcão"
       },
       "status": {
         "complete": "Versão completa",
@@ -5634,18 +5586,17 @@
       },
       "views": {
         "compare": "Duas estruturas",
-        "counter": "Balcão e bancada",
-        "generated": "Resposta completa"
+        "generated": "Resposta completa",
+        "daily": "Uma página por dia",
+        "freeform": "Fragmentos espalhados"
       },
-      "workbench": {
-        "applied": "Vai mudar",
-        "apply": "Aplicar",
-        "keep": "Manter",
-        "kept": "Mantido",
-        "kicker": "A mesma frase. Você pode tocar no que está mudando.",
-        "pending": "Planejado",
-        "plan": "Ele planeja mudar isto",
-        "title": "Bancada"
+      "drawer": {
+        "title": "Demo",
+        "open": "Controles da demo",
+        "presets": "Predefinições"
+      },
+      "sidebar": {
+        "days": "Dias"
       }
     }
   },

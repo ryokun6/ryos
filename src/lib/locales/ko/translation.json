@@ -5487,25 +5487,6 @@
         "notebook": "수첩"
       },
       "description": "같은 날들을 두 가지 모양으로 남기기",
-      "diff": {
-        "after": "이후",
-        "before": "이전",
-        "dailyPages": "하루 한 페이지",
-        "freeform": "자유로운 조각",
-        "note": "이 이전과 이후는 위의 계획만 따릅니다.",
-        "off": "제거",
-        "on": "유지",
-        "photo": "사진",
-        "photoNo": "시험 사진 없음",
-        "photoYes": "시험 사진을 넣음",
-        "structure": "구조",
-        "title": "이전과 이후"
-      },
-      "edits": {
-        "disableReminder": "알림 끄기",
-        "removeStreak": "연속 기록 삭제",
-        "switchToFreeform": "자유로운 조각으로 전환"
-      },
       "features": {
         "date": "날짜",
         "dateHint": "각 기록에 날짜가 있습니다.",
@@ -5521,66 +5502,52 @@
         "weeklyReportHint": "돌아보기 위한 주간 요약."
       },
       "generated": {
-        "freeformBanner": "이 수정은 자유롭게 흩어진 조각으로 바꿉니다. 하루 한 페이지는 그대로입니다.",
-        "kicker": "정하기 전에 받는 완성된 답.",
-        "openCompare": "두 가지 구조 보기",
         "question": "당신이라면 어떤 것을 빼겠습니까?",
         "ryoPick": "나는 이것을 빼겠다"
       },
       "help": {
         "completeAnswer": {
-          "description": "도구가 건네는 일기에서 시작합니다. 날짜, 기분 점수, 연속 기록, 매일 알림, 주간 보고가 있습니다.",
+          "description": "도구가 건네는 일기에서 시작합니다. 날짜, 기분 점수, 연속 기록, 매일 알림, 주간 보고. 본문은 TextEdit 편집기입니다.",
           "title": "완성된 답"
         },
         "featureToggles": {
-          "description": "기능은 하나씩 켜고 끌 수 있습니다. 쓰지 않은 날이 빚처럼 느껴지면 연속 기록부터 뺍니다.",
+          "description": "각 기능은 데모 서랍에서 하나씩 켜고 끕니다. 쓰지 않은 날이 빚처럼 느껴지면 연속 기록부터 뺍니다.",
           "title": "기능 빼기"
         },
         "photos": {
-          "description": "샘플 사진은 이미 들어 있습니다. 한 장 더 넣어 레이아웃을 시험하고 실행 취소할 수 있습니다.",
+          "description": "샘플 사진은 이미 들어 있습니다. 그날 페이지와 조각 양쪽에 나타납니다.",
           "title": "사진"
         },
         "resetDemo": {
-          "description": "데모를 재설정하면 샘플, 스위치, 계획이 처음으로 돌아갑니다.",
+          "description": "데모를 재설정하면 샘플, 스위치, 고친 본문이 처음으로 돌아갑니다.",
           "title": "데모 되돌리기"
         },
         "twoStructures": {
-          "description": "같은 샘플은 하루 한 페이지가 될 수도, 한 장 위에 흩어진 조각이 될 수도 있습니다. 둘 다 남습니다.",
+          "description": "데모 서랍에서 두 가지 구조를 고르면 같은 날이 하루 한 페이지와 흩어진 조각으로 나란히 보입니다.",
           "title": "두 가지 구조"
         },
-        "workbench": {
-          "description": "같은 요청이 계획으로 보입니다. 하나씩 남기거나 적용하고, 이전과 이후를 보고, 사진을 시험한 뒤 실행 취소할 수 있습니다. 이 기기의 그림이며 즉시 생성하지 않습니다.",
-          "title": "작업대"
+        "drawer": {
+          "title": "데모 서랍",
+          "description": "기능 스위치, 두 가지 구조 프리셋, 데모 재설정은 창 옆 서랍에 있습니다."
         }
       },
       "menu": {
         "about": "일기 정보",
         "help": "일기 도움말",
-        "reset": "데모 재설정",
-        "revert": "계획으로 돌아가기",
-        "undo": "실행 취소"
+        "reset": "데모 재설정"
       },
       "mood": {
         "label": "기분 점수",
-        "outOf": "{{score}} / 5"
+        "outOf": "{{score}} / 5",
+        "set": "기분 {{score}} / 5"
       },
       "name": "일기",
       "notice": {
-        "nothing": "실행 취소할 단계가 없습니다",
-        "photo": "샘플 사진을 넣었습니다. 실행 취소할 수 있습니다.",
-        "restored": "데모 샘플을 되돌렸습니다",
-        "reverted": "계획을 처음 상태로 되돌렸습니다",
-        "undone": "마지막 단계를 실행 취소했습니다"
+        "restored": "데모 샘플을 되돌렸습니다"
       },
       "pageNumber": "{{count}}페이지",
       "photo": {
-        "add": "사진을 넣어 보기",
-        "alt": "샘플 사진",
-        "remove": "시험 사진 빼기",
-        "trialAlt": "레이아웃을 시험하려고 넣은 사진"
-      },
-      "prompt": {
-        "removeStreak": "연속 기록을 빼서, 부담이 되지 않게 해 줘."
+        "alt": "샘플 사진"
       },
       "reminder": {
         "label": "매일 알림",
@@ -5591,21 +5558,6 @@
         "blurb": "이유는 모두 완전하게 들립니다. 날 자체에는 점수가 없습니다.",
         "days": "{{count}}일을 씀",
         "title": "주간 보고"
-      },
-      "service": {
-        "acceptAll": "모두 수락",
-        "accepted": "세 가지를 한 번에 적용합니다. 이 그림은 작업대를 바꾸지 않습니다.",
-        "askAgain": "다시 부탁",
-        "askedAgain": "같은 완성된 버전을 다시 돌려줬습니다.",
-        "changedDesign": "레이아웃도 바꿨습니다",
-        "kicker": "흐름을 보여주는 그림입니다. 속도를 비교하지 않습니다.",
-        "onlyWhole": "완성본만 있으면 수락하거나, 거절하거나, 다시 부탁하는 것뿐입니다.",
-        "rejectAll": "모두 거절",
-        "rejected": "원래의 완성된 버전을 남깁니다.",
-        "removedReminder": "매일 알림도 껐습니다",
-        "removedStreak": "연속 기록을 뺐습니다",
-        "resultTitle": "새 버전",
-        "title": "서비스 창구"
       },
       "status": {
         "complete": "완성된 버전",
@@ -5621,18 +5573,17 @@
       },
       "views": {
         "compare": "두 가지 구조",
-        "counter": "서비스 창구와 작업대",
-        "generated": "완성된 답"
+        "generated": "완성된 답",
+        "daily": "하루 한 페이지",
+        "freeform": "흩어진 조각"
       },
-      "workbench": {
-        "applied": "바꿈",
-        "apply": "적용",
-        "keep": "남기기",
-        "kept": "남김",
-        "kicker": "같은 문장입니다. 바뀌고 있는 것을 만질 수 있습니다.",
-        "pending": "예정",
-        "plan": "바꾸려는 항목",
-        "title": "작업대"
+      "drawer": {
+        "title": "데모",
+        "open": "데모 제어",
+        "presets": "프리셋"
+      },
+      "sidebar": {
+        "days": "날짜"
       }
     }
   },

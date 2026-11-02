@@ -1,55 +1,114 @@
+import type { ReactNode } from "react";
+import { BookOpen, Note, SidebarSimple } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
-import { JOURNAL_VIEWS } from "../types";
+import { JOURNAL_TOOLBAR_VIEWS, type JournalToolbarView } from "../types";
 import type { JournalLogic } from "../hooks/useJournalLogic";
-import { JournalButton, keptChangeLabels } from "./journalUi";
 
-const NOTICE_KEYS = {
-  restored: "apps.journal.notice.restored",
-  reverted: "apps.journal.notice.reverted",
-  undone: "apps.journal.notice.undone",
-  nothing: "apps.journal.notice.nothing",
-  photo: "apps.journal.notice.photo",
-} as const;
+const VIEW_ICONS: Record<JournalToolbarView, ReactNode> = {
+  daily: <BookOpen size={14} />,
+  freeform: <Note size={14} />,
+};
+
+function ToolbarButton({
+  l,
+  active,
+  onClick,
+  label,
+  showLabel,
+  children,
+}: {
+  l: JournalLogic;
+  active?: boolean;
+  onClick: () => void;
+  label: string;
+  showLabel?: boolean;
+  children: ReactNode;
+}) {
+  if (l.isMacOSTheme) {
+    return (
+      <button
+        type="button"
+        className={cn("metal-inset-btn", showLabel ? "gap-1 px-2 text-[11px]" : "metal-inset-icon")}
+        data-state={active ? "on" : "off"}
+        onClick={onClick}
+        title={label}
+        aria-label={label}
+        aria-pressed={active}
+      >
+        {children}
+        {showLabel ? <span>{label}</span> : null}
+      </button>
+    );
+  }
+  return (
+    <Button
+      type="button"
+      variant={l.isSystem7Theme ? "player" : "ghost"}
+      data-state={active ? "on" : "off"}
+      onClick={onClick}
+      className={cn(
+        "h-6 gap-1 px-1.5 text-[11px]",
+        !showLabel && "w-6 px-0",
+        l.isWindowsTheme && "text-black",
+        active && !l.isSystem7Theme && "bg-black/10"
+      )}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+    >
+      {children}
+      {showLabel ? <span>{label}</span> : null}
+    </Button>
+  );
+}
 
 export function JournalToolbar({
   l,
   isMobileLayout,
+  drawerOpen,
+  onToggleDrawer,
 }: {
   l: JournalLogic;
   isMobileLayout: boolean;
+  drawerOpen: boolean;
+  onToggleDrawer: () => void;
 }) {
-  const { t, journal, notice } = l;
-  const changes = keptChangeLabels(l);
-  const joiner = l.language.startsWith("zh") ? "、" : ", ";
-
+  const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme, journal } = l;
+  const group = isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0.5";
   return (
-    <div className="flex shrink-0 flex-col gap-2 border-b border-os-window px-2 py-2">
-      <div className={cn("flex gap-1", isMobileLayout && "flex-col")}>
-        <div className={cn("grid flex-1 gap-1", isMobileLayout ? "grid-cols-1" : "grid-cols-3")}>
-          {JOURNAL_VIEWS.map((view) => (
-            <JournalButton
-              key={view}
-              active={journal.view === view}
-              onClick={() => l.api.setView(view)}
-              className="w-full"
-            >
-              {t(`apps.journal.views.${view}`)}
-            </JournalButton>
-          ))}
-        </div>
-        <JournalButton onClick={() => l.api.resetDemo()}>{t("apps.journal.toolbar.reset")}</JournalButton>
+    <div
+      className={cn(
+        "flex h-[38px] shrink-0 items-center gap-2 py-1.5",
+        isMacOSTheme ? "px-1" : "px-2",
+        osToolbarSurfaceClassName({ isMacOSTheme, isSystem7Theme, isWindowsTheme })
+      )}
+    >
+      <div className={group} role="toolbar" aria-label={t("common.menu.view")}>
+        {JOURNAL_TOOLBAR_VIEWS.map((view) => (
+          <ToolbarButton
+            key={view}
+            l={l}
+            active={journal.view === view}
+            onClick={() => l.api.setView(view)}
+            label={t(`apps.journal.views.${view}`)}
+            showLabel={!isMobileLayout}
+          >
+            {VIEW_ICONS[view]}
+          </ToolbarButton>
+        ))}
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs">
-        <span>
-          {changes.length === 0
-            ? t("apps.journal.status.complete")
-            : `${t("apps.journal.status.kept")} ${changes.join(joiner)}`}
-        </span>
-        {notice ? (
-          <span role="status" className="text-os-link">
-            {t(NOTICE_KEYS[notice])}
-          </span>
-        ) : null}
+      <div className="flex-1" />
+      <div className={group}>
+        <ToolbarButton
+          l={l}
+          active={drawerOpen}
+          onClick={onToggleDrawer}
+          label={t("apps.journal.drawer.open")}
+        >
+          <SidebarSimple size={14} mirrored />
+        </ToolbarButton>
       </div>
     </div>
   );

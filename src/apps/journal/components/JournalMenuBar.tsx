@@ -43,21 +43,6 @@ export function JournalMenuBar({ l, onClose }: { l: JournalLogic; onClose: () =>
             ],
           },
           {
-            label: t("common.menu.edit"),
-            items: [
-              {
-                type: "action",
-                label: t("apps.journal.menu.undo"),
-                onClick: () => l.api.undo(),
-              },
-              {
-                type: "action",
-                label: t("apps.journal.menu.revert"),
-                onClick: () => l.api.revertPlan(),
-              },
-            ],
-          },
-          {
             label: t("common.menu.view"),
             items: [
               {
@@ -73,7 +58,7 @@ export function JournalMenuBar({ l, onClose }: { l: JournalLogic; onClose: () =>
               ...JOURNAL_FEATURES.map((feature) => ({
                 type: "checkbox" as const,
                 label: t(`apps.journal.features.${feature}`),
-                checked: l.visible.features[feature],
+                checked: l.journal.toggles[feature],
                 onChange: () => l.api.toggleFeature(feature as JournalFeatureId),
               })),
             ],

@@ -5487,29 +5487,10 @@
         "notebook": "手账"
       },
       "description": "用两种形状留下同一段生活",
-      "diff": {
-        "after": "之后",
-        "before": "之前",
-        "dailyPages": "每天一页",
-        "freeform": "自由片段",
-        "note": "前后差别只跟着上面的计划走。",
-        "off": "拿掉",
-        "on": "保留",
-        "photo": "照片",
-        "photoNo": "没有试放照片",
-        "photoYes": "试放了一张照片",
-        "structure": "结构",
-        "title": "前后差别"
-      },
-      "edits": {
-        "disableReminder": "关闭提醒",
-        "removeStreak": "删掉连续天数",
-        "switchToFreeform": "改成自由收集片段"
-      },
       "features": {
         "date": "日期",
         "dateHint": "每一则都有日期。",
-        "mood": "心情分数",
+        "mood": "心情指数",
         "moodHint": "给一天打分数，才看得到趋势。",
         "off": "关",
         "on": "开",
@@ -5521,66 +5502,52 @@
         "weeklyReportHint": "每周一份报告，用来帮助反思。"
       },
       "generated": {
-        "freeformBanner": "这次修改改成自由收集片段。每天一页还在。",
-        "kicker": "先看一个很完整的答案。",
-        "openCompare": "看两种结构",
         "question": "如果是你，有哪一样最想拿掉？",
         "ryoPick": "我会拿掉这个"
       },
       "help": {
         "completeAnswer": {
-          "description": "先看到一个工具会交出来的日记：日期、心情分数、连续记录天数、每日提醒、每周报告。",
+          "description": "先看到一个工具会交出来的日记：日期、心情指数、连续记录天数、每日提醒、每周报告。正文用 TextEdit 的编辑器。",
           "title": "完整答案"
         },
         "featureToggles": {
-          "description": "每一项都可以单独开关。如果没写的那一天不该像欠了什么，就先拿掉连续记录天数。",
+          "description": "每一项都在演示抽屉里单独开关。如果没写的那一天不该像欠了什么，就先拿掉连续记录天数。",
           "title": "逐项拿掉"
         },
         "photos": {
-          "description": "演示照片已经在内容里。也可以再放一张进去，看看版面合不合适，再撤销。",
+          "description": "演示照片已经在内容里。它们会出现在当天那一页，也出现在散放的片段里。",
           "title": "照片"
         },
         "resetDemo": {
-          "description": "还原演示数据会把样本、开关和修改计划回到一开始。",
+          "description": "还原演示数据会把样本、开关，和改过的内容回到一开始。",
           "title": "还原演示"
         },
         "twoStructures": {
-          "description": "同一份演示可以是每天一页，也可以是散放在同一张纸上的片段。两种都留着。",
+          "description": "在演示抽屉选两种结构，同一份日子会并排成每天一页，和散放在同一张纸上的片段。",
           "title": "两种结构"
         },
-        "workbench": {
-          "description": "同一句要求会列出计划。可以逐项先留着或照改，看前后差别，试放一张照片，再撤销。这是这台设备上的示意，不会即时生成。",
-          "title": "工作台"
+        "drawer": {
+          "title": "演示抽屉",
+          "description": "功能开关、两种结构的预设，和还原演示都在窗口旁边的抽屉里。"
         }
       },
       "menu": {
         "about": "关于日记",
         "help": "日记帮助",
-        "reset": "还原演示数据",
-        "revert": "回到计划",
-        "undo": "撤销"
+        "reset": "还原演示数据"
       },
       "mood": {
-        "label": "心情分数",
-        "outOf": "{{score}} / 5"
+        "label": "心情指数",
+        "outOf": "{{score}} / 5",
+        "set": "心情指数 {{score}}"
       },
       "name": "日记",
       "notice": {
-        "nothing": "没有可撤销的步骤",
-        "photo": "已放进一张演示照片。可以撤销。",
-        "restored": "已还原演示数据",
-        "reverted": "工作台回到原本的计划",
-        "undone": "已撤销上一步"
+        "restored": "已还原演示数据"
       },
       "pageNumber": "第 {{count}} 页",
       "photo": {
-        "add": "放一张照片试试看",
-        "alt": "演示照片",
-        "remove": "拿掉试放的照片",
-        "trialAlt": "试放进去的照片"
-      },
-      "prompt": {
-        "removeStreak": "帮我拿掉连续记录天数，让它不要有压力。"
+        "alt": "演示照片"
       },
       "reminder": {
         "label": "每日提醒",
@@ -5591,21 +5558,6 @@
         "blurb": "这些理由听起来都很完整。日子本身没有被打分数。",
         "days": "写了 {{count}} 天",
         "title": "每周报告"
-      },
-      "service": {
-        "acceptAll": "全部接受",
-        "accepted": "这一次会把三项一起套用。这个示意不会改动工作台。",
-        "askAgain": "再说一次",
-        "askedAgain": "它又交回同一个完整版本。",
-        "changedDesign": "也改成了另一种版面",
-        "kicker": "互动流程示意，不比较生成速度。",
-        "onlyWhole": "面前只有成品时，就只剩接受、拒绝、再说一次。",
-        "rejectAll": "全部拒绝",
-        "rejected": "留下原本的完整版本。",
-        "removedReminder": "也关闭了每日提醒",
-        "removedStreak": "拿掉了连续记录天数",
-        "resultTitle": "新版本",
-        "title": "服务窗口"
       },
       "status": {
         "complete": "完整版本",
@@ -5621,18 +5573,17 @@
       },
       "views": {
         "compare": "两种结构",
-        "counter": "服务窗口与工作台",
-        "generated": "完整答案"
+        "generated": "完整答案",
+        "daily": "每天一页",
+        "freeform": "自由散放的片段"
       },
-      "workbench": {
-        "applied": "会改",
-        "apply": "照改",
-        "keep": "先留着",
-        "kept": "先留着",
-        "kicker": "同一句话。你可以碰正在改的东西。",
-        "pending": "打算改",
-        "plan": "它打算改这些",
-        "title": "工作台"
+      "drawer": {
+        "title": "演示",
+        "open": "演示控制",
+        "presets": "预设"
+      },
+      "sidebar": {
+        "days": "日子"
       }
     }
   },

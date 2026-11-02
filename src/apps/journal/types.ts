@@ -8,30 +8,18 @@ export const JOURNAL_FEATURES = [
 
 export type JournalFeatureId = (typeof JOURNAL_FEATURES)[number];
 
-export const WORKBENCH_EDITS = [
-  "removeStreak",
-  "disableReminder",
-  "switchToFreeform",
-] as const;
+/** Toolbar tabs. Compare is a drawer preset, not a tab. */
+export const JOURNAL_TOOLBAR_VIEWS = ["daily", "freeform"] as const;
 
-export type WorkbenchEditId = (typeof WORKBENCH_EDITS)[number];
+export type JournalToolbarView = (typeof JOURNAL_TOOLBAR_VIEWS)[number];
 
-export const JOURNAL_VIEWS = ["generated", "counter", "compare"] as const;
+export const JOURNAL_VIEWS = ["daily", "freeform", "compare"] as const;
 
 export type JournalView = (typeof JOURNAL_VIEWS)[number];
 
-export type EditDecision = "pending" | "accepted" | "rejected";
+export const JOURNAL_PRESETS = ["complete", "compare"] as const;
 
-export type ServicePhase = "delivered" | "accepted" | "rejected" | "askedAgain";
-
-export type JournalStructure = "dailyPages" | "freeform";
-
-export type JournalNotice =
-  | "restored"
-  | "reverted"
-  | "undone"
-  | "nothing"
-  | "photo";
+export type JournalPreset = (typeof JOURNAL_PRESETS)[number];
 
 export interface JournalToggles {
   date: boolean;
@@ -41,63 +29,46 @@ export interface JournalToggles {
   weeklyReport: boolean;
 }
 
-export interface JournalDecisions {
-  removeStreak: EditDecision;
-  disableReminder: EditDecision;
-  switchToFreeform: EditDecision;
-}
-
 export interface FragmentPosition {
   x: number;
   y: number;
 }
 
-/** Fields a discrete edit can undo. View, selection, and drag positions stay put. */
-export interface JournalSnapshot {
-  toggles: JournalToggles;
-  baselineToggles: JournalToggles;
-  decisions: JournalDecisions;
-  trialPhoto: boolean;
-  reminderTime: string;
-  servicePhase: ServicePhase;
-  serviceAsks: number;
+export type JournalNotice = "restored";
+
+/** TipTap document JSON saved for one entry. */
+export interface JournalDoc {
+  type: "doc";
+  content?: JournalDocNode[];
+  [key: string]: unknown;
 }
 
-export interface JournalState extends JournalSnapshot {
+export interface JournalDocNode {
+  type?: string;
+  text?: string;
+  content?: JournalDocNode[];
+  [key: string]: unknown;
+}
+
+export interface JournalState {
   view: JournalView;
+  toggles: JournalToggles;
+  reminderTime: string;
+  /** Edited entry documents, keyed by fragment id. Absent means the sample text. */
+  texts: Record<string, JournalDoc>;
+  /** Mood overrides, keyed by day id. Absent means the sample score. */
+  moods: Record<string, number>;
   positions: Record<string, FragmentPosition>;
   selectedDayId: string;
-  past: JournalSnapshot[];
-}
-
-export interface PlanPicture {
-  date: boolean;
-  mood: boolean;
-  streak: boolean;
-  reminder: boolean;
-  weeklyReport: boolean;
-  structure: JournalStructure;
-  trialPhoto: boolean;
-}
-
-export interface PlanDiff {
-  before: PlanPicture;
-  after: PlanPicture;
 }
 
 export type JournalAction =
   | { type: "setView"; view: JournalView }
   | { type: "toggleFeature"; feature: JournalFeatureId }
-  | { type: "setDecision"; edit: WorkbenchEditId; decision: Exclude<EditDecision, "pending"> }
-  | { type: "clearDecision"; edit: WorkbenchEditId }
-  | { type: "addTrialPhoto" }
-  | { type: "removeTrialPhoto" }
+  | { type: "applyPreset"; preset: JournalPreset }
   | { type: "moveFragment"; id: string; position: FragmentPosition }
   | { type: "selectDay"; dayId: string }
   | { type: "setReminderTime"; time: string }
-  | { type: "serviceAccept" }
-  | { type: "serviceReject" }
-  | { type: "serviceAskAgain" }
-  | { type: "undo" }
-  | { type: "revertPlan" }
+  | { type: "setMood"; dayId: string; mood: number }
+  | { type: "setEntryText"; id: string; doc: JournalDoc }
   | { type: "reset" };

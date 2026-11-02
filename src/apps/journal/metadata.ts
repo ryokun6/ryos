@@ -16,36 +16,36 @@ export const helpItems = [
     icon: "📓",
     title: "Complete Answer",
     description:
-      "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report.",
+      "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report. Entries use the TextEdit editor.",
   },
   {
     icon: "🎚️",
     title: "Turn Features Off",
     description:
-      "Each feature has its own switch. The streak is the one to remove first if a day without writing should not feel like a debt.",
+      "Each feature has its own switch in the demo drawer. The streak is the one to remove first if a day without writing should not feel like a debt.",
   },
   {
-    icon: "🛠️",
-    title: "Workbench",
+    icon: "🧰",
+    title: "Demo Drawer",
     description:
-      "The same request shows a plan you can keep or apply one edit at a time, with a before and after, a trial photo, and undo. It is a local illustration. Nothing is generated live.",
+      "Feature switches, the Two Structures preset, and Reset Demo live in the drawer beside the window.",
   },
   {
     icon: "↔️",
     title: "Two Structures",
     description:
-      "The same sample days can be one page per day, or scraps scattered on a page. Both stay available.",
+      "Choose Two Structures in the demo drawer to see the same days as one page a day and as scraps on one page.",
   },
   {
     icon: "🖼️",
     title: "Photos",
     description:
-      "Sample photos are already in the entries. Add one more to see how a picture sits in the layout, then undo it.",
+      "Sample photos are already in the entries. They show on that day's page and among the scraps.",
   },
   {
     icon: "↺",
     title: "Reset the Demo",
     description:
-      "Reset Demo puts the sample journal, the switches, and the plan back to the start.",
+      "Reset Demo puts the sample journal and the switches back to the start. Edited entries return to the sample too.",
   },
 ];

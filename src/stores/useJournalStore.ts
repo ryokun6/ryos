@@ -1,17 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import {
-  normalizeJournalState,
-  reduceJournal,
-} from "@/apps/journal/logic";
+import { normalizeJournalState, reduceJournal } from "@/apps/journal/logic";
 import type {
   FragmentPosition,
   JournalAction,
   JournalFeatureId,
+  JournalDoc,
   JournalNotice,
+  JournalPreset,
   JournalState,
   JournalView,
-  WorkbenchEditId,
 } from "@/apps/journal/types";
 
 interface JournalStore {
@@ -19,25 +17,17 @@ interface JournalStore {
   notice: JournalNotice | null;
   setView: (view: JournalView) => void;
   toggleFeature: (feature: JournalFeatureId) => void;
-  setDecision: (
-    edit: WorkbenchEditId,
-    decision: "accepted" | "rejected"
-  ) => void;
-  addTrialPhoto: () => void;
-  removeTrialPhoto: () => void;
+  applyPreset: (preset: JournalPreset) => void;
   moveFragment: (id: string, position: FragmentPosition) => void;
   selectDay: (dayId: string) => void;
   setReminderTime: (time: string) => void;
-  serviceAccept: () => void;
-  serviceReject: () => void;
-  serviceAskAgain: () => void;
-  undo: () => void;
-  revertPlan: () => void;
+  setMood: (dayId: string, mood: number) => void;
+  setEntryText: (id: string, doc: JournalDoc) => void;
   resetDemo: () => void;
   dismissNotice: () => void;
 }
 
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 
 function commit(
   get: () => JournalStore,
@@ -45,12 +35,8 @@ function commit(
   action: JournalAction,
   notice: JournalNotice | null
 ) {
-  const current = get().journal;
-  const next = reduceJournal(current, action);
-  if (next === current) {
-    if (action.type === "undo") set({ notice: "nothing" });
-    return;
-  }
+  const next = reduceJournal(get().journal, action);
+  if (next === get().journal) return;
   set({ journal: next, notice });
 }
 
@@ -62,35 +48,18 @@ export const useJournalStore = create<JournalStore>()(
       setView: (view) => commit(get, set, { type: "setView", view }, null),
       toggleFeature: (feature) =>
         commit(get, set, { type: "toggleFeature", feature }, null),
-      setDecision: (edit, decision) => {
-        const current = get().journal.decisions[edit];
-        commit(
-          get,
-          set,
-          current === decision
-            ? { type: "clearDecision", edit }
-            : { type: "setDecision", edit, decision },
-          null
-        );
-      },
-      addTrialPhoto: () =>
-        commit(get, set, { type: "addTrialPhoto" }, "photo"),
-      removeTrialPhoto: () =>
-        commit(get, set, { type: "removeTrialPhoto" }, null),
+      applyPreset: (preset) => commit(get, set, { type: "applyPreset", preset }, null),
       moveFragment: (id, position) =>
         commit(get, set, { type: "moveFragment", id, position }, null),
-      selectDay: (dayId) =>
-        commit(get, set, { type: "selectDay", dayId }, null),
+      selectDay: (dayId) => commit(get, set, { type: "selectDay", dayId }, null),
       setReminderTime: (time) =>
         commit(get, set, { type: "setReminderTime", time }, null),
-      serviceAccept: () =>
-        commit(get, set, { type: "serviceAccept" }, null),
-      serviceReject: () =>
-        commit(get, set, { type: "serviceReject" }, null),
-      serviceAskAgain: () =>
-        commit(get, set, { type: "serviceAskAgain" }, null),
-      undo: () => commit(get, set, { type: "undo" }, "undone"),
-      revertPlan: () => commit(get, set, { type: "revertPlan" }, "reverted"),
+      setMood: (dayId, mood) => commit(get, set, { type: "setMood", dayId, mood }, null),
+      setEntryText: (id, doc) => {
+        const current = get().journal.texts[id];
+        if (current && JSON.stringify(current) === JSON.stringify(doc)) return;
+        commit(get, set, { type: "setEntryText", id, doc }, null);
+      },
       resetDemo: () => commit(get, set, { type: "reset" }, "restored"),
       dismissNotice: () => set({ notice: null }),
     }),
@@ -98,6 +67,7 @@ export const useJournalStore = create<JournalStore>()(
       name: "ryos:journal",
       version: STORE_VERSION,
       partialize: (state) => ({ journal: state.journal }),
+      migrate: (persisted) => persisted,
       merge: (persisted, current) => {
         const saved = persisted as { journal?: unknown } | undefined;
         return {
