@@ -82,7 +82,10 @@ export function JournalToolbar({
       className={cn(
         "flex h-[38px] shrink-0 items-center gap-2 py-1.5",
         isMacOSTheme ? "px-1" : "px-2",
-        osToolbarSurfaceClassName({ isMacOSTheme, isSystem7Theme, isWindowsTheme })
+        osToolbarSurfaceClassName(
+          { isMacOSTheme, isSystem7Theme, isWindowsTheme },
+          { border: "bottom" }
+        )
       )}
     >
       <div className={group} role="toolbar" aria-label={t("common.menu.view")}>

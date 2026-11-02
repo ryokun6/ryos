@@ -5475,17 +5475,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "把片段拖到想放的地方。不同日子可以并排。"
-      },
-      "compare": {
-        "caption": "同一份预先准备的内容。没有即时生成。",
-        "dailyHint": "比较容易回到某一天",
-        "dailyTitle": "每天一页",
-        "freeformHint": "比较容易把不同时间的东西放在一起",
-        "freeformTitle": "自由散放的片段",
-        "notebook": "手账"
-      },
       "description": "用两种形状留下同一段生活",
       "features": {
         "date": "日期",
@@ -5574,8 +5563,8 @@
       "views": {
         "compare": "两种结构",
         "generated": "完整答案",
-        "daily": "每天一页",
-        "freeform": "自由散放的片段"
+        "daily": "页面",
+        "freeform": "自由"
       },
       "drawer": {
         "title": "演示",

@@ -5877,17 +5877,6 @@
       }
     },
     "journal": {
-      "canvas": {
-        "hint": "Drag a scrap where you want it. Different days can sit together."
-      },
-      "compare": {
-        "caption": "The same prepared sample. Nothing here is generated live.",
-        "dailyHint": "Easier to return to a single day",
-        "dailyTitle": "One Page a Day",
-        "freeformHint": "Easier to put different times side by side",
-        "freeformTitle": "Scattered Fragments",
-        "notebook": "Notebook"
-      },
       "description": "Keep the same days in two shapes",
       "features": {
         "date": "Date",
@@ -5976,8 +5965,8 @@
       "views": {
         "compare": "Two Structures",
         "generated": "Complete Answer",
-        "daily": "One Page a Day",
-        "freeform": "Scattered Fragments"
+        "daily": "Pages",
+        "freeform": "Freeform"
       },
       "drawer": {
         "title": "Demo",

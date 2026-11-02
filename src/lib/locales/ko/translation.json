@@ -5475,17 +5475,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "조각을 두고 싶은 곳으로 끕니다. 다른 날을 나란히 둘 수 있습니다."
-      },
-      "compare": {
-        "caption": "미리 준비한 같은 샘플입니다. 여기서는 즉시 생성하지 않습니다.",
-        "dailyHint": "어느 하루로 돌아가기 쉽습니다",
-        "dailyTitle": "하루 한 페이지",
-        "freeformHint": "다른 시간의 것을 나란히 두기 쉽습니다",
-        "freeformTitle": "흩어진 조각",
-        "notebook": "수첩"
-      },
       "description": "같은 날들을 두 가지 모양으로 남기기",
       "features": {
         "date": "날짜",
@@ -5574,8 +5563,8 @@
       "views": {
         "compare": "두 가지 구조",
         "generated": "완성된 답",
-        "daily": "하루 한 페이지",
-        "freeform": "흩어진 조각"
+        "daily": "페이지",
+        "freeform": "자유"
       },
       "drawer": {
         "title": "데모",

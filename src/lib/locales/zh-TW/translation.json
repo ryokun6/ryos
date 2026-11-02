@@ -5475,17 +5475,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "把片段拖到想放的地方。不同日子可以並排。"
-      },
-      "compare": {
-        "caption": "同一份預先準備的內容。沒有即時生成。",
-        "dailyHint": "比較容易回到某一天",
-        "dailyTitle": "每天一頁",
-        "freeformHint": "比較容易把不同時間的東西放在一起",
-        "freeformTitle": "自由散放的片段",
-        "notebook": "手帳"
-      },
       "description": "用兩種形狀留下同一段生活",
       "features": {
         "date": "日期",
@@ -5574,8 +5563,8 @@
       "views": {
         "compare": "兩種結構",
         "generated": "完整答案",
-        "daily": "每天一頁",
-        "freeform": "自由散放的片段"
+        "daily": "頁面",
+        "freeform": "自由"
       },
       "drawer": {
         "title": "示範",

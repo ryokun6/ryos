@@ -5475,17 +5475,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "断片を置きたい場所へドラッグします。違う日のものを並べられます。"
-      },
-      "compare": {
-        "caption": "同じ用意されたサンプルです。ここでは何もその場で生成しません。",
-        "dailyHint": "ある一日に戻りやすい",
-        "dailyTitle": "一日一ページ",
-        "freeformHint": "違う時間のものを並べやすい",
-        "freeformTitle": "散らした断片",
-        "notebook": "手帳"
-      },
       "description": "同じ日々を、二つの形で残す",
       "features": {
         "date": "日付",
@@ -5574,8 +5563,8 @@
       "views": {
         "compare": "二つの構造",
         "generated": "完全な答え",
-        "daily": "一日一ページ",
-        "freeform": "散らした断片"
+        "daily": "ページ",
+        "freeform": "フリー"
       },
       "drawer": {
         "title": "デモ",

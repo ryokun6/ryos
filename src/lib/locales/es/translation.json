@@ -5488,17 +5488,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "Arrastra un fragmento adonde quieras. Días distintos pueden quedar juntos."
-      },
-      "compare": {
-        "caption": "La misma muestra preparada. Aquí no se genera nada en el momento.",
-        "dailyHint": "Más fácil volver a un solo día",
-        "dailyTitle": "Una página por día",
-        "freeformHint": "Más fácil poner momentos distintos uno al lado del otro",
-        "freeformTitle": "Fragmentos dispersos",
-        "notebook": "Cuaderno"
-      },
       "description": "Guardar los mismos días en dos formas",
       "features": {
         "date": "Fecha",
@@ -5587,8 +5576,8 @@
       "views": {
         "compare": "Dos estructuras",
         "generated": "Respuesta completa",
-        "daily": "Una página por día",
-        "freeform": "Fragmentos dispersos"
+        "daily": "Páginas",
+        "freeform": "Libre"
       },
       "drawer": {
         "title": "Demo",

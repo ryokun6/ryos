@@ -5475,17 +5475,6 @@
       "title": "Winamp"
     },
     "journal": {
-      "canvas": {
-        "hint": "Zieh ein Fragment dorthin, wo du es haben willst. Verschiedene Tage können nebeneinander liegen."
-      },
-      "compare": {
-        "caption": "Dasselbe vorbereitete Beispiel. Hier wird nichts live erzeugt.",
-        "dailyHint": "Leichter, zu einem einzelnen Tag zurückzukehren",
-        "dailyTitle": "Eine Seite pro Tag",
-        "freeformHint": "Leichter, verschiedene Zeiten nebeneinander zu legen",
-        "freeformTitle": "Verstreute Fragmente",
-        "notebook": "Notizbuch"
-      },
       "description": "Dieselben Tage in zwei Formen behalten",
       "features": {
         "date": "Datum",
@@ -5574,8 +5563,8 @@
       "views": {
         "compare": "Zwei Strukturen",
         "generated": "Vollständige Antwort",
-        "daily": "Eine Seite pro Tag",
-        "freeform": "Verstreute Fragmente"
+        "daily": "Seiten",
+        "freeform": "Frei"
       },
       "drawer": {
         "title": "Demo",
