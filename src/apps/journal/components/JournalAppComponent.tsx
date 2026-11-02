@@ -75,6 +75,7 @@ export function JournalAppComponent({
             <FreeformCanvas
               positions={journal.positions}
               texts={journal.texts}
+              showDates={journal.toggles.date}
               interactive
               onMove={l.api.moveFragment}
             />

@@ -19,6 +19,7 @@ export function CompareView({
         <FreeformCanvas
           positions={l.journal.positions}
           texts={l.journal.texts}
+          showDates={l.journal.toggles.date}
           interactive
           onMove={l.api.moveFragment}
         />

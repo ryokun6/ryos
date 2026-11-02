@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { clamp, plainTextFromDoc } from "../logic";
 import {
+  formatJournalDay,
   journalText,
   JOURNAL_FRAGMENTS,
   type JournalFragment,
@@ -24,11 +25,13 @@ interface DragState {
 export function FreeformCanvas({
   positions,
   texts,
+  showDates,
   interactive,
   onMove,
 }: {
   positions: Record<string, FragmentPosition>;
   texts: Record<string, JournalDoc>;
+  showDates: boolean;
   interactive: boolean;
   onMove?: (id: string, position: FragmentPosition) => void;
 }) {
@@ -139,6 +142,11 @@ export function FreeformCanvas({
               ) : (
                 <p className="text-sm leading-snug">{text}</p>
               )}
+              {showDates && fragment.dayId ? (
+                <p className="mt-1 text-right text-[10px] leading-none opacity-45">
+                  {formatJournalDay(fragment.dayId, language)}
+                </p>
+              ) : null}
             </article>
           );
         })}
