@@ -5486,6 +5486,167 @@
         "unknownArtist": "Artista sconosciuto"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "canvas": {
+        "hint": "Trascina un frammento dove vuoi. Giorni diversi possono stare insieme."
+      },
+      "compare": {
+        "caption": "Lo stesso esempio preparato. Qui non si genera nulla al momento.",
+        "dailyHint": "Più facile tornare a un singolo giorno",
+        "dailyTitle": "Una pagina al giorno",
+        "freeformHint": "Più facile mettere tempi diversi uno accanto all’altro",
+        "freeformTitle": "Frammenti sparsi",
+        "notebook": "Taccuino"
+      },
+      "description": "Tenere gli stessi giorni in due forme",
+      "diff": {
+        "after": "Dopo",
+        "before": "Prima",
+        "dailyPages": "Una pagina al giorno",
+        "freeform": "Frammenti liberi",
+        "note": "Questo prima e dopo segue solo il piano sopra.",
+        "off": "Tolto",
+        "on": "Tenuto",
+        "photo": "Foto",
+        "photoNo": "Nessuna foto di prova",
+        "photoYes": "Foto di prova aggiunta",
+        "structure": "Struttura",
+        "title": "Prima e dopo"
+      },
+      "edits": {
+        "disableReminder": "Disattiva il promemoria",
+        "removeStreak": "Togli la serie",
+        "switchToFreeform": "Passa ai frammenti liberi"
+      },
+      "features": {
+        "date": "Data",
+        "dateHint": "Una data su ogni voce.",
+        "mood": "Punteggio dell’umore",
+        "moodHint": "Dare un punteggio al giorno per vedere una tendenza.",
+        "off": "Disattivo",
+        "on": "Attivo",
+        "reminder": "Promemoria quotidiano",
+        "reminderHint": "Un invito a scrivere ogni giorno.",
+        "streak": "Serie",
+        "streakHint": "Quanti giorni di seguito hai scritto.",
+        "weeklyReport": "Report settimanale",
+        "weeklyReportHint": "Un riepilogo settimanale per riflettere."
+      },
+      "generated": {
+        "freeformBanner": "Questa modifica passa ai frammenti liberi. Una pagina al giorno resta.",
+        "kicker": "Una risposta completa, prima che tu abbia deciso.",
+        "openCompare": "Mostra le due strutture",
+        "question": "Se fossi tu, quale toglieresti?",
+        "ryoPick": "Io toglierei questa"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Inizia dal diario che consegnerebbe uno strumento: data, punteggio dell’umore, serie, promemoria quotidiano e report settimanale.",
+          "title": "Risposta completa"
+        },
+        "featureToggles": {
+          "description": "Ogni funzione ha il proprio interruttore. Togli prima la serie se un giorno senza scrivere non deve sembrare un debito.",
+          "title": "Togliere funzioni"
+        },
+        "photos": {
+          "description": "Le foto di esempio sono già nelle voci. Aggiungine un’altra per vedere il layout, poi annulla.",
+          "title": "Foto"
+        },
+        "resetDemo": {
+          "description": "Ripristina la demo riporta esempio, interruttori e piano all’inizio.",
+          "title": "Ripristina la demo"
+        },
+        "twoStructures": {
+          "description": "Gli stessi giorni di esempio possono essere una pagina al giorno o frammenti sparsi. Entrambe le forme restano.",
+          "title": "Due strutture"
+        },
+        "workbench": {
+          "description": "La stessa richiesta mostra un piano che puoi tenere o applicare una modifica alla volta, con un prima e dopo, una foto di prova e annulla. È uno schema locale. Non si genera nulla al momento.",
+          "title": "Banco di lavoro"
+        }
+      },
+      "menu": {
+        "about": "Informazioni su Diario",
+        "help": "Aiuto Diario",
+        "reset": "Ripristina la demo",
+        "revert": "Torna al piano",
+        "undo": "Annulla"
+      },
+      "mood": {
+        "label": "Punteggio dell’umore",
+        "outOf": "{{score}} / 5"
+      },
+      "name": "Diario",
+      "notice": {
+        "nothing": "Niente da annullare",
+        "photo": "Foto di esempio aggiunta. Puoi annullare.",
+        "restored": "Esempio della demo ripristinato",
+        "reverted": "Il piano è tornato all’inizio",
+        "undone": "Ultimo passo annullato"
+      },
+      "pageNumber": "Pagina {{count}}",
+      "photo": {
+        "add": "Prova una foto",
+        "alt": "Foto di esempio",
+        "remove": "Rimuovi la foto di prova",
+        "trialAlt": "Una foto aggiunta per provare il layout"
+      },
+      "prompt": {
+        "removeStreak": "Togli la serie, così non sembri una pressione."
+      },
+      "reminder": {
+        "label": "Promemoria quotidiano",
+        "timeLabel": "Ora"
+      },
+      "report": {
+        "average": "Umore medio {{score}}",
+        "blurb": "Le ragioni sembrano complete. I giorni stessi non sono stati valutati.",
+        "days": "{{count}} giorni scritti",
+        "title": "Report settimanale"
+      },
+      "service": {
+        "acceptAll": "Accetta tutto",
+        "accepted": "Questo applicherebbe tutte e tre insieme. Lo schema non cambia il banco di lavoro.",
+        "askAgain": "Chiedi di nuovo",
+        "askedAgain": "Ha restituito la stessa versione completa.",
+        "changedDesign": "Ha anche cambiato il layout",
+        "kicker": "Uno schema del flusso. Non è un confronto di velocità.",
+        "onlyWhole": "Con solo la versione finita restano accetta, rifiuta o chiedi di nuovo.",
+        "rejectAll": "Rifiuta tutto",
+        "rejected": "Resta la versione completa originale.",
+        "removedReminder": "Ha anche disattivato il promemoria quotidiano",
+        "removedStreak": "Ha tolto la serie",
+        "resultTitle": "Nuova versione",
+        "title": "Sportello"
+      },
+      "status": {
+        "complete": "Versione completa",
+        "kept": "Modifica tenuta:"
+      },
+      "streak": {
+        "label": "Serie",
+        "value": "{{count}} giorni"
+      },
+      "title": "Diario",
+      "toolbar": {
+        "reset": "Ripristina la demo"
+      },
+      "views": {
+        "compare": "Due strutture",
+        "counter": "Sportello e banco di lavoro",
+        "generated": "Risposta completa"
+      },
+      "workbench": {
+        "applied": "Cambierà",
+        "apply": "Applica",
+        "keep": "Tieni",
+        "kept": "Tenuto",
+        "kicker": "La stessa frase. Puoi toccare ciò che sta cambiando.",
+        "pending": "Previsto",
+        "plan": "Ha in programma di cambiare questi",
+        "title": "Banco di lavoro"
+      }
     }
   },
   "common": {

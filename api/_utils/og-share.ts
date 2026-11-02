@@ -36,6 +36,7 @@ const APP_NAMES: Record<string, string> = {
   stuff: "Stuff",
   dictionary: "Dictionary",
   fitness: "Fitness",
+  journal: "Journal",
 };
 
 const APP_DESCRIPTIONS: Record<string, string> = {
@@ -70,6 +71,7 @@ const APP_DESCRIPTIONS: Record<string, string> = {
   stuff: "Catalog your stuff on a wooden shelf",
   dictionary: "Look up words in English, Chinese, Japanese, and Korean",
   fitness: "Exercise guide, workout log, training schedule, and AI food log",
+  journal: "A sample journal in two shapes: one page a day, or freeform scraps",
 };
 
 const APP_ICONS: Record<string, string> = {
@@ -104,6 +106,7 @@ const APP_ICONS: Record<string, string> = {
   stuff: "stuff.png",
   dictionary: "dictionary.png",
   fitness: "fitness.png",
+  journal: "journal.png",
 };
 
 export type SongShareMetadata = {

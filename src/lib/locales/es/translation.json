@@ -5486,6 +5486,167 @@
         "unknownArtist": "Artista desconocido"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "canvas": {
+        "hint": "Arrastra un fragmento adonde quieras. Días distintos pueden quedar juntos."
+      },
+      "compare": {
+        "caption": "La misma muestra preparada. Aquí no se genera nada en el momento.",
+        "dailyHint": "Más fácil volver a un solo día",
+        "dailyTitle": "Una página por día",
+        "freeformHint": "Más fácil poner momentos distintos uno al lado del otro",
+        "freeformTitle": "Fragmentos dispersos",
+        "notebook": "Cuaderno"
+      },
+      "description": "Guardar los mismos días en dos formas",
+      "diff": {
+        "after": "Después",
+        "before": "Antes",
+        "dailyPages": "Una página por día",
+        "freeform": "Fragmentos libres",
+        "note": "Este antes y después sigue solo el plan de arriba.",
+        "off": "Quitado",
+        "on": "Conservado",
+        "photo": "Foto",
+        "photoNo": "Sin foto de prueba",
+        "photoYes": "Foto de prueba añadida",
+        "structure": "Estructura",
+        "title": "Antes y después"
+      },
+      "edits": {
+        "disableReminder": "Desactivar el recordatorio",
+        "removeStreak": "Quitar la racha",
+        "switchToFreeform": "Pasar a fragmentos libres"
+      },
+      "features": {
+        "date": "Fecha",
+        "dateHint": "Una fecha en cada entrada.",
+        "mood": "Puntuación de ánimo",
+        "moodHint": "Puntuar el día para ver una tendencia.",
+        "off": "Desactivado",
+        "on": "Activado",
+        "reminder": "Recordatorio diario",
+        "reminderHint": "Un aviso para escribir cada día.",
+        "streak": "Racha",
+        "streakHint": "Cuántos días seguidos has escrito.",
+        "weeklyReport": "Informe semanal",
+        "weeklyReportHint": "Un resumen semanal para reflexionar."
+      },
+      "generated": {
+        "freeformBanner": "Este cambio pasa a fragmentos libres. Una página por día sigue aquí.",
+        "kicker": "Una respuesta completa, antes de que hayas decidido.",
+        "openCompare": "Ver las dos estructuras",
+        "question": "Si fueras tú, ¿cuál quitarías?",
+        "ryoPick": "Yo quitaría esta"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Empieza por el diario que entregaría una herramienta: fecha, puntuación de ánimo, racha, recordatorio diario e informe semanal.",
+          "title": "Respuesta completa"
+        },
+        "featureToggles": {
+          "description": "Cada función tiene su interruptor. Quita primero la racha si un día sin escribir no debe sentirse como una deuda.",
+          "title": "Quitar funciones"
+        },
+        "photos": {
+          "description": "Las fotos de ejemplo ya están en las entradas. Añade otra para ver el diseño y luego deshazlo.",
+          "title": "Fotos"
+        },
+        "resetDemo": {
+          "description": "Restablecer la demo devuelve la muestra, los interruptores y el plan al inicio.",
+          "title": "Restablecer la demo"
+        },
+        "twoStructures": {
+          "description": "Los mismos días de ejemplo pueden ser una página por día o fragmentos dispersos. Las dos formas siguen disponibles.",
+          "title": "Dos estructuras"
+        },
+        "workbench": {
+          "description": "La misma petición muestra un plan que puedes conservar o aplicar de una en una, con un antes y después, una foto de prueba y deshacer. Es un esquema local. No se genera nada en el momento.",
+          "title": "Mesa de trabajo"
+        }
+      },
+      "menu": {
+        "about": "Acerca de Diario",
+        "help": "Ayuda de Diario",
+        "reset": "Restablecer la demo",
+        "revert": "Volver al plan",
+        "undo": "Deshacer"
+      },
+      "mood": {
+        "label": "Puntuación de ánimo",
+        "outOf": "{{score}} / 5"
+      },
+      "name": "Diario",
+      "notice": {
+        "nothing": "Nada que deshacer",
+        "photo": "Se añadió una foto de ejemplo. Puedes deshacerlo.",
+        "restored": "Muestra de la demo restaurada",
+        "reverted": "El plan volvió al inicio",
+        "undone": "Se deshizo el último paso"
+      },
+      "pageNumber": "Página {{count}}",
+      "photo": {
+        "add": "Probar una foto",
+        "alt": "Foto de ejemplo",
+        "remove": "Quitar la foto de prueba",
+        "trialAlt": "Una foto añadida para probar el diseño"
+      },
+      "prompt": {
+        "removeStreak": "Quita la racha, para que no se sienta como presión."
+      },
+      "reminder": {
+        "label": "Recordatorio diario",
+        "timeLabel": "Hora"
+      },
+      "report": {
+        "average": "Ánimo medio {{score}}",
+        "blurb": "Las razones suenan completas. Los días en sí no fueron puntuados.",
+        "days": "{{count}} días escritos",
+        "title": "Informe semanal"
+      },
+      "service": {
+        "acceptAll": "Aceptar todo",
+        "accepted": "Esto aplicaría las tres a la vez. El esquema no cambia la mesa de trabajo.",
+        "askAgain": "Pedir de nuevo",
+        "askedAgain": "Devolvió la misma versión completa.",
+        "changedDesign": "También cambió el diseño",
+        "kicker": "Un esquema del flujo. No es una comparación de velocidad.",
+        "onlyWhole": "Con solo la versión terminada, queda aceptar, rechazar o pedir de nuevo.",
+        "rejectAll": "Rechazar todo",
+        "rejected": "Se queda la versión completa original.",
+        "removedReminder": "También desactivó el recordatorio diario",
+        "removedStreak": "Quitó la racha",
+        "resultTitle": "Versión nueva",
+        "title": "Ventanilla"
+      },
+      "status": {
+        "complete": "Versión completa",
+        "kept": "Cambio conservado:"
+      },
+      "streak": {
+        "label": "Racha",
+        "value": "{{count}} días"
+      },
+      "title": "Diario",
+      "toolbar": {
+        "reset": "Restablecer la demo"
+      },
+      "views": {
+        "compare": "Dos estructuras",
+        "counter": "Ventanilla y mesa de trabajo",
+        "generated": "Respuesta completa"
+      },
+      "workbench": {
+        "applied": "Cambiará",
+        "apply": "Aplicar",
+        "keep": "Conservar",
+        "kept": "Conservado",
+        "kicker": "La misma frase. Puedes tocar lo que está cambiando.",
+        "pending": "Planeado",
+        "plan": "Planea cambiar esto",
+        "title": "Mesa de trabajo"
+      }
     }
   },
   "common": {

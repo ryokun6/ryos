@@ -5473,6 +5473,167 @@
         "unknownArtist": "未知的藝人"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "canvas": {
+        "hint": "把片段拖到想放的地方。不同日子可以並排。"
+      },
+      "compare": {
+        "caption": "同一份預先準備的內容。沒有即時生成。",
+        "dailyHint": "比較容易回到某一天",
+        "dailyTitle": "每天一頁",
+        "freeformHint": "比較容易把不同時間的東西放在一起",
+        "freeformTitle": "自由散放的片段",
+        "notebook": "手帳"
+      },
+      "description": "用兩種形狀留下同一段生活",
+      "diff": {
+        "after": "之後",
+        "before": "之前",
+        "dailyPages": "每天一頁",
+        "freeform": "自由片段",
+        "note": "前後差別只跟著上面的計畫走。",
+        "off": "拿掉",
+        "on": "保留",
+        "photo": "照片",
+        "photoNo": "沒有試放照片",
+        "photoYes": "試放了一張照片",
+        "structure": "結構",
+        "title": "前後差別"
+      },
+      "edits": {
+        "disableReminder": "關閉提醒",
+        "removeStreak": "刪掉連續天數",
+        "switchToFreeform": "改成自由收集片段"
+      },
+      "features": {
+        "date": "日期",
+        "dateHint": "每一則都有日期。",
+        "mood": "心情分數",
+        "moodHint": "給一天打分數，才看得到趨勢。",
+        "off": "關",
+        "on": "開",
+        "reminder": "每日提醒",
+        "reminderHint": "每天提醒你寫。",
+        "streak": "連續記錄天數",
+        "streakHint": "連續記錄了幾天。",
+        "weeklyReport": "每週報告",
+        "weeklyReportHint": "每週一份報告，用來幫助反思。"
+      },
+      "generated": {
+        "freeformBanner": "這次修改改成自由收集片段。每天一頁還在。",
+        "kicker": "先看一個很完整的答案。",
+        "openCompare": "看兩種結構",
+        "question": "如果是你，有哪一樣最想拿掉？",
+        "ryoPick": "我會拿掉這個"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "先看到一個工具會交出來的日記：日期、心情分數、連續記錄天數、每日提醒、每週報告。",
+          "title": "完整答案"
+        },
+        "featureToggles": {
+          "description": "每一項都可以單獨開關。如果沒寫的那一天不該像欠了什麼，就先拿掉連續記錄天數。",
+          "title": "逐項拿掉"
+        },
+        "photos": {
+          "description": "示範照片已經在內容裡。也可以再放一張進去，看看版面合不合適，再還原。",
+          "title": "照片"
+        },
+        "resetDemo": {
+          "description": "還原示範資料會把樣本、開關和修改計畫回到一開始。",
+          "title": "還原示範"
+        },
+        "twoStructures": {
+          "description": "同一份示範可以是每天一頁，也可以是散放在同一張紙上的片段。兩種都留著。",
+          "title": "兩種結構"
+        },
+        "workbench": {
+          "description": "同一句要求會列出計畫。可以逐項先留著或照改，看前後差別，試放一張照片，再還原。這是這台裝置上的示意，不會即時生成。",
+          "title": "工作台"
+        }
+      },
+      "menu": {
+        "about": "關於日記",
+        "help": "日記輔助說明",
+        "reset": "還原示範資料",
+        "revert": "回到計畫",
+        "undo": "還原"
+      },
+      "mood": {
+        "label": "心情分數",
+        "outOf": "{{score}} / 5"
+      },
+      "name": "日記",
+      "notice": {
+        "nothing": "沒有可還原的步驟",
+        "photo": "已放進一張示範照片。可以還原。",
+        "restored": "已還原示範資料",
+        "reverted": "工作台回到原本的計畫",
+        "undone": "已還原上一步"
+      },
+      "pageNumber": "第 {{count}} 頁",
+      "photo": {
+        "add": "放一張照片試試看",
+        "alt": "示範照片",
+        "remove": "拿掉試放的照片",
+        "trialAlt": "試放進去的照片"
+      },
+      "prompt": {
+        "removeStreak": "幫我拿掉連續記錄天數，讓它不要有壓力。"
+      },
+      "reminder": {
+        "label": "每日提醒",
+        "timeLabel": "時間"
+      },
+      "report": {
+        "average": "平均心情 {{score}}",
+        "blurb": "這些理由聽起來都很完整。日子本身沒有被打分數。",
+        "days": "寫了 {{count}} 天",
+        "title": "每週報告"
+      },
+      "service": {
+        "acceptAll": "全部接受",
+        "accepted": "這一次會把三項一起套用。這個示意不會改動工作台。",
+        "askAgain": "再說一次",
+        "askedAgain": "它又交回同一個完整版本。",
+        "changedDesign": "也改成了另一種版面",
+        "kicker": "互動流程示意，不比較生成速度。",
+        "onlyWhole": "面前只有成品時，就只剩接受、拒絕、再說一次。",
+        "rejectAll": "全部拒絕",
+        "rejected": "留下原本的完整版本。",
+        "removedReminder": "也關閉了每日提醒",
+        "removedStreak": "拿掉了連續記錄天數",
+        "resultTitle": "新版本",
+        "title": "服務窗口"
+      },
+      "status": {
+        "complete": "完整版本",
+        "kept": "留下的修改："
+      },
+      "streak": {
+        "label": "連續記錄天數",
+        "value": "{{count}} 天"
+      },
+      "title": "日記",
+      "toolbar": {
+        "reset": "還原示範"
+      },
+      "views": {
+        "compare": "兩種結構",
+        "counter": "服務窗口與工作台",
+        "generated": "完整答案"
+      },
+      "workbench": {
+        "applied": "會改",
+        "apply": "照改",
+        "keep": "先留著",
+        "kept": "先留著",
+        "kicker": "同一句話。你可以碰正在改的東西。",
+        "pending": "打算改",
+        "plan": "它打算改這些",
+        "title": "工作台"
+      }
     }
   },
   "common": {

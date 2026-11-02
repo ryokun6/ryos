@@ -5473,6 +5473,167 @@
         "unknownArtist": "Unbekannter Künstler"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "canvas": {
+        "hint": "Zieh ein Fragment dorthin, wo du es haben willst. Verschiedene Tage können nebeneinander liegen."
+      },
+      "compare": {
+        "caption": "Dasselbe vorbereitete Beispiel. Hier wird nichts live erzeugt.",
+        "dailyHint": "Leichter, zu einem einzelnen Tag zurückzukehren",
+        "dailyTitle": "Eine Seite pro Tag",
+        "freeformHint": "Leichter, verschiedene Zeiten nebeneinander zu legen",
+        "freeformTitle": "Verstreute Fragmente",
+        "notebook": "Notizbuch"
+      },
+      "description": "Dieselben Tage in zwei Formen behalten",
+      "diff": {
+        "after": "Nachher",
+        "before": "Vorher",
+        "dailyPages": "Eine Seite pro Tag",
+        "freeform": "Freie Fragmente",
+        "note": "Dieses Vorher und Nachher folgt nur dem Plan oben.",
+        "off": "Entfernt",
+        "on": "Behalten",
+        "photo": "Foto",
+        "photoNo": "Kein Probefoto",
+        "photoYes": "Probefoto hinzugefügt",
+        "structure": "Struktur",
+        "title": "Vorher und nachher"
+      },
+      "edits": {
+        "disableReminder": "Erinnerung ausschalten",
+        "removeStreak": "Serie entfernen",
+        "switchToFreeform": "Zu freien Fragmenten wechseln"
+      },
+      "features": {
+        "date": "Datum",
+        "dateHint": "Ein Datum an jedem Eintrag.",
+        "mood": "Stimmungswert",
+        "moodHint": "Den Tag bewerten, damit ein Trend sichtbar wird.",
+        "off": "Aus",
+        "on": "Ein",
+        "reminder": "Tägliche Erinnerung",
+        "reminderHint": "Ein Anstoß, jeden Tag zu schreiben.",
+        "streak": "Serie",
+        "streakHint": "Wie viele Tage in Folge du geschrieben hast.",
+        "weeklyReport": "Wochenbericht",
+        "weeklyReportHint": "Eine Wochenzusammenfassung zum Nachdenken."
+      },
+      "generated": {
+        "freeformBanner": "Diese Änderung wechselt zu freien Fragmenten. Eine Seite pro Tag bleibt.",
+        "kicker": "Eine vollständige Antwort, bevor du entschieden hast.",
+        "openCompare": "Zwei Strukturen zeigen",
+        "question": "Welche würdest du entfernen?",
+        "ryoPick": "Ich würde diese entfernen"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Beginnt mit dem Tagebuch, das ein Werkzeug liefern würde: Datum, Stimmungswert, Serie, tägliche Erinnerung und Wochenbericht.",
+          "title": "Vollständige Antwort"
+        },
+        "featureToggles": {
+          "description": "Jede Funktion hat einen eigenen Schalter. Entferne zuerst die Serie, wenn ein Tag ohne Eintrag sich nicht wie eine Schuld anfühlen soll.",
+          "title": "Funktionen entfernen"
+        },
+        "photos": {
+          "description": "Beispielfotos sind schon in den Einträgen. Füge ein weiteres hinzu, um das Layout zu sehen, und widerrufe es.",
+          "title": "Fotos"
+        },
+        "resetDemo": {
+          "description": "Demo zurücksetzen setzt Beispiel, Schalter und Plan auf den Anfang.",
+          "title": "Demo zurücksetzen"
+        },
+        "twoStructures": {
+          "description": "Dieselben Beispieltage können eine Seite pro Tag sein oder Fragmente auf einer Seite. Beide bleiben verfügbar.",
+          "title": "Zwei Strukturen"
+        },
+        "workbench": {
+          "description": "Dieselbe Bitte zeigt einen Plan, den du einzeln behalten oder anwenden kannst, mit Vorher und Nachher, einem Probefoto und Widerrufen. Es ist ein lokales Bild. Nichts wird live erzeugt.",
+          "title": "Werkbank"
+        }
+      },
+      "menu": {
+        "about": "Über Tagebuch",
+        "help": "Tagebuch-Hilfe",
+        "reset": "Demo zurücksetzen",
+        "revert": "Zum Plan zurück",
+        "undo": "Widerrufen"
+      },
+      "mood": {
+        "label": "Stimmungswert",
+        "outOf": "{{score}} / 5"
+      },
+      "name": "Tagebuch",
+      "notice": {
+        "nothing": "Nichts zum Widerrufen",
+        "photo": "Beispielfoto hinzugefügt. Du kannst es widerrufen.",
+        "restored": "Demo-Beispiel wiederhergestellt",
+        "reverted": "Der Plan ist wieder am Anfang",
+        "undone": "Letzten Schritt widerrufen"
+      },
+      "pageNumber": "Seite {{count}}",
+      "photo": {
+        "add": "Ein Foto ausprobieren",
+        "alt": "Beispielfoto",
+        "remove": "Probefoto entfernen",
+        "trialAlt": "Ein Foto, um das Layout auszuprobieren"
+      },
+      "prompt": {
+        "removeStreak": "Nimm die Serie heraus, damit es sich nicht wie Druck anfühlt."
+      },
+      "reminder": {
+        "label": "Tägliche Erinnerung",
+        "timeLabel": "Zeit"
+      },
+      "report": {
+        "average": "Mittlere Stimmung {{score}}",
+        "blurb": "Die Gründe klingen vollständig. Die Tage selbst wurden nicht bewertet.",
+        "days": "{{count}} Tage geschrieben",
+        "title": "Wochenbericht"
+      },
+      "service": {
+        "acceptAll": "Alle annehmen",
+        "accepted": "Das würde alle drei auf einmal anwenden. Das Bild ändert die Werkbank nicht.",
+        "askAgain": "Erneut fragen",
+        "askedAgain": "Es hat dieselbe vollständige Version zurückgegeben.",
+        "changedDesign": "Layout ebenfalls geändert",
+        "kicker": "Ein Ablaufbild. Kein Vergleich der Geschwindigkeit.",
+        "onlyWhole": "Mit nur der fertigen Version bleiben annehmen, ablehnen oder erneut fragen.",
+        "rejectAll": "Alle ablehnen",
+        "rejected": "Die ursprüngliche vollständige Version bleibt.",
+        "removedReminder": "Tägliche Erinnerung ebenfalls ausgeschaltet",
+        "removedStreak": "Serie entfernt",
+        "resultTitle": "Neue Version",
+        "title": "Schalter"
+      },
+      "status": {
+        "complete": "Vollständige Version",
+        "kept": "Behaltene Änderung:"
+      },
+      "streak": {
+        "label": "Serie",
+        "value": "{{count}} Tage"
+      },
+      "title": "Tagebuch",
+      "toolbar": {
+        "reset": "Demo zurücksetzen"
+      },
+      "views": {
+        "compare": "Zwei Strukturen",
+        "counter": "Schalter und Werkbank",
+        "generated": "Vollständige Antwort"
+      },
+      "workbench": {
+        "applied": "Wird geändert",
+        "apply": "Anwenden",
+        "keep": "Behalten",
+        "kept": "Behalten",
+        "kicker": "Derselbe Satz. Du kannst anfassen, was sich ändert.",
+        "pending": "Geplant",
+        "plan": "Das will es ändern",
+        "title": "Werkbank"
+      }
     }
   },
   "common": {

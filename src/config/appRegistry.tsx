@@ -213,6 +213,14 @@ const LazyFitnessApp = createLazyComponent<FitnessInitialData>(
   "fitness"
 );
 
+const LazyJournalApp = createLazyComponent<unknown>(
+  () =>
+    import("@/apps/journal/components/JournalAppComponent").then((m) => ({
+      default: m.JournalAppComponent,
+    })),
+  "journal"
+);
+
 // ============================================================================
 // APP METADATA (loaded eagerly - small, isolated from components)
 // Import from metadata.ts files to avoid eager loading of components
@@ -255,6 +263,7 @@ import { appMetadata as calculatorMetadata, helpItems as calculatorHelpItems } f
 import { appMetadata as stuffMetadata, helpItems as stuffHelpItems } from "@/apps/stuff/metadata";
 import { appMetadata as dictionaryMetadata, helpItems as dictionaryHelpItems } from "@/apps/dictionary/metadata";
 import { appMetadata as fitnessMetadata, helpItems as fitnessHelpItems } from "@/apps/fitness/metadata";
+import { appMetadata as journalMetadata, helpItems as journalHelpItems } from "@/apps/journal/metadata";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infiniteMacDefaultSize } from "@/apps/infinite-mac/windowConfig";
 import { DEFAULT_WINDOW_SIZE_WITH_TITLEBAR as infinitePcDefaultSize } from "@/apps/infinite-pc/windowConfig";
 
@@ -678,6 +687,19 @@ export const appRegistry = {
       maxSize: { width: 660 },
     } as WindowConstraints,
   } as BaseApp<FitnessInitialData> & { windowConfig: WindowConstraints },
+  ["journal"]: {
+    id: "journal",
+    name: "Journal",
+    icon: { type: "image", src: journalMetadata.icon },
+    description: "A sample journal in two shapes: one page a day, or freeform scraps",
+    component: LazyJournalApp,
+    helpItems: journalHelpItems,
+    metadata: journalMetadata,
+    windowConfig: {
+      defaultSize: { width: 1120, height: 740 },
+      minSize: { width: 360, height: 480 },
+    } as WindowConstraints,
+  },
 } as const;
 
 // ============================================================================

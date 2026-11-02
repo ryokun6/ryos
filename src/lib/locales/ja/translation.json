@@ -5473,6 +5473,167 @@
         "unknownArtist": "不明なアーティスト"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "canvas": {
+        "hint": "断片を置きたい場所へドラッグします。違う日のものを並べられます。"
+      },
+      "compare": {
+        "caption": "同じ用意されたサンプルです。ここでは何もその場で生成しません。",
+        "dailyHint": "ある一日に戻りやすい",
+        "dailyTitle": "一日一ページ",
+        "freeformHint": "違う時間のものを並べやすい",
+        "freeformTitle": "散らした断片",
+        "notebook": "手帳"
+      },
+      "description": "同じ日々を、二つの形で残す",
+      "diff": {
+        "after": "後",
+        "before": "前",
+        "dailyPages": "一日一ページ",
+        "freeform": "自由な断片",
+        "note": "この前後は、上の計画だけを追います。",
+        "off": "外す",
+        "on": "残す",
+        "photo": "写真",
+        "photoNo": "試しの写真なし",
+        "photoYes": "試しの写真を追加",
+        "structure": "構造",
+        "title": "前後の違い"
+      },
+      "edits": {
+        "disableReminder": "リマインダーをオフにする",
+        "removeStreak": "連続記録を消す",
+        "switchToFreeform": "自由な断片に切り替える"
+      },
+      "features": {
+        "date": "日付",
+        "dateHint": "各エントリーに日付が付きます。",
+        "mood": "気分スコア",
+        "moodHint": "一日に点数を付けて、傾向を見ます。",
+        "off": "オフ",
+        "on": "オン",
+        "reminder": "毎日のリマインダー",
+        "reminderHint": "毎日書くように促します。",
+        "streak": "連続記録",
+        "streakHint": "何日続けて書いたか。",
+        "weeklyReport": "週次レポート",
+        "weeklyReportHint": "振り返りのための週次まとめ。"
+      },
+      "generated": {
+        "freeformBanner": "この変更で自由な断片になります。一日一ページは残ります。",
+        "kicker": "決める前に渡される、完成した答え。",
+        "openCompare": "二つの構造を見る",
+        "question": "あなたなら、どれを外しますか？",
+        "ryoPick": "自分ならこれを外す"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "ツールが渡す日記から始まります。日付、気分スコア、連続記録、毎日のリマインダー、週次レポートです。",
+          "title": "完全な答え"
+        },
+        "featureToggles": {
+          "description": "機能は一つずつ切り替えられます。書かなかった日が負債に感じるなら、まず連続記録を外します。",
+          "title": "機能を外す"
+        },
+        "photos": {
+          "description": "サンプル写真は最初から入っています。もう一枚置いてレイアウトを試し、取り消せます。",
+          "title": "写真"
+        },
+        "resetDemo": {
+          "description": "デモをリセットすると、サンプル、スイッチ、計画が最初に戻ります。",
+          "title": "デモを戻す"
+        },
+        "twoStructures": {
+          "description": "同じサンプルは、一日一ページにも、一枚の上に散らした断片にもなります。両方残ります。",
+          "title": "二つの構造"
+        },
+        "workbench": {
+          "description": "同じ依頼が計画になります。一つずつ残すか適用し、前後を見て、写真を試し、取り消せます。この端末上の図で、その場では生成しません。",
+          "title": "作業台"
+        }
+      },
+      "menu": {
+        "about": "日記について",
+        "help": "日記ヘルプ",
+        "reset": "デモをリセット",
+        "revert": "計画に戻す",
+        "undo": "取り消す"
+      },
+      "mood": {
+        "label": "気分スコア",
+        "outOf": "{{score}} / 5"
+      },
+      "name": "日記",
+      "notice": {
+        "nothing": "取り消す操作はありません",
+        "photo": "サンプル写真を置きました。取り消せます。",
+        "restored": "デモのサンプルを戻しました",
+        "reverted": "計画を最初の状態に戻しました",
+        "undone": "直前の操作を取り消しました"
+      },
+      "pageNumber": "{{count}} ページ",
+      "photo": {
+        "add": "写真を置いてみる",
+        "alt": "サンプル写真",
+        "remove": "試しの写真を外す",
+        "trialAlt": "レイアウトを試すために加えた写真"
+      },
+      "prompt": {
+        "removeStreak": "連続記録を外して、プレッシャーにしないで。"
+      },
+      "reminder": {
+        "label": "毎日のリマインダー",
+        "timeLabel": "時刻"
+      },
+      "report": {
+        "average": "平均の気分 {{score}}",
+        "blurb": "理由はどれも完全に聞こえます。日々そのものに点数は付いていません。",
+        "days": "{{count}} 日分を書いた",
+        "title": "週次レポート"
+      },
+      "service": {
+        "acceptAll": "すべて受け入れる",
+        "accepted": "三つを一度に適用します。この図は作業台を変えません。",
+        "askAgain": "もう一度頼む",
+        "askedAgain": "同じ完全なバージョンが、もう一度返ってきました。",
+        "changedDesign": "レイアウトも変えました",
+        "kicker": "流れの図です。速度の比較ではありません。",
+        "onlyWhole": "完成品だけが目の前にあると、受け入れ、拒否、もう一度、のどれかになります。",
+        "rejectAll": "すべて拒否する",
+        "rejected": "元の完全なバージョンを残します。",
+        "removedReminder": "毎日のリマインダーもオフにしました",
+        "removedStreak": "連続記録を外しました",
+        "resultTitle": "新しいバージョン",
+        "title": "サービス窓口"
+      },
+      "status": {
+        "complete": "完全なバージョン",
+        "kept": "残した変更："
+      },
+      "streak": {
+        "label": "連続記録",
+        "value": "{{count}} 日"
+      },
+      "title": "日記",
+      "toolbar": {
+        "reset": "デモをリセット"
+      },
+      "views": {
+        "compare": "二つの構造",
+        "counter": "サービス窓口と作業台",
+        "generated": "完全な答え"
+      },
+      "workbench": {
+        "applied": "変える",
+        "apply": "適用する",
+        "keep": "残す",
+        "kept": "残す",
+        "kicker": "同じ一文です。変わりつつあるものに触れられます。",
+        "pending": "予定",
+        "plan": "変更する予定はこれです",
+        "title": "作業台"
+      }
     }
   },
   "common": {
