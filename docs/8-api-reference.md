@@ -252,4 +252,4 @@ When running via `scripts/api-standalone-server.ts`:
 |----------|--------|
 | OpenAI | gpt-6 (gpt-6-luna), gpt-6.1-sol (ryo only), gpt-5.5, tts-1, whisper-1 |
 | Anthropic | sonnet-5.5 (claude-sonnet-5-5, ryo only), opus-5.5 (claude-opus-5-5, ryo + debug) |
-| Google | gemini-3-flash, gemini-3-flash-preview, gemini-3.1-pro-preview, gemini-3.1-flash-image-preview |
+| Google | gemini-3.6-flash, gemini-3.8-flash, gemini-3.1-pro-preview, gemini-3.5-flash-lite, gemini-nano-banana-2.1 |

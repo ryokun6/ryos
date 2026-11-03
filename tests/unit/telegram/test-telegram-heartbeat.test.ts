@@ -548,7 +548,7 @@ describe("telegram heartbeat helpers", () => {
     const prepared = await prepareRyoConversationModelInput({
       channel: "telegram",
       username: TELEGRAM_HEARTBEAT_TARGET_USERNAME,
-      model: "gemini-3-flash",
+      model: "gemini-3.6-flash",
       messages: [
         {
           id: "heartbeat-2",

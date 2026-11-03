@@ -5,6 +5,7 @@ import { AppId, getWindowConfig, getMobileWindowSize } from "@/config/appRegistr
 import { prefetchAppChunk } from "@/config/lazyAppComponent";
 import { useAppletStore } from "@/stores/useAppletStore";
 import { AppState } from "@/apps/base/types";
+import { migrateStoredAiModel } from "@/shared/aiModels";
 import { AIModel } from "@/types/aiModels";
 import { APP_ANALYTICS, track } from "@/utils/analytics";
 import { requestCloudSyncCheck } from "@/utils/cloudSyncEvents";
@@ -309,15 +310,16 @@ const createUseAppStore = () =>
       // AI model (kept here as it's core app functionality)
       aiModel: null,
       setAiModel: (m) => {
+        const next = migrateStoredAiModel(m);
         const previousModel = get().aiModel;
-        set({ aiModel: m });
-        if (previousModel !== m) {
+        set({ aiModel: next });
+        if (previousModel !== next) {
           appStoreLog.debug("AI model changed", {
-            model: m || "auto",
+            model: next || "auto",
             previousModel: previousModel || "auto",
           });
           track(APP_ANALYTICS.AI_MODEL_CHANGE, {
-            model: m || "auto",
+            model: next || "auto",
             previousModel: previousModel || "auto",
           });
         }
@@ -1027,6 +1029,10 @@ const createUseAppStore = () =>
         }),
         onRehydrateStorage: () => (state) => {
         if (!state) return;
+        const migratedModel = migrateStoredAiModel(state.aiModel);
+        if (migratedModel !== state.aiModel) {
+          state.aiModel = migratedModel;
+        }
         // Clean instanceOrder after rehydrate
         if (
           (state as unknown as { instanceOrder?: string[] }).instanceOrder &&

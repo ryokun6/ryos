@@ -13,8 +13,8 @@
 
 import { readFile, readdir, stat, writeFile } from "fs/promises";
 import { join } from "path";
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { geminiFlashLiteSettings } from "../api/_utils/gemini-flash-lite.js";
 
 const DOCS_DIR = "docs";
 const APPS_DIR = "src/apps";
@@ -551,14 +551,13 @@ Write the documentation in a clear, professional tone. Use markdown formatting p
 
   try {
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      ...geminiFlashLiteSettings("low"),
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.7,
     });
 
     return text;

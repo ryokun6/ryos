@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { generateText, NoObjectGeneratedError, Output, type UserContent } from "ai";
+import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getClientIp } from "../_utils/_rate-limit.js";
@@ -73,11 +73,10 @@ export default apiHandler<FoodAnalyzeRequestBody>(
 
     try {
       const { output } = await generateText({
-        model: google("gemini-3-flash-preview"),
+        ...geminiFlashLiteSettings("low"),
         instructions: prompt.instructions,
         output: Output.object({ schema: FoodAiOutputSchema, name: "food_estimate" }),
         messages: [{ role: "user", content }],
-        temperature: 0.2,
       });
       if (!output) throw new Error("AI returned no estimate");
       const result = foodResultFromAi(output);

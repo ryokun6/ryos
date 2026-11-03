@@ -16,8 +16,11 @@
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
+import {
+  GEMINI_FLASH_LITE_MODEL_ID,
+  geminiFlashLiteSettings,
+} from "../api/_utils/gemini-flash-lite.js";
 import { z } from "zod";
 import {
   FREE_EXERCISE_DB_COMMIT,
@@ -33,16 +36,9 @@ import {
 } from "../src/apps/fitness/utils/exerciseCatalogAudit";
 
 /** Gemini 2.5 Flash redirects here on 2026-12-01. Keep sampling params off. */
-export const FITNESS_EXERCISE_TRANSLATION_MODEL = "gemini-3.5-flash-lite";
+export const FITNESS_EXERCISE_TRANSLATION_MODEL = GEMINI_FLASH_LITE_MODEL_ID;
 
-export const fitnessExerciseTranslationSettings = {
-  model: google(FITNESS_EXERCISE_TRANSLATION_MODEL),
-  providerOptions: {
-    google: {
-      thinkingConfig: { thinkingLevel: "minimal" as const, includeThoughts: false },
-    },
-  },
-};
+export const fitnessExerciseTranslationSettings = geminiFlashLiteSettings("minimal");
 
 /** Replaces the old temperature: 0.2. 3.5 Flash-Lite ignores sampling params. */
 const FAITHFUL_TRANSLATION =

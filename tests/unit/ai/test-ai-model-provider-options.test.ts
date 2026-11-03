@@ -20,11 +20,15 @@ describe("model reasoning options", () => {
     expect(modelSupportsTemperature("opus-5.5")).toBe(false);
     expect(modelSupportsTemperature("sonnet-5.5")).toBe(false);
     expect(modelSupportsTemperature("gpt-5.5")).toBe(true);
-    expect(modelSupportsTemperature("gemini-3-flash")).toBe(true);
+    expect(modelSupportsTemperature("gemini-3.1-pro-preview")).toBe(true);
+    expect(modelSupportsTemperature("gemini-3.6-flash")).toBe(false);
+    expect(modelSupportsTemperature("gemini-3.8-flash")).toBe(false);
   });
 
-  test("leaves non-OpenAI models on provider default", () => {
+  test("uses medium thinking for Gemini Flash chat models", () => {
     expect(getModelReasoning("sonnet-5.5")).toBeUndefined();
-    expect(getModelReasoning("gemini-3-flash")).toBeUndefined();
+    expect(getModelReasoning("gemini-3.1-pro-preview")).toBeUndefined();
+    expect(getModelReasoning("gemini-3.6-flash")).toBe("medium");
+    expect(getModelReasoning("gemini-3.8-flash")).toBe("medium");
   });
 });

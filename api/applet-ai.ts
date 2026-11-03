@@ -18,6 +18,7 @@ import { apiHandler } from "./_utils/api-handler.js";
 import { isAllowedAppHost } from "./_utils/runtime-config.js";
 import { addCacheControlToMessages } from "./_utils/ai-prompt-cache.js";
 import { GOOGLE_FILES_POLL_TIMEOUT_MS } from "./_utils/upload-provider-file.js";
+import { geminiFlashLiteSettings } from "./_utils/gemini-flash-lite.js";
 
 // ============================================================================
 // Constants and Schemas
@@ -122,6 +123,9 @@ const AUTH_TEXT_LIMIT_PER_HOUR = 50;
 const AUTH_IMAGE_LIMIT_PER_HOUR = 12;
 const RATE_LIMIT_WINDOW_SECONDS = 60 * 60;
 
+/** Nano Banana 2.1. Replaces shut-down gemini-3.1-flash-image-preview. */
+export const APPLET_IMAGE_MODEL_ID = "gemini-nano-banana-2.1";
+
 export const APPLET_IMAGE_PROVIDER_OPTIONS = {
   google: {
     responseModalities: ["IMAGE", "TEXT"],
@@ -133,6 +137,20 @@ export const APPLET_IMAGE_PROVIDER_OPTIONS = {
 } as const;
 
 type ParsedMessage = z.infer<typeof MessageSchema>;
+
+/**
+ * Gemini 3.5 Flash-Lite rejects a request whose last turn is the model.
+ * Drop trailing assistant messages so the call always ends on a user turn.
+ */
+export function omitTrailingAssistantMessages<T extends { role: string }>(
+  messages: readonly T[]
+): T[] {
+  let end = messages.length;
+  while (end > 0 && messages[end - 1]?.role === "assistant") {
+    end -= 1;
+  }
+  return messages.slice(0, end);
+}
 
 // ============================================================================
 // Utility Functions
@@ -567,14 +585,13 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     try {
       logger.info("Starting image generation (Gemini)", { promptPartsCount: promptParts.length });
       const imageResult = await generateText({
-        model: google("gemini-3.1-flash-image-preview"),
+        model: google(APPLET_IMAGE_MODEL_ID),
         messages: [
           {
             role: "user",
             content: promptParts,
           },
         ],
-        ...(typeof temperature === "number" ? { temperature } : {}),
         providerOptions: APPLET_IMAGE_PROVIDER_OPTIONS,
       });
 
@@ -639,16 +656,24 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     });
   }
 
+  const modelMessages = omitTrailingAssistantMessages(prepared.messages);
+  if (prepared.messages.length > 0 && modelMessages.length === 0) {
+    logger.warn("Applet text request ended on a model turn");
+    logger.response(400, Date.now() - startTime);
+    return res.status(400).json({
+      error: "Conversation must end with a user message.",
+    });
+  }
+
   try {
     logger.info("Starting text generation", {
-      messageCount: prepared.messages.length,
+      messageCount: modelMessages.length,
       dynamicContextCount: prepared.dynamicContextMessages.length,
     });
-    const appletModel = google("gemini-3-flash-preview");
     const { text } = await generateText({
-      model: appletModel,
+      ...geminiFlashLiteSettings("low"),
       instructions: prepared.instructions,
-      messages: prepared.messages,
+      messages: modelMessages,
       prepareStep: ({ stepNumber, messages, model: stepModel }) => {
         const withDynamicContext =
           stepNumber === 0 && prepared.dynamicContextMessages.length > 0
@@ -661,7 +686,6 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
           }),
         };
       },
-      temperature: temperature ?? 0.6,
       maxOutputTokens: 4000,
       timeout: {
         totalMs: 60_000,
@@ -672,8 +696,7 @@ export default apiHandler<z.infer<typeof RequestSchema>>(
     const trimmedReply = text.trim();
     logger.info("Text generation succeeded", {
       replyLength: trimmedReply.length,
-      messageCount: prepared.messages.length,
-      temperature: temperature ?? 0.6,
+      messageCount: modelMessages.length,
     });
 
     logger.response(200, Date.now() - startTime);

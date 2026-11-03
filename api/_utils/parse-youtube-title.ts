@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
+import { geminiFlashLiteSettings } from "./gemini-flash-lite.js";
 import { z } from "zod";
 
 export interface ParsedYouTubeTitle {
@@ -196,7 +196,7 @@ export async function parseYouTubeTitleWithAI(
 
   try {
     const { output: parsedData } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      ...geminiFlashLiteSettings("minimal"),
       output: Output.object({
         schema: ParsedTitleSchema,
         name: "parsed_youtube_title",
@@ -221,7 +221,6 @@ Examples:
           content: `Title: ${cleanTitle}${cleanChannel ? `\nChannel: ${cleanChannel}` : ""}`,
         },
       ],
-      temperature: 0.1,
       abortSignal: abortController.signal,
     });
 
