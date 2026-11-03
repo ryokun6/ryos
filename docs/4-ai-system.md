@@ -15,6 +15,7 @@ Default model: `gpt-6` (OpenAI `gpt-6-luna`). Provider errors are returned to th
 Specialized models used by specific flows:
 - `gemini-3-flash-preview` (proactive greeting, applet text mode, chat-room auto replies, memory extraction, and daily-notes processing)
 - `gemini-3.1-flash-image-preview` (applet image generation)
+- `gemini-3.5-flash-lite` (offline fitness exercise catalog translation in `scripts/translate-fitness-exercises.ts`). That call sets `thinkingLevel: "minimal"` and does not send `temperature`, `topP`, or `topK`.
 
 ```mermaid
 graph TD

@@ -8,6 +8,10 @@
  *
  * Requires GOOGLE_GENERATIVE_AI_API_KEY. Safe to re-run: completed exercises
  * (matching instruction counts) are skipped.
+ *
+ * Uses gemini-3.5-flash-lite. That model ignores temperature/topP/topK and
+ * thinks with thinkingLevel (default "minimal"). Translation stays on
+ * "minimal"; the instructions below carry the old low-temperature guidance.
  */
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
@@ -27,6 +31,22 @@ import {
   type ExerciseCatalog,
   type ExerciseCopy,
 } from "../src/apps/fitness/utils/exerciseCatalogAudit";
+
+/** Gemini 2.5 Flash redirects here on 2026-12-01. Keep sampling params off. */
+export const FITNESS_EXERCISE_TRANSLATION_MODEL = "gemini-3.5-flash-lite";
+
+export const fitnessExerciseTranslationSettings = {
+  model: google(FITNESS_EXERCISE_TRANSLATION_MODEL),
+  providerOptions: {
+    google: {
+      thinkingConfig: { thinkingLevel: "minimal" as const, includeThoughts: false },
+    },
+  },
+};
+
+/** Replaces the old temperature: 0.2. 3.5 Flash-Lite ignores sampling params. */
+const FAITHFUL_TRANSLATION =
+  "Stay literal. Choose the most direct wording and do not vary phrasing for style.";
 
 const LOCALES = ["zh-TW", "zh-CN", "ja", "ko", "fr", "de", "es", "pt", "it", "ru"] as const;
 type Locale = (typeof LOCALES)[number];
@@ -238,12 +258,12 @@ async function translateBatch(locale: Locale, batch: readonly SourceExercise[]):
         ? "Write Simplified Chinese as used in Mainland China."
         : "";
   const { output } = await generateText({
-    model: google("gemini-2.5-flash"),
-    temperature: 0.2,
+    ...fitnessExerciseTranslationSettings,
     abortSignal: AbortSignal.timeout(150_000),
     output: Output.object({ schema: TranslationSchema, name: "exercise_translations" }),
     instructions: `You translate a fitness app's exercise library into ${LANGUAGE_NAMES[locale]}.
 Tone: terse, clear, imperative, like a workout card. Do not add coaching fluff.
+${FAITHFUL_TRANSLATION}
 Keep each instruction as its own step, in the same order, with the same count.
 Preserve numbers, fractions, percentages, and parenthetical cues.
 Use standard gym terminology. Preferred terms: ${GLOSSARY[locale]}.
@@ -384,12 +404,12 @@ async function translateMulti(
 ): Promise<Record<string, ExerciseCopy[]>> {
   const glossary = locales.map((locale) => `${locale}: ${GLOSSARY[locale]}`).join("\n");
   const { output } = await generateText({
-    model: google("gemini-2.5-flash"),
-    temperature: 0.2,
+    ...fitnessExerciseTranslationSettings,
     abortSignal: AbortSignal.timeout(120_000),
     output: Output.object({ schema: MultiSchema, name: "exercise_translations" }),
     instructions: `You translate a fitness app's exercise library. For each exercise, return translations for every requested locale.
 Tone: terse, clear, imperative, like a workout card. Do not add coaching fluff.
+${FAITHFUL_TRANSLATION}
 Keep each instruction as its own step, in the same order, with the same count.
 Preserve numbers, fractions, percentages, and parenthetical cues.
 zh-TW must be Traditional Chinese as used in Taiwan, with no Simplified characters.
