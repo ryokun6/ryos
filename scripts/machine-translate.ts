@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 
 /**
- * Script to machine translate [TODO] marked keys in translation files using Gemini 2.5 Flash
+ * Script to machine translate [TODO] marked keys in translation files using
+ * Gemini 3.5 Flash-Lite (thinkingLevel minimal; no sampling parameters).
  * 
  * This script:
  * - Reads translation files for each language
@@ -19,8 +20,8 @@
 
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
-import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
+import { geminiFlashLiteSettings } from "../api/_utils/gemini-flash-lite.js";
 import {
   formatAppleContextualTerminologyForPrompt,
   formatAppleTerminologyForPrompt,
@@ -162,14 +163,13 @@ Return ONLY a valid JSON array of strings, nothing else.`;
 
   try {
     const { text } = await generateText({
-      model: google("gemini-3-flash-preview"),
+      ...geminiFlashLiteSettings("minimal"),
       messages: [
         {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.3,
     });
 
     // Parse the response - it should be a JSON array

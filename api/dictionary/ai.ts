@@ -1,5 +1,5 @@
-import { google } from "@ai-sdk/google";
 import { smoothStream, streamText } from "ai";
+import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import { uiStreamErrorText } from "../_utils/provider-auth.js";
 import { z } from "zod";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -55,7 +55,7 @@ async function streamDictionaryAiText({
   lang,
   mode,
   prompt,
-  temperature,
+  thinkingLevel,
 }: {
   req: IncomingMessage;
   res: ServerResponse;
@@ -70,7 +70,7 @@ async function streamDictionaryAiText({
   lang: RequestBody["lang"];
   mode: DictionaryAiMode;
   prompt: { instructions: string; user: string };
-  temperature: number;
+  thinkingLevel: "minimal" | "low";
 }): Promise<void> {
   const abort = new AbortController();
   const abortGeneration = () => {
@@ -96,20 +96,14 @@ async function streamDictionaryAiText({
   };
 
   const result = streamText({
-    model: google("gemini-3-flash-preview"),
+    ...geminiFlashLiteSettings(thinkingLevel),
     instructions: prompt.instructions,
     messages: [{ role: "user", content: prompt.user }],
-    temperature,
     abortSignal: abort.signal,
     // Same word-sized chunks Chats uses, so CJK and Latin both paint smoothly.
     experimental_transform: smoothStream({
       chunking: /[\u4E00-\u9FFF]|\S+\s+/,
     }),
-    providerOptions: {
-      google: {
-        thinkingConfig: { thinkingLevel: "minimal", includeThoughts: false },
-      },
-    },
   });
 
   try {
@@ -214,7 +208,7 @@ export default apiHandler<RequestBody>(
         lang,
         mode,
         prompt,
-        temperature: mode === "fallback" ? 0.2 : 0.4,
+        thinkingLevel: mode === "fallback" ? "minimal" : "low",
       });
     } catch (error) {
       logger.error("dictionary ai failed", error);

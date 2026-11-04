@@ -36,8 +36,13 @@ export const AI_MODELS = {
     provider: "OpenAI",
     access: "public",
   },
-  "gemini-3-flash": {
-    name: "gemini-3-flash",
+  "gemini-3.6-flash": {
+    name: "gemini-3.6-flash",
+    provider: "Google",
+    access: "public",
+  },
+  "gemini-3.8-flash": {
+    name: "gemini-3.8-flash",
     provider: "Google",
     access: "public",
   },
@@ -89,6 +94,9 @@ export const AI_MODEL_ALIASES: Record<string, SupportedModel> = {
   "gpt-6-astra": "gpt-6",
   "gpt-6-luna": "gpt-6",
   "gpt-6-sol": "gpt-6.1-sol",
+  // gemini-3-flash-preview is legacy. 3.6 Flash is the recommended replacement.
+  "gemini-3-flash": "gemini-3.6-flash",
+  "gemini-3-flash-preview": "gemini-3.6-flash",
 };
 
 export function isRyoAdminUsername(
@@ -139,12 +147,27 @@ export function normalizeAiModelId(model: string): string {
   return AI_MODEL_ALIASES[model] ?? model;
 }
 
+/**
+ * Persisted Control Panels / sync values. Known retired ids move to their
+ * replacement. Anything else that is not a current model becomes the default
+ * (null), which chat treats as gpt-6.
+ */
+export function migrateStoredAiModel(
+  model: string | null | undefined
+): AIModel {
+  if (model == null || model === "") return null;
+  const normalized = normalizeAiModelId(model);
+  return isSupportedAiModel(normalized) ? normalized : null;
+}
+
 export function resolveClientAiModel(
   selected: string | null | undefined,
   options: { username?: string | null; debugMode?: boolean } = {}
 ): SupportedModel | null {
-  if (!isSupportedAiModel(selected)) return null;
-  return canAccessAiModel(selected, options) ? selected : null;
+  if (selected == null || selected === "") return null;
+  const model = normalizeAiModelId(selected);
+  if (!isSupportedAiModel(model)) return null;
+  return canAccessAiModel(model, options) ? model : null;
 }
 
 export type ResolveRequestedAiModelResult =

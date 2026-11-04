@@ -345,7 +345,10 @@ function shouldEnableGoogleSearch({
   model: SupportedModel;
   username?: string | null;
 }): boolean {
-  return model === "gemini-3-flash" && !!username;
+  return (
+    (model === "gemini-3.6-flash" || model === "gemini-3.8-flash") &&
+    !!username
+  );
 }
 
 function createOpenAIWebSearchTool(

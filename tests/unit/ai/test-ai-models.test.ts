@@ -7,6 +7,7 @@ import {
   canAccessAiModel,
   getSelectableAiModels,
   isRestrictedAiModel,
+  migrateStoredAiModel,
   normalizeAiModelId,
   resolveClientAiModel,
   resolveRequestedAiModel,
@@ -41,6 +42,27 @@ describe("AI model registry", () => {
     expect(getModelInstance("gpt-6.1-sol").modelId).toBe("gpt-6.1-sol");
     expect(getModelInstance("sonnet-5.5").modelId).toBe("claude-sonnet-5-5");
     expect(getModelInstance("opus-5.5").modelId).toContain("opus");
+    expect(getModelInstance("gemini-3.6-flash").modelId).toBe("gemini-3.6-flash");
+    expect(getModelInstance("gemini-3.8-flash").modelId).toBe("gemini-3.8-flash");
+    expect(getModelInstance("gemini-3.1-pro-preview").modelId).toBe(
+      "gemini-3.1-pro-preview"
+    );
+  });
+
+  test("migrates a stored gemini-3-flash preference to gemini-3.6-flash", () => {
+    expect(normalizeAiModelId("gemini-3-flash")).toBe("gemini-3.6-flash");
+    expect(normalizeAiModelId("gemini-3-flash-preview")).toBe("gemini-3.6-flash");
+    expect(migrateStoredAiModel("gemini-3-flash")).toBe("gemini-3.6-flash");
+    expect(migrateStoredAiModel("gemini-3-flash-preview")).toBe("gemini-3.6-flash");
+    expect(migrateStoredAiModel("gemini-3.8-flash")).toBe("gemini-3.8-flash");
+    expect(migrateStoredAiModel("not-a-model")).toBeNull();
+    expect(migrateStoredAiModel(null)).toBeNull();
+    expect(
+      resolveRequestedAiModel("gemini-3-flash", { username: "ryo" })
+    ).toEqual({ ok: true, model: "gemini-3.6-flash" });
+    expect(
+      resolveClientAiModel("gemini-3-flash-preview", { username: "ryo" })
+    ).toBe("gemini-3.6-flash");
   });
 
   test("lists opus-5.5 as a restricted Ryo-debug model", () => {
@@ -92,6 +114,8 @@ describe("opus-5.5 access control", () => {
     expect(ryoDebug).toContain("gpt-6");
     expect(ryoDebug).toContain("gpt-6.1-sol");
     expect(ryoDebug).toContain("sonnet-5.5");
+    expect(ryoDebug).toContain("gemini-3.6-flash");
+    expect(ryoDebug).toContain("gemini-3.8-flash");
 
     const ryo = getSelectableAiModels({
       username: "ryo",
@@ -99,6 +123,8 @@ describe("opus-5.5 access control", () => {
     }).map((model) => model.id);
     expect(ryo).toContain("gpt-6.1-sol");
     expect(ryo).toContain("sonnet-5.5");
+    expect(ryo).toContain("gemini-3.6-flash");
+    expect(ryo).toContain("gemini-3.8-flash");
     expect(ryo).not.toContain("opus-5.5");
 
     expect(

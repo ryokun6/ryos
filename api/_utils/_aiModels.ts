@@ -54,6 +54,9 @@ const MODEL_REASONING_BY_MODEL: Partial<
   // GPT-6 Luna supports `none`. gpt-6.1-sol does not.
   "gpt-6": "none",
   "gpt-6.1-sol": "low",
+  // Tool-using Gemini Flash. 3.8 rejects thinkingLevel "minimal".
+  "gemini-3.6-flash": "medium",
+  "gemini-3.8-flash": "medium",
 };
 
 function createModelInstance(model: SupportedModel): LanguageModel {
@@ -68,8 +71,10 @@ function createModelInstance(model: SupportedModel): LanguageModel {
       return openai("gpt-6.1-sol");
     case "gpt-5.5":
       return openai("gpt-5.5");
-    case "gemini-3-flash":
-      return google("gemini-3-flash-preview");
+    case "gemini-3.6-flash":
+      return google("gemini-3.6-flash");
+    case "gemini-3.8-flash":
+      return google("gemini-3.8-flash");
     case "gemini-3.1-pro-preview":
       return google("gemini-3.1-pro-preview");
     default:
@@ -94,10 +99,11 @@ export function getModelReasoning(
 }
 
 /**
- * gpt-6 (gpt-6-luna), gpt-6.1-sol, claude-opus-5-5, and claude-sonnet-5-5
- * are called without a custom temperature. The AI SDK forwards temperature
- * for gpt-6-luna when reasoning effort is none; ryOS still omits it. The
- * Anthropic provider treats any `claude-sonnet-5*` id as
+ * gpt-6 (gpt-6-luna), gpt-6.1-sol, claude-opus-5-5, claude-sonnet-5-5,
+ * gemini-3.6-flash, and gemini-3.8-flash are called without a custom
+ * temperature. Gemini 3.6/3.8 ignore sampling params. The AI SDK forwards
+ * temperature for gpt-6-luna when reasoning effort is none; ryOS still omits
+ * it. The Anthropic provider treats any `claude-sonnet-5*` id as
  * `rejectsSamplingParameters`.
  */
 export function modelSupportsTemperature(model: SupportedModel): boolean {
@@ -105,7 +111,9 @@ export function modelSupportsTemperature(model: SupportedModel): boolean {
     model !== "gpt-6" &&
     model !== "gpt-6.1-sol" &&
     model !== "opus-5.5" &&
-    model !== "sonnet-5.5"
+    model !== "sonnet-5.5" &&
+    model !== "gemini-3.6-flash" &&
+    model !== "gemini-3.8-flash"
   );
 }
 

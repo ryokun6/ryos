@@ -640,7 +640,7 @@ import { extractAuth, extractAuthNormalized } from "../_utils/auth/index.js";</c
 <p>Model IDs and metadata are defined in <code><a href="https://github.com/ryokun6/ryos/blob/main/src/shared/aiModels.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">src/shared/aiModels.ts</a></code>. Server provider wiring is in <code><a href="https://github.com/ryokun6/ryos/blob/main/api/_utils/_aiModels.ts" target="_blank" rel="noopener noreferrer" style="color: var(--doc-link); text-decoration: underline;">api/_utils/_aiModels.ts</a></code>.</p>
 <h3>Supported Models (AI SDK 7)</h3>
 <p>The API uses Vercel AI SDK 7 with structured outputs for type-safe responses.</p>
-<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-6 (gpt-6-astra, default), gpt-5.5</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6), opus-5.5 (claude-opus-5-5, ryo + debug)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3-flash, gemini-3.1-pro-preview</td><td>Image generation, title parsing</td></tr></tbody></table>
+<table><thead><tr><th>Provider</th><th>Models</th><th>Use Cases</th></tr></thead><tbody><tr><td><strong>OpenAI</strong></td><td>gpt-6 (gpt-6-astra, default), gpt-5.5</td><td>Default chat, code generation</td></tr><tr><td><strong>Anthropic</strong></td><td>sonnet-4.6 (claude-sonnet-4-6), opus-5.5 (claude-opus-5-5, ryo + debug)</td><td>Complex reasoning</td></tr><tr><td><strong>Google</strong></td><td>gemini-3.6-flash, gemini-3.8-flash, gemini-3.1-pro-preview</td><td>Chat, tools, Google Search</td></tr></tbody></table>
 <strong>Structured Outputs:</strong> Used for deterministic responses like song title parsing (<code>/api/parse-title</code>).
 <h3>Model Selection</h3>
 <pre><code>// api/_utils/_aiModels.ts
@@ -654,8 +654,10 @@ export const getModelInstance = (model: SupportedModel): LanguageModel =&gt; {
       return anthropic("claude-sonnet-4-6");
     case "opus-5.5":
       return anthropic("claude-opus-5-5");
-    case "gemini-3-flash":
-      return google("gemini-3-flash-preview");
+    case "gemini-3.6-flash":
+      return google("gemini-3.6-flash");
+    case "gemini-3.8-flash":
+      return google("gemini-3.8-flash");
     case "gemini-3.1-pro-preview":
       return google("gemini-3.1-pro-preview");
   }
