@@ -28,6 +28,13 @@ interface CanvasCard {
 
 const CLICK_SLOP_PX = 5;
 
+/**
+ * Cards are laid out on this frame, not on the live window.
+ * Widths and positions stay put when the canvas pane is resized.
+ */
+const CANVAS_LAYOUT_WIDTH = 1068;
+const CANVAS_LAYOUT_HEIGHT = 1360;
+
 function CanvasNote({ text }: { text: string }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [clipped, setClipped] = useState(false);
@@ -319,17 +326,21 @@ export function FreeformCanvas({
   return (
     <div className="relative flex h-full min-h-0 flex-col" {...hoverProps}>
       <div
-        ref={canvasRef}
         onPointerDown={(event) => {
-          if (event.target !== event.currentTarget) return;
+          if (event.target !== event.currentTarget && event.target !== canvasRef.current) return;
           flushPendingClick();
           l.api.selectCard(null);
         }}
         className={cn(
-          "journal-canvas relative min-h-[22rem] flex-1 overflow-hidden",
+          "journal-canvas relative min-h-0 flex-1 overflow-auto",
           "text-[#2c2416] os-dark:text-[#f3ead7]"
         )}
       >
+        <div
+          ref={canvasRef}
+          className="relative"
+          style={{ width: CANVAS_LAYOUT_WIDTH, height: CANVAS_LAYOUT_HEIGHT }}
+        >
         {cards.map((fragment) => {
           const position = positionFor(fragment);
           const text = textFor(fragment);
@@ -451,6 +462,7 @@ export function FreeformCanvas({
             </article>
           );
         })}
+        </div>
       </div>
       <JournalViewToolbar l={l} open={open} pages="canvas" />
       <JournalCardMenu menu={menu} onClose={() => setMenu(null)} l={l} />

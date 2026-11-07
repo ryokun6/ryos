@@ -6,6 +6,7 @@
  */
 .journal-canvas {
   --journal-canvas-accent: var(--os-accent-color, var(--os-color-link, #2765ca));
+  background-attachment: local;
   background-color: #f7f4ee;
   background-image: linear-gradient(
     to bottom,
