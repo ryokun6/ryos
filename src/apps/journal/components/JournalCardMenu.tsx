@@ -1,6 +1,7 @@
 import { createPortal } from "react-dom";
 import { RightClickMenu, type MenuItem } from "@/components/ui/right-click-menu";
 import type { JournalLogic } from "../hooks/useJournalLogic";
+import { deleteJournalSelection } from "../journalSelectionDelete";
 import { journalCardDayId, sidebarDates, todayDayId } from "../logic";
 import { formatJournalDay } from "../sampleContent";
 
@@ -25,7 +26,7 @@ export function JournalCardMenu({
     {
       type: "item",
       label: l.t("apps.journal.toolbar.delete"),
-      onSelect: () => l.api.removeCard(menu.id),
+      onSelect: () => deleteJournalSelection(menu.id, l.api.removeCard),
     },
     {
       type: "submenu",

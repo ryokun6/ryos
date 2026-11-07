@@ -11,7 +11,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
-import { createInitialJournalState } from "../../../src/apps/journal/logic";
+import { createInitialJournalState, fragmentsForJournalDay } from "../../../src/apps/journal/logic";
 
 type JournalLogic = import("../../../src/apps/journal/hooks/useJournalLogic").JournalLogic;
 type JournalStore = typeof import("../../../src/stores/useJournalStore").useJournalStore;
@@ -245,5 +245,25 @@ describe("journal view toolbar", () => {
     expect(button("apps.journal.toolbar.delete")).toBeNull();
     expect(useJournalStore.getState().journal.selectedCardId).toBeNull();
     expect(useJournalStore.getState().journal.removedFragmentIds).toContain("oct27-note");
+  });
+
+  test("delete removes the selected text block and leaves the rest of the page", async () => {
+    await renderToolbar("none");
+
+    await act(async () => {
+      useJournalStore.getState().selectDay("2026-10-28");
+      useJournalStore.getState().selectCard("oct28-note");
+    });
+
+    await act(async () => {
+      button("apps.journal.toolbar.delete")?.click();
+    });
+
+    const journal = useJournalStore.getState().journal;
+    expect(journal.selectedDayId).toBe("2026-10-28");
+    expect(journal.removedFragmentIds).toEqual(["oct28-note"]);
+    expect(fragmentsForJournalDay(journal, "2026-10-28").map((fragment) => fragment.id)).toEqual([
+      "oct28-photo",
+    ]);
   });
 });

@@ -355,7 +355,7 @@ export function DailyJournal({
               <PageCard
                 key={fragment.id}
                 id={fragment.id}
-                highlight={false}
+                highlight={journal.selectedCardId === fragment.id}
                 onSelect={l.api.selectCard}
                 onMenu={(id, x, y) => setMenu({ id, x, y })}
               >
@@ -364,6 +364,7 @@ export function DailyJournal({
                   saved={journal.texts[fragment.id]}
                   language={language}
                   onChange={l.api.setEntryText}
+                  onSelect={l.api.selectCard}
                 />
               </PageCard>
             )
@@ -381,7 +382,7 @@ export function DailyJournal({
             <PageCard
               key={scrap.id}
               id={scrap.id}
-              highlight={scrap.kind !== "text" && journal.selectedCardId === scrap.id}
+              highlight={journal.selectedCardId === scrap.id}
               onSelect={l.api.selectCard}
               onMenu={(id, x, y) => setMenu({ id, x, y })}
             >
@@ -424,6 +425,7 @@ export function DailyJournal({
                   saved={journal.texts[scrap.id]}
                   language={language}
                   onChange={l.api.setEntryText}
+                  onSelect={l.api.selectCard}
                 />
               )}
             </PageCard>

@@ -6,6 +6,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { getActiveIpodTracks, useIpodStore } from "@/stores/useIpodStore";
 import type { JournalLogic } from "../hooks/useJournalLogic";
+import { deleteJournalSelection } from "../journalSelectionDelete";
 import { activeJournalDayId, currentJournalPage, journalCardExists } from "../logic";
 import type { JournalScrapKind } from "../types";
 
@@ -319,7 +320,7 @@ export function JournalViewToolbar({
             onClick={() => {
               if (!journal.selectedCardId) return;
               playClick();
-              l.api.removeCard(journal.selectedCardId);
+              deleteJournalSelection(journal.selectedCardId, l.api.removeCard);
             }}
           >
             <Trash size={16} weight="bold" />
