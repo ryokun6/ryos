@@ -278,6 +278,24 @@ describe("createSplitIndexedDBPersistStorage", () => {
     );
   });
 
+  test("keeps a legacy localStorage snapshot if storage is cleared while IndexedDB is opening", async () => {
+    localStorage.setItem(
+      "ryos:test-split",
+      JSON.stringify({
+        state: {
+          label: "legacy",
+          items: { a: { id: "a", value: "one" } },
+        },
+        version: 1,
+      })
+    );
+    const storage = createStorage();
+    const hydration = storage.getItem("ryos:test-split");
+    localStorage.clear();
+    expect((await hydration)?.state.label).toBe("legacy");
+    expect((await hydration)?.state.items.a?.value).toBe("one");
+  });
+
   test("epoch invalidation preserves legacy localStorage during migration", async () => {
     localStorage.setItem(
       "ryos:test-split",

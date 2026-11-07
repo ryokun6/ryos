@@ -213,9 +213,9 @@ function rowsEqual(
   );
 }
 
-async function readLegacyLocalStorage<S>(
+function readLegacyLocalStorageSync<S>(
   names: readonly string[]
-): Promise<{ name: string; value: StorageValue<S> } | null> {
+): { name: string; value: StorageValue<S> } | null {
   if (typeof localStorage === "undefined") return null;
   for (const name of names) {
     try {
@@ -502,6 +502,13 @@ export function createSplitIndexedDBPersistStorage<S>(
     getItem: async (name) => {
       if (pendingName === name && pendingValue !== null) return pendingValue;
 
+      // Snapshot before the IndexedDB await. The unit suite shares
+      // localStorage, and another file can clear it while this read waits.
+      const legacySnapshot = readLegacyLocalStorageSync<S>([
+        name,
+        ...legacyNames,
+      ]);
+
       hydratingNames.add(name);
       try {
         let record = await readMetadataRecord<S>(name);
@@ -517,15 +524,9 @@ export function createSplitIndexedDBPersistStorage<S>(
           }
         }
 
-        if (!record) {
-          const legacy = await readLegacyLocalStorage<S>([
-            name,
-            ...legacyNames,
-          ]);
-          if (legacy) {
-            sourceName = legacy.name;
-            record = legacy.value;
-          }
+        if (!record && legacySnapshot) {
+          sourceName = legacySnapshot.name;
+          record = legacySnapshot.value;
         }
 
         if (!record) return null;
