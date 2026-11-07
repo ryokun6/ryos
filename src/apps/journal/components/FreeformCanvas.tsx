@@ -28,9 +28,7 @@ interface CanvasCard {
 
 const CLICK_SLOP_PX = 5;
 
-const CONTENT_RING = "ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]";
-
-function CanvasNote({ text, marked }: { text: string; marked: boolean }) {
+function CanvasNote({ text }: { text: string }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [clipped, setClipped] = useState(false);
 
@@ -49,14 +47,12 @@ function CanvasNote({ text, marked }: { text: string; marked: boolean }) {
   }, [text]);
 
   return (
-    <div className={cn("w-fit max-w-full rounded-[4px]", marked && CONTENT_RING)}>
-      <p
-        ref={ref}
-        className={cn("journal-canvas-note text-sm leading-snug", clipped && "journal-canvas-note-clip")}
-      >
-        {text}
-      </p>
-    </div>
+    <p
+      ref={ref}
+      className={cn("journal-canvas-note text-sm leading-snug", clipped && "journal-canvas-note-clip")}
+    >
+      {text}
+    </p>
   );
 }
 
@@ -340,7 +336,6 @@ export function FreeformCanvas({
           const editing = editingId === fragment.id;
           const current = fragment.pageId === activePageId;
           const selected = l.journal.selectedCardId === fragment.id;
-          const marked = selected || current;
           const isPhoto = fragment.kind === "photo" && Boolean(fragment.photo);
           const cursorClass = editing
             ? "cursor-text select-text"
@@ -367,7 +362,7 @@ export function FreeformCanvas({
                       "border border-black/10 bg-[#fffdf8] p-2 os-dark:border-white/10 os-dark:bg-[#3a342c]",
                       dateLabel && "pb-5"
                     ),
-                marked && "z-[2]",
+                selected && "z-[2] ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]",
                 cursorClass
               )}
               style={{
@@ -393,18 +388,13 @@ export function FreeformCanvas({
                   src={fragment.photo!}
                   alt={t("apps.journal.photo.alt")}
                   draggable={false}
-                  className={cn(
-                    "block aspect-[4/3] w-full object-cover ring-inset",
-                    marked && CONTENT_RING
-                  )}
+                  className="block aspect-[4/3] w-full object-cover"
                   style={{ borderRadius: 8 }}
                 />
               ) : fragment.kind === "song" ? (
                 <div className="flex items-start gap-1.5">
-                  <span className={cn("rounded-[4px]", marked && CONTENT_RING)}>
-                    <JournalSongMark songId={fragment.songId} cover={fragment.songCover} size={36} />
-                  </span>
-                  <div className={cn("min-w-0 rounded-[4px]", marked && CONTENT_RING)}>
+                  <JournalSongMark songId={fragment.songId} cover={fragment.songCover} size={36} />
+                  <div className="min-w-0">
                     <p className="truncate text-sm font-medium leading-snug">
                       {fragment.songTitle || t("apps.journal.toolbar.addSong")}
                     </p>
@@ -420,10 +410,7 @@ export function FreeformCanvas({
                   defaultValue={text}
                   placeholder={t("apps.journal.toolbar.emptyNote")}
                   rows={Math.min(8, Math.max(2, text.split("\n").length))}
-                  className={cn(
-                    "journal-canvas-note w-full resize-none overflow-y-auto rounded-[4px] bg-transparent p-0 text-sm leading-snug text-inherit outline-none select-text",
-                    marked && CONTENT_RING
-                  )}
+                  className="journal-canvas-note w-full resize-none overflow-y-auto bg-transparent p-0 text-sm leading-snug text-inherit outline-none select-text"
                   onPointerDown={(event) => event.stopPropagation()}
                   onPointerUp={(event) => event.stopPropagation()}
                   onKeyDown={(event) => {
@@ -442,7 +429,7 @@ export function FreeformCanvas({
                   onBlur={(event) => finishTextEdit(event.currentTarget.value)}
                 />
               ) : (
-                <CanvasNote text={text || t("apps.journal.toolbar.emptyNote")} marked={marked} />
+                <CanvasNote text={text || t("apps.journal.toolbar.emptyNote")} />
               )}
               {dateLabel ? (
                 <p
