@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import "../journal.css";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { clamp, isJournalDayId, journalFragments, plainTextFromDoc } from "../logic";
 import { formatJournalDay, journalText } from "../sampleContent";
@@ -178,9 +179,8 @@ export function FreeformCanvas({
           if (event.target === event.currentTarget) l.api.selectCard(null);
         }}
         className={cn(
-          "relative min-h-[22rem] flex-1 overflow-hidden",
-          "bg-[#f4efe4] text-[#2c2416]",
-          "os-dark:bg-[#2a261f] os-dark:text-[#f3ead7]",
+          "journal-canvas relative min-h-[22rem] flex-1 overflow-hidden",
+          "text-[#2c2416] os-dark:text-[#f3ead7]",
           "bg-[linear-gradient(transparent_31px,rgba(90,70,40,0.08)_32px)] bg-[length:100%_32px]"
         )}
       >
