@@ -46,6 +46,7 @@ function PageCard({
 }) {
   return (
     <div
+      data-journal-page-card={id}
       className={cn(highlight && "rounded-[8px] ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]")}
       onPointerDown={(event) => {
         if (event.button !== 0 || event.ctrlKey) return;
@@ -355,7 +356,7 @@ export function DailyJournal({
               <PageCard
                 key={fragment.id}
                 id={fragment.id}
-                highlight={journal.selectedCardId === fragment.id}
+                highlight={false}
                 onSelect={l.api.selectCard}
                 onMenu={(id, x, y) => setMenu({ id, x, y })}
               >
@@ -382,7 +383,7 @@ export function DailyJournal({
             <PageCard
               key={scrap.id}
               id={scrap.id}
-              highlight={journal.selectedCardId === scrap.id}
+              highlight={scrap.kind !== "text" && journal.selectedCardId === scrap.id}
               onSelect={l.api.selectCard}
               onMenu={(id, x, y) => setMenu({ id, x, y })}
             >

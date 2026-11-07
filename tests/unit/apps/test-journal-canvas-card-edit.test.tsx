@@ -269,6 +269,14 @@ async function waitPastDoubleClick() {
 }
 
 describe("freeform canvas card editing", () => {
+  test("a selected text card keeps its ring on the board", async () => {
+    const journal = createInitialJournalState();
+    journal.selectedCardId = noteFragment.id;
+    await renderCanvas({ journal });
+    const card = container?.querySelector(`[data-journal-card="${noteFragment.id}"]`);
+    expect(card?.className).toContain("ring-2");
+  });
+
   test("a single click on a text card still opens its day", async () => {
     const state = await renderCanvas();
     const card = cardWithText(noteText);
