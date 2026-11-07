@@ -74,6 +74,10 @@ describe("Files metadata normalized persistence", () => {
       createdAt: 1,
       modifiedAt: 1,
     };
+    const { useFilesStore } = await import("../../../src/stores/useFilesStore");
+    // Seed after the import await. Hydration snapshots legacy localStorage
+    // synchronously, before its IndexedDB read, so a concurrent suite cannot
+    // clear this value during that wait.
     localStorage.setItem(
       "ryos:files",
       JSON.stringify({
@@ -84,8 +88,6 @@ describe("Files metadata normalized persistence", () => {
         version: 14,
       })
     );
-
-    const { useFilesStore } = await import("../../../src/stores/useFilesStore");
     await useFilesStore.persist.rehydrate();
     // onRehydrateStorage kicks off a background root-directory sync that may
     // decorate default folders (icon, modifiedAt) when an earlier suite cached
