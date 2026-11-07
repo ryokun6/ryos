@@ -3853,6 +3853,8 @@
         "addImage": "Ajouter une image",
         "addNote": "Ajouter une note",
         "addSong": "Ajouter un morceau",
+        "play": "Lecture",
+        "pause": "Pause",
         "emptyNote": "Note",
         "newPage": "Nouvelle page",
         "next": "Page suivante",

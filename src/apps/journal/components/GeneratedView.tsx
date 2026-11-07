@@ -355,9 +355,8 @@ export function DailyJournal({
                   style={{ borderRadius: 8 }}
                 />
               ) : scrap.kind === "song" ? (
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
+                <div
+                  className="group/song flex w-full cursor-pointer items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
                   onClick={() => {
                     l.api.selectCard(scrap.id);
                     if (scrap.songId) toggleJournalSong(scrap.songId);
@@ -370,7 +369,7 @@ export function DailyJournal({
                       <span className="block truncate text-xs text-os-text-secondary">{scrap.songArtist}</span>
                     ) : null}
                   </span>
-                </button>
+                </div>
               ) : (
                 <JournalEntryEditor
                   fragment={{
