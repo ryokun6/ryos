@@ -6,7 +6,7 @@ import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
 import { getActiveIpodTracks, useIpodStore } from "@/stores/useIpodStore";
 import type { JournalLogic } from "../hooks/useJournalLogic";
-import { currentJournalPage, journalCardExists } from "../logic";
+import { activeJournalDayId, currentJournalPage, journalCardExists } from "../logic";
 import type { JournalScrapKind } from "../types";
 
 const BUTTON_CLASS =
@@ -196,13 +196,10 @@ export function JournalViewToolbar({
       songCover?: string | null;
     }
   ) {
-    if (showPages) {
-      l.api.addScrap({ pageId: boardId, canvasPageId: boardId, kind, ...extra });
-      return;
-    }
+    const pageId = activeJournalDayId(journal) ?? currentJournalPage(journal).id;
     l.api.addScrap({
-      pageId: currentJournalPage(journal).id,
-      canvasPageId: boards[0] ?? null,
+      pageId,
+      canvasPageId: showPages ? boardId : boards[0] ?? null,
       kind,
       ...extra,
     });

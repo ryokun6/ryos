@@ -210,6 +210,25 @@ describe("journal view toolbar", () => {
     expect(dividerCount()).toBe(1);
   });
 
+  test("a card added from the canvas belongs to the selected day", async () => {
+    await act(async () => {
+      useJournalStore.getState().selectDay("2026-10-30");
+      useJournalStore.getState().addCanvasPage();
+    });
+    const boardId = useJournalStore.getState().journal.selectedCanvasPageId;
+    await renderToolbar("canvas");
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+
+    const scrap = useJournalStore.getState().journal.scraps.at(-1);
+    expect(scrap?.kind).toBe("text");
+    expect(scrap?.pageId).toBe("2026-10-30");
+    expect(scrap?.canvasPageId).toBe(boardId);
+    expect(scrap?.pageId).not.toBe(boardId);
+  });
+
   test("daily toolbar has no divider and reveals delete only for a selected card", async () => {
     await renderToolbar("none");
 
