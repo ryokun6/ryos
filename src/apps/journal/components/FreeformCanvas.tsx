@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import "../journal.css";
@@ -27,6 +27,39 @@ interface CanvasCard {
 }
 
 const CLICK_SLOP_PX = 5;
+
+const CONTENT_RING = "ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]";
+
+function CanvasNote({ text, marked }: { text: string; marked: boolean }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [clipped, setClipped] = useState(false);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const measure = () => {
+      const overflows = node.scrollHeight - node.clientHeight > 1;
+      setClipped((current) => (current === overflows ? current : overflows));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [text]);
+
+  return (
+    <div className={cn("w-fit max-w-full rounded-[4px]", marked && CONTENT_RING)}>
+      <p
+        ref={ref}
+        className={cn("journal-canvas-note text-sm leading-snug", clipped && "journal-canvas-note-clip")}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
 /** Long enough that a slow double-click still edits instead of opening the day. */
 export const CANVAS_TEXT_DOUBLE_CLICK_MS = 500;
 
@@ -334,7 +367,7 @@ export function FreeformCanvas({
                       "border border-black/10 bg-[#fffdf8] p-2 os-dark:border-white/10 os-dark:bg-[#3a342c]",
                       dateLabel && "pb-5"
                     ),
-                marked && "z-[2] ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]",
+                marked && "z-[2]",
                 cursorClass
               )}
               style={{
@@ -360,13 +393,18 @@ export function FreeformCanvas({
                   src={fragment.photo!}
                   alt={t("apps.journal.photo.alt")}
                   draggable={false}
-                  className="block aspect-[4/3] w-full object-cover"
+                  className={cn(
+                    "block aspect-[4/3] w-full object-cover ring-inset",
+                    marked && CONTENT_RING
+                  )}
                   style={{ borderRadius: 8 }}
                 />
               ) : fragment.kind === "song" ? (
                 <div className="flex items-start gap-1.5">
-                  <JournalSongMark songId={fragment.songId} cover={fragment.songCover} size={36} />
-                  <div className="min-w-0">
+                  <span className={cn("rounded-[4px]", marked && CONTENT_RING)}>
+                    <JournalSongMark songId={fragment.songId} cover={fragment.songCover} size={36} />
+                  </span>
+                  <div className={cn("min-w-0 rounded-[4px]", marked && CONTENT_RING)}>
                     <p className="truncate text-sm font-medium leading-snug">
                       {fragment.songTitle || t("apps.journal.toolbar.addSong")}
                     </p>
@@ -382,7 +420,10 @@ export function FreeformCanvas({
                   defaultValue={text}
                   placeholder={t("apps.journal.toolbar.emptyNote")}
                   rows={Math.min(8, Math.max(2, text.split("\n").length))}
-                  className="w-full resize-none bg-transparent p-0 text-sm leading-snug text-inherit outline-none select-text"
+                  className={cn(
+                    "journal-canvas-note w-full resize-none overflow-y-auto rounded-[4px] bg-transparent p-0 text-sm leading-snug text-inherit outline-none select-text",
+                    marked && CONTENT_RING
+                  )}
                   onPointerDown={(event) => event.stopPropagation()}
                   onPointerUp={(event) => event.stopPropagation()}
                   onKeyDown={(event) => {
@@ -401,7 +442,7 @@ export function FreeformCanvas({
                   onBlur={(event) => finishTextEdit(event.currentTarget.value)}
                 />
               ) : (
-                <p className="text-sm leading-snug">{text || t("apps.journal.toolbar.emptyNote")}</p>
+                <CanvasNote text={text || t("apps.journal.toolbar.emptyNote")} marked={marked} />
               )}
               {dateLabel ? (
                 <p

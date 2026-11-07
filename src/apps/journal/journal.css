@@ -43,3 +43,24 @@
     color-mix(in srgb, var(--journal-canvas-accent) 62%, transparent) 32px
   );
 }
+
+/* Six lines of text-sm / leading-snug. Longer notes clip with a fade. */
+.journal-canvas-note {
+  max-height: 7.25rem;
+  max-height: 6lh;
+  overflow: hidden;
+}
+
+.journal-canvas-note-clip {
+  --journal-note-fade: 2.25rem;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--journal-note-fade)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--journal-note-fade)),
+    transparent
+  );
+}
