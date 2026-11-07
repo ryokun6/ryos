@@ -74,19 +74,30 @@ describe("Files metadata normalized persistence", () => {
       createdAt: 1,
       modifiedAt: 1,
     };
-    localStorage.setItem(
-      "ryos:files",
-      JSON.stringify({
-        state: {
-          items: { "/Documents": item },
-          libraryState: "loaded",
-        },
-        version: 14,
-      })
-    );
+    const legacyFiles = JSON.stringify({
+      state: {
+        items: { "/Documents": item },
+        libraryState: "loaded",
+      },
+      version: 14,
+    });
 
-    const { useFilesStore } = await import("../../../src/stores/useFilesStore");
-    await useFilesStore.persist.rehydrate();
+    const { useFilesStore, settleFilesRehydrationTasks } = await import(
+      "../../../src/stores/useFilesStore"
+    );
+    // Hydration reads legacy localStorage only after an IndexedDB await.
+    // Other files share this storage and clear it from their beforeEach, so
+    // keep the snapshot visible until this rehydrate has copied it.
+    const storage = localStorage;
+    const originalGetItem = storage.getItem.bind(storage);
+    storage.getItem = ((key: string) =>
+      key === "ryos:files" ? legacyFiles : originalGetItem(key)) as Storage["getItem"];
+    storage.setItem("ryos:files", legacyFiles);
+    try {
+      await useFilesStore.persist.rehydrate();
+    } finally {
+      storage.getItem = originalGetItem;
+    }
     // onRehydrateStorage kicks off a background root-directory sync that may
     // decorate default folders (icon, modifiedAt) when an earlier suite cached
     // /data/filesystem.json, so assert only the fields migration must keep.
@@ -98,6 +109,7 @@ describe("Files metadata normalized persistence", () => {
       status: "active",
       createdAt: item.createdAt,
     });
+    await settleFilesRehydrationTasks();
     expect(localStorage.getItem("ryos:files")).toBeNull();
 
     const { ensureIndexedDBInitialized, STORES } = await import(
