@@ -9,6 +9,7 @@ import {
   entryDocId,
   fragmentsForJournalDay,
   journalPageIndex,
+  journalDateUnderTitle,
   journalPageTitle,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
@@ -130,10 +131,13 @@ export function DailyJournal({
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);
-  const defaultPageTitle =
-    features.date && activeDayId
-      ? formatJournalDay(activeDayId, language)
-      : t("apps.journal.pageNumber", { count: pageIndex + 1 });
+  const dateLabel =
+    features.date && activeDayId ? formatJournalDay(activeDayId, language) : "";
+  const defaultPageTitle = dateLabel || t("apps.journal.pageNumber", { count: pageIndex + 1 });
+  const titleDate = journalDateUnderTitle(
+    pageId ? journal.pageTitles[pageId] : undefined,
+    dateLabel
+  );
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -300,7 +304,11 @@ export function DailyJournal({
             />
             {features.mood ? (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-os-text-secondary">{t("apps.journal.mood.label")}</span>
+                {titleDate ? (
+                  <span data-journal-title-date className="text-sm text-os-text-secondary">
+                    {titleDate}
+                  </span>
+                ) : null}
                 <div className="flex" role="group" aria-label={t("apps.journal.mood.label")}>
                   {MOOD_FACES.map((Face, index) => {
                     const score = index + 1;

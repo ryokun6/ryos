@@ -60,12 +60,9 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(
   globalThis,
   "IS_REACT_ACT_ENVIRONMENT"
 );
-let registeredDomHere = false;
-
 if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
   if (!GlobalRegistrator.isRegistered) {
     GlobalRegistrator.register();
-    registeredDomHere = true;
   }
 }
 
@@ -173,9 +170,6 @@ afterAll(() => {
     );
   } else {
     Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-  }
-  if (registeredDomHere && GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.unregister();
   }
 });
 

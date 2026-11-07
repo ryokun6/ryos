@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -7,7 +7,6 @@ import {
   journalMonthGrid,
 } from "../../../src/apps/journal/components/JournalSidebarCalendar";
 
-let registeredDomHere = false;
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
@@ -16,7 +15,6 @@ Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
 if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
   if (!GlobalRegistrator.isRegistered) {
     GlobalRegistrator.register();
-    registeredDomHere = true;
   }
 }
 
@@ -79,11 +77,4 @@ describe("journal sidebar calendar", () => {
     });
     container.remove();
   });
-});
-
-afterAll(() => {
-  Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-  if (registeredDomHere && GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.unregister();
-  }
 });

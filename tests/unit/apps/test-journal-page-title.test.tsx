@@ -1,10 +1,13 @@
-import { afterAll, describe, expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { JournalPageTitle } from "../../../src/apps/journal/components/JournalPageTitle";
+import { DailyJournal } from "../../../src/apps/journal/components/GeneratedView";
+import { formatJournalDay } from "../../../src/apps/journal/sampleContent";
+import i18next from "i18next";
+import { I18nextProvider, initReactI18next } from "react-i18next";
 
-let registeredDomHere = false;
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
@@ -13,7 +16,6 @@ Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
 if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
   if (!GlobalRegistrator.isRegistered) {
     GlobalRegistrator.register();
-    registeredDomHere = true;
   }
 }
 
@@ -91,11 +93,87 @@ describe("journal page title", () => {
     });
     container.remove();
   });
-});
 
-afterAll(() => {
-  Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-  if (registeredDomHere && GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.unregister();
-  }
+  test("shows the date under the mood faces only for a custom title", async () => {
+    class FakeAudioContext {
+      state = "running";
+      currentTime = 0;
+      destination = {};
+      createGain() {
+        return {
+          gain: { value: 1, setValueAtTime() {}, linearRampToValueAtTime() {} },
+          context: this,
+          connect() {},
+          disconnect() {},
+        };
+      }
+    }
+    Object.defineProperty(window, "AudioContext", {
+      configurable: true,
+      writable: true,
+      value: FakeAudioContext,
+    });
+    Object.defineProperty(HTMLElement.prototype, "animate", {
+      configurable: true,
+      value: undefined,
+    });
+    const { useJournalLogic } = await import("../../../src/apps/journal/hooks/useJournalLogic");
+    const { useJournalStore } = await import("../../../src/stores/useJournalStore");
+    const { useAudioSettingsStore } = await import("../../../src/stores/useAudioSettingsStore");
+    const { createInitialJournalState } = await import("../../../src/apps/journal/logic");
+    useAudioSettingsStore.setState({ uiSoundsEnabled: false });
+    useJournalStore.setState({ journal: createInitialJournalState(), notice: null });
+    const i18n = i18next.createInstance();
+    await i18n.use(initReactI18next).init({
+      lng: "en",
+      fallbackLng: "en",
+      resources: { en: { translation: {} } },
+      interpolation: { escapeValue: false },
+      returnNull: false,
+    });
+    const dayId = useJournalStore.getState().journal.selectedDayId;
+    const dateLabel = formatJournalDay(dayId, "en");
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    function Page() {
+      const l = useJournalLogic();
+      return <DailyJournal l={l} isMobileLayout={false} />;
+    }
+
+    await act(async () => {
+      root.render(
+        <I18nextProvider i18n={i18n}>
+          <Page />
+        </I18nextProvider>
+      );
+    });
+    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
+    expect(container.textContent).not.toContain("apps.journal.mood.label");
+    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+
+    await act(async () => {
+      useJournalStore.getState().setPageTitle(dayId, "Taipei");
+    });
+    expect(container.querySelector("[data-journal-title-date]")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("h2")?.textContent).toBe("Taipei");
+
+    await act(async () => {
+      useJournalStore.getState().setPageTitle(dayId, dateLabel);
+    });
+    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
+
+    await act(async () => {
+      useJournalStore.getState().setPageTitle(dayId, "");
+    });
+    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
+    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+    useJournalStore.setState({ journal: createInitialJournalState(), notice: null });
+  });
 });

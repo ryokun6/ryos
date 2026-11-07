@@ -3784,7 +3784,7 @@
         },
         "drawer": {
           "description": "Gli interruttori, il predefinito Due strutture e Ripristina la demo stanno nel cassetto accanto alla finestra.",
-          "title": "Cassetto della demo"
+          "title": "Impostazioni"
         },
         "featureToggles": {
           "description": "Ogni funzione ha il proprio interruttore nel cassetto. Togli prima la serie se un giorno senza scrivere non deve sembrare un debito.",

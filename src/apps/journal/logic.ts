@@ -77,6 +77,16 @@ export function journalPageTitle(
   return saved && saved.length > 0 ? saved : fallback;
 }
 
+/** Date under a custom page title. Hidden when the title is blank or already that date. */
+export function journalDateUnderTitle(
+  savedTitle: string | undefined,
+  dateLabel: string
+): string {
+  const title = savedTitle?.trim() ?? "";
+  if (!dateLabel || !title || title === dateLabel) return "";
+  return dateLabel;
+}
+
 export function entryDocId(dayId: string): string {
   return `entry:${dayId}`;
 }

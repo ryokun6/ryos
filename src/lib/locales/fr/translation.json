@@ -3784,7 +3784,7 @@
         },
         "drawer": {
           "description": "Les interrupteurs, le préréglage Deux structures et Réinitialiser la démo sont dans le tiroir à côté de la fenêtre.",
-          "title": "Tiroir de démo"
+          "title": "Réglages"
         },
         "featureToggles": {
           "description": "Chaque fonction a son interrupteur dans le tiroir. Retirez d’abord la série si un jour sans écriture ne doit pas ressembler à une dette.",

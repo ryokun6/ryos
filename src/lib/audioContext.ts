@@ -17,12 +17,14 @@ import { createClientLogger } from "@/utils/logger";
 
 const log = createClientLogger("AudioContext");
 
-const AudioContextClass =
-  typeof window !== "undefined"
-    ? window.AudioContext ||
-      (window as unknown as { webkitAudioContext?: typeof AudioContext })
-        .webkitAudioContext
-    : undefined;
+function audioContextConstructor(): typeof AudioContext | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext
+  );
+}
 
 let audioContext: AudioContext | null = null;
 
@@ -56,6 +58,7 @@ const notifyContextChange = (newContext: AudioContext) => {
 export const getAudioContext = (): AudioContext => {
   if (!audioContext || audioContext.state === "closed") {
     try {
+      const AudioContextClass = audioContextConstructor();
       if (!AudioContextClass) {
         throw new Error("AudioContext not supported in this browser");
       }
@@ -69,9 +72,24 @@ export const getAudioContext = (): AudioContext => {
       console.error("[AudioContext] Failed to create AudioContext:", err);
       // Return a dummy context to avoid callers exploding – this will do
       // nothing but at least has the expected shape.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore – Constructing the dummy to satisfy type, never used.
-      audioContext = { state: "closed" } as AudioContext;
+      const dummy = {
+        state: "closed" as const,
+        currentTime: 0,
+        destination: {},
+        createGain() {
+          return {
+            gain: {
+              value: 1,
+              setValueAtTime() {},
+              linearRampToValueAtTime() {},
+            },
+            context: dummy,
+            connect() {},
+            disconnect() {},
+          };
+        },
+      };
+      audioContext = dummy as unknown as AudioContext;
     }
   }
   return audioContext;

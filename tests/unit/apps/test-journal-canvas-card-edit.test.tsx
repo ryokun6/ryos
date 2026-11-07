@@ -7,10 +7,8 @@ import { I18nextProvider, initReactI18next } from "react-i18next";
 import type { JournalLogic } from "../../../src/apps/journal/hooks/useJournalLogic";
 import type { JournalDoc, JournalScrap, JournalState } from "../../../src/apps/journal/types";
 
-let registeredDomForSuite = false;
 if (typeof document === "undefined") {
   GlobalRegistrator.register();
-  registeredDomForSuite = true;
 }
 
 class FakeGainNode {
@@ -169,9 +167,6 @@ afterAll(() => {
   window.AudioContext = originalAudioContext;
   Element.prototype.animate = originalAnimate;
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
-  if (registeredDomForSuite && GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.unregister();
-  }
 });
 
 function harness(journal: JournalState = createInitialJournalState()) {

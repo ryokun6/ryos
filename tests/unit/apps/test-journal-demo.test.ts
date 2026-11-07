@@ -15,6 +15,7 @@ import {
   dayHasEntry,
   fragmentsForJournalDay,
   journalCardDayId,
+  journalDateUnderTitle,
   journalPageTitle,
   moodForDay,
   normalizeJournalState,
@@ -319,6 +320,11 @@ describe("journal demo", () => {
     expect(normalizeJournalState({ pageTitles: { "2026-11-01": "  Kept  " } }).pageTitles).toEqual({
       "2026-11-01": "Kept",
     });
+    expect(journalDateUnderTitle(undefined, "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("   ", "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("Nov 1", "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("Taipei notes", "Nov 1")).toBe("Nov 1");
+    expect(journalDateUnderTitle("Taipei notes", "")).toBe("");
   });
 
   test("sidebar width stays inside the drag limits", () => {
