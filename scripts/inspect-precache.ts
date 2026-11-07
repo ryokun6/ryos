@@ -36,10 +36,11 @@ const totalBytes = urls.reduce((total, url) => total + fileBytes(url), 0);
 // adding Dictionary split ~22 more shared chunks out (~299 / ~285);
 // Fitness added its app + store chunks (~305 / ~291).
 // The byte budget tracks the measured offline shell (Stuff + shelf apps
-// pushed it past 12 MiB); keep a small headroom for theme/CSS polish.
+// pushed it past 12 MiB). Journal's canvas measured 13312.3 KiB, and the
+// sample posts from ryo.lu/journal add another chunk. Leave 256 KiB.
 const MAX_FILES = 315;
 const MAX_SCRIPTS = 300;
-const MAX_BYTES = 13 * 1024 * 1024;
+const MAX_BYTES = 13 * 1024 * 1024 + 256 * 1024;
 
 summarize("total", urls);
 summarize("JavaScript", javascript);

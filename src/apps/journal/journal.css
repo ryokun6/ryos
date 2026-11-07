@@ -50,6 +50,7 @@
   max-height: 7.25rem;
   max-height: 6lh;
   overflow: hidden;
+  white-space: pre-line;
 }
 
 .journal-canvas-note-clip {

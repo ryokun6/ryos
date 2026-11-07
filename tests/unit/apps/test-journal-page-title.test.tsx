@@ -4,7 +4,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { JournalPageTitle } from "../../../src/apps/journal/components/JournalPageTitle";
 import { DailyJournal } from "../../../src/apps/journal/components/GeneratedView";
-import { formatJournalDay } from "../../../src/apps/journal/sampleContent";
+import { formatJournalDay, sampleJournalTitle } from "../../../src/apps/journal/sampleContent";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
@@ -149,9 +149,9 @@ describe("journal page title", () => {
         </I18nextProvider>
       );
     });
-    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
+    expect(container.querySelector("[data-journal-title-date]")?.textContent).toBe(dateLabel);
     expect(container.textContent).not.toContain("apps.journal.mood.label");
-    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("h2")?.textContent).toBe(sampleJournalTitle(dayId, "en"));
 
     await act(async () => {
       useJournalStore.getState().setPageTitle(dayId, "Taipei");
@@ -167,8 +167,8 @@ describe("journal page title", () => {
     await act(async () => {
       useJournalStore.getState().setPageTitle(dayId, "");
     });
-    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
-    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("[data-journal-title-date]")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("h2")?.textContent).toBe(sampleJournalTitle(dayId, "en"));
 
     await act(async () => {
       root.unmount();

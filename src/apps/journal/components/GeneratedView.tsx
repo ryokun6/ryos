@@ -21,6 +21,7 @@ import {
 import {
   formatJournalDay,
   JOURNAL_DAYS,
+  sampleJournalTitle,
   type JournalFragment,
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
@@ -143,11 +144,12 @@ export function DailyJournal({
   const mood = moodForDay(journal, moodKey);
   const dateLabel =
     features.date && activeDayId ? formatJournalDay(activeDayId, language) : "";
-  const defaultPageTitle = dateLabel || t("apps.journal.pageNumber", { count: pageIndex + 1 });
-  const titleDate = journalDateUnderTitle(
-    pageId ? journal.pageTitles[pageId] : undefined,
-    dateLabel
-  );
+  const defaultPageTitle =
+    (pageId ? sampleJournalTitle(pageId, language) : "") ||
+    dateLabel ||
+    t("apps.journal.pageNumber", { count: pageIndex + 1 });
+  const displayedTitle = journalPageTitle(journal, pageId ?? "", defaultPageTitle);
+  const titleDate = journalDateUnderTitle(displayedTitle, dateLabel);
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -192,7 +194,11 @@ export function DailyJournal({
                     )}
                   >
                     <span className={cn("truncate", !hasEntry && "opacity-40")}>
-                      {journalPageTitle(journal, dayId, formatJournalDay(dayId, language))}
+                      {journalPageTitle(
+                        journal,
+                        dayId,
+                        sampleJournalTitle(dayId, language) || formatJournalDay(dayId, language)
+                      )}
                     </span>
                   </button>
                 );
@@ -309,7 +315,7 @@ export function DailyJournal({
               key={pageId ?? "page"}
               pageId={pageId ?? ""}
               defaultTitle={defaultPageTitle}
-              title={journalPageTitle(journal, pageId ?? "", defaultPageTitle)}
+              title={displayedTitle}
               onSave={l.api.setPageTitle}
             />
             {features.mood ? (

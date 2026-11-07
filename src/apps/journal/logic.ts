@@ -491,6 +491,10 @@ export function canvasTextCard(
 export function plainTextFromDoc(doc: JournalDoc): string {
   const chunks: string[] = [];
   const walk = (node: JournalDocNode, block: boolean) => {
+    if (node.type === "hardBreak") {
+      chunks.push("\n");
+      return;
+    }
     if (typeof node.text === "string") chunks.push(node.text);
     const children = node.content ?? [];
     if (block) {

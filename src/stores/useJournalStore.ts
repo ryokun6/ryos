@@ -43,7 +43,7 @@ interface JournalStore {
   dismissNotice: () => void;
 }
 
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 
 function commit(
   get: () => JournalStore,
@@ -125,10 +125,18 @@ export const useJournalStore = create<JournalStore>()(
         sidebarWidth: state.sidebarWidth,
       }),
       migrate: (persisted, version) => {
-        if (!persisted || typeof persisted !== "object" || version >= 3) return persisted;
-        const saved = persisted as { journal?: Record<string, unknown> };
-        if (!saved.journal || typeof saved.journal !== "object") return persisted;
-        return { ...saved, journal: { ...saved.journal, view: "compare" } };
+        if (!persisted || typeof persisted !== "object") return persisted;
+        const saved = persisted as {
+          journal?: Record<string, unknown>;
+          sidebarWidth?: unknown;
+        };
+        if (version < 3 && saved.journal && typeof saved.journal === "object") {
+          saved.journal = { ...saved.journal, view: "compare" };
+        }
+        // Sample days changed. Drop a saved layout so the new posts and
+        // their clustered cards replace the previous demo.
+        if (version < 4) return { sidebarWidth: saved.sidebarWidth };
+        return saved;
       },
       merge: (persisted, current) => {
         const saved = persisted as { journal?: unknown; sidebarWidth?: unknown } | undefined;

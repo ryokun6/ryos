@@ -46,10 +46,10 @@ describe("canvas text cards", () => {
 
   test("selects a sample note the writer cleared", () => {
     const state = createInitialJournalState();
-    state.texts = { "oct30-note": sampleDoc("") };
+    state.texts = { "big-boy-note": sampleDoc("") };
     expect(canvasTextCard(state, "2026-10-30", "board")).toEqual({
       type: "select",
-      id: "oct30-note",
+      id: "big-boy-note",
       boardId: "board",
     });
   });

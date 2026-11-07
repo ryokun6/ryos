@@ -29,9 +29,9 @@ describe("journal page delete", () => {
   test("deletes the selected paragraph and leaves the other paragraph", () => {
     const editor = editorWith("<p>Keep</p><p>Drop</p>");
     editor.commands.focus("end");
-    registerJournalTextEditor("oct28-note", editor);
+    registerJournalTextEditor("big-boy-note", editor);
 
-    expect(deleteFocusedTextBlock("oct28-note")).toBe(true);
+    expect(deleteFocusedTextBlock("big-boy-note")).toBe(true);
     expect(editor.getText()).toBe("Keep");
 
     clearJournalTextEditor(editor);
@@ -41,21 +41,21 @@ describe("journal page delete", () => {
   test("a single text block is the card, and the rest of the page stays", () => {
     const editor = editorWith("<p>Only</p>");
     editor.commands.focus("end");
-    registerJournalTextEditor("oct28-note", editor);
+    registerJournalTextEditor("big-boy-note", editor);
     const removed: string[] = [];
 
-    deleteJournalSelection("oct28-note", (id) => removed.push(id));
+    deleteJournalSelection("big-boy-note", (id) => removed.push(id));
 
-    expect(removed).toEqual(["oct28-note"]);
+    expect(removed).toEqual(["big-boy-note"]);
     expect(editor.getText()).toBe("Only");
     const page = reduceJournal(createInitialJournalState(), {
       type: "selectDay",
-      dayId: "2026-10-28",
+      dayId: "2026-10-30",
     });
-    const next = reduceJournal(page, { type: "removeCard", id: "oct28-note" });
-    expect(next.selectedDayId).toBe("2026-10-28");
-    expect(fragmentsForJournalDay(next, "2026-10-28").map((fragment) => fragment.id)).toEqual([
-      "oct28-photo",
+    const next = reduceJournal(page, { type: "removeCard", id: "big-boy-note" });
+    expect(next.selectedDayId).toBe("2026-10-30");
+    expect(fragmentsForJournalDay(next, "2026-10-30").map((fragment) => fragment.id)).toEqual([
+      "big-boy-photo",
     ]);
 
     clearJournalTextEditor(editor);
@@ -64,7 +64,7 @@ describe("journal page delete", () => {
 
   test("a selected photo card is removed without the note", () => {
     const removed: string[] = [];
-    deleteJournalSelection("oct28-photo", (id) => removed.push(id));
-    expect(removed).toEqual(["oct28-photo"]);
+    deleteJournalSelection("big-boy-photo", (id) => removed.push(id));
+    expect(removed).toEqual(["big-boy-photo"]);
   });
 });

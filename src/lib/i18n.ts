@@ -160,6 +160,11 @@ export async function ensureLanguageResources(
       );
       loadedFullLanguages.add(language);
     })
+    .catch((error) => {
+      // A broken catalog must not reject the app chunk that waits on this.
+      // The shell strings stay in place, and the next open tries again.
+      console.error(`[ryOS] Failed to load ${language} translations:`, error);
+    })
     .finally(() => {
       loadingLanguages.delete(language);
     });

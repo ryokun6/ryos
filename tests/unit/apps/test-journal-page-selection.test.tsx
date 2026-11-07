@@ -17,7 +17,7 @@ if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
   }
 }
 
-const DAY_ID = "2026-10-28";
+const DAY_ID = "2026-10-30";
 
 const textScrap: JournalScrap = {
   id: "scrap-note",
@@ -129,25 +129,25 @@ describe("journal page selection", () => {
     expect(
       card(textScrap.id).querySelector("[data-journal-placeholder]")?.textContent
     ).toBe("Write something...");
-    expect(card("oct28-note").querySelector("[data-journal-placeholder]")).toBeNull();
+    expect(card("big-boy-note").querySelector("[data-journal-placeholder]")).toBeNull();
 
     await act(async () => {
-      useJournalStore.getState().selectCard("oct28-note");
+      useJournalStore.getState().selectCard("big-boy-note");
     });
-    expect(card("oct28-note").className).not.toContain("ring-2");
-    expect(card("oct28-photo").className).not.toContain("ring-2");
+    expect(card("big-boy-note").className).not.toContain("ring-2");
+    expect(card("big-boy-photo").className).not.toContain("ring-2");
 
     await act(async () => {
-      useJournalStore.getState().selectCard("oct28-photo");
+      useJournalStore.getState().selectCard("big-boy-photo");
     });
-    expect(card("oct28-note").className).not.toContain("ring-2");
-    expect(card("oct28-photo").className).toContain("ring-2");
+    expect(card("big-boy-note").className).not.toContain("ring-2");
+    expect(card("big-boy-photo").className).toContain("ring-2");
 
     await act(async () => {
       useJournalStore.getState().selectCard(textScrap.id);
     });
     expect(card(textScrap.id).className).not.toContain("ring-2");
-    expect(card("oct28-photo").className).not.toContain("ring-2");
+    expect(card("big-boy-photo").className).not.toContain("ring-2");
 
     await act(async () => {
       useJournalStore.getState().selectCard(songScrap.id);
@@ -160,5 +160,9 @@ describe("journal page selection", () => {
     });
     container.remove();
     useJournalStore.setState({ journal: createInitialJournalState(), notice: null });
+    const { settleAllPersistWrites } = await import(
+      "../../../src/utils/persistWriteQueue"
+    );
+    await settleAllPersistWrites();
   });
 });

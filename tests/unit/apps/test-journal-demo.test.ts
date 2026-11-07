@@ -24,7 +24,12 @@ import {
   sampleAverageMood,
   sidebarDates,
 } from "../../../src/apps/journal/logic";
-import { JOURNAL_DAYS, JOURNAL_FRAGMENTS, journalText } from "../../../src/apps/journal/sampleContent";
+import {
+  JOURNAL_DAYS,
+  JOURNAL_FRAGMENTS,
+  journalText,
+  sampleJournalTitle,
+} from "../../../src/apps/journal/sampleContent";
 
 function state() {
   return createInitialJournalState();
@@ -36,7 +41,7 @@ describe("journal demo", () => {
     expect(initial.view).toBe("compare");
     expect(allFeaturesOn(initial.toggles)).toBe(true);
     expect(initial.toggles).not.toHaveProperty("streak");
-    expect(JOURNAL_DAYS).toHaveLength(6);
+    expect(JOURNAL_DAYS).toHaveLength(8);
     expect(sampleAverageMood()).toBe(averageMood(JOURNAL_DAYS.map((day) => day.mood)));
   });
 
@@ -62,7 +67,7 @@ describe("journal demo", () => {
     next = reduceJournal(next, { type: "toggleFeature", feature: "mood" });
     next = reduceJournal(next, {
       type: "moveFragment",
-      id: "oct30-note",
+      id: "big-boy-note",
       position: { x: 12, y: 18 },
     });
     const reset = reduceJournal(next, { type: "reset" });
@@ -84,10 +89,10 @@ describe("journal demo", () => {
     );
     const moved = reduceJournal(initial, {
       type: "moveFragment",
-      id: "oct27-note",
+      id: "speed-note",
       position: { x: -20, y: 140 },
     });
-    expect(moved.positions["oct27-note"]).toEqual({ x: 0, y: 100 });
+    expect(moved.positions["speed-note"]).toEqual({ x: 0, y: 100 });
   });
 
   test("normalizes a saved service-window demo back to the daily journal", () => {
@@ -98,16 +103,65 @@ describe("journal demo", () => {
       trialPhoto: true,
       servicePhase: "accepted",
       selectedDayId: "not-a-day",
-      positions: { "oct30-note": { x: 4, y: 9 }, bad: { x: "no" } },
+      positions: { "big-boy-note": { x: 4, y: 9 }, bad: { x: "no" } },
     });
     expect(normalized.view).toBe("daily");
     expect(normalized.toggles.reminder).toBe(false);
     expect(normalized.toggles).not.toHaveProperty("streak");
     expect(normalized.toggles.mood).toBe(true);
-    expect(normalized.selectedDayId).toBe("2026-11-01");
-    expect(normalized.positions["oct30-note"]).toEqual({ x: 4, y: 9 });
+    expect(normalized.selectedDayId).toBe("2026-11-06");
+    expect(normalized.positions["big-boy-note"]).toEqual({ x: 4, y: 9 });
     expect(normalized.positions.bad).toBeUndefined();
     expect("decisions" in normalized).toBe(false);
+  });
+
+  test("sample posts are the public journal, with each photo overlapping its note", () => {
+    expect(JOURNAL_DAYS.map((day) => day.id)).toEqual([
+      "2026-09-24",
+      "2026-10-03",
+      "2026-10-05",
+      "2026-10-17",
+      "2026-10-25",
+      "2026-10-29",
+      "2026-10-30",
+      "2026-11-06",
+    ]);
+    expect(sampleJournalTitle("2026-11-06", "en")).toBe("as i began to love myself");
+    expect(sampleJournalTitle("2026-11-06", "zh-TW")).toBe("當我真正開始愛自己");
+    expect(sampleJournalTitle("2026-11-06", "zh-CN")).toBe("当我真正开始爱自己");
+    expect(JOURNAL_FRAGMENTS.filter((fragment) => fragment.kind === "photo").map((fragment) => fragment.photo)).toEqual([
+      "/journal/alley.jpg",
+      "/journal/light.jpg",
+      "/journal/tea.jpg",
+    ]);
+    for (const photo of JOURNAL_FRAGMENTS.filter((fragment) => fragment.kind === "photo")) {
+      const note = JOURNAL_FRAGMENTS.find(
+        (fragment) => fragment.dayId === photo.dayId && fragment.kind === "text"
+      );
+      expect(note).toBeDefined();
+      const dx = Math.abs((note?.x ?? 0) - photo.x);
+      const dy = Math.abs((note?.y ?? 0) - photo.y);
+      expect(dx).toBeGreaterThanOrEqual(8);
+      expect(dx).toBeLessThanOrEqual(16);
+      expect(dy).toBeGreaterThanOrEqual(4);
+      expect(dy).toBeLessThanOrEqual(12);
+    }
+    const xs = JOURNAL_FRAGMENTS.map((fragment) => fragment.x);
+    const ys = JOURNAL_FRAGMENTS.map((fragment) => fragment.y);
+    expect(Math.min(...xs)).toBeLessThanOrEqual(3);
+    expect(Math.min(...ys)).toBeLessThanOrEqual(3);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(30);
+    for (const fragment of JOURNAL_FRAGMENTS) {
+      const copy = fragment.text;
+      const values = copy ? [copy.en, copy["zh-TW"], copy["zh-CN"]] : [];
+      for (const value of values) {
+        expect(value).not.toContain("<a");
+        expect(value).not.toContain("http");
+      }
+    }
+    const intellect = JOURNAL_FRAGMENTS.find((fragment) => fragment.id === "intellect-note");
+    expect(intellect?.text?.en).toContain("augmenting human intellect");
+    expect(intellect?.text?.en).not.toContain("worrydream.com");
   });
 
   test("sample prose follows Traditional Chinese, then Simplified, then English", () => {
@@ -134,14 +188,14 @@ describe("journal demo", () => {
     expect(moodForDay(next, "2026-10-30")).toBe(5);
     next = reduceJournal(next, { type: "setMood", dayId: "2026-10-30", mood: 2 });
     expect(moodForDay(next, "2026-10-30")).toBe(2);
-    expect(moodForDay(next, "2026-10-27")).toBe(3);
+    expect(moodForDay(next, "2026-09-24")).toBe(3);
 
     const doc = {
       type: "doc" as const,
       content: [{ type: "paragraph", content: [{ type: "text", text: "改過的一句" }] }],
     };
-    next = reduceJournal(next, { type: "setEntryText", id: "oct30-note", doc });
-    expect(plainTextFromDoc(next.texts["oct30-note"])).toBe("改過的一句");
+    next = reduceJournal(next, { type: "setEntryText", id: "big-boy-note", doc });
+    expect(plainTextFromDoc(next.texts["big-boy-note"])).toBe("改過的一句");
 
     const reset = reduceJournal(next, { type: "reset" });
     expect(reset.texts).toEqual({});
@@ -151,8 +205,8 @@ describe("journal demo", () => {
 
   test("the date list includes the next week and empty days stay empty until written", () => {
     const dates = sidebarDates("2026-11-02");
-    expect(dates[0]).toBe("2026-10-27");
-    expect(dates.at(-1)).toBe("2026-11-09");
+    expect(dates[0]).toBe("2026-09-24");
+    expect(dates.at(-1)).toBe("2026-11-13");
     expect(dates).toContain("2026-11-02");
     expect(dayHasEntry(state(), "2026-10-30")).toBe(true);
     expect(dayHasEntry(state(), "2026-11-02")).toBe(false);

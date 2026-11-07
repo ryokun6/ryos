@@ -166,6 +166,10 @@ afterEach(async () => {
   ipod.setIsPlaying(false);
   ipod.setCurrentSongId(null);
   ipod.setAppleMusicCurrentSongId(null);
+  const { settleAllPersistWrites } = await import(
+    "../../../src/utils/persistWriteQueue"
+  );
+  await settleAllPersistWrites();
 });
 
 afterAll(() => {
