@@ -51,7 +51,8 @@ export interface BaseApp<TInitialData = unknown> {
     | "calculator"
     | "stuff"
     | "dictionary"
-    | "fitness";
+    | "fitness"
+    | "journal";
   name: string;
   icon: string | { type: "image"; src: string };
   description: string;

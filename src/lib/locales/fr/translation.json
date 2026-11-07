@@ -599,12 +599,6 @@
         "remove": "Supprimer le signet",
         "title": "Signets"
       },
-      "highlights": {
-        "emptyHint": "Sélectionnez un passage pendant votre lecture pour qu’il s’affiche ici.",
-        "emptyTitle": "Aucun surlignage",
-        "title": "Surlignages",
-        "untitled": "Surlignage"
-      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
@@ -671,6 +665,12 @@
           "description": "Votre position est enregistrée automatiquement et restaurée à la prochaine ouverture du livre.",
           "title": "Progression de lecture"
         }
+      },
+      "highlights": {
+        "emptyHint": "Sélectionnez un passage pendant votre lecture pour qu’il s’affiche ici.",
+        "emptyTitle": "Aucun surlignage",
+        "title": "Surlignages",
+        "untitled": "Surlignage"
       },
       "import": {
         "title": "Importer un EPUB"
@@ -3626,8 +3626,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "Artistes",
         "backlight": "Rétroéclairage",
-        "clicker": "Clic",
         "brickGame": "Brique",
+        "clicker": "Clic",
         "extras": "Extras",
         "favoriteSongs": "Morceaux favoris",
         "genius": "Genius",
@@ -3751,6 +3751,127 @@
         "spanish": "Espagnol"
       }
     },
+    "journal": {
+      "description": "Garder les mêmes jours sous deux formes",
+      "drawer": {
+        "features": "Fonctions",
+        "open": "Réglages",
+        "presets": "Préréglages",
+        "title": "Réglages"
+      },
+      "features": {
+        "date": "Date",
+        "dateHint": "Une date sur chaque entrée.",
+        "mood": "Note d’humeur",
+        "moodHint": "Noter le jour pour voir une tendance.",
+        "off": "Désactivé",
+        "on": "Activé",
+        "reminder": "Rappel quotidien",
+        "reminderHint": "Une relance pour écrire chaque jour.",
+        "streak": "Série",
+        "streakHint": "Le nombre de jours écrits d’affilée.",
+        "weeklyReport": "Rapport hebdomadaire",
+        "weeklyReportHint": "Un résumé hebdomadaire destiné à la réflexion."
+      },
+      "generated": {
+        "question": "À votre place, lequel retireriez-vous ?",
+        "ryoPick": "Je retirerais celui-ci"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Commence par le journal qu’un outil rendrait : date, note d’humeur, série et rappel quotidien. Le texte utilise l’éditeur de TextEdit.",
+          "title": "Réponse complète"
+        },
+        "drawer": {
+          "description": "Les interrupteurs, le préréglage Deux structures et Réinitialiser la démo sont dans le tiroir à côté de la fenêtre.",
+          "title": "Tiroir de démo"
+        },
+        "featureToggles": {
+          "description": "Chaque fonction a son interrupteur dans le tiroir. Retirez d’abord la série si un jour sans écriture ne doit pas ressembler à une dette.",
+          "title": "Retirer des fonctions"
+        },
+        "photos": {
+          "description": "Les photos d’exemple sont déjà dans les entrées. Elles apparaissent sur la page du jour et parmi les fragments.",
+          "title": "Photos"
+        },
+        "resetDemo": {
+          "description": "Réinitialiser la démo remet le journal d’exemple, les interrupteurs et les textes modifiés au début.",
+          "title": "Réinitialiser la démo"
+        },
+        "twoStructures": {
+          "description": "Choisissez Deux structures dans le tiroir pour voir les mêmes jours en une page par jour et en fragments sur une page.",
+          "title": "Deux structures"
+        }
+      },
+      "menu": {
+        "about": "À propos de Journal",
+        "help": "Aide Journal",
+        "reset": "Réinitialiser la démo"
+      },
+      "mood": {
+        "label": "Note d’humeur",
+        "outOf": "{{score}} / 5",
+        "set": "Humeur {{score}} sur 5"
+      },
+      "name": "Journal",
+      "notice": {
+        "restored": "Exemple de démo rétabli"
+      },
+      "pageNumber": "Jour {{count}}",
+      "photo": {
+        "alt": "Photo d’exemple"
+      },
+      "presets": {
+        "compare": "Deux structures",
+        "freeform": "Libre",
+        "journal": "Journal"
+      },
+      "reminder": {
+        "label": "Rappel quotidien",
+        "timeLabel": "Heure"
+      },
+      "report": {
+        "average": "Humeur moyenne {{score}}",
+        "blurb": "Les raisons semblent complètes. Les jours eux-mêmes n’ont pas été notés.",
+        "days": "{{count}} jours écrits",
+        "title": "Rapport hebdomadaire"
+      },
+      "sidebar": {
+        "days": "Jours",
+        "newPage": "Nouveau jour"
+      },
+      "status": {
+        "complete": "Version complète",
+        "kept": "Modification gardée :"
+      },
+      "streak": {
+        "label": "Série",
+        "value": "{{count}} jours"
+      },
+      "title": "Journal",
+      "toolbar": {
+        "addImage": "Ajouter une image",
+        "addNote": "Ajouter une note",
+        "addSong": "Ajouter un morceau",
+        "emptyNote": "Note",
+        "newPage": "Nouvelle page",
+        "next": "Page suivante",
+        "page": "Page {{count}}",
+        "noSongs": "Aucun morceau dans la bibliothèque",
+        "photoAlt": "Photo",
+        "delete": "Supprimer",
+        "move": "Déplacer vers une date",
+        "previous": "Page précédente",
+        "reset": "Réinitialiser la démo",
+        "tools": "Outils de la page"
+      },
+      "views": {
+        "compare": "Combiné",
+        "daily": "Jours",
+        "freeform": "Libre",
+        "generated": "Réponse complète"
+      }
+    },
     "karaoke": {
       "description": "Lecteur karaoké avec paroles synchronisées",
       "emptyLibrary": {
@@ -3827,27 +3948,6 @@
         "shareLinkInvite": "Partagez ce lien pour inviter des amis dans la salle KTV.",
         "start": "Ouvrir la salle KTV"
       },
-      "queue": {
-        "title": "à suivre",
-        "empty": "rien dans la file",
-        "add": "ajouter à la file",
-        "playNext": "lire ensuite",
-        "remove": "retirer",
-        "open": "file",
-        "from": "{{name}}",
-        "queued": "ajouté",
-        "playingNext": "à suivre",
-        "removed": "retiré",
-        "full": "la file est pleine",
-        "updateFailed": "file non mise à jour",
-        "signIn": "connectez-vous pour ajouter",
-        "rateLimited": "trop de changements – réessayez",
-        "notInRoom": "vous n'êtes pas dans cette salle",
-        "invalidTrack": "ce titre ne peut pas être ajouté",
-        "openAria": "file, {{count}} en attente",
-        "addSongs": "ajouter des chansons",
-        "addSongsHint": "chercher, puis ajouter à la file"
-      },
       "lyrics": {
         "noLyricsFound": "Paroles introuvables",
         "search": "Rechercher",
@@ -3869,7 +3969,28 @@
         "view": "Affichage"
       },
       "name": "Karaoké",
-      "noTrack": "Aucun morceau n'est chargé. Ouvrez l'iPod pour sélectionner un morceau."
+      "noTrack": "Aucun morceau n'est chargé. Ouvrez l'iPod pour sélectionner un morceau.",
+      "queue": {
+        "add": "ajouter à la file",
+        "addSongs": "ajouter des chansons",
+        "addSongsHint": "chercher, puis ajouter à la file",
+        "empty": "rien dans la file",
+        "from": "{{name}}",
+        "full": "la file est pleine",
+        "invalidTrack": "ce titre ne peut pas être ajouté",
+        "notInRoom": "vous n'êtes pas dans cette salle",
+        "open": "file",
+        "openAria": "file, {{count}} en attente",
+        "playNext": "lire ensuite",
+        "playingNext": "à suivre",
+        "queued": "ajouté",
+        "rateLimited": "trop de changements – réessayez",
+        "remove": "retirer",
+        "removed": "retiré",
+        "signIn": "connectez-vous pour ajouter",
+        "title": "à suivre",
+        "updateFailed": "file non mise à jour"
+      }
     },
     "maps": {
       "description": "Trouvez des lieux avec Apple Maps",

@@ -415,7 +415,7 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
     [data-os-color-scheme="dark"]
   )
-  .books-speech-overlay {
+  :is(.books-speech-overlay, .journal-view-toolbar) {
   border: none;
   color: rgba(0, 0, 0, 0.78);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -435,13 +435,13 @@
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]:not(
     [data-os-color-scheme="dark"]
   )
-  .books-speech-overlay
+  :is(.books-speech-overlay, .journal-view-toolbar)
   button:hover:not(:disabled) {
   background-color: rgba(0, 0, 0, 0.08);
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .books-speech-overlay {
+  :is(.books-speech-overlay, .journal-view-toolbar) {
   border: none;
   color: rgba(255, 255, 255, 0.92);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
@@ -460,7 +460,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .books-speech-overlay
+  :is(.books-speech-overlay, .journal-view-toolbar)
   button:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.12);
 }
@@ -470,7 +470,7 @@
    0.8-alpha `bg-os-window-bg` fill — opaque enough to bury the blur — for a
    lighter wash, and add the blur + specular rim on the same element. */
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"]
-  .books-customize-panel {
+  :is(.books-customize-panel, .journal-view-toolbar-menu) {
   -webkit-backdrop-filter: blur(36px) saturate(200%);
   backdrop-filter: blur(36px) saturate(200%);
   background-color: color-mix(
@@ -483,7 +483,7 @@
 }
 
 :root[data-os-theme="macosx"][data-os-aqua-material="glass"][data-os-color-scheme="dark"]
-  .books-customize-panel {
+  :is(.books-customize-panel, .journal-view-toolbar-menu) {
   background-color: color-mix(
     in srgb,
     var(--os-accent-color, #3a73d6) 7%,

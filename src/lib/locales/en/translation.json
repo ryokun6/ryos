@@ -5875,6 +5875,127 @@
           "description": "Workouts, body stats, food, schedule, and goals sync across devices when Cloud Sync is on. Units and the current view stay on this device."
         }
       }
+    },
+    "journal": {
+      "description": "Keep the same days in two shapes",
+      "features": {
+        "date": "Date",
+        "dateHint": "A date on each entry.",
+        "mood": "Mood Score",
+        "moodHint": "Score the day so a trend can appear.",
+        "off": "Off",
+        "on": "On",
+        "reminder": "Daily Reminder",
+        "reminderHint": "A nudge to write every day.",
+        "streak": "Streak",
+        "streakHint": "How many days in a row you have written.",
+        "weeklyReport": "Weekly Report",
+        "weeklyReportHint": "A weekly summary meant to help you reflect."
+      },
+      "generated": {
+        "question": "If it were you, which one would you remove?",
+        "ryoPick": "I would remove this"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Open on the journal a tool would hand you: a date, a mood score, and a daily reminder. Entries use the TextEdit editor.",
+          "title": "Complete Answer"
+        },
+        "featureToggles": {
+          "description": "The daily reminder and its time are set in Settings.",
+          "title": "Turn Features Off"
+        },
+        "photos": {
+          "description": "Sample photos are already in the entries. They show on that day's page and among the scraps.",
+          "title": "Photos"
+        },
+        "resetDemo": {
+          "description": "Reset Demo puts the sample journal and the switches back to the start. Edited entries return to the sample too.",
+          "title": "Reset the Demo"
+        },
+        "twoStructures": {
+          "description": "Journal opens on two structures: the same days as one page a day, and as scraps on one page. Combined stays in the toolbar.",
+          "title": "Two Structures"
+        },
+        "drawer": {
+          "title": "Settings",
+          "description": "The daily reminder switch and time live in Settings beside the window."
+        }
+      },
+      "menu": {
+        "about": "About Journal",
+        "help": "Journal Help",
+        "reset": "Reset Demo"
+      },
+      "mood": {
+        "label": "Mood Score",
+        "outOf": "{{score}} / 5",
+        "set": "Mood {{score}} of 5"
+      },
+      "name": "Journal",
+      "notice": {
+        "restored": "Demo sample restored"
+      },
+      "pageNumber": "Day {{count}}",
+      "photo": {
+        "alt": "Sample photo"
+      },
+      "reminder": {
+        "label": "Daily Reminder",
+        "timeLabel": "Time"
+      },
+      "report": {
+        "average": "Average mood {{score}}",
+        "blurb": "The reasons sound complete. The days themselves were not scored.",
+        "days": "{{count}} days written",
+        "title": "Weekly Report"
+      },
+      "status": {
+        "complete": "Complete version",
+        "kept": "Kept change:"
+      },
+      "streak": {
+        "label": "Streak",
+        "value": "{{count}} days"
+      },
+      "title": "Journal",
+      "toolbar": {
+        "reset": "Reset Demo",
+        "tools": "Page Tools",
+        "previous": "Previous Page",
+        "next": "Next Page",
+        "page": "Page {{count}}",
+        "newPage": "New Page",
+        "addNote": "Add Note",
+        "addImage": "Add Image",
+        "addSong": "Add Song",
+        "noSongs": "No Songs in the Library",
+        "emptyNote": "Note",
+        "photoAlt": "Photo",
+        "delete": "Delete",
+        "move": "Move to Date"
+      },
+      "views": {
+        "compare": "Combined",
+        "generated": "Complete Answer",
+        "daily": "Days",
+        "freeform": "Freeform"
+      },
+      "drawer": {
+        "title": "Settings",
+        "open": "Settings",
+        "features": "Features",
+        "presets": "Presets"
+      },
+      "sidebar": {
+        "days": "Days",
+        "newPage": "New Day"
+      },
+      "presets": {
+        "journal": "Journal",
+        "freeform": "Freeform",
+        "compare": "Two Structures"
+      }
     }
   },
   "components": {

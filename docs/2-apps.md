@@ -1,6 +1,6 @@
 # Apps
 
-ryOS includes 31 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
+ryOS includes 32 built-in applications, each designed to replicate classic desktop experiences while adding modern functionality.
 
 Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-viewer`, and Virtual PC is registered as `pc`.
 
@@ -37,6 +37,7 @@ Registry IDs and docs slugs mostly match; Applet Store is registered as `applet-
 | [Stuff](/docs/stuff) | Wooden inventory shelf with barcodes, tags, locations, cutout covers, sharing, and print labels. The app name follows the current language | Productivity |
 | [Dictionary](/docs/dictionary) | English, Chinese, Japanese, and Korean lookup with readings, handwriting, stroke-order cards, favorites, and flashcards | Utilities |
 | [Fitness](/docs/fitness) | Exercise guide, workout log, weekly plan, body stats, and an AI food log that can split a shared meal | Productivity |
+| [Journal](/docs/journal) | Demo journal with a full generated diary and a freeform notebook of the same sample days | Productivity |
 | [Calculator](/docs/calculator) | Basic, scientific, and unit conversion calculator | Utilities |
 | [Admin](/docs/admin) | Admin-only panel for users, chat-room moderation, song library, server health, and Cursor agent telemetry | System |
 

@@ -599,12 +599,6 @@
         "remove": "Rimuovi segnalibro",
         "title": "Segnalibri"
       },
-      "highlights": {
-        "emptyHint": "Seleziona un brano mentre leggi e comparirà qui.",
-        "emptyTitle": "Nessuna evidenziazione",
-        "title": "Evidenziazioni",
-        "untitled": "Evidenziazione"
-      },
       "chineseScript": {
         "original": "Originale",
         "simplified": "简体",
@@ -671,6 +665,12 @@
           "description": "La posizione viene salvata automaticamente e ripristinata alla successiva apertura del libro.",
           "title": "Progressi di lettura"
         }
+      },
+      "highlights": {
+        "emptyHint": "Seleziona un brano mentre leggi e comparirà qui.",
+        "emptyTitle": "Nessuna evidenziazione",
+        "title": "Evidenziazioni",
+        "untitled": "Evidenziazione"
       },
       "import": {
         "title": "Importa EPUB"
@@ -3626,8 +3626,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "Artisti",
         "backlight": "Retroilluminazione",
-        "clicker": "Clic",
         "brickGame": "Brick",
+        "clicker": "Clic",
         "extras": "Extra",
         "favoriteSongs": "Brani preferiti",
         "genius": "Genius",
@@ -3751,6 +3751,127 @@
         "spanish": "Spagnolo"
       }
     },
+    "journal": {
+      "description": "Tenere gli stessi giorni in due forme",
+      "drawer": {
+        "features": "Funzioni",
+        "open": "Impostazioni",
+        "presets": "Predefiniti",
+        "title": "Impostazioni"
+      },
+      "features": {
+        "date": "Data",
+        "dateHint": "Una data su ogni voce.",
+        "mood": "Punteggio dell’umore",
+        "moodHint": "Dare un punteggio al giorno per vedere una tendenza.",
+        "off": "Disattivo",
+        "on": "Attivo",
+        "reminder": "Promemoria quotidiano",
+        "reminderHint": "Un invito a scrivere ogni giorno.",
+        "streak": "Serie",
+        "streakHint": "Quanti giorni di seguito hai scritto.",
+        "weeklyReport": "Report settimanale",
+        "weeklyReportHint": "Un riepilogo settimanale per riflettere."
+      },
+      "generated": {
+        "question": "Se fossi tu, quale toglieresti?",
+        "ryoPick": "Io toglierei questa"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Inizia dal diario che consegnerebbe uno strumento: data, punteggio dell’umore, serie e promemoria quotidiano. Il testo usa l’editor di TextEdit.",
+          "title": "Risposta completa"
+        },
+        "drawer": {
+          "description": "Gli interruttori, il predefinito Due strutture e Ripristina la demo stanno nel cassetto accanto alla finestra.",
+          "title": "Cassetto della demo"
+        },
+        "featureToggles": {
+          "description": "Ogni funzione ha il proprio interruttore nel cassetto. Togli prima la serie se un giorno senza scrivere non deve sembrare un debito.",
+          "title": "Togliere funzioni"
+        },
+        "photos": {
+          "description": "Le foto di esempio sono già nelle voci. Compaiono nella pagina del giorno e tra i frammenti.",
+          "title": "Foto"
+        },
+        "resetDemo": {
+          "description": "Ripristina la demo riporta il diario di esempio, gli interruttori e i testi modificati all’inizio.",
+          "title": "Ripristina la demo"
+        },
+        "twoStructures": {
+          "description": "Scegli Due strutture nel cassetto per vedere gli stessi giorni come una pagina al giorno e come frammenti su una pagina.",
+          "title": "Due strutture"
+        }
+      },
+      "menu": {
+        "about": "Informazioni su Diario",
+        "help": "Aiuto Diario",
+        "reset": "Ripristina la demo"
+      },
+      "mood": {
+        "label": "Punteggio dell’umore",
+        "outOf": "{{score}} / 5",
+        "set": "Umore {{score}} di 5"
+      },
+      "name": "Diario",
+      "notice": {
+        "restored": "Esempio della demo ripristinato"
+      },
+      "pageNumber": "Giorno {{count}}",
+      "photo": {
+        "alt": "Foto di esempio"
+      },
+      "presets": {
+        "compare": "Due strutture",
+        "freeform": "Libero",
+        "journal": "Diario"
+      },
+      "reminder": {
+        "label": "Promemoria quotidiano",
+        "timeLabel": "Ora"
+      },
+      "report": {
+        "average": "Umore medio {{score}}",
+        "blurb": "Le ragioni sembrano complete. I giorni stessi non sono stati valutati.",
+        "days": "{{count}} giorni scritti",
+        "title": "Report settimanale"
+      },
+      "sidebar": {
+        "days": "Giorni",
+        "newPage": "Nuovo giorno"
+      },
+      "status": {
+        "complete": "Versione completa",
+        "kept": "Modifica tenuta:"
+      },
+      "streak": {
+        "label": "Serie",
+        "value": "{{count}} giorni"
+      },
+      "title": "Diario",
+      "toolbar": {
+        "addImage": "Aggiungi immagine",
+        "addNote": "Aggiungi nota",
+        "addSong": "Aggiungi brano",
+        "emptyNote": "Nota",
+        "newPage": "Nuova pagina",
+        "next": "Pagina successiva",
+        "page": "Pagina {{count}}",
+        "noSongs": "Nessun brano in libreria",
+        "photoAlt": "Foto",
+        "delete": "Elimina",
+        "move": "Sposta in un'altra data",
+        "previous": "Pagina precedente",
+        "reset": "Ripristina la demo",
+        "tools": "Strumenti pagina"
+      },
+      "views": {
+        "compare": "Combinato",
+        "daily": "Giorni",
+        "freeform": "Libero",
+        "generated": "Risposta completa"
+      }
+    },
     "karaoke": {
       "description": "Lettore karaoke con testi sincronizzati",
       "emptyLibrary": {
@@ -3827,27 +3948,6 @@
         "shareLinkInvite": "Condividi questo link per invitare amici nella sala KTV.",
         "start": "Apri sala KTV"
       },
-      "queue": {
-        "title": "in coda",
-        "empty": "niente in coda",
-        "add": "aggiungi alla coda",
-        "playNext": "riproduci dopo",
-        "remove": "rimuovi",
-        "open": "coda",
-        "from": "{{name}}",
-        "queued": "in coda",
-        "playingNext": "subito dopo",
-        "removed": "rimosso",
-        "full": "coda piena",
-        "updateFailed": "coda non aggiornata",
-        "signIn": "accedi per mettere in coda",
-        "rateLimited": "troppe modifiche – riprova",
-        "notInRoom": "non sei in questa stanza",
-        "invalidTrack": "questo brano non si può mettere in coda",
-        "openAria": "coda, {{count}} in attesa",
-        "addSongs": "aggiungi brani",
-        "addSongsHint": "cerca, poi aggiungi alla coda"
-      },
       "lyrics": {
         "noLyricsFound": "Testi non trovati",
         "search": "Cerca",
@@ -3869,7 +3969,28 @@
         "view": "Visualizza"
       },
       "name": "Karaoke",
-      "noTrack": "Nessun brano caricato. Apri iPod per selezionare un brano."
+      "noTrack": "Nessun brano caricato. Apri iPod per selezionare un brano.",
+      "queue": {
+        "add": "aggiungi alla coda",
+        "addSongs": "aggiungi brani",
+        "addSongsHint": "cerca, poi aggiungi alla coda",
+        "empty": "niente in coda",
+        "from": "{{name}}",
+        "full": "coda piena",
+        "invalidTrack": "questo brano non si può mettere in coda",
+        "notInRoom": "non sei in questa stanza",
+        "open": "coda",
+        "openAria": "coda, {{count}} in attesa",
+        "playNext": "riproduci dopo",
+        "playingNext": "subito dopo",
+        "queued": "in coda",
+        "rateLimited": "troppe modifiche – riprova",
+        "remove": "rimuovi",
+        "removed": "rimosso",
+        "signIn": "accedi per mettere in coda",
+        "title": "in coda",
+        "updateFailed": "coda non aggiornata"
+      }
     },
     "maps": {
       "description": "Trova luoghi con Mappe Apple",

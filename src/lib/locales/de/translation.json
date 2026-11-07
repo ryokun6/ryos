@@ -597,12 +597,6 @@
         "remove": "Lesezeichen entfernen",
         "title": "Lesezeichen"
       },
-      "highlights": {
-        "emptyHint": "Wähle beim Lesen eine Textstelle aus, damit sie hier angezeigt wird.",
-        "emptyTitle": "Keine Markierungen",
-        "title": "Markierungen",
-        "untitled": "Markierung"
-      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
@@ -669,6 +663,12 @@
           "description": "Deine Leseposition wird automatisch gespeichert und beim nächsten Öffnen des Buches wiederhergestellt.",
           "title": "Lesefortschritt"
         }
+      },
+      "highlights": {
+        "emptyHint": "Wähle beim Lesen eine Textstelle aus, damit sie hier angezeigt wird.",
+        "emptyTitle": "Keine Markierungen",
+        "title": "Markierungen",
+        "untitled": "Markierung"
       },
       "import": {
         "title": "EPUB importieren"
@@ -3615,8 +3615,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "Künstler:innen",
         "backlight": "Hintergrundbeleuchtung",
-        "clicker": "Klicker",
         "brickGame": "Brick",
+        "clicker": "Klicker",
         "extras": "Extras",
         "favoriteSongs": "Lieblingssongs",
         "genius": "Genius",
@@ -3739,6 +3739,127 @@
         "spanish": "Spanisch"
       }
     },
+    "journal": {
+      "description": "Dieselben Tage in zwei Formen behalten",
+      "drawer": {
+        "features": "Funktionen",
+        "open": "Einstellungen",
+        "presets": "Voreinstellungen",
+        "title": "Einstellungen"
+      },
+      "features": {
+        "date": "Datum",
+        "dateHint": "Ein Datum an jedem Eintrag.",
+        "mood": "Stimmungswert",
+        "moodHint": "Den Tag bewerten, damit ein Trend sichtbar wird.",
+        "off": "Aus",
+        "on": "Ein",
+        "reminder": "Tägliche Erinnerung",
+        "reminderHint": "Ein Anstoß, jeden Tag zu schreiben.",
+        "streak": "Serie",
+        "streakHint": "Wie viele Tage in Folge du geschrieben hast.",
+        "weeklyReport": "Wochenbericht",
+        "weeklyReportHint": "Eine Wochenzusammenfassung zum Nachdenken."
+      },
+      "generated": {
+        "question": "Welche würdest du entfernen?",
+        "ryoPick": "Ich würde diese entfernen"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Beginnt mit dem Tagebuch, das ein Werkzeug liefern würde: Datum, Stimmungswert, Serie und tägliche Erinnerung. Der Text nutzt den TextEdit-Editor.",
+          "title": "Vollständige Antwort"
+        },
+        "drawer": {
+          "description": "Funktionsschalter, die Voreinstellung Zwei Strukturen und Demo zurücksetzen liegen in der Schublade neben dem Fenster.",
+          "title": "Demo-Schublade"
+        },
+        "featureToggles": {
+          "description": "Jede Funktion hat einen Schalter in der Demo-Schublade. Entferne zuerst die Serie, wenn ein Tag ohne Eintrag sich nicht wie eine Schuld anfühlen soll.",
+          "title": "Funktionen entfernen"
+        },
+        "photos": {
+          "description": "Beispielfotos sind schon in den Einträgen. Sie erscheinen auf der Tagesseite und zwischen den Fragmenten.",
+          "title": "Fotos"
+        },
+        "resetDemo": {
+          "description": "Demo zurücksetzen setzt Beispiel, Schalter und bearbeitete Einträge auf den Anfang.",
+          "title": "Demo zurücksetzen"
+        },
+        "twoStructures": {
+          "description": "Wähle Zwei Strukturen in der Schublade, um dieselben Tage als eine Seite pro Tag und als Fragmente auf einer Seite zu sehen.",
+          "title": "Zwei Strukturen"
+        }
+      },
+      "menu": {
+        "about": "Über Tagebuch",
+        "help": "Tagebuch-Hilfe",
+        "reset": "Demo zurücksetzen"
+      },
+      "mood": {
+        "label": "Stimmungswert",
+        "outOf": "{{score}} / 5",
+        "set": "Stimmung {{score}} von 5"
+      },
+      "name": "Tagebuch",
+      "notice": {
+        "restored": "Demo-Beispiel wiederhergestellt"
+      },
+      "pageNumber": "Tag {{count}}",
+      "photo": {
+        "alt": "Beispielfoto"
+      },
+      "presets": {
+        "compare": "Zwei Strukturen",
+        "freeform": "Frei",
+        "journal": "Tagebuch"
+      },
+      "reminder": {
+        "label": "Tägliche Erinnerung",
+        "timeLabel": "Zeit"
+      },
+      "report": {
+        "average": "Mittlere Stimmung {{score}}",
+        "blurb": "Die Gründe klingen vollständig. Die Tage selbst wurden nicht bewertet.",
+        "days": "{{count}} Tage geschrieben",
+        "title": "Wochenbericht"
+      },
+      "sidebar": {
+        "days": "Tage",
+        "newPage": "Neuer Tag"
+      },
+      "status": {
+        "complete": "Vollständige Version",
+        "kept": "Behaltene Änderung:"
+      },
+      "streak": {
+        "label": "Serie",
+        "value": "{{count}} Tage"
+      },
+      "title": "Tagebuch",
+      "toolbar": {
+        "addImage": "Bild hinzufügen",
+        "addNote": "Notiz hinzufügen",
+        "addSong": "Titel hinzufügen",
+        "emptyNote": "Notiz",
+        "newPage": "Neue Seite",
+        "next": "Nächste Seite",
+        "page": "Seite {{count}}",
+        "noSongs": "Keine Titel in der Mediathek",
+        "photoAlt": "Foto",
+        "delete": "Löschen",
+        "move": "Auf ein anderes Datum verschieben",
+        "previous": "Vorherige Seite",
+        "reset": "Demo zurücksetzen",
+        "tools": "Seitenwerkzeuge"
+      },
+      "views": {
+        "compare": "Kombiniert",
+        "daily": "Tage",
+        "freeform": "Frei",
+        "generated": "Vollständige Antwort"
+      }
+    },
     "karaoke": {
       "description": "Karaoke-Player mit synchronisierten Liedtexten",
       "emptyLibrary": {
@@ -3815,27 +3936,6 @@
         "shareLinkInvite": "Diesen Link teilen, um Freunde in den KTV-Raum einzuladen.",
         "start": "KTV-Raum öffnen"
       },
-      "queue": {
-        "title": "als Nächstes",
-        "empty": "nichts in der Warteschlange",
-        "add": "zur Warteschlange",
-        "playNext": "als Nächstes",
-        "remove": "entfernen",
-        "open": "Warteschlange",
-        "from": "{{name}}",
-        "queued": "eingereiht",
-        "playingNext": "als Nächstes",
-        "removed": "entfernt",
-        "full": "Warteschlange voll",
-        "updateFailed": "Warteschlange nicht aktualisiert",
-        "signIn": "anmelden, um einzureihen",
-        "rateLimited": "zu viele Änderungen – später erneut",
-        "notInRoom": "du bist nicht in diesem Raum",
-        "invalidTrack": "dieser Song kann nicht eingereiht werden",
-        "openAria": "Song-Warteschlange, {{count}} wartend",
-        "addSongs": "Songs hinzufügen",
-        "addSongsHint": "suchen, dann in die Warteschlange"
-      },
       "lyrics": {
         "noLyricsFound": "Keine Liedtexte gefunden",
         "search": "Suchen",
@@ -3857,7 +3957,28 @@
         "view": "Ansicht"
       },
       "name": "Karaoke",
-      "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen."
+      "noTrack": "Kein Titel geladen. Öffne den iPod, um einen Titel auszuwählen.",
+      "queue": {
+        "add": "zur Warteschlange",
+        "addSongs": "Songs hinzufügen",
+        "addSongsHint": "suchen, dann in die Warteschlange",
+        "empty": "nichts in der Warteschlange",
+        "from": "{{name}}",
+        "full": "Warteschlange voll",
+        "invalidTrack": "dieser Song kann nicht eingereiht werden",
+        "notInRoom": "du bist nicht in diesem Raum",
+        "open": "Warteschlange",
+        "openAria": "Song-Warteschlange, {{count}} wartend",
+        "playNext": "als Nächstes",
+        "playingNext": "als Nächstes",
+        "queued": "eingereiht",
+        "rateLimited": "zu viele Änderungen – später erneut",
+        "remove": "entfernen",
+        "removed": "entfernt",
+        "signIn": "anmelden, um einzureihen",
+        "title": "als Nächstes",
+        "updateFailed": "Warteschlange nicht aktualisiert"
+      }
     },
     "maps": {
       "description": "Orte mit Apple Karten finden",

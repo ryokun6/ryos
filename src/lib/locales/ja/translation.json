@@ -597,12 +597,6 @@
         "remove": "ブックマークを削除",
         "title": "ブックマーク"
       },
-      "highlights": {
-        "emptyHint": "読書中に文章を選択すると、ここに表示されます。",
-        "emptyTitle": "ハイライトなし",
-        "title": "ハイライト",
-        "untitled": "ハイライト"
-      },
       "chineseScript": {
         "original": "オリジナル",
         "simplified": "简体",
@@ -669,6 +663,12 @@
           "description": "読書位置は自動的に保存され、次にブックを開いたときに復元されます。",
           "title": "読書の進捗"
         }
+      },
+      "highlights": {
+        "emptyHint": "読書中に文章を選択すると、ここに表示されます。",
+        "emptyTitle": "ハイライトなし",
+        "title": "ハイライト",
+        "untitled": "ハイライト"
       },
       "import": {
         "title": "EPUBを読み込む"
@@ -3615,8 +3615,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "アーティスト",
         "backlight": "バックライト",
-        "clicker": "クリック音",
         "brickGame": "ブロック崩し",
+        "clicker": "クリック音",
         "extras": "エクストラ",
         "favoriteSongs": "お気に入りの曲",
         "genius": "Genius",
@@ -3739,6 +3739,127 @@
         "spanish": "スペイン語"
       }
     },
+    "journal": {
+      "description": "同じ日々を、二つの形で残す",
+      "drawer": {
+        "features": "機能",
+        "open": "設定",
+        "presets": "プリセット",
+        "title": "設定"
+      },
+      "features": {
+        "date": "日付",
+        "dateHint": "各エントリーに日付が付きます。",
+        "mood": "気分スコア",
+        "moodHint": "一日に点数を付けて、傾向を見ます。",
+        "off": "オフ",
+        "on": "オン",
+        "reminder": "毎日のリマインダー",
+        "reminderHint": "毎日書くように促します。",
+        "streak": "連続記録",
+        "streakHint": "何日続けて書いたか。",
+        "weeklyReport": "週次レポート",
+        "weeklyReportHint": "振り返りのための週次まとめ。"
+      },
+      "generated": {
+        "question": "あなたなら、どれを外しますか？",
+        "ryoPick": "自分ならこれを外す"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "ツールが渡す日記から始まります。日付、気分スコア、連続記録、毎日のリマインダー。本文は TextEdit のエディタです。",
+          "title": "完全な答え"
+        },
+        "drawer": {
+          "description": "機能のスイッチ、二つの構造のプリセット、デモのリセットは窓の横の引き出しにあります。",
+          "title": "デモの引き出し"
+        },
+        "featureToggles": {
+          "description": "各機能はデモの引き出しで個別に切り替えます。書かなかった日を負債に感じるなら、まず連続記録を外します。",
+          "title": "機能を外す"
+        },
+        "photos": {
+          "description": "サンプル写真は最初から入っています。その日のページと断片の両方に出ます。",
+          "title": "写真"
+        },
+        "resetDemo": {
+          "description": "デモをリセットすると、サンプル、スイッチ、編集した本文が最初に戻ります。",
+          "title": "デモを戻す"
+        },
+        "twoStructures": {
+          "description": "デモの引き出しで二つの構造を選ぶと、同じ日々が一日一ページと、一枚に散らした断片として並びます。",
+          "title": "二つの構造"
+        }
+      },
+      "menu": {
+        "about": "日記について",
+        "help": "日記ヘルプ",
+        "reset": "デモをリセット"
+      },
+      "mood": {
+        "label": "気分スコア",
+        "outOf": "{{score}} / 5",
+        "set": "気分 {{score}} / 5"
+      },
+      "name": "日記",
+      "notice": {
+        "restored": "デモのサンプルを戻しました"
+      },
+      "pageNumber": "{{count}}日目",
+      "photo": {
+        "alt": "サンプル写真"
+      },
+      "presets": {
+        "compare": "二つの構造",
+        "freeform": "フリー",
+        "journal": "日記"
+      },
+      "reminder": {
+        "label": "毎日のリマインダー",
+        "timeLabel": "時刻"
+      },
+      "report": {
+        "average": "平均の気分 {{score}}",
+        "blurb": "理由はどれも完全に聞こえます。日々そのものに点数は付いていません。",
+        "days": "{{count}} 日分を書いた",
+        "title": "週次レポート"
+      },
+      "sidebar": {
+        "days": "日",
+        "newPage": "新しい日"
+      },
+      "status": {
+        "complete": "完全なバージョン",
+        "kept": "残した変更："
+      },
+      "streak": {
+        "label": "連続記録",
+        "value": "{{count}} 日"
+      },
+      "title": "日記",
+      "toolbar": {
+        "addImage": "画像を追加",
+        "addNote": "メモを追加",
+        "addSong": "曲を追加",
+        "emptyNote": "メモ",
+        "newPage": "新しいページ",
+        "next": "次のページ",
+        "page": "ページ {{count}}",
+        "noSongs": "ライブラリに曲がありません",
+        "photoAlt": "写真",
+        "delete": "削除",
+        "move": "別の日付へ移動",
+        "previous": "前のページ",
+        "reset": "デモをリセット",
+        "tools": "ページツール"
+      },
+      "views": {
+        "compare": "並べる",
+        "daily": "日",
+        "freeform": "フリー",
+        "generated": "完全な答え"
+      }
+    },
     "karaoke": {
       "description": "歌詞同期カラオケプレイヤー",
       "emptyLibrary": {
@@ -3815,27 +3936,6 @@
         "shareLinkInvite": "このリンクを共有して、友達をカラオケルームに招待しましょう。",
         "start": "カラオケルームを開く"
       },
-      "queue": {
-        "title": "次に歌う",
-        "empty": "予約なし",
-        "add": "予約に追加",
-        "playNext": "次に再生",
-        "remove": "削除",
-        "open": "予約",
-        "from": "{{name}}",
-        "queued": "予約した",
-        "playingNext": "次に再生",
-        "removed": "削除した",
-        "full": "予約がいっぱい",
-        "updateFailed": "予約を更新できない",
-        "signIn": "ログインして予約",
-        "rateLimited": "操作が多すぎる – 少し待って",
-        "notInRoom": "この部屋にいない",
-        "invalidTrack": "この曲は予約できない",
-        "openAria": "予約、{{count}} 曲待ち",
-        "addSongs": "曲を追加",
-        "addSongsHint": "検索して予約に追加"
-      },
       "lyrics": {
         "noLyricsFound": "歌詞が見つかりません",
         "search": "検索",
@@ -3857,7 +3957,28 @@
         "view": "表示"
       },
       "name": "カラオケ",
-      "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。"
+      "noTrack": "トラックが読み込まれていません。曲を選択するにはiPodを開いてください。",
+      "queue": {
+        "add": "予約に追加",
+        "addSongs": "曲を追加",
+        "addSongsHint": "検索して予約に追加",
+        "empty": "予約なし",
+        "from": "{{name}}",
+        "full": "予約がいっぱい",
+        "invalidTrack": "この曲は予約できない",
+        "notInRoom": "この部屋にいない",
+        "open": "予約",
+        "openAria": "予約、{{count}} 曲待ち",
+        "playNext": "次に再生",
+        "playingNext": "次に再生",
+        "queued": "予約した",
+        "rateLimited": "操作が多すぎる – 少し待って",
+        "remove": "削除",
+        "removed": "削除した",
+        "signIn": "ログインして予約",
+        "title": "次に歌う",
+        "updateFailed": "予約を更新できない"
+      }
     },
     "maps": {
       "description": "Apple マップで場所を検索",

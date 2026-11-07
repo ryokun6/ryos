@@ -5473,6 +5473,127 @@
         "unknownArtist": "未知的藝人"
       },
       "title": "Winamp"
+    },
+    "journal": {
+      "description": "用兩種形狀留下同一段生活",
+      "features": {
+        "date": "日期",
+        "dateHint": "每一則都有日期。",
+        "mood": "心情指數",
+        "moodHint": "給一天打分數，才看得到趨勢。",
+        "off": "關",
+        "on": "開",
+        "reminder": "每日提醒",
+        "reminderHint": "每天提醒你寫。",
+        "streak": "連續記錄天數",
+        "streakHint": "連續記錄了幾天。",
+        "weeklyReport": "每週報告",
+        "weeklyReportHint": "每週一份報告，用來幫助反思。"
+      },
+      "generated": {
+        "question": "如果是你，有哪一樣最想拿掉？",
+        "ryoPick": "我會拿掉這個"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "先看到一個工具會交出來的日記：日期、心情指數、連續記錄天數、每日提醒。內文用 TextEdit 的編輯器。",
+          "title": "完整答案"
+        },
+        "featureToggles": {
+          "description": "每一項都在示範抽屜裡單獨開關。如果沒寫的那一天不該像欠了什麼，就先拿掉連續記錄天數。",
+          "title": "逐項拿掉"
+        },
+        "photos": {
+          "description": "示範照片已經在內容裡。它們會出現在當天那一頁，也出現在散放的片段裡。",
+          "title": "照片"
+        },
+        "resetDemo": {
+          "description": "還原示範資料會把樣本、開關，和改過的內容回到一開始。",
+          "title": "還原示範"
+        },
+        "twoStructures": {
+          "description": "在示範抽屜選兩種結構，同一份日子會並排成每天一頁，和散放在同一張紙上的片段。",
+          "title": "兩種結構"
+        },
+        "drawer": {
+          "title": "示範抽屜",
+          "description": "功能開關、兩種結構的預設，和還原示範都在視窗旁邊的抽屜裡。"
+        }
+      },
+      "menu": {
+        "about": "關於日記",
+        "help": "日記輔助說明",
+        "reset": "還原示範資料"
+      },
+      "mood": {
+        "label": "心情指數",
+        "outOf": "{{score}} / 5",
+        "set": "心情指數 {{score}}"
+      },
+      "name": "日記",
+      "notice": {
+        "restored": "已還原示範資料"
+      },
+      "pageNumber": "第 {{count}} 天",
+      "photo": {
+        "alt": "示範照片"
+      },
+      "reminder": {
+        "label": "每日提醒",
+        "timeLabel": "時間"
+      },
+      "report": {
+        "average": "平均心情 {{score}}",
+        "blurb": "這些理由聽起來都很完整。日子本身沒有被打分數。",
+        "days": "寫了 {{count}} 天",
+        "title": "每週報告"
+      },
+      "status": {
+        "complete": "完整版本",
+        "kept": "留下的修改："
+      },
+      "streak": {
+        "label": "連續記錄天數",
+        "value": "{{count}} 天"
+      },
+      "title": "日記",
+      "toolbar": {
+        "reset": "還原示範",
+        "tools": "頁面工具",
+        "previous": "上一頁",
+        "next": "下一頁",
+        "page": "第 {{count}} 頁",
+        "newPage": "新頁面",
+        "addNote": "加入文字",
+        "addImage": "加入圖片",
+        "addSong": "加入歌曲",
+        "noSongs": "曲庫裡沒有歌曲",
+        "emptyNote": "筆記",
+        "photoAlt": "照片",
+        "delete": "刪除",
+        "move": "移到其他日期"
+      },
+      "views": {
+        "compare": "合併",
+        "generated": "完整答案",
+        "daily": "天數",
+        "freeform": "自由"
+      },
+      "drawer": {
+        "title": "設定",
+        "open": "設定",
+        "presets": "預設",
+        "features": "功能"
+      },
+      "sidebar": {
+        "days": "日子",
+        "newPage": "新的一天"
+      },
+      "presets": {
+        "journal": "日記",
+        "freeform": "自由",
+        "compare": "兩種結構"
+      }
     }
   },
   "common": {

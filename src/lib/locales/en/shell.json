@@ -1808,6 +1808,10 @@
     "fitness": {
       "name": "Fitness",
       "description": "Exercise guide, training schedule, and food log"
+    },
+    "journal": {
+      "name": "Journal",
+      "description": "Keep the same days in two shapes"
     }
   }
 }
