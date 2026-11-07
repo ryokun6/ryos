@@ -341,7 +341,7 @@ describe("freeform canvas card editing", () => {
     });
     expect(state.saved).toEqual([{ id: noteFragment.id, text: "Kept this fragment" }]);
 
-    const again = cardWithText("After moving to Taipei");
+    const again = cardWithText(noteText);
     await clickCard(again);
     await clickCard(again);
     const next = container?.querySelector("textarea");
