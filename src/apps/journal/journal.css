@@ -1,21 +1,45 @@
 /*
- * Freeform board fill. Mac chromes use the accent's pastel — the same shade as
- * assistant bubbles (`--os-accent-assistant-bubble-bg`) — including the stock
- * fallbacks for the System accent, which sets no inline override. The saturated
- * swatch (`--os-accent-color`) is not a page fill. Windows themes keep the paper.
+ * Freeform board. Mac chromes wash the accent pastel well toward white, lighter
+ * than the assistant bubble, including the stock fallbacks for the System
+ * accent (it sets no inline override). Ruled lines use the accent swatch.
+ * Windows keeps the paper and rules in the same accent color.
  */
 .journal-canvas {
-  background-color: #f4efe4;
+  --journal-canvas-accent: var(--os-accent-color, var(--os-color-link, #2765ca));
+  background-color: #f7f4ee;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 31px,
+    color-mix(in srgb, var(--journal-canvas-accent) 40%, transparent) 32px
+  );
+  background-size: 100% 32px;
 }
 
 :root[data-os-theme="macosx"] .journal-canvas {
-  background-color: var(--os-accent-assistant-bubble-bg, #bfdbfe);
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #bfdbfe) 24%,
+    #fff
+  );
 }
 
 :root[data-os-theme="system7"] .journal-canvas {
-  background-color: var(--os-accent-assistant-bubble-bg, #dbeafe);
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #dbeafe) 24%,
+    #fff
+  );
 }
 
 :root[data-os-theme="macosx"][data-os-color-scheme="dark"] .journal-canvas {
-  background-color: var(--os-accent-assistant-bubble-bg, #353a42);
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #353a42) 70%,
+    #fff
+  );
+  background-image: linear-gradient(
+    to bottom,
+    transparent 31px,
+    color-mix(in srgb, var(--journal-canvas-accent) 62%, transparent) 32px
+  );
 }

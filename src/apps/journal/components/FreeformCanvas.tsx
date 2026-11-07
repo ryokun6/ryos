@@ -298,8 +298,7 @@ export function FreeformCanvas({
         }}
         className={cn(
           "journal-canvas relative min-h-[22rem] flex-1 overflow-hidden",
-          "text-[#2c2416] os-dark:text-[#f3ead7]",
-          "bg-[linear-gradient(transparent_31px,rgba(90,70,40,0.08)_32px)] bg-[length:100%_32px]"
+          "text-[#2c2416] os-dark:text-[#f3ead7]"
         )}
       >
         {cards.map((fragment) => {
