@@ -23,6 +23,7 @@ import {
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
+import { JournalSidebarCalendar } from "./JournalSidebarCalendar";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
 import { JournalSongMark } from "./journalSong";
@@ -78,7 +79,7 @@ export function DailyJournal({
   l: JournalLogic;
   isMobileLayout: boolean;
 }) {
-  const { t, language, journal, isMacOSTheme, isSystem7Theme, sidebarWidth } = l;
+  const { t, language, journal, isMacOSTheme, isSystem7Theme, isWindowsTheme, sidebarWidth } = l;
   const sidebarWidthRef = useRef(sidebarWidth);
   sidebarWidthRef.current = sidebarWidth;
   const { open, hoverProps } = useJournalViewChrome();
@@ -131,7 +132,11 @@ export function DailyJournal({
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
       <div
-        className={cn("relative flex min-h-0 shrink-0", isMobileLayout && "max-h-[150px] w-full")}
+        className={cn(
+          "relative flex min-h-0 shrink-0",
+          isMobileLayout && "w-full",
+          isMobileLayout && !features.date && "max-h-[150px]"
+        )}
         style={isMobileLayout ? undefined : { width: sidebarWidth }}
       >
       <AppSidebarPanel
@@ -144,7 +149,12 @@ export function DailyJournal({
           useGeneva={useGeneva}
           bordered={isMacOSTheme}
         />
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            isMobileLayout && features.date && "max-h-[150px]"
+          )}
+        >
           {features.date
             ? sidebarDates(today).map((dayId) => {
                 const active = !showingUndated && dayId === selectedDayId;
@@ -226,6 +236,19 @@ export function DailyJournal({
             </button>
           )}
         </div>
+        {features.date ? (
+          <div className="shrink-0 border-t border-black/10 os-dark:border-white/10">
+            <JournalSidebarCalendar
+              selectedDate={showingUndated ? "" : selectedDayId}
+              today={today}
+              language={language}
+              isWindowsTheme={isWindowsTheme}
+              isMacOSTheme={isMacOSTheme}
+              isSystem7Theme={isSystem7Theme}
+              onSelectDay={l.api.selectDay}
+            />
+          </div>
+        ) : null}
       </AppSidebarPanel>
       {isMobileLayout ? null : (
         <div
