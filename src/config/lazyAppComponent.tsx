@@ -7,6 +7,7 @@ import { loadLazyModuleWithRetry } from "./lazyModuleRetry";
 // Cache for lazy components to maintain stable references across HMR.
 // `var` so a circular import during startup sees the binding instead of a
 // temporal-dead-zone throw. The map is created on first use.
+// eslint-disable-next-line no-var -- binding must exist before circular imports initialize
 var lazyComponentCache: Map<string, ComponentType<AppProps<unknown>>> | undefined;
 
 function getLazyComponentCache() {
@@ -15,6 +16,7 @@ function getLazyComponentCache() {
 }
 
 /** Dynamic import functions registered per app id for intent-based prefetch. */
+// eslint-disable-next-line no-var -- binding must exist before circular imports initialize
 var appChunkLoaders: Map<string, () => Promise<unknown>> | undefined;
 
 function getAppChunkLoaders() {

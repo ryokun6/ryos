@@ -1,21 +1,17 @@
-import { describe, expect, test } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { afterAll, describe, expect, test } from "bun:test";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import type { JournalScrap } from "../../../src/apps/journal/types";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
   value: true,
 });
-if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
-  if (!GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.register();
-  }
-}
+const installedHappyDom = installHappyDom();
 
 const DAY_ID = "2026-10-30";
 
@@ -165,4 +161,8 @@ describe("journal page selection", () => {
     );
     await settleAllPersistWrites();
   });
+});
+
+afterAll(async () => {
+  await uninstallHappyDom(installedHappyDom);
 });

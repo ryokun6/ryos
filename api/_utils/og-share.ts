@@ -196,6 +196,8 @@ function asShareText(value: unknown): string | null {
   const text = asNonEmptyString(value);
   if (!text) return null;
   const cleaned = text
+    // Control characters are the characters this strip is for.
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u001F\u007F]/g, " ")
     .replace(/\s+/g, " ")
     .trim();

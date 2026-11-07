@@ -1,5 +1,4 @@
-import { describe, expect, test } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { afterAll, describe, expect, test } from "bun:test";
 import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import {
@@ -13,10 +12,9 @@ import {
   fragmentsForJournalDay,
   reduceJournal,
 } from "../../../src/apps/journal/logic";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
-if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
-  if (!GlobalRegistrator.isRegistered) GlobalRegistrator.register();
-}
+const installedHappyDom = installHappyDom();
 
 function editorWith(html: string) {
   return new Editor({
@@ -67,4 +65,8 @@ describe("journal page delete", () => {
     deleteJournalSelection("big-boy-photo", (id) => removed.push(id));
     expect(removed).toEqual(["big-boy-photo"]);
   });
+});
+
+afterAll(async () => {
+  await uninstallHappyDom(installedHappyDom);
 });

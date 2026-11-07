@@ -6,12 +6,12 @@ import {
   expect,
   test,
 } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import { createInitialJournalState, fragmentsForJournalDay } from "../../../src/apps/journal/logic";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
 type JournalLogic = import("../../../src/apps/journal/hooks/useJournalLogic").JournalLogic;
 type JournalStore = typeof import("../../../src/stores/useJournalStore").useJournalStore;
@@ -60,11 +60,7 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(
   globalThis,
   "IS_REACT_ACT_ENVIRONMENT"
 );
-if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
-  if (!GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.register();
-  }
-}
+const installedHappyDom = installHappyDom();
 
 const i18n = i18next.createInstance();
 let container: HTMLDivElement | null = null;
@@ -165,7 +161,7 @@ afterEach(async () => {
   await settleAllPersistWrites();
 });
 
-afterAll(() => {
+afterAll(async () => {
   if (originalActEnvironment) {
     Object.defineProperty(
       globalThis,
@@ -175,6 +171,7 @@ afterAll(() => {
   } else {
     Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
   }
+  await uninstallHappyDom(installedHappyDom);
 });
 
 describe("journal view toolbar", () => {

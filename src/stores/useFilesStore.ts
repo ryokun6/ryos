@@ -195,8 +195,9 @@ async function loadDefaultFiles(): Promise<FileSystemData> {
   
   // Start new fetch
   const generation = defaultLibraryLoadGeneration;
+  // `const` is illegal: the callback reads `load` while the binding initializes.
   let load!: Promise<FileSystemData>;
-  load = (async () => {
+  load = (async () => { // eslint-disable-line prefer-const
     try {
       const res = await abortableFetch("/data/filesystem.json", {
         timeout: 15000,
@@ -239,8 +240,9 @@ async function loadDefaultApplets(): Promise<{
   
   // Start new fetch
   const generation = defaultLibraryLoadGeneration;
+  // `const` is illegal: the callback reads `load` while the binding initializes.
   let load!: Promise<{ applets: FileSystemItemData[] }>;
-  load = (async () => {
+  load = (async () => { // eslint-disable-line prefer-const
     try {
       const res = await abortableFetch("/data/applets.json", {
         timeout: 15000,
