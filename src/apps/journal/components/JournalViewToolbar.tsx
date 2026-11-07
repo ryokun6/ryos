@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type PointerEvent, type ReactNode } from "react";
 import { CaretLeft, CaretRight, Image, MusicNotes, Note, Trash } from "@phosphor-icons/react";
-import { motion } from "motion/react";
+import { motion, type Variants } from "motion/react";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,43 @@ const BUTTON_CLASS =
 const BAR_EXPANDED_HEIGHT = 36;
 const BAR_COLLAPSED = { width: 72, height: 5 } as const;
 const BAR_SPRING = { type: "spring" as const, stiffness: 520, damping: 34, mass: 0.7 };
+// Same enter spring as a Books toolbar control that mounts after the bar is
+// already open (the remove-highlight button in BooksReaderPane).
+const BAR_ITEM_VARIANTS: Variants = {
+  hidden: { opacity: 0, y: 4, scale: 0.6 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 640, damping: 32 },
+  },
+};
+
+function RevealedToolbarButton({
+  label,
+  className,
+  onClick,
+  children,
+}: {
+  label: string;
+  className: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <motion.button
+      type="button"
+      variants={BAR_ITEM_VARIANTS}
+      initial="hidden"
+      animate="visible"
+      aria-label={label}
+      className={className}
+      onClick={onClick}
+    >
+      {children}
+    </motion.button>
+  );
+}
 
 export function useJournalViewChrome() {
   const [open, setOpen] = useState(false);
@@ -119,13 +156,17 @@ export function JournalViewToolbar({
   const atStart = boardIndex <= 0;
   const atEnd = boardIndex >= boards.length - 1;
   const showPages = pages === "canvas";
+  const showPrevious = showPages && !atStart;
+  const showDelete =
+    journal.selectedCardId !== null &&
+    journalCardExists(journal, journal.selectedCardId);
 
   useLayoutEffect(() => {
     const node = measureRef.current;
     if (!node) return;
     const next = Math.ceil(node.scrollWidth);
     if (next > 0) setBarWidth(next);
-  }, [showPages, boardIndex, shown]);
+  }, [showPages, boardIndex, shown, showPrevious, showDelete]);
 
   useEffect(() => {
     if (!songOpen) return;
@@ -210,18 +251,18 @@ export function JournalViewToolbar({
         >
         {showPages ? (
           <>
-            <button
-              type="button"
-              aria-label={t("apps.journal.toolbar.previous")}
-              disabled={atStart}
-              className={buttonClass}
-              onClick={() => {
-                playClick();
-                go(-1);
-              }}
-            >
-              <CaretLeft size={16} weight="bold" />
-            </button>
+            {showPrevious ? (
+              <RevealedToolbarButton
+                label={t("apps.journal.toolbar.previous")}
+                className={buttonClass}
+                onClick={() => {
+                  playClick();
+                  go(-1);
+                }}
+              >
+                <CaretLeft size={16} weight="bold" />
+              </RevealedToolbarButton>
+            ) : null}
             <span className="max-w-[6.5rem] truncate px-1 text-center text-[12px] font-medium">
               {t("apps.journal.toolbar.page", { count: boardIndex + 1 })}
             </span>
@@ -275,20 +316,19 @@ export function JournalViewToolbar({
             <MusicNotes size={16} weight="bold" />
           </button>
         </div>
-        <span aria-hidden className="mx-0.5 h-4 w-px shrink-0 bg-current/20" />
-        <button
-          type="button"
-          aria-label={t("apps.journal.toolbar.delete")}
-          disabled={!journal.selectedCardId || !journalCardExists(journal, journal.selectedCardId)}
-          className={buttonClass}
-          onClick={() => {
-            if (!journal.selectedCardId) return;
-            playClick();
-            l.api.removeCard(journal.selectedCardId);
-          }}
-        >
-          <Trash size={16} weight="bold" />
-        </button>
+        {showDelete ? (
+          <RevealedToolbarButton
+            label={t("apps.journal.toolbar.delete")}
+            className={buttonClass}
+            onClick={() => {
+              if (!journal.selectedCardId) return;
+              playClick();
+              l.api.removeCard(journal.selectedCardId);
+            }}
+          >
+            <Trash size={16} weight="bold" />
+          </RevealedToolbarButton>
+        ) : null}
         <input
           ref={fileRef}
           type="file"
