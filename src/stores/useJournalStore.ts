@@ -26,6 +26,7 @@ interface JournalStore {
   toggleFeature: (feature: JournalFeatureId) => void;
   moveFragment: (id: string, position: FragmentPosition) => void;
   selectDay: (dayId: string) => void;
+  startDay: (dayId: string) => void;
   selectUndated: (id: string) => void;
   addUndatedPage: () => void;
   selectCanvasPage: (id: string) => void;
@@ -43,7 +44,7 @@ interface JournalStore {
   dismissNotice: () => void;
 }
 
-const STORE_VERSION = 3;
+const STORE_VERSION = 4;
 
 function commit(
   get: () => JournalStore,
@@ -68,6 +69,7 @@ export const useJournalStore = create<JournalStore>()(
       moveFragment: (id, position) =>
         commit(get, set, { type: "moveFragment", id, position }, null),
       selectDay: (dayId) => commit(get, set, { type: "selectDay", dayId }, null),
+      startDay: (dayId) => commit(get, set, { type: "startDay", dayId }, null),
       selectUndated: (id) => commit(get, set, { type: "selectUndated", id }, null),
       addUndatedPage: () =>
         commit(get, set, { type: "addUndatedPage", id: crypto.randomUUID() }, null),
@@ -94,7 +96,7 @@ export const useJournalStore = create<JournalStore>()(
           {
             type: "addScrap",
             scrap: {
-              id: crypto.randomUUID(),
+              id: input.id && input.id.length > 0 ? input.id : crypto.randomUUID(),
               pageId: input.pageId,
               kind: input.kind,
               photo: input.photo ?? null,
@@ -125,10 +127,18 @@ export const useJournalStore = create<JournalStore>()(
         sidebarWidth: state.sidebarWidth,
       }),
       migrate: (persisted, version) => {
-        if (!persisted || typeof persisted !== "object" || version >= 3) return persisted;
-        const saved = persisted as { journal?: Record<string, unknown> };
-        if (!saved.journal || typeof saved.journal !== "object") return persisted;
-        return { ...saved, journal: { ...saved.journal, view: "compare" } };
+        if (!persisted || typeof persisted !== "object") return persisted;
+        const saved = persisted as {
+          journal?: Record<string, unknown>;
+          sidebarWidth?: unknown;
+        };
+        if (version < 3 && saved.journal && typeof saved.journal === "object") {
+          saved.journal = { ...saved.journal, view: "compare" };
+        }
+        // Sample days changed. Drop a saved layout so the new posts and
+        // their clustered cards replace the previous demo.
+        if (version < 4) return { sidebarWidth: saved.sidebarWidth };
+        return saved;
       },
       merge: (persisted, current) => {
         const saved = persisted as { journal?: unknown; sidebarWidth?: unknown } | undefined;

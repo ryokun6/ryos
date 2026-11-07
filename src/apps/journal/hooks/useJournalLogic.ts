@@ -19,6 +19,7 @@ export function useJournalLogic() {
       toggleFeature: state.toggleFeature,
       moveFragment: state.moveFragment,
       selectDay: state.selectDay,
+      startDay: state.startDay,
       selectUndated: state.selectUndated,
       addUndatedPage: state.addUndatedPage,
       selectCanvasPage: state.selectCanvasPage,

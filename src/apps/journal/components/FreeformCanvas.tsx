@@ -45,7 +45,7 @@ function cardWidth(kind: CanvasCard["kind"]): number {
   return CANVAS_CARD_WIDTH[kind];
 }
 
-function CanvasNote({ text }: { text: string }) {
+function CanvasNote({ text, placeholder }: { text: string; placeholder?: boolean }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [clipped, setClipped] = useState(false);
 
@@ -66,7 +66,12 @@ function CanvasNote({ text }: { text: string }) {
   return (
     <p
       ref={ref}
-      className={cn("journal-canvas-note text-sm leading-snug", clipped && "journal-canvas-note-clip")}
+      data-journal-placeholder={placeholder ? "" : undefined}
+      className={cn(
+        "journal-canvas-note text-sm leading-snug",
+        placeholder && "text-os-text-secondary",
+        clipped && "journal-canvas-note-clip"
+      )}
     >
       {text}
     </p>
@@ -350,7 +355,6 @@ export function FreeformCanvas({
         >
         {cards.map((fragment) => {
           const position = positionFor(fragment);
-          const text = textFor(fragment);
           const editing = editingId === fragment.id;
           const current = fragment.pageId === activePageId;
           const selected = l.journal.selectedCardId === fragment.id;
@@ -360,6 +364,7 @@ export function FreeformCanvas({
             : interactive
                 ? "cursor-grab touch-none active:cursor-grabbing"
                 : "cursor-pointer";
+          const note = textFor(fragment);
           const dateLabel =
             showDates && fragment.kind !== "song" && isJournalDayId(fragment.pageId)
               ? formatJournalDay(fragment.pageId, language)
@@ -422,10 +427,10 @@ export function FreeformCanvas({
               ) : editing ? (
                 <textarea
                   ref={editorRef}
-                  aria-label={t("apps.journal.toolbar.emptyNote")}
-                  defaultValue={text}
-                  placeholder={t("apps.journal.toolbar.emptyNote")}
-                  rows={Math.min(8, Math.max(2, text.split("\n").length))}
+                  aria-label={t("apps.journal.toolbar.write")}
+                  defaultValue={note}
+                  placeholder={t("apps.journal.toolbar.write")}
+                  rows={Math.min(8, Math.max(2, note.split("\n").length))}
                   className="journal-canvas-note w-full resize-none overflow-y-auto bg-transparent p-0 text-sm leading-snug text-inherit outline-none select-text"
                   onPointerDown={(event) => event.stopPropagation()}
                   onPointerUp={(event) => event.stopPropagation()}
@@ -445,7 +450,10 @@ export function FreeformCanvas({
                   onBlur={(event) => finishTextEdit(event.currentTarget.value)}
                 />
               ) : (
-                <CanvasNote text={text || t("apps.journal.toolbar.emptyNote")} />
+                <CanvasNote
+                  text={note || t("apps.journal.toolbar.write")}
+                  placeholder={!note}
+                />
               )}
               {dateLabel ? (
                 <p

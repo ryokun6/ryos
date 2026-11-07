@@ -3826,6 +3826,7 @@
       },
       "sidebar": {
         "days": "日",
+        "newJournal": "新しい日記",
         "newPage": "新しい日"
       },
       "status": {
@@ -3844,6 +3845,7 @@
         "play": "再生",
         "pause": "一時停止",
         "emptyNote": "メモ",
+        "write": "何か書いて…",
         "newPage": "新しいページ",
         "next": "次のページ",
         "page": "ページ {{count}}",

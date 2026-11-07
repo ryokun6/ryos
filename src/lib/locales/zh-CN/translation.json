@@ -5571,6 +5571,7 @@
         "pause": "暂停",
         "noSongs": "曲库里没有歌曲",
         "emptyNote": "笔记",
+        "write": "写点什么…",
         "photoAlt": "照片",
         "delete": "删除",
         "move": "移到其他日期"
@@ -5589,6 +5590,7 @@
       },
       "sidebar": {
         "days": "日子",
+        "newJournal": "新日记",
         "newPage": "新的一天"
       },
       "presets": {

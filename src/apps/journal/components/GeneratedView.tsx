@@ -5,22 +5,22 @@ import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader
 import { cn } from "@/lib/utils";
 import {
   clamp,
-  dayHasEntry,
   entryDocId,
   fragmentsForJournalDay,
   journalPageIndex,
   journalDateUnderTitle,
   journalPageTitle,
+  journalSidebarDays,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
-  sidebarDates,
   todayDayId,
   undatedDocId,
 } from "../logic";
 import {
   formatJournalDay,
   JOURNAL_DAYS,
+  sampleJournalTitle,
   type JournalFragment,
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
@@ -46,6 +46,7 @@ function PageCard({
 }) {
   return (
     <div
+      data-journal-page-card={id}
       className={cn(highlight && "rounded-[8px] ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]")}
       onPointerDown={(event) => {
         if (event.button !== 0 || event.ctrlKey) return;
@@ -89,6 +90,7 @@ export function DailyJournal({
   const [menu, setMenu] = useState<JournalCardMenuState | null>(null);
   const features = journal.toggles;
   const today = todayDayId();
+  const sidebarDays = journalSidebarDays(journal);
   const pageIndex = journalPageIndex(journal, today);
   const showingUndated =
     journal.selectedUndatedId !== null &&
@@ -103,41 +105,51 @@ export function DailyJournal({
   const pageScraps = pageId ? journal.scraps.filter((scrap) => scrap.pageId === pageId) : [];
   const fragments = activeDayId ? fragmentsForJournalDay(journal, activeDayId) : [];
   const textFragments = fragments.filter((fragment) => fragment.kind === "text");
-  const blankFragment: JournalFragment | null = showingUndated
-    ? {
-        id: undatedDocId(journal.selectedUndatedId!),
-        dayId: "",
-        kind: "text",
-        text: null,
-        photo: null,
-        x: 0,
-        y: 0,
-        w: 40,
-        rotate: 0,
-      }
-    : textFragments.length === 0 && activeDayId
-      ? {
-          id: entryDocId(activeDayId),
-          dayId: activeDayId,
-          kind: "text",
-          text: null,
-          photo: null,
-          x: 0,
-          y: 0,
-          w: 40,
-          rotate: 0,
-        }
+  const blankId = showingUndated
+    ? undatedDocId(journal.selectedUndatedId!)
+    : activeDayId
+      ? entryDocId(activeDayId)
       : null;
+  const blankIsCard = blankId ? pageScraps.some((scrap) => scrap.id === blankId) : false;
+  const blankFragment: JournalFragment | null =
+    blankIsCard
+      ? null
+      : showingUndated
+        ? {
+            id: undatedDocId(journal.selectedUndatedId!),
+            dayId: "",
+            kind: "text",
+            text: null,
+            photo: null,
+            x: 0,
+            y: 0,
+            w: 40,
+            rotate: 0,
+          }
+        : textFragments.length === 0 && activeDayId
+          ? {
+              id: entryDocId(activeDayId),
+              dayId: activeDayId,
+              kind: "text",
+              text: null,
+              photo: null,
+              x: 0,
+              y: 0,
+              w: 40,
+              rotate: 0,
+            }
+          : null;
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);
   const dateLabel =
     features.date && activeDayId ? formatJournalDay(activeDayId, language) : "";
-  const defaultPageTitle = dateLabel || t("apps.journal.pageNumber", { count: pageIndex + 1 });
-  const titleDate = journalDateUnderTitle(
-    pageId ? journal.pageTitles[pageId] : undefined,
-    dateLabel
-  );
+  const defaultPageTitle =
+    (pageId ? sampleJournalTitle(pageId, language) : "") ||
+    dateLabel ||
+    t("apps.journal.pageNumber", { count: pageIndex + 1 });
+  const displayedTitle = journalPageTitle(journal, pageId ?? "", defaultPageTitle);
+  const titleDate = journalDateUnderTitle(displayedTitle, dateLabel);
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -166,9 +178,8 @@ export function DailyJournal({
           )}
         >
           {features.date
-            ? sidebarDates(today).map((dayId) => {
+            ? sidebarDays.map((dayId) => {
                 const active = !showingUndated && dayId === selectedDayId;
-                const hasEntry = dayHasEntry(journal, dayId);
                 return (
                   <button
                     key={dayId}
@@ -181,8 +192,12 @@ export function DailyJournal({
                       !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
                     )}
                   >
-                    <span className={cn("truncate", !hasEntry && "opacity-40")}>
-                      {journalPageTitle(journal, dayId, formatJournalDay(dayId, language))}
+                    <span className="truncate">
+                      {journalPageTitle(
+                        journal,
+                        dayId,
+                        sampleJournalTitle(dayId, language) || formatJournalDay(dayId, language)
+                      )}
                     </span>
                   </button>
                 );
@@ -205,7 +220,7 @@ export function DailyJournal({
                   >
                     <span className="truncate">
                       {t("apps.journal.pageNumber", {
-                        count: sidebarDates(today).length + index + 1,
+                        count: sidebarDays.length + index + 1,
                       })}
                     </span>
                   </button>
@@ -259,6 +274,15 @@ export function DailyJournal({
             />
           </div>
         ) : null}
+        {features.date && !sidebarDays.includes(today) ? (
+          <button
+            type="button"
+            onClick={() => l.api.startDay(today)}
+            className="flex w-full shrink-0 items-center border-t border-black/10 px-2.5 py-1 text-left text-[13px] leading-tight text-os-link os-dark:border-white/10 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            {t("apps.journal.sidebar.newJournal")}
+          </button>
+        ) : null}
       </AppSidebarPanel>
       {isMobileLayout ? null : (
         <div
@@ -299,7 +323,7 @@ export function DailyJournal({
               key={pageId ?? "page"}
               pageId={pageId ?? ""}
               defaultTitle={defaultPageTitle}
-              title={journalPageTitle(journal, pageId ?? "", defaultPageTitle)}
+              title={displayedTitle}
               onSave={l.api.setPageTitle}
             />
             {features.mood ? (
@@ -355,7 +379,7 @@ export function DailyJournal({
               <PageCard
                 key={fragment.id}
                 id={fragment.id}
-                highlight={journal.selectedCardId === fragment.id}
+                highlight={false}
                 onSelect={l.api.selectCard}
                 onMenu={(id, x, y) => setMenu({ id, x, y })}
               >
@@ -382,7 +406,7 @@ export function DailyJournal({
             <PageCard
               key={scrap.id}
               id={scrap.id}
-              highlight={journal.selectedCardId === scrap.id}
+              highlight={scrap.kind !== "text" && journal.selectedCardId === scrap.id}
               onSelect={l.api.selectCard}
               onMenu={(id, x, y) => setMenu({ id, x, y })}
             >

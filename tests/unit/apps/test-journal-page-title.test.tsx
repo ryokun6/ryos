@@ -4,7 +4,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { JournalPageTitle } from "../../../src/apps/journal/components/JournalPageTitle";
 import { DailyJournal } from "../../../src/apps/journal/components/GeneratedView";
-import { formatJournalDay } from "../../../src/apps/journal/sampleContent";
+import { formatJournalDay, sampleJournalTitle } from "../../../src/apps/journal/sampleContent";
+import { journalSidebarDays, todayDayId } from "../../../src/apps/journal/logic";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 
@@ -149,9 +150,31 @@ describe("journal page title", () => {
         </I18nextProvider>
       );
     });
-    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
+    expect(container.querySelector("[data-journal-title-date]")?.textContent).toBe(dateLabel);
     expect(container.textContent).not.toContain("apps.journal.mood.label");
-    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("h2")?.textContent).toBe(sampleJournalTitle(dayId, "en"));
+    expect(container.textContent).not.toContain(formatJournalDay("2026-11-02", "en"));
+    const today = todayDayId();
+    if (!journalSidebarDays(useJournalStore.getState().journal).includes(today)) {
+      const button = [...container.querySelectorAll("button")].find(
+        (node) => node.textContent === "apps.journal.sidebar.newJournal"
+      );
+      if (!(button instanceof HTMLButtonElement)) throw new Error("New Journal button missing");
+      const dayRow = [...container.querySelectorAll("button")].find(
+        (node) => node.textContent === sampleJournalTitle(dayId, "en")
+      );
+      expect(dayRow).toBeTruthy();
+      expect(dayRow!.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      await act(async () => {
+        button.click();
+      });
+      expect(useJournalStore.getState().journal.selectedDayId).toBe(today);
+      expect(container.textContent).toContain(formatJournalDay(today, "en"));
+      expect(container.textContent).not.toContain("apps.journal.sidebar.newJournal");
+      await act(async () => {
+        useJournalStore.getState().selectDay(dayId);
+      });
+    }
 
     await act(async () => {
       useJournalStore.getState().setPageTitle(dayId, "Taipei");
@@ -167,8 +190,8 @@ describe("journal page title", () => {
     await act(async () => {
       useJournalStore.getState().setPageTitle(dayId, "");
     });
-    expect(container.querySelector("[data-journal-title-date]")).toBeNull();
-    expect(container.querySelector("h2")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("[data-journal-title-date]")?.textContent).toBe(dateLabel);
+    expect(container.querySelector("h2")?.textContent).toBe(sampleJournalTitle(dayId, "en"));
 
     await act(async () => {
       root.unmount();

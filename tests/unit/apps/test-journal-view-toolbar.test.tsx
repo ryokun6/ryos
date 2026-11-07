@@ -159,6 +159,10 @@ afterEach(async () => {
     journal: createInitialJournalState(),
     notice: null,
   });
+  const { settleAllPersistWrites } = await import(
+    "../../../src/utils/persistWriteQueue"
+  );
+  await settleAllPersistWrites();
 });
 
 afterAll(() => {
@@ -185,7 +189,7 @@ describe("journal view toolbar", () => {
     expect(dividerCount()).toBe(1);
 
     await act(async () => {
-      useJournalStore.getState().selectCard("oct27-note");
+      useJournalStore.getState().selectCard("love-note");
     });
 
     const deleteButton = button("apps.journal.toolbar.delete");
@@ -221,6 +225,35 @@ describe("journal view toolbar", () => {
     expect(scrap?.pageId).toBe("2026-10-30");
     expect(scrap?.canvasPageId).toBe(boardId);
     expect(scrap?.pageId).not.toBe(boardId);
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    const again = useJournalStore.getState().journal;
+    expect(again.scraps).toHaveLength(1);
+    expect(again.scraps[0]?.id).toBe(scrap?.id);
+    expect(again.selectedCardId).toBe(scrap?.id);
+  });
+
+  test("a canvas note adopts the empty day entry instead of adding another", async () => {
+    await act(async () => {
+      useJournalStore.getState().selectDay("2026-11-07");
+    });
+    await renderToolbar("canvas");
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    expect(useJournalStore.getState().journal.scraps.map((scrap) => scrap.id)).toEqual([
+      "entry:2026-11-07",
+    ]);
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    const journal = useJournalStore.getState().journal;
+    expect(journal.scraps).toHaveLength(1);
+    expect(journal.selectedCardId).toBe("entry:2026-11-07");
   });
 
   test("daily toolbar has no divider and reveals delete only for a selected card", async () => {
@@ -231,7 +264,7 @@ describe("journal view toolbar", () => {
     expect(button("apps.journal.toolbar.previous")).toBeNull();
 
     await act(async () => {
-      useJournalStore.getState().selectCard("oct27-note");
+      useJournalStore.getState().selectCard("love-note");
     });
 
     const deleteButton = button("apps.journal.toolbar.delete");
@@ -244,15 +277,15 @@ describe("journal view toolbar", () => {
 
     expect(button("apps.journal.toolbar.delete")).toBeNull();
     expect(useJournalStore.getState().journal.selectedCardId).toBeNull();
-    expect(useJournalStore.getState().journal.removedFragmentIds).toContain("oct27-note");
+    expect(useJournalStore.getState().journal.removedFragmentIds).toContain("love-note");
   });
 
   test("delete removes the selected text block and leaves the rest of the page", async () => {
     await renderToolbar("none");
 
     await act(async () => {
-      useJournalStore.getState().selectDay("2026-10-28");
-      useJournalStore.getState().selectCard("oct28-note");
+      useJournalStore.getState().selectDay("2026-10-30");
+      useJournalStore.getState().selectCard("big-boy-note");
     });
 
     await act(async () => {
@@ -260,10 +293,10 @@ describe("journal view toolbar", () => {
     });
 
     const journal = useJournalStore.getState().journal;
-    expect(journal.selectedDayId).toBe("2026-10-28");
-    expect(journal.removedFragmentIds).toEqual(["oct28-note"]);
-    expect(fragmentsForJournalDay(journal, "2026-10-28").map((fragment) => fragment.id)).toEqual([
-      "oct28-photo",
+    expect(journal.selectedDayId).toBe("2026-10-30");
+    expect(journal.removedFragmentIds).toEqual(["big-boy-note"]);
+    expect(fragmentsForJournalDay(journal, "2026-10-30").map((fragment) => fragment.id)).toEqual([
+      "big-boy-photo",
     ]);
   });
 });

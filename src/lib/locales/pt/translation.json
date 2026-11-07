@@ -3838,6 +3838,7 @@
       },
       "sidebar": {
         "days": "Dias",
+        "newJournal": "Novo diário",
         "newPage": "Novo dia"
       },
       "status": {
@@ -3856,6 +3857,7 @@
         "play": "Reproduzir",
         "pause": "Pausar",
         "emptyNote": "Nota",
+        "write": "Escreve alguma coisa…",
         "newPage": "Nova página",
         "next": "Página Seguinte",
         "page": "Página {{count}}",

@@ -133,6 +133,7 @@ beforeAll(async () => {
               photo: { alt: "Sample photo" },
               toolbar: {
                 emptyNote: "Note",
+                write: "Write something...",
                 addSong: "Add Song",
                 tools: "Page Tools",
                 previous: "Previous Page",
@@ -165,6 +166,10 @@ afterEach(async () => {
   ipod.setIsPlaying(false);
   ipod.setCurrentSongId(null);
   ipod.setAppleMusicCurrentSongId(null);
+  const { settleAllPersistWrites } = await import(
+    "../../../src/utils/persistWriteQueue"
+  );
+  await settleAllPersistWrites();
 });
 
 afterAll(() => {
@@ -269,6 +274,33 @@ async function waitPastDoubleClick() {
 }
 
 describe("freeform canvas card editing", () => {
+  test("an empty text card shows the writing placeholder", async () => {
+    await renderCanvas({
+      scraps: [
+        {
+          ...songScrap,
+          id: "empty-note",
+          kind: "text",
+          songId: null,
+          songTitle: null,
+          songArtist: null,
+        },
+      ],
+    });
+    const placeholder = container?.querySelector(
+      '[data-journal-card="empty-note"] [data-journal-placeholder]'
+    );
+    expect(placeholder?.textContent).toBe("Write something...");
+  });
+
+  test("a selected text card keeps its ring on the board", async () => {
+    const journal = createInitialJournalState();
+    journal.selectedCardId = noteFragment.id;
+    await renderCanvas({ journal });
+    const card = container?.querySelector(`[data-journal-card="${noteFragment.id}"]`);
+    expect(card?.className).toContain("ring-2");
+  });
+
   test("a single click on a text card still opens its day", async () => {
     const state = await renderCanvas();
     const card = cardWithText(noteText);
@@ -309,7 +341,7 @@ describe("freeform canvas card editing", () => {
     });
     expect(state.saved).toEqual([{ id: noteFragment.id, text: "Kept this fragment" }]);
 
-    const again = cardWithText("After moving to Taipei");
+    const again = cardWithText(noteText);
     await clickCard(again);
     await clickCard(again);
     const next = container?.querySelector("textarea");

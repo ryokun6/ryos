@@ -61,6 +61,8 @@ export interface JournalState {
   selectedDayId: string;
   /** Custom page titles. Absent means the date, or the page number when there is no date. */
   pageTitles: Record<string, string>;
+  /** Days the user started from New Journal before they have any writing. */
+  startedDayIds: string[];
 }
 
 export type JournalScrapKind = "text" | "photo" | "song";
@@ -84,6 +86,8 @@ export interface JournalScrap {
 
 export interface JournalScrapInput {
   pageId: string;
+  /** Reuse this id when the new card is an existing empty text block. */
+  id?: string;
   kind: JournalScrapKind;
   photo?: string | null;
   songId?: string | null;
@@ -98,6 +102,7 @@ export type JournalAction =
   | { type: "toggleFeature"; feature: JournalFeatureId }
   | { type: "moveFragment"; id: string; position: FragmentPosition }
   | { type: "selectDay"; dayId: string }
+  | { type: "startDay"; dayId: string }
   | { type: "selectUndated"; id: string }
   | { type: "addUndatedPage"; id: string }
   | { type: "setReminderTime"; time: string }
