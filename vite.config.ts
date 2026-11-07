@@ -218,6 +218,15 @@ export default defineConfig({
     include: [
       "react",
       "react-dom",
+      // TipTap ships prebuilt ESM that imports named exports from
+      // react/jsx-runtime. That entry is CJS, so it must be prebundled or
+      // the browser throws "does not provide an export named 'Fragment'".
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      // Same CJS interop problem: TipTap imports these named exports from
+      // the shim's CommonJS entry.
+      "use-sync-external-store/shim/index.js",
+      "use-sync-external-store/shim/with-selector.js",
       "zustand",
       "clsx",
       "tailwind-merge",

@@ -599,12 +599,6 @@
         "remove": "Eliminar marcador",
         "title": "Marcadores"
       },
-      "highlights": {
-        "emptyHint": "Selecciona un fragmento mientras lees y aparecerá aquí.",
-        "emptyTitle": "Sin resaltados",
-        "title": "Resaltados",
-        "untitled": "Resaltado"
-      },
       "chineseScript": {
         "original": "Original",
         "simplified": "简体",
@@ -671,6 +665,12 @@
           "description": "Tu posición se guarda automáticamente y se recupera la próxima vez que abras el libro.",
           "title": "Progreso de lectura"
         }
+      },
+      "highlights": {
+        "emptyHint": "Selecciona un fragmento mientras lees y aparecerá aquí.",
+        "emptyTitle": "Sin resaltados",
+        "title": "Resaltados",
+        "untitled": "Resaltado"
       },
       "import": {
         "title": "Importar EPUB"
@@ -3626,8 +3626,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "Artistas",
         "backlight": "Retroiluminación",
-        "clicker": "Clic",
         "brickGame": "Ladrillo",
+        "clicker": "Clic",
         "extras": "Extras",
         "favoriteSongs": "Canciones favoritas",
         "genius": "Genius",
@@ -3751,6 +3751,127 @@
         "spanish": "Español"
       }
     },
+    "journal": {
+      "description": "Guardar los mismos días en dos formas",
+      "drawer": {
+        "features": "Funciones",
+        "open": "Ajustes",
+        "presets": "Preajustes",
+        "title": "Ajustes"
+      },
+      "features": {
+        "date": "Fecha",
+        "dateHint": "Una fecha en cada entrada.",
+        "mood": "Puntuación de ánimo",
+        "moodHint": "Puntuar el día para ver una tendencia.",
+        "off": "Desactivado",
+        "on": "Activado",
+        "reminder": "Recordatorio diario",
+        "reminderHint": "Un aviso para escribir cada día.",
+        "streak": "Racha",
+        "streakHint": "Cuántos días seguidos has escrito.",
+        "weeklyReport": "Informe semanal",
+        "weeklyReportHint": "Un resumen semanal para reflexionar."
+      },
+      "generated": {
+        "question": "Si fueras tú, ¿cuál quitarías?",
+        "ryoPick": "Yo quitaría esta"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "Empieza por el diario que entregaría una herramienta: fecha, puntuación de ánimo, racha y recordatorio diario. El texto usa el editor de TextEdit.",
+          "title": "Respuesta completa"
+        },
+        "drawer": {
+          "description": "Los interruptores, el preajuste Dos estructuras y Restablecer la demo están en el cajón junto a la ventana.",
+          "title": "Cajón de la demo"
+        },
+        "featureToggles": {
+          "description": "Cada función tiene su interruptor en el cajón. Quita primero la racha si un día sin escribir no debe sentirse como una deuda.",
+          "title": "Quitar funciones"
+        },
+        "photos": {
+          "description": "Las fotos de ejemplo ya están en las entradas. Aparecen en la página del día y entre los fragmentos.",
+          "title": "Fotos"
+        },
+        "resetDemo": {
+          "description": "Restablecer la demo devuelve el diario de ejemplo, los interruptores y los textos editados al inicio.",
+          "title": "Restablecer la demo"
+        },
+        "twoStructures": {
+          "description": "Elige Dos estructuras en el cajón para ver los mismos días como una página por día y como fragmentos en una página.",
+          "title": "Dos estructuras"
+        }
+      },
+      "menu": {
+        "about": "Acerca de Diario",
+        "help": "Ayuda de Diario",
+        "reset": "Restablecer la demo"
+      },
+      "mood": {
+        "label": "Puntuación de ánimo",
+        "outOf": "{{score}} / 5",
+        "set": "Ánimo {{score}} de 5"
+      },
+      "name": "Diario",
+      "notice": {
+        "restored": "Muestra de la demo restaurada"
+      },
+      "pageNumber": "Día {{count}}",
+      "photo": {
+        "alt": "Foto de ejemplo"
+      },
+      "presets": {
+        "compare": "Dos estructuras",
+        "freeform": "Libre",
+        "journal": "Diario"
+      },
+      "reminder": {
+        "label": "Recordatorio diario",
+        "timeLabel": "Hora"
+      },
+      "report": {
+        "average": "Ánimo medio {{score}}",
+        "blurb": "Las razones suenan completas. Los días en sí no fueron puntuados.",
+        "days": "{{count}} días escritos",
+        "title": "Informe semanal"
+      },
+      "sidebar": {
+        "days": "Días",
+        "newPage": "Nuevo día"
+      },
+      "status": {
+        "complete": "Versión completa",
+        "kept": "Cambio conservado:"
+      },
+      "streak": {
+        "label": "Racha",
+        "value": "{{count}} días"
+      },
+      "title": "Diario",
+      "toolbar": {
+        "addImage": "Añadir imagen",
+        "addNote": "Añadir nota",
+        "addSong": "Añadir canción",
+        "emptyNote": "Nota",
+        "newPage": "Página nueva",
+        "next": "Página siguiente",
+        "page": "Página {{count}}",
+        "noSongs": "No hay canciones en la biblioteca",
+        "photoAlt": "Foto",
+        "delete": "Eliminar",
+        "move": "Mover a otra fecha",
+        "previous": "Página anterior",
+        "reset": "Restablecer la demo",
+        "tools": "Herramientas de página"
+      },
+      "views": {
+        "compare": "Combinado",
+        "daily": "Días",
+        "freeform": "Libre",
+        "generated": "Respuesta completa"
+      }
+    },
     "karaoke": {
       "description": "Reproductor de karaoke con letras sincronizadas",
       "emptyLibrary": {
@@ -3827,27 +3948,6 @@
         "shareLinkInvite": "Comparte este enlace para invitar a tus amigos a la sala KTV.",
         "start": "Abrir sala KTV"
       },
-      "queue": {
-        "title": "a continuación",
-        "empty": "nada en la cola",
-        "add": "añadir a la cola",
-        "playNext": "reproducir después",
-        "remove": "quitar",
-        "open": "cola",
-        "from": "{{name}}",
-        "queued": "en cola",
-        "playingNext": "a continuación",
-        "removed": "quitada",
-        "full": "la cola está llena",
-        "updateFailed": "no se pudo actualizar la cola",
-        "signIn": "inicia sesión para añadir",
-        "rateLimited": "demasiados cambios – inténtalo luego",
-        "notInRoom": "no estás en esta sala",
-        "invalidTrack": "esa canción no se puede añadir",
-        "openAria": "cola de canciones, {{count}} en espera",
-        "addSongs": "añadir canciones",
-        "addSongsHint": "busca y añádelas a la cola"
-      },
       "lyrics": {
         "noLyricsFound": "No se encontraron letras",
         "search": "Buscar",
@@ -3869,7 +3969,28 @@
         "view": "Ver"
       },
       "name": "Karaoke",
-      "noTrack": "No hay pista cargada. Abre el iPod para seleccionar una canción."
+      "noTrack": "No hay pista cargada. Abre el iPod para seleccionar una canción.",
+      "queue": {
+        "add": "añadir a la cola",
+        "addSongs": "añadir canciones",
+        "addSongsHint": "busca y añádelas a la cola",
+        "empty": "nada en la cola",
+        "from": "{{name}}",
+        "full": "la cola está llena",
+        "invalidTrack": "esa canción no se puede añadir",
+        "notInRoom": "no estás en esta sala",
+        "open": "cola",
+        "openAria": "cola de canciones, {{count}} en espera",
+        "playNext": "reproducir después",
+        "playingNext": "a continuación",
+        "queued": "en cola",
+        "rateLimited": "demasiados cambios – inténtalo luego",
+        "remove": "quitar",
+        "removed": "quitada",
+        "signIn": "inicia sesión para añadir",
+        "title": "a continuación",
+        "updateFailed": "no se pudo actualizar la cola"
+      }
     },
     "maps": {
       "description": "Busca lugares con Apple Maps",
@@ -5486,113 +5607,6 @@
         "unknownArtist": "Artista desconocido"
       },
       "title": "Winamp"
-    },
-    "journal": {
-      "description": "Guardar los mismos días en dos formas",
-      "features": {
-        "date": "Fecha",
-        "dateHint": "Una fecha en cada entrada.",
-        "mood": "Puntuación de ánimo",
-        "moodHint": "Puntuar el día para ver una tendencia.",
-        "off": "Desactivado",
-        "on": "Activado",
-        "reminder": "Recordatorio diario",
-        "reminderHint": "Un aviso para escribir cada día.",
-        "streak": "Racha",
-        "streakHint": "Cuántos días seguidos has escrito.",
-        "weeklyReport": "Informe semanal",
-        "weeklyReportHint": "Un resumen semanal para reflexionar."
-      },
-      "generated": {
-        "question": "Si fueras tú, ¿cuál quitarías?",
-        "ryoPick": "Yo quitaría esta"
-      },
-      "help": {
-        "completeAnswer": {
-          "description": "Empieza por el diario que entregaría una herramienta: fecha, puntuación de ánimo, racha, recordatorio diario e informe semanal. El texto usa el editor de TextEdit.",
-          "title": "Respuesta completa"
-        },
-        "featureToggles": {
-          "description": "Cada función tiene su interruptor en el cajón. Quita primero la racha si un día sin escribir no debe sentirse como una deuda.",
-          "title": "Quitar funciones"
-        },
-        "photos": {
-          "description": "Las fotos de ejemplo ya están en las entradas. Aparecen en la página del día y entre los fragmentos.",
-          "title": "Fotos"
-        },
-        "resetDemo": {
-          "description": "Restablecer la demo devuelve el diario de ejemplo, los interruptores y los textos editados al inicio.",
-          "title": "Restablecer la demo"
-        },
-        "twoStructures": {
-          "description": "Elige Dos estructuras en el cajón para ver los mismos días como una página por día y como fragmentos en una página.",
-          "title": "Dos estructuras"
-        },
-        "drawer": {
-          "title": "Cajón de la demo",
-          "description": "Los interruptores, el preajuste Dos estructuras y Restablecer la demo están en el cajón junto a la ventana."
-        }
-      },
-      "menu": {
-        "about": "Acerca de Diario",
-        "help": "Ayuda de Diario",
-        "reset": "Restablecer la demo"
-      },
-      "mood": {
-        "label": "Puntuación de ánimo",
-        "outOf": "{{score}} / 5",
-        "set": "Ánimo {{score}} de 5"
-      },
-      "name": "Diario",
-      "notice": {
-        "restored": "Muestra de la demo restaurada"
-      },
-      "pageNumber": "Página {{count}}",
-      "photo": {
-        "alt": "Foto de ejemplo"
-      },
-      "reminder": {
-        "label": "Recordatorio diario",
-        "timeLabel": "Hora"
-      },
-      "report": {
-        "average": "Ánimo medio {{score}}",
-        "blurb": "Las razones suenan completas. Los días en sí no fueron puntuados.",
-        "days": "{{count}} días escritos",
-        "title": "Informe semanal"
-      },
-      "status": {
-        "complete": "Versión completa",
-        "kept": "Cambio conservado:"
-      },
-      "streak": {
-        "label": "Racha",
-        "value": "{{count}} días"
-      },
-      "title": "Diario",
-      "toolbar": {
-        "reset": "Restablecer la demo"
-      },
-      "views": {
-        "compare": "Combinado",
-        "generated": "Respuesta completa",
-        "daily": "Páginas",
-        "freeform": "Libre"
-      },
-      "drawer": {
-        "title": "Demo",
-        "open": "Controles de la demo",
-        "presets": "Preajustes"
-      },
-      "sidebar": {
-        "days": "Días",
-        "newPage": "Nueva página"
-      },
-      "presets": {
-        "journal": "Diario",
-        "freeform": "Libre",
-        "compare": "Dos estructuras"
-      }
     }
   },
   "common": {

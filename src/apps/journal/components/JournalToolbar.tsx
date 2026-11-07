@@ -3,7 +3,7 @@ import { BookOpen, Columns, Note, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { osToolbarSurfaceClassName } from "@/components/shared/osThemePrimitives";
 import { cn } from "@/lib/utils";
-import { JOURNAL_TOOLBAR_VIEWS, type JournalView } from "../types";
+import { JOURNAL_VIEWS, type JournalView } from "../types";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 
 const VIEW_ICONS: Record<JournalView, ReactNode> = {
@@ -78,8 +78,7 @@ export function JournalToolbar({
 }) {
   const { t, isMacOSTheme, isSystem7Theme, isWindowsTheme, journal } = l;
   const group = isMacOSTheme ? "metal-inset-btn-group" : "flex items-center gap-0.5";
-  const tabs: JournalView[] =
-    journal.view === "compare" ? [...JOURNAL_TOOLBAR_VIEWS, "compare"] : [...JOURNAL_TOOLBAR_VIEWS];
+  const tabs: JournalView[] = [...JOURNAL_VIEWS];
   return (
     <div
       className={cn(

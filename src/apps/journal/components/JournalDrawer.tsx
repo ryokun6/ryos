@@ -1,15 +1,38 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { AppDrawer } from "@/components/shared/AppDrawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useSound, Sounds } from "@/hooks/useSound";
-import { cn } from "@/lib/utils";
-import { allFeaturesOn } from "../logic";
-import { JOURNAL_FEATURES, JOURNAL_PRESETS } from "../types";
+import { reminderTimeOptions } from "../logic";
 import type { JournalLogic } from "../hooks/useJournalLogic";
-import { keptChangeLabels } from "./journalUi";
 
-const NOTICE_KEYS = {
-  restored: "apps.journal.notice.restored",
-} as const;
+function SettingsField({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <div className="min-w-0 text-left">
+        <div className="text-[11px] leading-snug text-os-text-primary">{label}</div>
+        {description ? (
+          <div className="mt-0.5 text-[10px] leading-snug text-os-text-secondary">{description}</div>
+        ) : null}
+      </div>
+      <div className="shrink-0">{children}</div>
+    </div>
+  );
+}
 
 export function JournalDrawer({
   l,
@@ -20,7 +43,7 @@ export function JournalDrawer({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const { t, journal, notice } = l;
+  const { t, journal } = l;
   const { play: playDrawerOpen } = useSound(Sounds.WINDOW_ZOOM_MAXIMIZE);
   const { play: playDrawerClose } = useSound(Sounds.WINDOW_ZOOM_MINIMIZE);
   const mountedRef = useRef(false);
@@ -33,13 +56,8 @@ export function JournalDrawer({
     else void playDrawerClose();
   }, [isOpen, playDrawerOpen, playDrawerClose]);
 
-  const changes = keptChangeLabels(l);
-  const joiner = l.language.startsWith("zh") ? "、" : ", ";
-  const presetSelected = {
-    journal: journal.view === "daily" && allFeaturesOn(journal.toggles),
-    freeform: journal.view === "freeform",
-    compare: journal.view === "compare",
-  };
+  const reminderOn = journal.toggles.reminder;
+  const reminderTimes = reminderTimeOptions(journal.reminderTime);
 
   return (
     <AppDrawer
@@ -48,72 +66,41 @@ export function JournalDrawer({
       title={t("apps.journal.drawer.title")}
       data-journal-drawer=""
     >
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <p className="px-2.5 pb-1 pt-2 text-[11px] uppercase tracking-wide opacity-50">
-          {t("apps.journal.drawer.presets")}
-        </p>
-        {JOURNAL_PRESETS.map((preset) => (
-          <button
-            key={preset}
-            type="button"
-            onClick={() => l.api.applyPreset(preset)}
-            data-selected={presetSelected[preset] ? "true" : undefined}
-            className={cn(
-              "flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight",
-              !presetSelected[preset] && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-            )}
-          >
-            {t(`apps.journal.presets.${preset}`)}
-          </button>
-        ))}
-
-        <p className="px-2.5 pb-1 pt-3 text-[11px] uppercase tracking-wide opacity-50">
-          {t("apps.journal.generated.question")}
-        </p>
-        {JOURNAL_FEATURES.map((feature) => {
-          const on = journal.toggles[feature];
-          return (
-            <button
-              key={feature}
-              type="button"
-              aria-pressed={on}
-              onClick={() => l.api.toggleFeature(feature)}
-              className="flex w-full items-center gap-2 px-2.5 py-1 text-left transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] leading-tight">
-                  {t(`apps.journal.features.${feature}`)}
-                </span>
-                {feature === "streak" ? (
-                  <span className="block truncate text-[11px] leading-tight text-os-link">
-                    {t("apps.journal.generated.ryoPick")}
-                  </span>
-                ) : (
-                  <span className="block truncate text-[11px] leading-tight opacity-60">
-                    {t(`apps.journal.features.${feature}Hint`)}
-                  </span>
-                )}
-              </span>
-              <span className="shrink-0 text-[11px] opacity-70">
-                {on ? t("apps.journal.features.on") : t("apps.journal.features.off")}
-              </span>
-            </button>
-          );
-        })}
-
-        <button
-          type="button"
-          onClick={() => l.api.resetDemo()}
-          className="mt-2 flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-3 py-3">
+        <SettingsField
+          label={t("apps.journal.features.reminder")}
+          description={t("apps.journal.features.reminderHint")}
         >
-          {t("apps.journal.toolbar.reset")}
-        </button>
-        <p className="px-2.5 pb-2 text-[11px] leading-snug opacity-60">
-          {changes.length === 0
-            ? t("apps.journal.status.complete")
-            : `${t("apps.journal.status.kept")} ${changes.join(joiner)}`}
-          {notice ? ` ${t(NOTICE_KEYS[notice])}` : ""}
-        </p>
+          <Switch
+            id="journal-feature-reminder"
+            checked={reminderOn}
+            onCheckedChange={() => l.api.toggleFeature("reminder")}
+            aria-label={t("apps.journal.features.reminder")}
+            className="data-[state=checked]:bg-[#000000]"
+          />
+        </SettingsField>
+        {reminderOn ? (
+          <SettingsField label={t("apps.journal.reminder.timeLabel")}>
+            <Select
+              value={journal.reminderTime}
+              onValueChange={(value) => l.api.setReminderTime(value)}
+            >
+              <SelectTrigger
+                aria-label={t("apps.journal.reminder.timeLabel")}
+                className="w-[5.75rem]"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="item-aligned" className="max-h-64">
+                {reminderTimes.map((time) => (
+                  <SelectItem key={time} value={time}>
+                    {time}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingsField>
+        ) : null}
       </div>
     </AppDrawer>
   );

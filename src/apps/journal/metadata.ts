@@ -16,25 +16,25 @@ export const helpItems = [
     icon: "📓",
     title: "Complete Answer",
     description:
-      "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report. Entries use the TextEdit editor.",
+      "Open on the journal a tool would hand you: a date, a mood score, and a daily reminder. Entries use the TextEdit editor.",
   },
   {
     icon: "🎚️",
     title: "Turn Features Off",
     description:
-      "Each feature has its own switch in the demo drawer. The streak is the one to remove first if a day without writing should not feel like a debt.",
+      "The daily reminder and its time are set in Settings.",
   },
   {
     icon: "🧰",
-    title: "Demo Drawer",
+    title: "Settings",
     description:
-      "Feature switches, the Two Structures preset, and Reset Demo live in the drawer beside the window.",
+      "The daily reminder switch and time live in Settings beside the window.",
   },
   {
     icon: "↔️",
     title: "Two Structures",
     description:
-      "Choose Two Structures in the demo drawer to see the same days as one page a day and as scraps on one page.",
+      "Journal opens on two structures: the same days as one page a day, and as scraps on one page. Combined stays in the toolbar.",
   },
   {
     icon: "🖼️",

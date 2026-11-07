@@ -5,7 +5,8 @@ import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { useResizeObserverWithRef } from "@/hooks/useResizeObserver";
 import { cn } from "@/lib/utils";
 import { appMetadata } from "../metadata";
-import { useJournalLogic } from "../hooks/useJournalLogic";
+import { useJournalLogic, type JournalLogic } from "../hooks/useJournalLogic";
+import { currentJournalPage, isJournalDayId } from "../logic";
 import { CompareView } from "./CompareView";
 import { FreeformCanvas } from "./FreeformCanvas";
 import { GeneratedView } from "./GeneratedView";
@@ -14,6 +15,12 @@ import { JournalMenuBar } from "./JournalMenuBar";
 import { JournalToolbar } from "./JournalToolbar";
 
 const MOBILE_BREAKPOINT = 760;
+
+function openCanvasPage(l: JournalLogic, pageId: string) {
+  if (isJournalDayId(pageId)) l.api.selectDay(pageId);
+  else l.api.selectUndated(pageId);
+  if (l.journal.view === "freeform") l.api.setView("daily");
+}
 
 export function JournalAppComponent({
   isWindowOpen,
@@ -73,11 +80,15 @@ export function JournalAppComponent({
             <CompareView l={l} isMobileLayout={isMobileLayout} />
           ) : journal.view === "freeform" ? (
             <FreeformCanvas
+              l={l}
               positions={journal.positions}
               texts={journal.texts}
+              scraps={journal.scraps}
               showDates={journal.toggles.date}
+              activePageId={currentJournalPage(journal).id}
               interactive
               onMove={l.api.moveFragment}
+              onOpenDay={(pageId) => openCanvasPage(l, pageId)}
             />
           ) : (
             <GeneratedView l={l} isMobileLayout={isMobileLayout} />

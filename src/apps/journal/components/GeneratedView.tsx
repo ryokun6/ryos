@@ -1,37 +1,65 @@
-import { useRef } from "react";
-import { Star } from "@phosphor-icons/react";
+import { useRef, useState, type ReactNode } from "react";
+import { Smiley, SmileyBlank, SmileyMeh, SmileySad, SmileyWink } from "@phosphor-icons/react";
 import { AppSidebarPanel } from "@/components/layout/AppSidebarPanel";
 import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  averageMood,
   clamp,
   dayHasEntry,
   entryDocId,
+  fragmentsForJournalDay,
+  journalPageIndex,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
-  reminderTimeOptions,
-  sampleStreak,
   sidebarDates,
   todayDayId,
   undatedDocId,
 } from "../logic";
 import {
   formatJournalDay,
-  fragmentsForDay,
   JOURNAL_DAYS,
   type JournalFragment,
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
+import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
 import { JournalEntryEditor } from "./JournalEntryEditor";
+import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
+import { JournalSongMark, toggleJournalSong } from "./journalSong";
+
+function PageCard({
+  id,
+  highlight,
+  onSelect,
+  onMenu,
+  children,
+}: {
+  id: string;
+  highlight: boolean;
+  onSelect: (id: string) => void;
+  onMenu: (id: string, x: number, y: number) => void;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={cn(highlight && "rounded-[8px] ring-2 ring-[#9a7424] os-dark:ring-[#e6c36a]")}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || event.ctrlKey) return;
+        onSelect(id);
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onSelect(id);
+        onMenu(id, event.clientX, event.clientY);
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const MOOD_FACES = [SmileySad, SmileyMeh, SmileyBlank, Smiley, SmileyWink] as const;
 
 export function GeneratedView({
   l,
@@ -53,9 +81,12 @@ export function DailyJournal({
   const { t, language, journal, isMacOSTheme, isSystem7Theme, sidebarWidth } = l;
   const sidebarWidthRef = useRef(sidebarWidth);
   sidebarWidthRef.current = sidebarWidth;
+  const { open, hoverProps } = useJournalViewChrome();
+  const [menu, setMenu] = useState<JournalCardMenuState | null>(null);
   const features = journal.toggles;
+  const today = todayDayId();
+  const pageIndex = journalPageIndex(journal, today);
   const showingUndated =
-    !features.date &&
     journal.selectedUndatedId !== null &&
     journal.undatedPages.includes(journal.selectedUndatedId);
   const pageItems = [
@@ -63,11 +94,10 @@ export function DailyJournal({
     ...journal.undatedPages.map((id) => ({ kind: "page" as const, id })),
   ];
   const selectedDayId = journal.selectedDayId;
-  const selectedPageIndex = showingUndated
-    ? JOURNAL_DAYS.length + journal.undatedPages.indexOf(journal.selectedUndatedId!)
-    : Math.max(0, pageItems.findIndex((item) => item.kind === "day" && item.id === selectedDayId));
   const activeDayId = showingUndated ? null : selectedDayId;
-  const fragments = activeDayId ? fragmentsForDay(activeDayId) : [];
+  const pageId = showingUndated ? journal.selectedUndatedId! : activeDayId;
+  const pageScraps = pageId ? journal.scraps.filter((scrap) => scrap.pageId === pageId) : [];
+  const fragments = activeDayId ? fragmentsForJournalDay(journal, activeDayId) : [];
   const textFragments = fragments.filter((fragment) => fragment.kind === "text");
   const blankFragment: JournalFragment | null = showingUndated
     ? {
@@ -97,12 +127,6 @@ export function DailyJournal({
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);
-  const moodAverage = averageMood(JOURNAL_DAYS.map((day) => moodForDay(journal, day.id)));
-  const statCard =
-    "flex min-h-[4.75rem] flex-col items-start justify-center gap-1 rounded-os border border-os-window bg-os-panel-bg px-3 py-2.5 os-theme-win98:rounded-none";
-  const statLabel = "whitespace-nowrap text-[11px] leading-none text-os-text-secondary";
-  const statValue = "w-full bg-transparent p-0 text-2xl font-medium leading-none text-os-text-primary";
-  const reminderTimes = reminderTimeOptions(journal.reminderTime);
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -122,8 +146,8 @@ export function DailyJournal({
         />
         <div className="min-h-0 flex-1 overflow-y-auto">
           {features.date
-            ? sidebarDates(todayDayId()).map((dayId) => {
-                const active = dayId === selectedDayId;
+            ? sidebarDates(today).map((dayId) => {
+                const active = !showingUndated && dayId === selectedDayId;
                 const hasEntry = dayHasEntry(journal, dayId);
                 return (
                   <button
@@ -139,6 +163,30 @@ export function DailyJournal({
                   >
                     <span className={cn("truncate", !hasEntry && "opacity-40")}>
                       {formatJournalDay(dayId, language)}
+                    </span>
+                  </button>
+                );
+              })
+            : null}
+          {features.date
+            ? journal.undatedPages.map((id, index) => {
+                const active = journal.selectedUndatedId === id;
+                return (
+                  <button
+                    key={`page:${id}`}
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => l.api.selectUndated(id)}
+                    data-selected={active ? "true" : undefined}
+                    className={cn(
+                      "flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight",
+                      !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                    )}
+                  >
+                    <span className="truncate">
+                      {t("apps.journal.pageNumber", {
+                        count: sidebarDates(today).length + index + 1,
+                      })}
                     </span>
                   </button>
                 );
@@ -210,110 +258,75 @@ export function DailyJournal({
         />
       )}
       </div>
-      <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col" {...hoverProps}>
+      <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pb-16">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-medium leading-tight">
               {features.date && activeDayId
                 ? formatJournalDay(activeDayId, language)
-                : t("apps.journal.pageNumber", { count: selectedPageIndex + 1 })}
+                : t("apps.journal.pageNumber", { count: pageIndex + 1 })}
             </h2>
             {features.mood ? (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-os-text-secondary">{t("apps.journal.mood.label")}</span>
                 <div className="flex" role="group" aria-label={t("apps.journal.mood.label")}>
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <button
-                      key={score}
-                      type="button"
-                      aria-label={t("apps.journal.mood.set", { score })}
-                      aria-pressed={mood === score}
-                      onClick={() => l.api.setMood(moodKey, score)}
-                      className={cn(
-                        "p-0.5",
-                        score <= mood ? "text-os-link" : "text-os-text-secondary"
-                      )}
-                    >
-                      <Star size={18} weight={score <= mood ? "fill" : "regular"} />
-                    </button>
-                  ))}
+                  {MOOD_FACES.map((Face, index) => {
+                    const score = index + 1;
+                    const selected = mood === score;
+                    return (
+                      <button
+                        key={score}
+                        type="button"
+                        aria-label={t("apps.journal.mood.set", { score })}
+                        aria-pressed={selected}
+                        onClick={() => l.api.setMood(moodKey, score)}
+                        className={cn(
+                          "p-0.5",
+                          selected ? "text-os-link" : "text-os-text-secondary"
+                        )}
+                      >
+                        <Face size={20} weight={selected ? "fill" : "regular"} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ) : null}
           </div>
         </header>
-        {features.streak || features.reminder ? (
-          <div className={cn("mt-4 grid gap-2", isMobileLayout ? "grid-cols-1" : "grid-cols-2")}>
-            {features.streak ? (
-              <div className={statCard}>
-                <span className={statLabel}>{t("apps.journal.streak.label")}</span>
-                <span className={statValue}>
-                  {t("apps.journal.streak.value", { count: sampleStreak() })}
-                </span>
-              </div>
-            ) : null}
-            {features.reminder ? (
-              <div className={statCard}>
-                <span className={statLabel}>{t("apps.journal.reminder.label")}</span>
-                <Select
-                  value={journal.reminderTime}
-                  onValueChange={(value) => l.api.setReminderTime(value)}
-                >
-                  <SelectTrigger
-                    aria-label={t("apps.journal.reminder.timeLabel")}
-                    className={cn(
-                      statValue,
-                      "no-chevron h-auto min-h-0 w-full justify-start rounded-none border-0 px-0 py-0 text-left shadow-none",
-                      "!h-auto !min-h-0 !min-w-0 !overflow-visible !rounded-none !border-0 !bg-transparent !p-0 !shadow-none",
-                      "!text-2xl !font-medium !leading-none !text-os-text-primary ![background:transparent] ![text-shadow:none]",
-                      "before:!hidden [&_svg]:hidden [border-image:none]"
-                    )}
-                    style={{
-                      height: "auto",
-                      minHeight: 0,
-                      padding: 0,
-                      border: "none",
-                      background: "transparent",
-                      boxShadow: "none",
-                      textShadow: "none",
-                      fontFamily: "var(--os-font-ui)",
-                      fontSize: "1.5rem",
-                      fontWeight: 500,
-                      lineHeight: 1,
-                      color: "var(--os-color-text-primary)",
-                    }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent position="item-aligned" className="max-h-64">
-                    {reminderTimes.map((time) => (
-                      <SelectItem key={time} value={time}>
-                        {time}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
         <div className="mt-4 flex max-w-xl flex-col gap-3">
           {fragments.map((fragment) =>
             fragment.kind === "photo" && fragment.photo ? (
-              <img
+              <PageCard
                 key={fragment.id}
-                src={fragment.photo}
-                alt={t("apps.journal.photo.alt")}
-                className="max-h-56 w-full rounded-os object-cover os-theme-win98:rounded-none"
-              />
+                id={fragment.id}
+                highlight={journal.selectedCardId === fragment.id}
+                onSelect={l.api.selectCard}
+                onMenu={(id, x, y) => setMenu({ id, x, y })}
+              >
+                <img
+                  src={fragment.photo}
+                  alt={t("apps.journal.photo.alt")}
+                  draggable={false}
+                  className="max-h-56 w-full rounded-[8px] object-cover"
+                />
+              </PageCard>
             ) : (
-              <JournalEntryEditor
+              <PageCard
                 key={fragment.id}
-                fragment={fragment}
-                saved={journal.texts[fragment.id]}
-                language={language}
-                onChange={l.api.setEntryText}
-              />
+                id={fragment.id}
+                highlight={false}
+                onSelect={l.api.selectCard}
+                onMenu={(id, x, y) => setMenu({ id, x, y })}
+              >
+                <JournalEntryEditor
+                  fragment={fragment}
+                  saved={journal.texts[fragment.id]}
+                  language={language}
+                  onChange={l.api.setEntryText}
+                />
+              </PageCard>
             )
           )}
           {blankFragment ? (
@@ -325,25 +338,64 @@ export function DailyJournal({
               onChange={l.api.setEntryText}
             />
           ) : null}
+          {pageScraps.map((scrap) => (
+            <PageCard
+              key={scrap.id}
+              id={scrap.id}
+              highlight={scrap.kind !== "text" && journal.selectedCardId === scrap.id}
+              onSelect={l.api.selectCard}
+              onMenu={(id, x, y) => setMenu({ id, x, y })}
+            >
+              {scrap.kind === "photo" && scrap.photo ? (
+                <img
+                  src={scrap.photo}
+                  alt={t("apps.journal.toolbar.photoAlt")}
+                  draggable={false}
+                  className="max-h-56 w-full overflow-hidden !rounded-[8px] object-cover"
+                  style={{ borderRadius: 8 }}
+                />
+              ) : scrap.kind === "song" ? (
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
+                  onClick={() => {
+                    l.api.selectCard(scrap.id);
+                    if (scrap.songId) toggleJournalSong(scrap.songId);
+                  }}
+                >
+                  <JournalSongMark songId={scrap.songId} cover={scrap.songCover} size={40} />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm">{scrap.songTitle}</span>
+                    {scrap.songArtist ? (
+                      <span className="block truncate text-xs text-os-text-secondary">{scrap.songArtist}</span>
+                    ) : null}
+                  </span>
+                </button>
+              ) : (
+                <JournalEntryEditor
+                  fragment={{
+                    id: scrap.id,
+                    dayId: scrap.pageId,
+                    kind: "text",
+                    text: null,
+                    photo: null,
+                    x: scrap.x,
+                    y: scrap.y,
+                    w: scrap.w,
+                    rotate: scrap.rotate,
+                  }}
+                  saved={journal.texts[scrap.id]}
+                  language={language}
+                  onChange={l.api.setEntryText}
+                />
+              )}
+            </PageCard>
+          ))}
         </div>
-        {features.weeklyReport ? (
-          <section className="mt-5 max-w-xl rounded-os border border-os-window bg-os-panel-bg p-3 os-theme-win98:rounded-none">
-            <h3 className="text-sm font-medium">{t("apps.journal.report.title")}</h3>
-            <p className="mt-1 text-sm">
-              {t("apps.journal.report.days", { count: JOURNAL_DAYS.length })}
-              {features.mood
-                ? ` · ${t("apps.journal.report.average", { score: moodAverage })}`
-                : ""}
-              {features.streak
-                ? ` · ${t("apps.journal.streak.value", { count: sampleStreak() })}`
-                : ""}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-os-text-secondary">
-              {t("apps.journal.report.blurb")}
-            </p>
-          </section>
-        ) : null}
       </article>
+      <JournalViewToolbar l={l} open={open} pages="none" />
+      <JournalCardMenu menu={menu} onClose={() => setMenu(null)} l={l} />
+      </div>
     </div>
   );
 }

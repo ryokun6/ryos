@@ -1,10 +1,15 @@
-import { DEFAULT_DAY_ID, fragmentsForDay, JOURNAL_DAYS } from "./sampleContent";
+import {
+  DEFAULT_DAY_ID,
+  JOURNAL_DAYS,
+  JOURNAL_FRAGMENTS,
+  type JournalFragment,
+} from "./sampleContent";
 import type {
   JournalAction,
   JournalDoc,
   JournalDocNode,
   JournalFeatureId,
-  JournalPreset,
+  JournalScrap,
   JournalState,
   JournalToggles,
   JournalView,
@@ -13,14 +18,12 @@ import type {
 export const ALL_FEATURES_ON: JournalToggles = {
   date: true,
   mood: true,
-  streak: true,
   reminder: true,
-  weeklyReport: true,
 };
 
 const VIEWS = new Set<JournalView>(["daily", "freeform", "compare"]);
-const PRESETS = new Set<JournalPreset>(["journal", "freeform", "compare"]);
 export const UPCOMING_DAY_COUNT = 7;
+export const JOURNAL_CANVAS_PAGE_ID = "board";
 export const JOURNAL_SIDEBAR_DEFAULT_WIDTH = 148;
 export const JOURNAL_SIDEBAR_MIN_WIDTH = 112;
 export const JOURNAL_SIDEBAR_MAX_WIDTH = 280;
@@ -32,13 +35,7 @@ export function clampSidebarWidth(value: unknown): number {
   return clamp(value, JOURNAL_SIDEBAR_MIN_WIDTH, JOURNAL_SIDEBAR_MAX_WIDTH);
 }
 const DAY_ID = /^\d{4}-\d{2}-\d{2}$/;
-const FEATURES = new Set<JournalFeatureId>([
-  "date",
-  "mood",
-  "streak",
-  "reminder",
-  "weeklyReport",
-]);
+const FEATURES = new Set<JournalFeatureId>(["date", "mood", "reminder"]);
 
 const LEGACY_VIEWS: Record<string, JournalView> = {
   generated: "daily",
@@ -50,13 +47,19 @@ const LEGACY_VIEWS: Record<string, JournalView> = {
 
 export function createInitialJournalState(): JournalState {
   return {
-    view: "daily",
+    view: "compare",
     toggles: { ...ALL_FEATURES_ON },
     reminderTime: "21:00",
     texts: {},
     moods: {},
     undatedPages: [],
     selectedUndatedId: null,
+    scraps: [],
+    canvasPages: [JOURNAL_CANVAS_PAGE_ID],
+    selectedCanvasPageId: JOURNAL_CANVAS_PAGE_ID,
+    removedFragmentIds: [],
+    fragmentDays: {},
+    selectedCardId: null,
     positions: {},
     selectedDayId: DEFAULT_DAY_ID,
   };
@@ -98,8 +101,92 @@ export function sidebarDates(today: string): string[] {
   return dates;
 }
 
+/** The dated page on screen. A selected blank page highlights nothing dated. */
+export function activeJournalDayId(state: JournalState): string | null {
+  if (
+    state.selectedUndatedId !== null &&
+    state.undatedPages.includes(state.selectedUndatedId)
+  ) {
+    return null;
+  }
+  return state.selectedDayId;
+}
+
+export function isJournalDayId(value: string): boolean {
+  return DAY_ID.test(value);
+}
+
+export interface JournalPageRef {
+  kind: "day" | "page";
+  id: string;
+}
+
+/** Days in the sidebar, then any blank pages added from the toolbar. */
+export function journalPages(state: JournalState, today = todayDayId()): JournalPageRef[] {
+  const dayIds = state.toggles.date
+    ? sidebarDates(today)
+    : JOURNAL_DAYS.map((day) => day.id);
+  return [
+    ...dayIds.map((id) => ({ kind: "day" as const, id })),
+    ...state.undatedPages.map((id) => ({ kind: "page" as const, id })),
+  ];
+}
+
+export function currentJournalPage(state: JournalState): JournalPageRef {
+  if (
+    state.selectedUndatedId !== null &&
+    state.undatedPages.includes(state.selectedUndatedId)
+  ) {
+    return { kind: "page", id: state.selectedUndatedId };
+  }
+  return { kind: "day", id: state.selectedDayId };
+}
+
+export function journalPageIndex(state: JournalState, today = todayDayId()): number {
+  const pages = journalPages(state, today);
+  const current = currentJournalPage(state);
+  const index = pages.findIndex((page) => page.kind === current.kind && page.id === current.id);
+  return index < 0 ? 0 : index;
+}
+
+export function scrapPlacement(index: number): Pick<JournalScrap, "x" | "y" | "w" | "rotate"> {
+  return {
+    x: 8 + (index % 4) * 7,
+    y: 10 + (index % 5) * 11,
+    w: 30,
+    rotate: index % 2 === 0 ? -2 : 2,
+  };
+}
+
+export function journalFragments(state: JournalState): JournalFragment[] {
+  const removed = new Set(state.removedFragmentIds);
+  return JOURNAL_FRAGMENTS.flatMap((fragment) => {
+    if (removed.has(fragment.id)) return [];
+    const dayId = state.fragmentDays[fragment.id];
+    return dayId && dayId !== fragment.dayId ? [{ ...fragment, dayId }] : [fragment];
+  });
+}
+
+export function fragmentsForJournalDay(state: JournalState, dayId: string): JournalFragment[] {
+  return journalFragments(state).filter((fragment) => fragment.dayId === dayId);
+}
+
+export function journalCardExists(state: JournalState, id: string): boolean {
+  if (state.scraps.some((scrap) => scrap.id === id)) return true;
+  return JOURNAL_FRAGMENTS.some((fragment) => fragment.id === id) && !state.removedFragmentIds.includes(id);
+}
+
+export function journalCardDayId(state: JournalState, id: string): string | null {
+  const scrap = state.scraps.find((item) => item.id === id);
+  if (scrap) return isJournalDayId(scrap.pageId) ? scrap.pageId : null;
+  const fragment = JOURNAL_FRAGMENTS.find((item) => item.id === id);
+  if (!fragment || state.removedFragmentIds.includes(id)) return null;
+  return state.fragmentDays[id] ?? fragment.dayId;
+}
+
 export function dayHasEntry(state: JournalState, dayId: string): boolean {
-  if (fragmentsForDay(dayId).length > 0) return true;
+  if (fragmentsForJournalDay(state, dayId).length > 0) return true;
+  if (state.scraps.some((scrap) => scrap.pageId === dayId)) return true;
   const doc = state.texts[entryDocId(dayId)];
   return Boolean(doc && plainTextFromDoc(doc).length > 0);
 }
@@ -129,12 +216,7 @@ function cloneToggles(
   return {
     date: typeof value?.date === "boolean" ? value.date : fallback.date,
     mood: typeof value?.mood === "boolean" ? value.mood : fallback.mood,
-    streak: typeof value?.streak === "boolean" ? value.streak : fallback.streak,
     reminder: typeof value?.reminder === "boolean" ? value.reminder : fallback.reminder,
-    weeklyReport:
-      typeof value?.weeklyReport === "boolean"
-        ? value.weeklyReport
-        : fallback.weeklyReport,
   };
 }
 
@@ -158,6 +240,17 @@ export function normalizeJournalState(value: unknown): JournalState {
   const undatedPages = Array.isArray(raw.undatedPages)
     ? raw.undatedPages.filter((id): id is string => typeof id === "string" && id.length > 0)
     : [];
+  const canvasPages = cloneCanvasPages(raw.canvasPages);
+  const scraps = cloneScraps(raw.scraps);
+  const removedFragmentIds = cloneRemovedFragments(raw.removedFragmentIds);
+  const fragmentDays = cloneFragmentDays(raw.fragmentDays, removedFragmentIds);
+  const selectedCardId =
+    typeof raw.selectedCardId === "string" &&
+    (scraps.some((scrap) => scrap.id === raw.selectedCardId) ||
+      (JOURNAL_FRAGMENTS.some((fragment) => fragment.id === raw.selectedCardId) &&
+        !removedFragmentIds.includes(raw.selectedCardId)))
+      ? raw.selectedCardId
+      : null;
   return {
     view: VIEWS.has(view) ? view : initial.view,
     toggles: cloneToggles(raw.toggles, initial.toggles),
@@ -169,11 +262,108 @@ export function normalizeJournalState(value: unknown): JournalState {
       typeof raw.selectedUndatedId === "string" && undatedPages.includes(raw.selectedUndatedId)
         ? raw.selectedUndatedId
         : null,
+    scraps,
+    canvasPages,
+    selectedCanvasPageId: selectedCanvasPage(raw.selectedCanvasPageId, canvasPages),
+    removedFragmentIds,
+    fragmentDays,
+    selectedCardId,
     positions,
     selectedDayId: DAY_ID.test(raw.selectedDayId ?? "")
       ? raw.selectedDayId!
       : initial.selectedDayId,
   };
+}
+
+function cloneCanvasPages(value: unknown): string[] {
+  if (!Array.isArray(value)) return [JOURNAL_CANVAS_PAGE_ID];
+  const pages: string[] = [];
+  for (const id of value) {
+    if (typeof id !== "string" || id.length === 0 || pages.includes(id)) continue;
+    pages.push(id);
+  }
+  return pages.length > 0 ? pages : [JOURNAL_CANVAS_PAGE_ID];
+}
+
+function selectedCanvasPage(value: unknown, pages: string[]): string {
+  return typeof value === "string" && pages.includes(value) ? value : pages[0];
+}
+
+const SCRAP_KINDS = new Set<JournalScrap["kind"]>(["text", "photo", "song"]);
+const MAX_SCRAP_PHOTO_LENGTH = 500_000;
+const MAX_SONG_COVER_LENGTH = 2048;
+const FRAGMENT_IDS = new Set(JOURNAL_FRAGMENTS.map((fragment) => fragment.id));
+
+function cloneRemovedFragments(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids: string[] = [];
+  for (const id of value) {
+    if (typeof id !== "string" || !FRAGMENT_IDS.has(id) || ids.includes(id)) continue;
+    ids.push(id);
+  }
+  return ids;
+}
+
+function cloneFragmentDays(value: unknown, removed: string[]): Record<string, string> {
+  if (!value || typeof value !== "object") return {};
+  const removedSet = new Set(removed);
+  const days: Record<string, string> = {};
+  for (const [id, dayId] of Object.entries(value)) {
+    if (!FRAGMENT_IDS.has(id) || removedSet.has(id) || typeof dayId !== "string" || !DAY_ID.test(dayId)) {
+      continue;
+    }
+    const original = JOURNAL_FRAGMENTS.find((fragment) => fragment.id === id)?.dayId;
+    if (original === dayId) continue;
+    days[id] = dayId;
+  }
+  return days;
+}
+
+function cloneScraps(value: unknown): JournalScrap[] {
+  if (!Array.isArray(value)) return [];
+  const scraps: JournalScrap[] = [];
+  const seen = new Set<string>();
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Partial<JournalScrap>;
+    if (typeof raw.id !== "string" || raw.id.length === 0 || seen.has(raw.id)) continue;
+    if (typeof raw.pageId !== "string" || raw.pageId.length === 0) continue;
+    if (typeof raw.kind !== "string" || !SCRAP_KINDS.has(raw.kind)) continue;
+    const photo =
+      typeof raw.photo === "string" &&
+      raw.photo.length > 0 &&
+      raw.photo.length <= MAX_SCRAP_PHOTO_LENGTH
+        ? raw.photo
+        : null;
+    const songId = typeof raw.songId === "string" && raw.songId.length > 0 ? raw.songId : null;
+    if (raw.kind === "photo" && !photo) continue;
+    if (raw.kind === "song" && !songId) continue;
+    seen.add(raw.id);
+    scraps.push({
+      id: raw.id,
+      pageId: raw.pageId,
+      kind: raw.kind,
+      photo,
+      songId,
+      songTitle: typeof raw.songTitle === "string" ? raw.songTitle : null,
+      songArtist: typeof raw.songArtist === "string" ? raw.songArtist : null,
+      songCover:
+        typeof raw.songCover === "string" &&
+        raw.songCover.length > 0 &&
+        raw.songCover.length <= MAX_SONG_COVER_LENGTH
+          ? raw.songCover
+          : null,
+      canvasPageId:
+        typeof raw.canvasPageId === "string" && raw.canvasPageId.length > 0
+          ? raw.canvasPageId
+          : null,
+      x: typeof raw.x === "number" ? clamp(raw.x, 0, 100) : 8,
+      y: typeof raw.y === "number" ? clamp(raw.y, 0, 100) : 8,
+      w: typeof raw.w === "number" ? clamp(raw.w, 12, 80) : 30,
+      rotate: typeof raw.rotate === "number" ? clamp(raw.rotate, -15, 15) : 0,
+    });
+  }
+  return scraps;
 }
 
 function cloneTexts(value: unknown): Record<string, JournalDoc> {
@@ -225,40 +415,13 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 export function allFeaturesOn(toggles: JournalToggles): boolean {
-  return (
-    toggles.date &&
-    toggles.mood &&
-    toggles.streak &&
-    toggles.reminder &&
-    toggles.weeklyReport
-  );
-}
-
-export function consecutiveDayStreak(dayIds: readonly string[]): number {
-  const unique = [...new Set(dayIds)].filter((id) => /^\d{4}-\d{2}-\d{2}$/.test(id));
-  unique.sort();
-  if (unique.length === 0) return 0;
-  let streak = 1;
-  for (let index = unique.length - 1; index > 0; index -= 1) {
-    const previous = Date.parse(`${unique[index - 1]}T00:00:00Z`);
-    const current = Date.parse(`${unique[index]}T00:00:00Z`);
-    if (current - previous === 86_400_000) {
-      streak += 1;
-    } else {
-      break;
-    }
-  }
-  return streak;
+  return toggles.date && toggles.mood && toggles.reminder;
 }
 
 export function averageMood(moods: readonly number[]): number {
   if (moods.length === 0) return 0;
   const sum = moods.reduce((total, mood) => total + mood, 0);
   return Math.round((sum / moods.length) * 10) / 10;
-}
-
-export function sampleStreak(): number {
-  return consecutiveDayStreak(JOURNAL_DAYS.map((day) => day.id));
 }
 
 export function sampleAverageMood(): number {
@@ -274,21 +437,6 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
       return {
         ...state,
         toggles: { ...state.toggles, [action.feature]: !state.toggles[action.feature] },
-      };
-    }
-    case "applyPreset": {
-      if (!PRESETS.has(action.preset)) return state;
-      if (action.preset === "compare") {
-        return state.view === "compare" ? state : { ...state, view: "compare" };
-      }
-      if (action.preset === "freeform") {
-        return state.view === "freeform" ? state : { ...state, view: "freeform" };
-      }
-      if (state.view === "daily" && allFeaturesOn(state.toggles)) return state;
-      return {
-        ...state,
-        view: "daily",
-        toggles: { ...ALL_FEATURES_ON },
       };
     }
     case "moveFragment": {
@@ -332,6 +480,76 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
     case "setEntryText": {
       if (!action.id || action.doc?.type !== "doc") return state;
       return { ...state, texts: { ...state.texts, [action.id]: action.doc } };
+    }
+    case "addScrap": {
+      const [scrap] = cloneScraps([action.scrap]);
+      if (!scrap || state.scraps.some((item) => item.id === scrap.id)) return state;
+      return { ...state, scraps: [...state.scraps, scrap], selectedCardId: scrap.id };
+    }
+    case "selectCard": {
+      if (action.id === state.selectedCardId) return state;
+      if (action.id !== null && !journalCardExists(state, action.id)) return state;
+      return { ...state, selectedCardId: action.id };
+    }
+    case "removeCard": {
+      if (!action.id || !journalCardExists(state, action.id)) return state;
+      const texts = { ...state.texts };
+      const positions = { ...state.positions };
+      delete texts[action.id];
+      delete positions[action.id];
+      const selectedCardId = state.selectedCardId === action.id ? null : state.selectedCardId;
+      if (state.scraps.some((scrap) => scrap.id === action.id)) {
+        return {
+          ...state,
+          scraps: state.scraps.filter((scrap) => scrap.id !== action.id),
+          texts,
+          positions,
+          selectedCardId,
+        };
+      }
+      const fragmentDays = { ...state.fragmentDays };
+      delete fragmentDays[action.id];
+      return {
+        ...state,
+        removedFragmentIds: [...state.removedFragmentIds, action.id],
+        fragmentDays,
+        texts,
+        positions,
+        selectedCardId,
+      };
+    }
+    case "moveCard": {
+      if (!action.id || !DAY_ID.test(action.dayId) || !journalCardExists(state, action.id)) return state;
+      const scrapIndex = state.scraps.findIndex((scrap) => scrap.id === action.id);
+      if (scrapIndex >= 0) {
+        const scrap = state.scraps[scrapIndex];
+        if (scrap.pageId === action.dayId) return state;
+        const scraps = state.scraps.slice();
+        scraps[scrapIndex] = { ...scrap, pageId: action.dayId };
+        return { ...state, scraps, selectedCardId: action.id };
+      }
+      const fragment = JOURNAL_FRAGMENTS.find((item) => item.id === action.id);
+      if (!fragment) return state;
+      const currentDay = state.fragmentDays[action.id] ?? fragment.dayId;
+      if (currentDay === action.dayId) return state;
+      const fragmentDays = { ...state.fragmentDays };
+      if (action.dayId === fragment.dayId) delete fragmentDays[action.id];
+      else fragmentDays[action.id] = action.dayId;
+      return { ...state, fragmentDays, selectedCardId: action.id };
+    }
+    case "selectCanvasPage": {
+      if (!state.canvasPages.includes(action.id) || state.selectedCanvasPageId === action.id) {
+        return state;
+      }
+      return { ...state, selectedCanvasPageId: action.id };
+    }
+    case "addCanvasPage": {
+      if (!action.id || state.canvasPages.includes(action.id)) return state;
+      return {
+        ...state,
+        canvasPages: [...state.canvasPages, action.id],
+        selectedCanvasPageId: action.id,
+      };
     }
     case "reset":
       return createInitialJournalState();

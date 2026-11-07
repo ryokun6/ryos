@@ -1,32 +1,16 @@
-export const JOURNAL_FEATURES = [
-  "date",
-  "mood",
-  "streak",
-  "reminder",
-  "weeklyReport",
-] as const;
+export const JOURNAL_FEATURES = ["date", "mood", "reminder"] as const;
 
 export type JournalFeatureId = (typeof JOURNAL_FEATURES)[number];
 
-/** Pages and Freeform are always in the toolbar. Combined appears while that view is open. */
-export const JOURNAL_TOOLBAR_VIEWS = ["daily", "freeform"] as const;
-
-export type JournalToolbarView = (typeof JOURNAL_TOOLBAR_VIEWS)[number];
-
+/** Days, Freeform, and Combined stay in the toolbar. Combined is the default. */
 export const JOURNAL_VIEWS = ["daily", "freeform", "compare"] as const;
 
 export type JournalView = (typeof JOURNAL_VIEWS)[number];
 
-export const JOURNAL_PRESETS = ["journal", "freeform", "compare"] as const;
-
-export type JournalPreset = (typeof JOURNAL_PRESETS)[number];
-
 export interface JournalToggles {
   date: boolean;
   mood: boolean;
-  streak: boolean;
   reminder: boolean;
-  weeklyReport: boolean;
 }
 
 export interface FragmentPosition {
@@ -60,16 +44,56 @@ export interface JournalState {
   moods: Record<string, number>;
   /** Blank pages that are not tied to a date. */
   undatedPages: string[];
-  /** Selected undated page while the date feature is off. */
+  /** Selected blank page. When set, the page view shows this page instead of the selected day. */
   selectedUndatedId: string | null;
+  /** Notes, photos, and songs added from the page toolbar. */
+  scraps: JournalScrap[];
+  /** Freeform boards. These are not journal days. */
+  canvasPages: string[];
+  selectedCanvasPageId: string;
+  /** Sample cards the user removed. */
+  removedFragmentIds: string[];
+  /** Sample cards moved onto a different day. */
+  fragmentDays: Record<string, string>;
+  /** The card the trash button and context menu act on. */
+  selectedCardId: string | null;
   positions: Record<string, FragmentPosition>;
   selectedDayId: string;
+}
+
+export type JournalScrapKind = "text" | "photo" | "song";
+
+export interface JournalScrap {
+  id: string;
+  pageId: string;
+  kind: JournalScrapKind;
+  photo: string | null;
+  songId: string | null;
+  songTitle: string | null;
+  songArtist: string | null;
+  songCover: string | null;
+  /** Canvas board this scrap is drawn on. Null stays on the first board. */
+  canvasPageId: string | null;
+  x: number;
+  y: number;
+  w: number;
+  rotate: number;
+}
+
+export interface JournalScrapInput {
+  pageId: string;
+  kind: JournalScrapKind;
+  photo?: string | null;
+  songId?: string | null;
+  songTitle?: string | null;
+  songArtist?: string | null;
+  songCover?: string | null;
+  canvasPageId?: string | null;
 }
 
 export type JournalAction =
   | { type: "setView"; view: JournalView }
   | { type: "toggleFeature"; feature: JournalFeatureId }
-  | { type: "applyPreset"; preset: JournalPreset }
   | { type: "moveFragment"; id: string; position: FragmentPosition }
   | { type: "selectDay"; dayId: string }
   | { type: "selectUndated"; id: string }
@@ -77,4 +101,10 @@ export type JournalAction =
   | { type: "setReminderTime"; time: string }
   | { type: "setMood"; dayId: string; mood: number }
   | { type: "setEntryText"; id: string; doc: JournalDoc }
+  | { type: "addScrap"; scrap: JournalScrap }
+  | { type: "selectCard"; id: string | null }
+  | { type: "removeCard"; id: string }
+  | { type: "moveCard"; id: string; dayId: string }
+  | { type: "selectCanvasPage"; id: string }
+  | { type: "addCanvasPage"; id: string }
   | { type: "reset" };

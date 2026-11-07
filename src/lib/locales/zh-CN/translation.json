@@ -5496,7 +5496,7 @@
       },
       "help": {
         "completeAnswer": {
-          "description": "先看到一个工具会交出来的日记：日期、心情指数、连续记录天数、每日提醒、每周报告。正文用 TextEdit 的编辑器。",
+          "description": "先看到一个工具会交出来的日记：日期、心情指数、连续记录天数、每日提醒。正文用 TextEdit 的编辑器。",
           "title": "完整答案"
         },
         "featureToggles": {
@@ -5534,7 +5534,7 @@
       "notice": {
         "restored": "已还原演示数据"
       },
-      "pageNumber": "第 {{count}} 页",
+      "pageNumber": "第 {{count}} 天",
       "photo": {
         "alt": "演示照片"
       },
@@ -5558,22 +5558,36 @@
       },
       "title": "日记",
       "toolbar": {
-        "reset": "还原演示"
+        "reset": "还原演示",
+        "tools": "页面工具",
+        "previous": "上一页",
+        "next": "下一页",
+        "page": "第 {{count}} 页",
+        "newPage": "新页面",
+        "addNote": "添加文字",
+        "addImage": "添加图片",
+        "addSong": "添加歌曲",
+        "noSongs": "曲库里没有歌曲",
+        "emptyNote": "笔记",
+        "photoAlt": "照片",
+        "delete": "删除",
+        "move": "移到其他日期"
       },
       "views": {
         "compare": "合并",
         "generated": "完整答案",
-        "daily": "页面",
+        "daily": "天数",
         "freeform": "自由"
       },
       "drawer": {
-        "title": "演示",
-        "open": "演示控制",
-        "presets": "预设"
+        "title": "设置",
+        "open": "设置",
+        "presets": "预设",
+        "features": "功能"
       },
       "sidebar": {
         "days": "日子",
-        "newPage": "新页面"
+        "newPage": "新的一天"
       },
       "presets": {
         "journal": "日记",

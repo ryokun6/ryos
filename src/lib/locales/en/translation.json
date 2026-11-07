@@ -5898,11 +5898,11 @@
       },
       "help": {
         "completeAnswer": {
-          "description": "Open on the journal a tool would hand you: a date, a mood score, a streak, a daily reminder, and a weekly report. Entries use the TextEdit editor.",
+          "description": "Open on the journal a tool would hand you: a date, a mood score, and a daily reminder. Entries use the TextEdit editor.",
           "title": "Complete Answer"
         },
         "featureToggles": {
-          "description": "Each feature has its own switch in the demo drawer. The streak is the one to remove first if a day without writing should not feel like a debt.",
+          "description": "The daily reminder and its time are set in Settings.",
           "title": "Turn Features Off"
         },
         "photos": {
@@ -5914,12 +5914,12 @@
           "title": "Reset the Demo"
         },
         "twoStructures": {
-          "description": "Choose Two Structures in the demo drawer to see the same days as one page a day and as scraps on one page.",
+          "description": "Journal opens on two structures: the same days as one page a day, and as scraps on one page. Combined stays in the toolbar.",
           "title": "Two Structures"
         },
         "drawer": {
-          "title": "Demo Drawer",
-          "description": "Feature switches, the Two Structures preset, and Reset Demo live in the drawer beside the window."
+          "title": "Settings",
+          "description": "The daily reminder switch and time live in Settings beside the window."
         }
       },
       "menu": {
@@ -5936,7 +5936,7 @@
       "notice": {
         "restored": "Demo sample restored"
       },
-      "pageNumber": "Page {{count}}",
+      "pageNumber": "Day {{count}}",
       "photo": {
         "alt": "Sample photo"
       },
@@ -5960,22 +5960,36 @@
       },
       "title": "Journal",
       "toolbar": {
-        "reset": "Reset Demo"
+        "reset": "Reset Demo",
+        "tools": "Page Tools",
+        "previous": "Previous Page",
+        "next": "Next Page",
+        "page": "Page {{count}}",
+        "newPage": "New Page",
+        "addNote": "Add Note",
+        "addImage": "Add Image",
+        "addSong": "Add Song",
+        "noSongs": "No Songs in the Library",
+        "emptyNote": "Note",
+        "photoAlt": "Photo",
+        "delete": "Delete",
+        "move": "Move to Date"
       },
       "views": {
         "compare": "Combined",
         "generated": "Complete Answer",
-        "daily": "Pages",
+        "daily": "Days",
         "freeform": "Freeform"
       },
       "drawer": {
-        "title": "Demo",
-        "open": "Demo Controls",
+        "title": "Settings",
+        "open": "Settings",
+        "features": "Features",
         "presets": "Presets"
       },
       "sidebar": {
         "days": "Days",
-        "newPage": "New Page"
+        "newPage": "New Day"
       },
       "presets": {
         "journal": "Journal",
