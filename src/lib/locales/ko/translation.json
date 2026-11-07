@@ -3841,6 +3841,8 @@
         "addImage": "이미지 추가",
         "addNote": "메모 추가",
         "addSong": "노래 추가",
+        "play": "재생",
+        "pause": "일시 정지",
         "emptyNote": "메모",
         "newPage": "새 페이지",
         "next": "다음 페이지",

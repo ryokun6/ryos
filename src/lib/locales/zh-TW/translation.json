@@ -5567,6 +5567,8 @@
         "addNote": "加入文字",
         "addImage": "加入圖片",
         "addSong": "加入歌曲",
+        "play": "播放",
+        "pause": "暫停",
         "noSongs": "曲庫裡沒有歌曲",
         "emptyNote": "筆記",
         "photoAlt": "照片",

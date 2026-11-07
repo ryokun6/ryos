@@ -3841,6 +3841,8 @@
         "addImage": "画像を追加",
         "addNote": "メモを追加",
         "addSong": "曲を追加",
+        "play": "再生",
+        "pause": "一時停止",
         "emptyNote": "メモ",
         "newPage": "新しいページ",
         "next": "次のページ",
