@@ -11,7 +11,6 @@ import { getDictionaryIndex, getKanjiInfoMap, warmDictionaryIndexes } from "../a
 import { fetchWiktionary } from "../api/dictionary/_helpers/_remote.js";
 import {
   beginDictionaryLookup,
-  lookupDictionary,
   type DictionaryLookupDeps,
   type DictionaryLookupTimings,
 } from "../api/dictionary/_helpers/_lookup.js";

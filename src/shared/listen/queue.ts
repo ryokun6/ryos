@@ -144,6 +144,8 @@ export function normalizeListenSessionQueue<
 }
 
 function cleanText(value: string, max: number): string | null {
+  // Control characters are the characters this strip is for.
+  // eslint-disable-next-line no-control-regex
   const cleaned = value.replace(/[\u0000-\u001F\u007F]/g, "").trim();
   if (!cleaned || cleaned.length > max) return null;
   return cleaned;

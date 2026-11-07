@@ -78,7 +78,7 @@ export function constrainWindowToViewport(
 
   let x = finite(input.x, 0);
   let width = Math.max(0, finite(input.width, 0));
-  let height = Math.max(0, finite(input.height, 0));
+  const height = Math.max(0, finite(input.height, 0));
 
   if (mobile) {
     const frame = resolveMobileWindowFrame({
