@@ -22,6 +22,7 @@ import {
   plainTextFromDoc,
   reduceJournal,
   sampleAverageMood,
+  journalSidebarDays,
   sidebarDates,
 } from "../../../src/apps/journal/logic";
 import {
@@ -201,6 +202,32 @@ describe("journal demo", () => {
     expect(reset.texts).toEqual({});
     expect(reset.moods).toEqual({});
     expect(moodForDay(reset, "2026-10-30")).toBe(5);
+  });
+
+  test("the sidebar lists written days and New Journal adds today only when it is empty", () => {
+    const initial = state();
+    const filled = journalSidebarDays(initial);
+    expect(filled).toEqual(JOURNAL_DAYS.map((day) => day.id));
+    expect(filled).not.toContain("2026-11-02");
+    expect(filled).not.toContain("2026-11-07");
+
+    const today = "2026-11-07";
+    const started = reduceJournal(initial, { type: "startDay", dayId: today });
+    expect(started.selectedDayId).toBe(today);
+    expect(started.startedDayIds).toEqual([today]);
+    expect(journalSidebarDays(started)).toEqual([...filled, today]);
+    const again = reduceJournal(started, { type: "startDay", dayId: today });
+    expect(again).toBe(started);
+
+    const written = reduceJournal(initial, {
+      type: "setEntryText",
+      id: "entry:2026-11-05",
+      doc: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "明天" }] }] },
+    });
+    expect(journalSidebarDays(written)).toContain("2026-11-05");
+    const reopen = reduceJournal(written, { type: "startDay", dayId: "2026-11-05" });
+    expect(reopen.startedDayIds).toEqual([]);
+    expect(reopen.selectedDayId).toBe("2026-11-05");
   });
 
   test("the date list includes the next week and empty days stay empty until written", () => {

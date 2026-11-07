@@ -5992,6 +5992,7 @@
       },
       "sidebar": {
         "days": "Days",
+        "newJournal": "New Journal",
         "newPage": "New Day"
       },
       "presets": {

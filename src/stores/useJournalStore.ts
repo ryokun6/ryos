@@ -26,6 +26,7 @@ interface JournalStore {
   toggleFeature: (feature: JournalFeatureId) => void;
   moveFragment: (id: string, position: FragmentPosition) => void;
   selectDay: (dayId: string) => void;
+  startDay: (dayId: string) => void;
   selectUndated: (id: string) => void;
   addUndatedPage: () => void;
   selectCanvasPage: (id: string) => void;
@@ -68,6 +69,7 @@ export const useJournalStore = create<JournalStore>()(
       moveFragment: (id, position) =>
         commit(get, set, { type: "moveFragment", id, position }, null),
       selectDay: (dayId) => commit(get, set, { type: "selectDay", dayId }, null),
+      startDay: (dayId) => commit(get, set, { type: "startDay", dayId }, null),
       selectUndated: (id) => commit(get, set, { type: "selectUndated", id }, null),
       addUndatedPage: () =>
         commit(get, set, { type: "addUndatedPage", id: crypto.randomUUID() }, null),

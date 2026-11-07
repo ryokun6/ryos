@@ -3838,6 +3838,7 @@
       },
       "sidebar": {
         "days": "Jours",
+        "newJournal": "Nouveau journal",
         "newPage": "Nouveau jour"
       },
       "status": {

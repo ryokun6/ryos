@@ -5,16 +5,15 @@ import { PanelHeader } from "@/apps/contacts/components/contacts-app/PanelHeader
 import { cn } from "@/lib/utils";
 import {
   clamp,
-  dayHasEntry,
   entryDocId,
   fragmentsForJournalDay,
   journalPageIndex,
   journalDateUnderTitle,
   journalPageTitle,
+  journalSidebarDays,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
-  sidebarDates,
   todayDayId,
   undatedDocId,
 } from "../logic";
@@ -91,6 +90,7 @@ export function DailyJournal({
   const [menu, setMenu] = useState<JournalCardMenuState | null>(null);
   const features = journal.toggles;
   const today = todayDayId();
+  const sidebarDays = journalSidebarDays(journal);
   const pageIndex = journalPageIndex(journal, today);
   const showingUndated =
     journal.selectedUndatedId !== null &&
@@ -177,10 +177,18 @@ export function DailyJournal({
             isMobileLayout && features.date && "max-h-[150px]"
           )}
         >
+          {features.date && !sidebarDays.includes(today) ? (
+            <button
+              type="button"
+              onClick={() => l.api.startDay(today)}
+              className="flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight text-os-link transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              {t("apps.journal.sidebar.newJournal")}
+            </button>
+          ) : null}
           {features.date
-            ? sidebarDates(today).map((dayId) => {
+            ? sidebarDays.map((dayId) => {
                 const active = !showingUndated && dayId === selectedDayId;
-                const hasEntry = dayHasEntry(journal, dayId);
                 return (
                   <button
                     key={dayId}
@@ -193,7 +201,7 @@ export function DailyJournal({
                       !active && "transition-colors hover:bg-black/5 dark:hover:bg-white/10"
                     )}
                   >
-                    <span className={cn("truncate", !hasEntry && "opacity-40")}>
+                    <span className="truncate">
                       {journalPageTitle(
                         journal,
                         dayId,
@@ -221,7 +229,7 @@ export function DailyJournal({
                   >
                     <span className="truncate">
                       {t("apps.journal.pageNumber", {
-                        count: sidebarDates(today).length + index + 1,
+                        count: sidebarDays.length + index + 1,
                       })}
                     </span>
                   </button>

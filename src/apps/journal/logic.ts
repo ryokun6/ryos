@@ -63,6 +63,7 @@ export function createInitialJournalState(): JournalState {
     positions: {},
     selectedDayId: DEFAULT_DAY_ID,
     pageTitles: {},
+    startedDayIds: [],
   };
 }
 
@@ -143,10 +144,27 @@ export interface JournalPageRef {
   id: string;
 }
 
+/** Dated journals in the sidebar: days with writing, and days started from New Journal. */
+export function journalSidebarDays(state: JournalState): string[] {
+  const ids = new Set<string>();
+  for (const day of JOURNAL_DAYS) ids.add(day.id);
+  for (const id of state.startedDayIds) ids.add(id);
+  for (const scrap of state.scraps) {
+    if (DAY_ID.test(scrap.pageId)) ids.add(scrap.pageId);
+  }
+  for (const fragment of journalFragments(state)) ids.add(fragment.dayId);
+  for (const key of Object.keys(state.texts)) {
+    if (key.startsWith("entry:") && DAY_ID.test(key.slice(6))) ids.add(key.slice(6));
+  }
+  return [...ids]
+    .filter((id) => state.startedDayIds.includes(id) || dayHasEntry(state, id))
+    .sort();
+}
+
 /** Days in the sidebar, then any blank pages added from the toolbar. */
-export function journalPages(state: JournalState, today = todayDayId()): JournalPageRef[] {
+export function journalPages(state: JournalState, _today = todayDayId()): JournalPageRef[] {
   const dayIds = state.toggles.date
-    ? sidebarDates(today)
+    ? journalSidebarDays(state)
     : JOURNAL_DAYS.map((day) => day.id);
   return [
     ...dayIds.map((id) => ({ kind: "day" as const, id })),
@@ -295,7 +313,18 @@ export function normalizeJournalState(value: unknown): JournalState {
       ? raw.selectedDayId!
       : initial.selectedDayId,
     pageTitles: clonePageTitles(raw.pageTitles),
+    startedDayIds: cloneStartedDays(raw.startedDayIds),
   };
+}
+
+function cloneStartedDays(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const days: string[] = [];
+  for (const id of value) {
+    if (typeof id !== "string" || !DAY_ID.test(id) || days.includes(id)) continue;
+    days.push(id);
+  }
+  return days;
 }
 
 function clonePageTitles(value: unknown): Record<string, string> {
@@ -553,6 +582,21 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
       if (!DAY_ID.test(action.dayId)) return state;
       if (state.selectedDayId === action.dayId && state.selectedUndatedId === null) return state;
       return { ...state, selectedDayId: action.dayId, selectedUndatedId: null };
+    }
+    case "startDay": {
+      if (!DAY_ID.test(action.dayId)) return state;
+      const alreadyListed =
+        state.startedDayIds.includes(action.dayId) || dayHasEntry(state, action.dayId);
+      if (alreadyListed) {
+        if (state.selectedDayId === action.dayId && state.selectedUndatedId === null) return state;
+        return { ...state, selectedDayId: action.dayId, selectedUndatedId: null };
+      }
+      return {
+        ...state,
+        startedDayIds: [...state.startedDayIds, action.dayId],
+        selectedDayId: action.dayId,
+        selectedUndatedId: null,
+      };
     }
     case "selectUndated": {
       if (!state.undatedPages.includes(action.id)) return state;

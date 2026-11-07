@@ -3853,6 +3853,7 @@
       },
       "sidebar": {
         "days": "Дни",
+        "newJournal": "Новый дневник",
         "newPage": "Новый день"
       },
       "status": {
