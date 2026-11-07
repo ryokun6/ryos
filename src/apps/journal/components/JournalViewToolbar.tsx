@@ -7,7 +7,12 @@ import { cn } from "@/lib/utils";
 import { getActiveIpodTracks, useIpodStore } from "@/stores/useIpodStore";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { deleteJournalSelection } from "../journalSelectionDelete";
-import { activeJournalDayId, currentJournalPage, journalCardExists } from "../logic";
+import {
+  activeJournalDayId,
+  canvasTextCard,
+  currentJournalPage,
+  journalCardExists,
+} from "../logic";
 import type { JournalScrapKind } from "../types";
 
 const BUTTON_CLASS =
@@ -198,6 +203,23 @@ export function JournalViewToolbar({
     }
   ) {
     const pageId = activeJournalDayId(journal) ?? currentJournalPage(journal).id;
+    if (kind === "text" && showPages) {
+      const decision = canvasTextCard(journal, pageId, boardId);
+      if (decision.type === "select") {
+        if (decision.boardId !== boardId) l.api.selectCanvasPage(decision.boardId);
+        l.api.selectCard(decision.id);
+        return;
+      }
+      if (decision.type === "adopt") {
+        l.api.addScrap({
+          id: decision.id,
+          pageId,
+          canvasPageId: boardId,
+          kind,
+        });
+        return;
+      }
+    }
     l.api.addScrap({
       pageId,
       canvasPageId: showPages ? boardId : boards[0] ?? null,

@@ -133,6 +133,7 @@ beforeAll(async () => {
               photo: { alt: "Sample photo" },
               toolbar: {
                 emptyNote: "Note",
+                write: "Write something...",
                 addSong: "Add Song",
                 tools: "Page Tools",
                 previous: "Previous Page",
@@ -269,6 +270,25 @@ async function waitPastDoubleClick() {
 }
 
 describe("freeform canvas card editing", () => {
+  test("an empty text card shows the writing placeholder", async () => {
+    await renderCanvas({
+      scraps: [
+        {
+          ...songScrap,
+          id: "empty-note",
+          kind: "text",
+          songId: null,
+          songTitle: null,
+          songArtist: null,
+        },
+      ],
+    });
+    const placeholder = container?.querySelector(
+      '[data-journal-card="empty-note"] [data-journal-placeholder]'
+    );
+    expect(placeholder?.textContent).toBe("Write something...");
+  });
+
   test("a selected text card keeps its ring on the board", async () => {
     const journal = createInitialJournalState();
     journal.selectedCardId = noteFragment.id;

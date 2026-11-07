@@ -221,6 +221,35 @@ describe("journal view toolbar", () => {
     expect(scrap?.pageId).toBe("2026-10-30");
     expect(scrap?.canvasPageId).toBe(boardId);
     expect(scrap?.pageId).not.toBe(boardId);
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    const again = useJournalStore.getState().journal;
+    expect(again.scraps).toHaveLength(1);
+    expect(again.scraps[0]?.id).toBe(scrap?.id);
+    expect(again.selectedCardId).toBe(scrap?.id);
+  });
+
+  test("a canvas note adopts the empty day entry instead of adding another", async () => {
+    await act(async () => {
+      useJournalStore.getState().selectDay("2026-11-07");
+    });
+    await renderToolbar("canvas");
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    expect(useJournalStore.getState().journal.scraps.map((scrap) => scrap.id)).toEqual([
+      "entry:2026-11-07",
+    ]);
+
+    await act(async () => {
+      button("apps.journal.toolbar.addNote")?.click();
+    });
+    const journal = useJournalStore.getState().journal;
+    expect(journal.scraps).toHaveLength(1);
+    expect(journal.selectedCardId).toBe("entry:2026-11-07");
   });
 
   test("daily toolbar has no divider and reveals delete only for a selected card", async () => {

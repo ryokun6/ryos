@@ -93,7 +93,13 @@ describe("journal page selection", () => {
     await i18n.use(initReactI18next).init({
       lng: "en",
       fallbackLng: "en",
-      resources: { en: { translation: {} } },
+      resources: {
+        en: {
+          translation: {
+            apps: { journal: { toolbar: { write: "Write something..." } } },
+          },
+        },
+      },
       interpolation: { escapeValue: false },
       returnNull: false,
     });
@@ -119,6 +125,11 @@ describe("journal page selection", () => {
       if (!(node instanceof HTMLElement)) throw new Error(`page card ${id} missing`);
       return node;
     }
+
+    expect(
+      card(textScrap.id).querySelector("[data-journal-placeholder]")?.textContent
+    ).toBe("Write something...");
+    expect(card("oct28-note").querySelector("[data-journal-placeholder]")).toBeNull();
 
     await act(async () => {
       useJournalStore.getState().selectCard("oct28-note");

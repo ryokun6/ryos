@@ -428,6 +428,66 @@ export function moodForDay(state: JournalState, dayId: string): number {
   return JOURNAL_DAYS.find((day) => day.id === dayId)?.mood ?? 3;
 }
 
+function journalDocIsEmpty(doc: JournalDoc | undefined): boolean {
+  if (!doc) return true;
+  return plainTextFromDoc(doc).length === 0;
+}
+
+function fragmentTextIsEmpty(state: JournalState, fragment: JournalFragment): boolean {
+  const saved = state.texts[fragment.id];
+  if (saved) return journalDocIsEmpty(saved);
+  return !fragment.text;
+}
+
+export type CanvasTextCard =
+  | { type: "select"; id: string; boardId: string }
+  | { type: "adopt"; id: string }
+  | { type: "create" };
+
+/**
+ * A canvas "add note" uses an empty text block on this page when one exists.
+ * A blank day entry that is not a card yet is adopted as that card.
+ */
+export function canvasTextCard(
+  state: JournalState,
+  pageId: string,
+  boardId: string
+): CanvasTextCard {
+  const firstBoard = state.canvasPages[0] ?? boardId;
+  const emptyScraps = state.scraps.filter(
+    (scrap) =>
+      scrap.pageId === pageId &&
+      scrap.kind === "text" &&
+      journalDocIsEmpty(state.texts[scrap.id])
+  );
+  const scrap =
+    emptyScraps.find((item) => (item.canvasPageId ?? firstBoard) === boardId) ??
+    emptyScraps[0];
+  if (scrap) {
+    return { type: "select", id: scrap.id, boardId: scrap.canvasPageId ?? firstBoard };
+  }
+
+  if (isJournalDayId(pageId)) {
+    const fragment = fragmentsForJournalDay(state, pageId).find(
+      (item) => item.kind === "text" && fragmentTextIsEmpty(state, item)
+    );
+    if (fragment) return { type: "select", id: fragment.id, boardId: firstBoard };
+  }
+
+  const blankId = isJournalDayId(pageId) ? entryDocId(pageId) : undatedDocId(pageId);
+  const hasTextFragment =
+    isJournalDayId(pageId) &&
+    fragmentsForJournalDay(state, pageId).some((item) => item.kind === "text");
+  if (
+    !hasTextFragment &&
+    journalDocIsEmpty(state.texts[blankId]) &&
+    !state.scraps.some((item) => item.id === blankId)
+  ) {
+    return { type: "adopt", id: blankId };
+  }
+  return { type: "create" };
+}
+
 export function plainTextFromDoc(doc: JournalDoc): string {
   const chunks: string[] = [];
   const walk = (node: JournalDocNode, block: boolean) => {

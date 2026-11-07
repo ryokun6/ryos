@@ -3844,6 +3844,7 @@
         "play": "재생",
         "pause": "일시 정지",
         "emptyNote": "메모",
+        "write": "무언가 적어 보세요…",
         "newPage": "새 페이지",
         "next": "다음 페이지",
         "page": "{{count}}페이지",

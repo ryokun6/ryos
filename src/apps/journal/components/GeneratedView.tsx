@@ -104,31 +104,40 @@ export function DailyJournal({
   const pageScraps = pageId ? journal.scraps.filter((scrap) => scrap.pageId === pageId) : [];
   const fragments = activeDayId ? fragmentsForJournalDay(journal, activeDayId) : [];
   const textFragments = fragments.filter((fragment) => fragment.kind === "text");
-  const blankFragment: JournalFragment | null = showingUndated
-    ? {
-        id: undatedDocId(journal.selectedUndatedId!),
-        dayId: "",
-        kind: "text",
-        text: null,
-        photo: null,
-        x: 0,
-        y: 0,
-        w: 40,
-        rotate: 0,
-      }
-    : textFragments.length === 0 && activeDayId
-      ? {
-          id: entryDocId(activeDayId),
-          dayId: activeDayId,
-          kind: "text",
-          text: null,
-          photo: null,
-          x: 0,
-          y: 0,
-          w: 40,
-          rotate: 0,
-        }
+  const blankId = showingUndated
+    ? undatedDocId(journal.selectedUndatedId!)
+    : activeDayId
+      ? entryDocId(activeDayId)
       : null;
+  const blankIsCard = blankId ? pageScraps.some((scrap) => scrap.id === blankId) : false;
+  const blankFragment: JournalFragment | null =
+    blankIsCard
+      ? null
+      : showingUndated
+        ? {
+            id: undatedDocId(journal.selectedUndatedId!),
+            dayId: "",
+            kind: "text",
+            text: null,
+            photo: null,
+            x: 0,
+            y: 0,
+            w: 40,
+            rotate: 0,
+          }
+        : textFragments.length === 0 && activeDayId
+          ? {
+              id: entryDocId(activeDayId),
+              dayId: activeDayId,
+              kind: "text",
+              text: null,
+              photo: null,
+              x: 0,
+              y: 0,
+              w: 40,
+              rotate: 0,
+            }
+          : null;
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);

@@ -84,6 +84,8 @@ export interface JournalScrap {
 
 export interface JournalScrapInput {
   pageId: string;
+  /** Reuse this id when the new card is an existing empty text block. */
+  id?: string;
   kind: JournalScrapKind;
   photo?: string | null;
   songId?: string | null;

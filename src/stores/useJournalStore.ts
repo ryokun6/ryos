@@ -94,7 +94,7 @@ export const useJournalStore = create<JournalStore>()(
           {
             type: "addScrap",
             scrap: {
-              id: crypto.randomUUID(),
+              id: input.id && input.id.length > 0 ? input.id : crypto.randomUUID(),
               pageId: input.pageId,
               kind: input.kind,
               photo: input.photo ?? null,

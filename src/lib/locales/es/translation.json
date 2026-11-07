@@ -3856,6 +3856,7 @@
         "play": "Reproducir",
         "pause": "Pausar",
         "emptyNote": "Nota",
+        "write": "Escribe algo…",
         "newPage": "Página nueva",
         "next": "Página siguiente",
         "page": "Página {{count}}",

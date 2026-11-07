@@ -3844,6 +3844,7 @@
         "play": "Wiedergabe",
         "pause": "Pause",
         "emptyNote": "Notiz",
+        "write": "Etwas schreiben…",
         "newPage": "Neue Seite",
         "next": "Nächste Seite",
         "page": "Seite {{count}}",
