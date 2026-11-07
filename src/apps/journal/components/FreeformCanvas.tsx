@@ -8,7 +8,7 @@ import { formatJournalDay, journalText, sampleDoc } from "../sampleContent";
 import type { FragmentPosition, JournalDoc, JournalScrap } from "../types";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
-import { isJournalSongPlayControl, JournalSongMark, toggleJournalSong } from "./journalSong";
+import { isJournalSongPlayControl, JournalSongMark } from "./journalSong";
 
 interface CanvasCard {
   id: string;
@@ -179,10 +179,7 @@ export function FreeformCanvas({
   }
 
   function activateCard(card: CanvasCard) {
-    if (card.kind === "song" && card.songId) {
-      toggleJournalSong(card.songId);
-      return;
-    }
+    if (card.kind === "song") return;
     if (card.pageId) onOpenDay?.(card.pageId);
   }
 
@@ -360,9 +357,7 @@ export function FreeformCanvas({
           const isPhoto = fragment.kind === "photo" && Boolean(fragment.photo);
           const cursorClass = editing
             ? "cursor-text select-text"
-            : fragment.kind === "song"
-              ? "cursor-pointer touch-none"
-              : interactive
+            : interactive
                 ? "cursor-grab touch-none active:cursor-grabbing"
                 : "cursor-pointer";
           const dateLabel =

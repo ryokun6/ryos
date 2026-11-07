@@ -90,7 +90,7 @@ function JournalSongPlayButton({
       type="button"
       data-journal-song-play=""
       aria-label={playing ? t("apps.journal.toolbar.pause") : t("apps.journal.toolbar.play")}
-      className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-[4px] bg-black/45 text-white opacity-0 transition-opacity group-hover/song:pointer-events-auto group-hover/song:opacity-100 focus-visible:pointer-events-auto focus-visible:opacity-100"
+      className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-[4px] bg-black/45 text-white opacity-0 transition-opacity group-hover/song:opacity-100 focus-visible:opacity-100"
       onClick={onClick}
     >
       {playing ? (

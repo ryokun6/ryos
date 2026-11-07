@@ -351,8 +351,15 @@ describe("freeform canvas card editing", () => {
     expect(container?.querySelector("textarea")).toBeNull();
 
     const song = cardWithText("Same Song");
+    const songBefore = useIpodStore.getState().currentSongId;
     await clickCard(song);
     expect(state.opened).toEqual([photoFragment.dayId]);
+    expect(useIpodStore.getState().currentSongId).toBe(songBefore);
+    const play = song.querySelector("[data-journal-song-play]");
+    if (!(play instanceof HTMLElement)) throw new Error("album art play control missing");
+    await act(async () => {
+      play.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
     expect(useIpodStore.getState().currentSongId).toBe(songScrap.songId);
     expect(container?.querySelector("textarea")).toBeNull();
   });

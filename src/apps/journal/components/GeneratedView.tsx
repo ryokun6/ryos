@@ -25,7 +25,7 @@ import type { JournalLogic } from "../hooks/useJournalLogic";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
-import { JournalSongMark, toggleJournalSong } from "./journalSong";
+import { JournalSongMark } from "./journalSong";
 
 function PageCard({
   id,
@@ -359,7 +359,6 @@ export function DailyJournal({
                   className="group/song flex w-full cursor-pointer items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
                   onClick={() => {
                     l.api.selectCard(scrap.id);
-                    if (scrap.songId) toggleJournalSong(scrap.songId);
                   }}
                 >
                   <JournalSongMark songId={scrap.songId} cover={scrap.songCover} size={40} />
