@@ -15,6 +15,8 @@ import {
   dayHasEntry,
   fragmentsForJournalDay,
   journalCardDayId,
+  journalDateUnderTitle,
+  journalPageTitle,
   moodForDay,
   normalizeJournalState,
   plainTextFromDoc,
@@ -297,6 +299,32 @@ describe("journal demo", () => {
       false
     );
     expect(normalizeJournalState({ selectedCardId: "missing" }).selectedCardId).toBeNull();
+  });
+
+  test("a page title falls back to the date until one is saved", () => {
+    const initial = state();
+    expect(journalPageTitle(initial, initial.selectedDayId, "Nov 1")).toBe("Nov 1");
+    const named = reduceJournal(initial, {
+      type: "setPageTitle",
+      id: initial.selectedDayId,
+      title: "  Taipei   notes  ",
+    });
+    expect(named.pageTitles[initial.selectedDayId]).toBe("Taipei notes");
+    expect(journalPageTitle(named, initial.selectedDayId, "Nov 1")).toBe("Taipei notes");
+    const cleared = reduceJournal(named, {
+      type: "setPageTitle",
+      id: initial.selectedDayId,
+      title: "   ",
+    });
+    expect(cleared.pageTitles[initial.selectedDayId]).toBeUndefined();
+    expect(normalizeJournalState({ pageTitles: { "2026-11-01": "  Kept  " } }).pageTitles).toEqual({
+      "2026-11-01": "Kept",
+    });
+    expect(journalDateUnderTitle(undefined, "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("   ", "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("Nov 1", "Nov 1")).toBe("");
+    expect(journalDateUnderTitle("Taipei notes", "Nov 1")).toBe("Nov 1");
+    expect(journalDateUnderTitle("Taipei notes", "")).toBe("");
   });
 
   test("sidebar width stays inside the drag limits", () => {

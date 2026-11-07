@@ -59,6 +59,8 @@ export interface JournalState {
   selectedCardId: string | null;
   positions: Record<string, FragmentPosition>;
   selectedDayId: string;
+  /** Custom page titles. Absent means the date, or the page number when there is no date. */
+  pageTitles: Record<string, string>;
 }
 
 export type JournalScrapKind = "text" | "photo" | "song";
@@ -107,4 +109,5 @@ export type JournalAction =
   | { type: "moveCard"; id: string; dayId: string }
   | { type: "selectCanvasPage"; id: string }
   | { type: "addCanvasPage"; id: string }
+  | { type: "setPageTitle"; id: string; title: string }
   | { type: "reset" };

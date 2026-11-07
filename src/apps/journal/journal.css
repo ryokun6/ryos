@@ -1,0 +1,67 @@
+/*
+ * Freeform board. Mac chromes wash the accent pastel well toward white, lighter
+ * than the assistant bubble, including the stock fallbacks for the System
+ * accent (it sets no inline override). Ruled lines use the accent swatch.
+ * Windows keeps the paper and rules in the same accent color.
+ */
+.journal-canvas {
+  --journal-canvas-accent: var(--os-accent-color, var(--os-color-link, #2765ca));
+  background-attachment: local;
+  background-color: #f7f4ee;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 31px,
+    color-mix(in srgb, var(--journal-canvas-accent) 40%, transparent) 32px
+  );
+  background-size: 100% 32px;
+}
+
+:root[data-os-theme="macosx"] .journal-canvas {
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #bfdbfe) 24%,
+    #fff
+  );
+}
+
+:root[data-os-theme="system7"] .journal-canvas {
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #dbeafe) 24%,
+    #fff
+  );
+}
+
+:root[data-os-theme="macosx"][data-os-color-scheme="dark"] .journal-canvas {
+  background-color: color-mix(
+    in srgb,
+    var(--os-accent-assistant-bubble-bg, #353a42) 70%,
+    #fff
+  );
+  background-image: linear-gradient(
+    to bottom,
+    transparent 31px,
+    color-mix(in srgb, var(--journal-canvas-accent) 62%, transparent) 32px
+  );
+}
+
+/* Six lines of text-sm / leading-snug. Longer notes clip with a fade. */
+.journal-canvas-note {
+  max-height: 7.25rem;
+  max-height: 6lh;
+  overflow: hidden;
+}
+
+.journal-canvas-note-clip {
+  --journal-note-fade: 2.25rem;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--journal-note-fade)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(100% - var(--journal-note-fade)),
+    transparent
+  );
+}

@@ -3784,7 +3784,7 @@
         },
         "drawer": {
           "description": "Os interruptores, a predefinição Duas estruturas e Redefinir a demo ficam na gaveta ao lado da janela.",
-          "title": "Gaveta da demo"
+          "title": "Ajustes"
         },
         "featureToggles": {
           "description": "Cada recurso tem o próprio interruptor na gaveta. Remova primeiro a sequência se um dia sem escrever não deve parecer uma dívida.",
@@ -3853,9 +3853,11 @@
         "addImage": "Adicionar imagem",
         "addNote": "Adicionar nota",
         "addSong": "Adicionar música",
+        "play": "Reproduzir",
+        "pause": "Pausar",
         "emptyNote": "Nota",
         "newPage": "Nova página",
-        "next": "Página seguinte",
+        "next": "Página Seguinte",
         "page": "Página {{count}}",
         "noSongs": "Nenhuma música na biblioteca",
         "photoAlt": "Foto",

@@ -5516,7 +5516,7 @@
           "title": "兩種結構"
         },
         "drawer": {
-          "title": "示範抽屜",
+          "title": "設定",
           "description": "功能開關、兩種結構的預設，和還原示範都在視窗旁邊的抽屜裡。"
         }
       },
@@ -5567,6 +5567,8 @@
         "addNote": "加入文字",
         "addImage": "加入圖片",
         "addSong": "加入歌曲",
+        "play": "播放",
+        "pause": "暫停",
         "noSongs": "曲庫裡沒有歌曲",
         "emptyNote": "筆記",
         "photoAlt": "照片",
@@ -5576,7 +5578,7 @@
       "views": {
         "compare": "合併",
         "generated": "完整答案",
-        "daily": "天數",
+        "daily": "日子",
         "freeform": "自由"
       },
       "drawer": {

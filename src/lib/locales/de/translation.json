@@ -3772,7 +3772,7 @@
         },
         "drawer": {
           "description": "Funktionsschalter, die Voreinstellung Zwei Strukturen und Demo zurücksetzen liegen in der Schublade neben dem Fenster.",
-          "title": "Demo-Schublade"
+          "title": "Einstellungen"
         },
         "featureToggles": {
           "description": "Jede Funktion hat einen Schalter in der Demo-Schublade. Entferne zuerst die Serie, wenn ein Tag ohne Eintrag sich nicht wie eine Schuld anfühlen soll.",
@@ -3841,6 +3841,8 @@
         "addImage": "Bild hinzufügen",
         "addNote": "Notiz hinzufügen",
         "addSong": "Titel hinzufügen",
+        "play": "Wiedergabe",
+        "pause": "Pause",
         "emptyNote": "Notiz",
         "newPage": "Neue Seite",
         "next": "Nächste Seite",

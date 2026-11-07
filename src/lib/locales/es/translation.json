@@ -3784,7 +3784,7 @@
         },
         "drawer": {
           "description": "Los interruptores, el preajuste Dos estructuras y Restablecer la demo están en el cajón junto a la ventana.",
-          "title": "Cajón de la demo"
+          "title": "Ajustes"
         },
         "featureToggles": {
           "description": "Cada función tiene su interruptor en el cajón. Quita primero la racha si un día sin escribir no debe sentirse como una deuda.",
@@ -3853,6 +3853,8 @@
         "addImage": "Añadir imagen",
         "addNote": "Añadir nota",
         "addSong": "Añadir canción",
+        "play": "Reproducir",
+        "pause": "Pausar",
         "emptyNote": "Nota",
         "newPage": "Página nueva",
         "next": "Página siguiente",

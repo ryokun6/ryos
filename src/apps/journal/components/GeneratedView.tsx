@@ -9,6 +9,8 @@ import {
   entryDocId,
   fragmentsForJournalDay,
   journalPageIndex,
+  journalDateUnderTitle,
+  journalPageTitle,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
@@ -23,9 +25,11 @@ import {
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
+import { JournalPageTitle } from "./JournalPageTitle";
+import { JournalSidebarCalendar } from "./JournalSidebarCalendar";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
-import { JournalSongMark, toggleJournalSong } from "./journalSong";
+import { JournalSongMark } from "./journalSong";
 
 function PageCard({
   id,
@@ -78,7 +82,7 @@ export function DailyJournal({
   l: JournalLogic;
   isMobileLayout: boolean;
 }) {
-  const { t, language, journal, isMacOSTheme, isSystem7Theme, sidebarWidth } = l;
+  const { t, language, journal, isMacOSTheme, isSystem7Theme, isWindowsTheme, sidebarWidth } = l;
   const sidebarWidthRef = useRef(sidebarWidth);
   sidebarWidthRef.current = sidebarWidth;
   const { open, hoverProps } = useJournalViewChrome();
@@ -127,11 +131,22 @@ export function DailyJournal({
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);
+  const dateLabel =
+    features.date && activeDayId ? formatJournalDay(activeDayId, language) : "";
+  const defaultPageTitle = dateLabel || t("apps.journal.pageNumber", { count: pageIndex + 1 });
+  const titleDate = journalDateUnderTitle(
+    pageId ? journal.pageTitles[pageId] : undefined,
+    dateLabel
+  );
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
       <div
-        className={cn("relative flex min-h-0 shrink-0", isMobileLayout && "max-h-[150px] w-full")}
+        className={cn(
+          "relative flex min-h-0 shrink-0",
+          isMobileLayout && "w-full",
+          isMobileLayout && !features.date && "max-h-[150px]"
+        )}
         style={isMobileLayout ? undefined : { width: sidebarWidth }}
       >
       <AppSidebarPanel
@@ -144,7 +159,12 @@ export function DailyJournal({
           useGeneva={useGeneva}
           bordered={isMacOSTheme}
         />
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div
+          className={cn(
+            "min-h-0 flex-1 overflow-y-auto",
+            isMobileLayout && features.date && "max-h-[150px]"
+          )}
+        >
           {features.date
             ? sidebarDates(today).map((dayId) => {
                 const active = !showingUndated && dayId === selectedDayId;
@@ -162,7 +182,7 @@ export function DailyJournal({
                     )}
                   >
                     <span className={cn("truncate", !hasEntry && "opacity-40")}>
-                      {formatJournalDay(dayId, language)}
+                      {journalPageTitle(journal, dayId, formatJournalDay(dayId, language))}
                     </span>
                   </button>
                 );
@@ -226,6 +246,19 @@ export function DailyJournal({
             </button>
           )}
         </div>
+        {features.date ? (
+          <div className="shrink-0 border-t border-black/10 os-dark:border-white/10">
+            <JournalSidebarCalendar
+              selectedDate={showingUndated ? "" : selectedDayId}
+              today={today}
+              language={language}
+              isWindowsTheme={isWindowsTheme}
+              isMacOSTheme={isMacOSTheme}
+              isSystem7Theme={isSystem7Theme}
+              onSelectDay={l.api.selectDay}
+            />
+          </div>
+        ) : null}
       </AppSidebarPanel>
       {isMobileLayout ? null : (
         <div
@@ -262,14 +295,20 @@ export function DailyJournal({
       <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pb-16">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-medium leading-tight">
-              {features.date && activeDayId
-                ? formatJournalDay(activeDayId, language)
-                : t("apps.journal.pageNumber", { count: pageIndex + 1 })}
-            </h2>
+            <JournalPageTitle
+              key={pageId ?? "page"}
+              pageId={pageId ?? ""}
+              defaultTitle={defaultPageTitle}
+              title={journalPageTitle(journal, pageId ?? "", defaultPageTitle)}
+              onSave={l.api.setPageTitle}
+            />
             {features.mood ? (
               <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm text-os-text-secondary">{t("apps.journal.mood.label")}</span>
+                {titleDate ? (
+                  <span data-journal-title-date className="text-sm text-os-text-secondary">
+                    {titleDate}
+                  </span>
+                ) : null}
                 <div className="flex" role="group" aria-label={t("apps.journal.mood.label")}>
                   {MOOD_FACES.map((Face, index) => {
                     const score = index + 1;
@@ -316,7 +355,7 @@ export function DailyJournal({
               <PageCard
                 key={fragment.id}
                 id={fragment.id}
-                highlight={false}
+                highlight={journal.selectedCardId === fragment.id}
                 onSelect={l.api.selectCard}
                 onMenu={(id, x, y) => setMenu({ id, x, y })}
               >
@@ -325,6 +364,7 @@ export function DailyJournal({
                   saved={journal.texts[fragment.id]}
                   language={language}
                   onChange={l.api.setEntryText}
+                  onSelect={l.api.selectCard}
                 />
               </PageCard>
             )
@@ -342,7 +382,7 @@ export function DailyJournal({
             <PageCard
               key={scrap.id}
               id={scrap.id}
-              highlight={scrap.kind !== "text" && journal.selectedCardId === scrap.id}
+              highlight={journal.selectedCardId === scrap.id}
               onSelect={l.api.selectCard}
               onMenu={(id, x, y) => setMenu({ id, x, y })}
             >
@@ -355,12 +395,10 @@ export function DailyJournal({
                   style={{ borderRadius: 8 }}
                 />
               ) : scrap.kind === "song" ? (
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
+                <div
+                  className="group/song flex w-full cursor-pointer items-center gap-2 rounded-[8px] border border-black/10 bg-[#fffdf8] p-2 text-left os-dark:border-white/10 os-dark:bg-[#3a342c]"
                   onClick={() => {
                     l.api.selectCard(scrap.id);
-                    if (scrap.songId) toggleJournalSong(scrap.songId);
                   }}
                 >
                   <JournalSongMark songId={scrap.songId} cover={scrap.songCover} size={40} />
@@ -370,7 +408,7 @@ export function DailyJournal({
                       <span className="block truncate text-xs text-os-text-secondary">{scrap.songArtist}</span>
                     ) : null}
                   </span>
-                </button>
+                </div>
               ) : (
                 <JournalEntryEditor
                   fragment={{
@@ -387,6 +425,7 @@ export function DailyJournal({
                   saved={journal.texts[scrap.id]}
                   language={language}
                   onChange={l.api.setEntryText}
+                  onSelect={l.api.selectCard}
                 />
               )}
             </PageCard>
