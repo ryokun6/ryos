@@ -7,7 +7,7 @@ import { formatJournalDay, journalText } from "../sampleContent";
 import type { FragmentPosition, JournalDoc, JournalScrap } from "../types";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
-import { JournalSongMark, toggleJournalSong } from "./journalSong";
+import { isJournalSongPlayControl, JournalSongMark, toggleJournalSong } from "./journalSong";
 
 interface CanvasCard {
   id: string;
@@ -117,6 +117,7 @@ export function FreeformCanvas({
     fragment: CanvasCard
   ) {
     if (event.button !== 0 || event.ctrlKey) return;
+    if (isJournalSongPlayControl(event.target)) return;
     if (!canvasRef.current || (!onOpenDay && (!interactive || !onMove))) return;
     const bounds = canvasRef.current.getBoundingClientRect();
     const current = positionFor(fragment);
@@ -147,6 +148,11 @@ export function FreeformCanvas({
   }
 
   function onPointerUp(event: PointerEvent<HTMLElement>) {
+    if (isJournalSongPlayControl(event.target)) {
+      const cardId = event.currentTarget.dataset.journalCard;
+      if (cardId) l.api.selectCard(cardId);
+      return;
+    }
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
@@ -193,15 +199,17 @@ export function FreeformCanvas({
           const marked = selected || current;
           const isPhoto = fragment.kind === "photo" && Boolean(fragment.photo);
           const dateLabel =
-            showDates && isJournalDayId(fragment.pageId)
+            showDates && fragment.kind !== "song" && isJournalDayId(fragment.pageId)
               ? formatJournalDay(fragment.pageId, language)
               : null;
           return (
             <article
               key={fragment.id}
               aria-current={current ? "true" : undefined}
+              data-journal-card={fragment.id}
               className={cn(
                 "group absolute select-none overflow-hidden !rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.18)]",
+                fragment.kind === "song" && "group/song",
                 isPhoto
                   ? "border-0 bg-transparent p-0"
                   : cn(

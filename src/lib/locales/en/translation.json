@@ -5969,6 +5969,8 @@
         "addNote": "Add Note",
         "addImage": "Add Image",
         "addSong": "Add Song",
+        "play": "Play",
+        "pause": "Pause",
         "noSongs": "No Songs in the Library",
         "emptyNote": "Note",
         "photoAlt": "Photo",
