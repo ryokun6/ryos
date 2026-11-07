@@ -91,7 +91,9 @@ const { createInitialJournalState, plainTextFromDoc } = await import(
 const { JOURNAL_FRAGMENTS, journalText } = await import(
   "../../../src/apps/journal/sampleContent"
 );
-const { useIpodStore } = await import("../../../src/stores/useIpodStore");
+const { getActiveIpodCurrentSongId, useIpodStore } = await import(
+  "../../../src/stores/useIpodStore"
+);
 
 const noteFragment = JOURNAL_FRAGMENTS.find((item) => item.kind === "text" && item.text);
 const photoFragment = JOURNAL_FRAGMENTS.find((item) => item.kind === "photo" && item.photo);
@@ -159,8 +161,10 @@ afterEach(async () => {
   container?.remove();
   container = null;
   const ipod = useIpodStore.getState();
+  ipod.setLibrarySource("youtube");
   ipod.setIsPlaying(false);
   ipod.setCurrentSongId(null);
+  ipod.setAppleMusicCurrentSongId(null);
 });
 
 afterAll(() => {
@@ -346,16 +350,17 @@ describe("freeform canvas card editing", () => {
     expect(container?.querySelector("textarea")).toBeNull();
 
     const song = cardWithText("Same Song");
-    const songBefore = useIpodStore.getState().currentSongId;
+    useIpodStore.getState().setLibrarySource("appleMusic");
+    const songBefore = getActiveIpodCurrentSongId(useIpodStore.getState());
     await clickCard(song);
     expect(state.opened).toEqual([photoFragment.dayId]);
-    expect(useIpodStore.getState().currentSongId).toBe(songBefore);
+    expect(getActiveIpodCurrentSongId(useIpodStore.getState())).toBe(songBefore);
     const play = song.querySelector("[data-journal-song-play]");
     if (!(play instanceof HTMLElement)) throw new Error("album art play control missing");
     await act(async () => {
       play.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
-    expect(useIpodStore.getState().currentSongId).toBe(songScrap.songId);
+    expect(getActiveIpodCurrentSongId(useIpodStore.getState())).toBe(songScrap.songId);
     expect(container?.querySelector("textarea")).toBeNull();
   });
 
