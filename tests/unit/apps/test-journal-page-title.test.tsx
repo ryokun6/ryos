@@ -1,5 +1,4 @@
-import { describe, expect, test } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { afterAll, describe, expect, test } from "bun:test";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { JournalPageTitle } from "../../../src/apps/journal/components/JournalPageTitle";
@@ -8,17 +7,14 @@ import { formatJournalDay, sampleJournalTitle } from "../../../src/apps/journal/
 import { journalSidebarDays, todayDayId } from "../../../src/apps/journal/logic";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
   value: true,
 });
-if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
-  if (!GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.register();
-  }
-}
+const installedHappyDom = installHappyDom();
 
 describe("journal page title", () => {
   test("shows the date until a double click saves a new title", async () => {
@@ -199,4 +195,8 @@ describe("journal page title", () => {
     container.remove();
     useJournalStore.setState({ journal: createInitialJournalState(), notice: null });
   });
+});
+
+afterAll(async () => {
+  await uninstallHappyDom(installedHappyDom);
 });

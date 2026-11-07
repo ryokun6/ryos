@@ -1,4 +1,5 @@
 import "../../helpers/local-storage-stub";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 import {
   afterAll,
   afterEach,
@@ -8,7 +9,6 @@ import {
   jest,
   test,
 } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { Contents, Rendition } from "epubjs";
@@ -31,9 +31,7 @@ const originalActEnvironment = Object.getOwnPropertyDescriptor(
   "IS_REACT_ACT_ENVIRONMENT"
 );
 
-if (typeof document === "undefined") {
-  GlobalRegistrator.register();
-}
+const installedHappyDom = installHappyDom();
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
@@ -210,7 +208,7 @@ afterEach(async () => {
   });
 });
 
-afterAll(() => {
+afterAll(async () => {
   if (originalActEnvironment) {
     Object.defineProperty(
       globalThis,
@@ -218,6 +216,7 @@ afterAll(() => {
       originalActEnvironment
     );
   }
+  await uninstallHappyDom(installedHappyDom);
 });
 
 describe("books highlight color preference", () => {

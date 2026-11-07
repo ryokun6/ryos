@@ -1,22 +1,18 @@
-import { describe, expect, test } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
+import { afterAll, describe, expect, test } from "bun:test";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import {
   JournalSidebarCalendar,
   journalMonthGrid,
 } from "../../../src/apps/journal/components/JournalSidebarCalendar";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,
   writable: true,
   value: true,
 });
-if (typeof document === "undefined" || !GlobalRegistrator.isRegistered) {
-  if (!GlobalRegistrator.isRegistered) {
-    GlobalRegistrator.register();
-  }
-}
+const installedHappyDom = installHappyDom();
 
 describe("journal sidebar calendar", () => {
   test("uses the same six-week month grid as the calendar", () => {
@@ -77,4 +73,8 @@ describe("journal sidebar calendar", () => {
     });
     container.remove();
   });
+});
+
+afterAll(async () => {
+  await uninstallHappyDom(installedHappyDom);
 });

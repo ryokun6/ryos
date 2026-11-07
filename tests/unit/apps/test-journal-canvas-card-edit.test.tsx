@@ -1,15 +1,13 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import i18next from "i18next";
 import { I18nextProvider, initReactI18next } from "react-i18next";
 import type { JournalLogic } from "../../../src/apps/journal/hooks/useJournalLogic";
 import type { JournalDoc, JournalScrap, JournalState } from "../../../src/apps/journal/types";
+import { installHappyDom, uninstallHappyDom } from "../../helpers/register-happy-dom";
 
-if (typeof document === "undefined") {
-  GlobalRegistrator.register();
-}
+const installedHappyDom = installHappyDom();
 
 class FakeGainNode {
   gain = {
@@ -172,10 +170,11 @@ afterEach(async () => {
   await settleAllPersistWrites();
 });
 
-afterAll(() => {
+afterAll(async () => {
   window.AudioContext = originalAudioContext;
   Element.prototype.animate = originalAnimate;
   Reflect.deleteProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT");
+  await uninstallHappyDom(installedHappyDom);
 });
 
 function harness(journal: JournalState = createInitialJournalState()) {
