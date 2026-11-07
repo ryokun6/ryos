@@ -30,6 +30,7 @@ export function useJournalLogic() {
       selectCard: state.selectCard,
       removeCard: state.removeCard,
       moveCard: state.moveCard,
+      setPageTitle: state.setPageTitle,
       resetDemo: state.resetDemo,
       setSidebarWidth: state.setSidebarWidth,
       dismissNotice: state.dismissNotice,

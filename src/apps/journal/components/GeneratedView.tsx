@@ -9,6 +9,7 @@ import {
   entryDocId,
   fragmentsForJournalDay,
   journalPageIndex,
+  journalPageTitle,
   JOURNAL_SIDEBAR_MAX_WIDTH,
   JOURNAL_SIDEBAR_MIN_WIDTH,
   moodForDay,
@@ -23,6 +24,7 @@ import {
 } from "../sampleContent";
 import type { JournalLogic } from "../hooks/useJournalLogic";
 import { JournalCardMenu, type JournalCardMenuState } from "./JournalCardMenu";
+import { JournalPageTitle } from "./JournalPageTitle";
 import { JournalSidebarCalendar } from "./JournalSidebarCalendar";
 import { JournalEntryEditor } from "./JournalEntryEditor";
 import { JournalViewToolbar, useJournalViewChrome } from "./JournalViewToolbar";
@@ -128,6 +130,10 @@ export function DailyJournal({
   const useGeneva = isMacOSTheme || isSystem7Theme;
   const moodKey = showingUndated ? journal.selectedUndatedId! : selectedDayId;
   const mood = moodForDay(journal, moodKey);
+  const defaultPageTitle =
+    features.date && activeDayId
+      ? formatJournalDay(activeDayId, language)
+      : t("apps.journal.pageNumber", { count: pageIndex + 1 });
 
   return (
     <div className={cn("flex min-h-0 flex-1", isMobileLayout ? "flex-col" : "flex-row")}>
@@ -172,7 +178,7 @@ export function DailyJournal({
                     )}
                   >
                     <span className={cn("truncate", !hasEntry && "opacity-40")}>
-                      {formatJournalDay(dayId, language)}
+                      {journalPageTitle(journal, dayId, formatJournalDay(dayId, language))}
                     </span>
                   </button>
                 );
@@ -285,11 +291,13 @@ export function DailyJournal({
       <article className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 pb-16">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-medium leading-tight">
-              {features.date && activeDayId
-                ? formatJournalDay(activeDayId, language)
-                : t("apps.journal.pageNumber", { count: pageIndex + 1 })}
-            </h2>
+            <JournalPageTitle
+              key={pageId ?? "page"}
+              pageId={pageId ?? ""}
+              defaultTitle={defaultPageTitle}
+              title={journalPageTitle(journal, pageId ?? "", defaultPageTitle)}
+              onSave={l.api.setPageTitle}
+            />
             {features.mood ? (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-sm text-os-text-secondary">{t("apps.journal.mood.label")}</span>

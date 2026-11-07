@@ -62,7 +62,19 @@ export function createInitialJournalState(): JournalState {
     selectedCardId: null,
     positions: {},
     selectedDayId: DEFAULT_DAY_ID,
+    pageTitles: {},
   };
+}
+
+const MAX_PAGE_TITLE_LENGTH = 80;
+
+export function journalPageTitle(
+  state: JournalState,
+  id: string,
+  fallback: string
+): string {
+  const saved = state.pageTitles[id];
+  return saved && saved.length > 0 ? saved : fallback;
 }
 
 export function entryDocId(dayId: string): string {
@@ -272,7 +284,21 @@ export function normalizeJournalState(value: unknown): JournalState {
     selectedDayId: DAY_ID.test(raw.selectedDayId ?? "")
       ? raw.selectedDayId!
       : initial.selectedDayId,
+    pageTitles: clonePageTitles(raw.pageTitles),
   };
+}
+
+function clonePageTitles(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object") return {};
+  const titles: Record<string, string> = {};
+  for (const [id, title] of Object.entries(value)) {
+    if (typeof id !== "string" || id.length === 0 || id.length > MAX_PAGE_TITLE_LENGTH) continue;
+    if (typeof title !== "string") continue;
+    const trimmed = title.trim().replace(/\s+/g, " ");
+    if (!trimmed || trimmed.length > MAX_PAGE_TITLE_LENGTH) continue;
+    titles[id] = trimmed;
+  }
+  return titles;
 }
 
 function cloneCanvasPages(value: unknown): string[] {
@@ -550,6 +576,16 @@ export function reduceJournal(state: JournalState, action: JournalAction): Journ
         canvasPages: [...state.canvasPages, action.id],
         selectedCanvasPageId: action.id,
       };
+    }
+    case "setPageTitle": {
+      if (!action.id || action.id.length > MAX_PAGE_TITLE_LENGTH) return state;
+      const title = action.title.trim().replace(/\s+/g, " ");
+      if (title.length > MAX_PAGE_TITLE_LENGTH) return state;
+      const pageTitles = { ...state.pageTitles };
+      if (!title) delete pageTitles[action.id];
+      else pageTitles[action.id] = title;
+      if ((state.pageTitles[action.id] ?? "") === (pageTitles[action.id] ?? "")) return state;
+      return { ...state, pageTitles };
     }
     case "reset":
       return createInitialJournalState();

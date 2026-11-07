@@ -37,6 +37,7 @@ interface JournalStore {
   selectCard: (id: string | null) => void;
   removeCard: (id: string) => void;
   moveCard: (id: string, dayId: string) => void;
+  setPageTitle: (id: string, title: string) => void;
   resetDemo: () => void;
   setSidebarWidth: (width: number) => void;
   dismissNotice: () => void;
@@ -111,6 +112,7 @@ export const useJournalStore = create<JournalStore>()(
       selectCard: (id) => commit(get, set, { type: "selectCard", id }, null),
       removeCard: (id) => commit(get, set, { type: "removeCard", id }, null),
       moveCard: (id, dayId) => commit(get, set, { type: "moveCard", id, dayId }, null),
+      setPageTitle: (id, title) => commit(get, set, { type: "setPageTitle", id, title }, null),
       resetDemo: () => commit(get, set, { type: "reset" }, "restored"),
       setSidebarWidth: (width) => set({ sidebarWidth: clampSidebarWidth(width) }),
       dismissNotice: () => set({ notice: null }),
