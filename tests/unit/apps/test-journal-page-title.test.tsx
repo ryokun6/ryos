@@ -160,6 +160,11 @@ describe("journal page title", () => {
         (node) => node.textContent === "apps.journal.sidebar.newJournal"
       );
       if (!(button instanceof HTMLButtonElement)) throw new Error("New Journal button missing");
+      const dayRow = [...container.querySelectorAll("button")].find(
+        (node) => node.textContent === sampleJournalTitle(dayId, "en")
+      );
+      expect(dayRow).toBeTruthy();
+      expect(dayRow!.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       await act(async () => {
         button.click();
       });

@@ -177,15 +177,6 @@ export function DailyJournal({
             isMobileLayout && features.date && "max-h-[150px]"
           )}
         >
-          {features.date && !sidebarDays.includes(today) ? (
-            <button
-              type="button"
-              onClick={() => l.api.startDay(today)}
-              className="flex w-full items-center px-2.5 py-1 text-left text-[13px] leading-tight text-os-link transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              {t("apps.journal.sidebar.newJournal")}
-            </button>
-          ) : null}
           {features.date
             ? sidebarDays.map((dayId) => {
                 const active = !showingUndated && dayId === selectedDayId;
@@ -282,6 +273,15 @@ export function DailyJournal({
               onSelectDay={l.api.selectDay}
             />
           </div>
+        ) : null}
+        {features.date && !sidebarDays.includes(today) ? (
+          <button
+            type="button"
+            onClick={() => l.api.startDay(today)}
+            className="flex w-full shrink-0 items-center border-t border-black/10 px-2.5 py-1 text-left text-[13px] leading-tight text-os-link os-dark:border-white/10 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            {t("apps.journal.sidebar.newJournal")}
+          </button>
         ) : null}
       </AppSidebarPanel>
       {isMobileLayout ? null : (
