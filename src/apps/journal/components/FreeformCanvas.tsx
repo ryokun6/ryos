@@ -35,6 +35,16 @@ const CLICK_SLOP_PX = 5;
 const CANVAS_LAYOUT_WIDTH = 1068;
 const CANVAS_LAYOUT_HEIGHT = 1360;
 
+const CANVAS_CARD_WIDTH = {
+  text: 220,
+  photo: 196,
+  song: 176,
+} as const;
+
+function cardWidth(kind: CanvasCard["kind"]): number {
+  return CANVAS_CARD_WIDTH[kind];
+}
+
 function CanvasNote({ text }: { text: string }) {
   const ref = useRef<HTMLParagraphElement>(null);
   const [clipped, setClipped] = useState(false);
@@ -258,7 +268,7 @@ export function FreeformCanvas({
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId || !interactive || !onMove) return;
     const fragment = cards.find((item) => item.id === drag.id);
-    const maxX = fragment ? 100 - fragment.w : 80;
+    const maxX = fragment ? 100 - (cardWidth(fragment.kind) / CANVAS_LAYOUT_WIDTH) * 100 : 80;
     drag.latest = {
       x: clamp(drag.startX + ((event.clientX - drag.originX) / drag.width) * 100, 0, maxX),
       y: clamp(drag.startY + ((event.clientY - drag.originY) / drag.height) * 100, 0, 88),
@@ -379,7 +389,7 @@ export function FreeformCanvas({
               style={{
                 left: `${position.x}%`,
                 top: `${position.y}%`,
-                width: `${fragment.w}%`,
+                width: cardWidth(fragment.kind),
                 transform: `rotate(${fragment.rotate}deg)`,
                 borderRadius: 8,
               }}
