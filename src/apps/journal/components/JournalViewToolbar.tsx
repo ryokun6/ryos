@@ -156,7 +156,6 @@ export function JournalViewToolbar({
   const atStart = boardIndex <= 0;
   const atEnd = boardIndex >= boards.length - 1;
   const showPages = pages === "canvas";
-  const showPrevious = showPages && !atStart;
   const showDelete =
     journal.selectedCardId !== null &&
     journalCardExists(journal, journal.selectedCardId);
@@ -166,7 +165,7 @@ export function JournalViewToolbar({
     if (!node) return;
     const next = Math.ceil(node.scrollWidth);
     if (next > 0) setBarWidth(next);
-  }, [showPages, boardIndex, shown, showPrevious, showDelete]);
+  }, [showPages, boardIndex, shown, showDelete]);
 
   useEffect(() => {
     if (!songOpen) return;
@@ -251,18 +250,18 @@ export function JournalViewToolbar({
         >
         {showPages ? (
           <>
-            {showPrevious ? (
-              <RevealedToolbarButton
-                label={t("apps.journal.toolbar.previous")}
-                className={buttonClass}
-                onClick={() => {
-                  playClick();
-                  go(-1);
-                }}
-              >
-                <CaretLeft size={16} weight="bold" />
-              </RevealedToolbarButton>
-            ) : null}
+            <button
+              type="button"
+              aria-label={t("apps.journal.toolbar.previous")}
+              className={buttonClass}
+              disabled={atStart}
+              onClick={() => {
+                playClick();
+                go(-1);
+              }}
+            >
+              <CaretLeft size={16} weight="bold" />
+            </button>
             <span className="max-w-[6.5rem] truncate px-1 text-center text-[12px] font-medium">
               {t("apps.journal.toolbar.page", { count: boardIndex + 1 })}
             </span>

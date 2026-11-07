@@ -180,10 +180,12 @@ afterAll(() => {
 });
 
 describe("journal view toolbar", () => {
-  test("hides disabled controls and keeps the page divider away from delete", async () => {
+  test("keeps previous visible but disabled on the first page", async () => {
     await renderToolbar("canvas");
 
-    expect(button("apps.journal.toolbar.previous")).toBeNull();
+    const previous = button("apps.journal.toolbar.previous");
+    expect(previous).not.toBeNull();
+    expect(previous?.disabled).toBe(true);
     expect(button("apps.journal.toolbar.delete")).toBeNull();
     expect(button("apps.journal.toolbar.addNote")).not.toBeNull();
     expect(dividerCount()).toBe(1);
@@ -202,10 +204,9 @@ describe("journal view toolbar", () => {
       useJournalStore.getState().addCanvasPage();
     });
 
-    const previous = button("apps.journal.toolbar.previous");
-    expect(previous).not.toBeNull();
-    expect(previous?.disabled).toBe(false);
-    expectEntering(previous);
+    const enabledPrevious = button("apps.journal.toolbar.previous");
+    expect(enabledPrevious).not.toBeNull();
+    expect(enabledPrevious?.disabled).toBe(false);
     expect(dividerCount()).toBe(1);
   });
 
