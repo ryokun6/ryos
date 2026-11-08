@@ -1385,13 +1385,29 @@ final class FileExportPanel: NSObject, UIDocumentPickerDelegate {
         picker.modalPresentationStyle = .formSheet
         self.picker = picker
         presenter.present(picker, animated: true)
-        // UIKit drops a refused present() without calling back. The picker
-        // connects to its remote view first (a few seconds, the first time),
-        // so give it time before deciding it never came up.
+        // UIKit drops a refused present() without calling back, and a sheet
+        // can close without calling back either. Only didPickDocumentsAt
+        // reports a save; a sheet that never came up, or went away silently,
+        // is a cancel. The picker connects to its remote view first (a few
+        // seconds, the first time), so it gets 10s to appear, and a closed
+        // sheet gets 3s for a late callback.
         Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .seconds(10))
-            guard let self, self.picker?.viewIfLoaded?.window == nil else { return }
-            self.finish(.unavailable)
+            var waited = 0.0
+            var goneFor = 0.0
+            var shown = false
+            while let self, self.completion != nil {
+                try? await Task.sleep(for: .milliseconds(500))
+                waited += 0.5
+                if self.picker?.viewIfLoaded?.window != nil {
+                    shown = true
+                    goneFor = 0
+                } else if shown {
+                    goneFor += 0.5
+                    if goneFor >= 3 { self.finish(.cancelled) }
+                } else if waited >= 10 {
+                    self.finish(.unavailable)
+                }
+            }
         }
     }
 
