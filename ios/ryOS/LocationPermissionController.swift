@@ -21,7 +21,7 @@ final class LocationPermissionController: NSObject {
 
     private let manager = CLLocationManager()
     private var managerConfigured = false
-    private var pendingAsks: [(String, (WKPermissionDecision) -> Void)] = []
+    private var pendingAsks: [(String, @MainActor (WKPermissionDecision) -> Void)] = []
 
     /// Maps the app's Core Location status to the string the web client sees.
     var webStatus: String {
@@ -35,7 +35,7 @@ final class LocationPermissionController: NSObject {
 
     /// Answers one web geolocation ask. May resolve immediately, or after the
     /// system permission dialog if the user has never been asked.
-    func handleWebAsk(origin: String, decide: @escaping (WKPermissionDecision) -> Void) {
+    func handleWebAsk(origin: String, decide: @escaping @MainActor (WKPermissionDecision) -> Void) {
         if !managerConfigured {
             managerConfigured = true
             manager.delegate = self
