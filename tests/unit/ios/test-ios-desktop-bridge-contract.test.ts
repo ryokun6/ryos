@@ -4,7 +4,8 @@
  * Runs the JavaScript the shell injects at document start
  * (`ios/ryOS/DesktopBridge.swift`) against the web client's own bridge
  * helpers, and checks the native side (`ShellWebView.swift`,
- * `MediaHapticsController.swift`, `RelayClient.swift`, `AppDelegate.swift`)
+ * `MediaHapticsController.swift`, `RelayClient.swift`, `AppDelegate.swift`,
+ * `BatteryBridgeController.swift`)
  * handles every message the injected script posts. Swift can't build on
  * Linux CI, so the native half is checked at the source level.
  */
@@ -42,6 +43,7 @@ const shellWebViewSwift = readIos("ShellWebView.swift");
 const mediaSwift = readIos("MediaHapticsController.swift");
 const relaySwift = readIos("RelayClient.swift");
 const appDelegateSwift = readIos("AppDelegate.swift");
+const batterySwift = readIos("BatteryBridgeController.swift");
 
 function extractInjectedJavaScript(source: string): string {
   const match = /static let injectedJavaScript = """\n([\s\S]*?)\n\s*"""/.exec(source);
@@ -78,6 +80,8 @@ interface ShellPage {
     __ryosEmitOpenRoom: (roomId: string | null) => void;
     __ryosEmitAuthPopupStatus: (status: unknown) => void;
     __ryosSetSideStatusBarExtent: (extent: unknown, hasCamera?: unknown) => void;
+    __ryosSetBattery: (level: unknown, charging?: unknown, lowPowerMode?: unknown) => void;
+    navigator: Record<string, unknown>;
   };
   posted: Posted[];
   /** Every event the script dispatched on window, in order. */
@@ -88,12 +92,23 @@ interface ShellPage {
   replyAll(value: (message: Posted) => unknown): void;
 }
 
+interface ShellPageOptions {
+  /** `window.__ryosInitialBattery`, as the shell's document-start prelude sets it. */
+  initialBattery?: Record<string, unknown>;
+  /** The page's navigator; by default a fresh one without getBattery (WKWebView). */
+  navigator?: Record<string, unknown>;
+  /** The page's EventTarget constructor; pass `undefined` for a page without one. */
+  EventTarget?: unknown;
+}
+
 /** Run the injected script in an isolated fake page, as WKUserScript would. */
-function loadShellPage(): ShellPage {
+function loadShellPage(options: ShellPageOptions = {}): ShellPage {
   const posted: Posted[] = [];
   const dispatched: ShellPage["dispatched"] = [];
   const listeners: Record<string, Array<() => void>> = {};
   const fakeWindow: Record<string, unknown> = {
+    navigator: options.navigator ?? {},
+    __ryosInitialBattery: options.initialBattery,
     webkit: {
       messageHandlers: {
         ryosBridge: { postMessage: (message: Posted) => posted.push(message) },
@@ -119,10 +134,11 @@ function loadShellPage(): ShellPage {
     timers.push(ms);
     return setTimeout(cb, ms);
   };
-  new Function("window", "document", "setTimeout", INJECTED_JS)(
+  new Function("window", "document", "setTimeout", "EventTarget", INJECTED_JS)(
     fakeWindow,
     fakeDocument,
-    recordingSetTimeout
+    recordingSetTimeout,
+    "EventTarget" in options ? options.EventTarget : EventTarget
   );
   const page = fakeWindow as ShellPage["window"];
   const replied = new Set<string>();
@@ -201,6 +217,8 @@ describe("injected bridge surface", () => {
       "onUpdateStatus",
       "openAuthSheet",
       "onAuthPopupStatus",
+      "getBattery",
+      "onBatteryChange",
     ]) {
       expect(typeof page.window.ryosDesktop[method]).toBe("function");
     }
@@ -517,5 +535,147 @@ describe("side status-bar extent", () => {
       shellWebViewSwift.indexOf('case "app-active":')
     );
     expect(bootCase).toContain("pushSideStatusBarExtent()");
+  });
+});
+
+type BatteryManagerLike = EventTarget & {
+  level: number;
+  charging: boolean;
+  chargingTime: number;
+  dischargingTime: number;
+  onlevelchange: ((event: Event) => void) | null;
+  onchargingchange: ((event: Event) => void) | null;
+};
+
+const navigatorBattery = (shell: ShellPage) =>
+  (shell.window.navigator.getBattery as () => Promise<BatteryManagerLike>)();
+
+const batteryStatus = (level: number, charging: boolean, lowPowerMode: boolean) => ({
+  level,
+  charging,
+  lowPowerMode,
+});
+
+describe("device battery", () => {
+  test("an unknown or missing battery reads as full and charging", async () => {
+    expect(await page.window.ryosDesktop.getBattery()).toEqual(batteryStatus(1, true, false));
+    const manager = await navigatorBattery(page);
+    expect(manager).toBe(await navigatorBattery(page));
+    expect(manager instanceof EventTarget).toBe(true);
+    expect([manager.level, manager.charging]).toEqual([1, true]);
+    expect([manager.chargingTime, manager.dischargingTime]).toEqual([0, Infinity]);
+  });
+
+  test("both APIs start from the document-start seed", async () => {
+    const shell = loadShellPage({
+      initialBattery: { level: 0.42, charging: false, lowPowerMode: true },
+    });
+    expect(await shell.window.ryosDesktop.getBattery()).toEqual(batteryStatus(0.42, false, true));
+    const manager = await navigatorBattery(shell);
+    expect([manager.level, manager.charging]).toEqual([0.42, false]);
+    expect([manager.chargingTime, manager.dischargingTime]).toEqual([Infinity, Infinity]);
+    expect(shell.dispatched).toEqual([]);
+  });
+
+  test("__ryosSetBattery updates both APIs and fires each change once", async () => {
+    const shell = loadShellPage({
+      initialBattery: { level: 1, charging: true, lowPowerMode: false },
+    });
+    const manager = await navigatorBattery(shell);
+    const events: string[] = [];
+    for (const type of [
+      "levelchange",
+      "chargingchange",
+      "chargingtimechange",
+      "dischargingtimechange",
+    ]) {
+      manager.addEventListener(type, () => events.push(type));
+    }
+    manager.onlevelchange = (event) => events.push(`on${event.type}`);
+    manager.onchargingchange = (event) => events.push(`on${event.type}`);
+    const seen: unknown[] = [];
+    const unsubscribe = shell.window.ryosDesktop.onBatteryChange((status: unknown) =>
+      seen.push(status)
+    ) as () => void;
+
+    const set = shell.window.__ryosSetBattery;
+    set(0.5, false, false);
+    set(0.5, false, false);
+    expect(events).toEqual([
+      "levelchange",
+      "onlevelchange",
+      "chargingchange",
+      "onchargingchange",
+      "chargingtimechange",
+    ]);
+    expect([manager.level, manager.charging, manager.chargingTime]).toEqual([0.5, false, Infinity]);
+    expect(await shell.window.ryosDesktop.getBattery()).toEqual(batteryStatus(0.5, false, false));
+
+    // Low Power Mode alone has no Battery Status API event.
+    set(0.5, false, true);
+    expect(events.length).toBe(5);
+    expect(seen).toEqual([batteryStatus(0.5, false, false), batteryStatus(0.5, false, true)]);
+    expect(shell.dispatched).toEqual(seen.map((detail) => ({ type: "ryos-battery", detail })));
+
+    unsubscribe();
+    set(0.51, false, true);
+    expect(seen.length).toBe(2);
+    expect(events.slice(5)).toEqual(["levelchange", "onlevelchange"]);
+  });
+
+  test("out-of-range and missing values fall back to the no-battery reading", async () => {
+    const shell = loadShellPage({ initialBattery: { level: 0.3, charging: false } });
+    shell.window.__ryosSetBattery(7, false, false);
+    expect(await shell.window.ryosDesktop.getBattery()).toEqual(batteryStatus(1, false, false));
+    shell.window.__ryosSetBattery("not a number");
+    expect(await shell.window.ryosDesktop.getBattery()).toEqual(batteryStatus(1, true, false));
+  });
+
+  test("a page that already has navigator.getBattery keeps its own", async () => {
+    const getBattery = () => Promise.resolve("native");
+    const nav: Record<string, unknown> = { getBattery };
+    const shell = loadShellPage({ navigator: nav });
+    expect(nav.getBattery).toBe(getBattery);
+    shell.window.__ryosSetBattery(0.3, false, false);
+    expect(await shell.window.ryosDesktop.getBattery()).toEqual(batteryStatus(0.3, false, false));
+  });
+
+  test("without EventTarget the polyfill still delivers listeners and handlers", async () => {
+    const shell = loadShellPage({ EventTarget: undefined });
+    const manager = await navigatorBattery(shell);
+    expect(manager instanceof EventTarget).toBe(false);
+    const seen: string[] = [];
+    const listener = (event: Event) => seen.push(event.type);
+    manager.addEventListener("levelchange", listener);
+    manager.addEventListener("levelchange", listener);
+    manager.onchargingchange = (event) => seen.push(`on${event.type}`);
+    shell.window.__ryosSetBattery(0.2, false, false);
+    expect(seen).toEqual(["levelchange", "onchargingchange"]);
+    manager.removeEventListener("levelchange", listener);
+    shell.window.__ryosSetBattery(0.1, false, false);
+    expect(seen).toEqual(["levelchange", "onchargingchange"]);
+  });
+
+  test("the shell seeds the battery at document start and pushes every change", () => {
+    expect(batterySwift).toContain("UIDevice.current.isBatteryMonitoringEnabled = true");
+    for (const name of [
+      "UIDevice.batteryLevelDidChangeNotification",
+      "UIDevice.batteryStateDidChangeNotification",
+      "Notification.Name.NSProcessInfoPowerStateDidChange",
+      "UIApplication.didBecomeActiveNotification",
+    ]) {
+      expect(batterySwift).toContain(name);
+    }
+    expect(batterySwift).toContain('"window.__ryosInitialBattery="');
+    expect(batterySwift).toContain("window.__ryosSetBattery && window.__ryosSetBattery(");
+    expect(shellWebViewSwift).toContain("BatteryBridgeController.shared.attach(webView)");
+    expect(swiftFunctionBody(shellWebViewSwift, "private func installPreludeAndLoad(")).toContain(
+      "BatteryBridgeController.shared.preludeScript"
+    );
+    const bootCase = shellWebViewSwift.slice(
+      shellWebViewSwift.indexOf('case "boot-finished":'),
+      shellWebViewSwift.indexOf('case "app-active":')
+    );
+    expect(bootCase).toContain("BatteryBridgeController.shared.push()");
   });
 });

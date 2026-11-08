@@ -72,6 +72,7 @@ struct ShellWebView: UIViewControllerRepresentable {
         webView.backgroundColor = UIColor(red: 0.02, green: 0.03, blue: 0.08, alpha: 1)
         context.coordinator.attach(webView)
         ShellRouter.shared.attach(webView)
+        BatteryBridgeController.shared.attach(webView)
         holder.onMeasuredGeometry = { [weak coordinator = context.coordinator] extent, camera in
             coordinator?.applyMeasuredSideStatus(extent, hasCamera: camera)
         }
@@ -280,6 +281,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         content.removeAllUserScripts()
         let prelude = "window.__ryosInitialSideStatusBar="
             + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
+            + BatteryBridgeController.shared.preludeScript
         content.addUserScript(
             WKUserScript(source: prelude, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         )
@@ -534,6 +536,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
             shell?.reportBootFinished()
             ShellRouter.shared.markPageReady()
             pushSideStatusBarExtent()
+            BatteryBridgeController.shared.push()
         case "app-active":
             ShellRouter.shared.firePendingRoom()
         default:
