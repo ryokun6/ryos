@@ -457,11 +457,13 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     /// Geolocation: the web client's navigator.geolocation asks route here.
     /// Answered from the app's Core Location permission; the first ask triggers
     /// the system when-in-use dialog (the native prompt, never a custom one).
+    /// WebKit only made this delegate public in iOS 27.
+    @available(iOS 27.0, *)
     func webView(
         _ webView: WKWebView,
-        requestGeolocationPermissionForOrigin origin: WKSecurityOrigin,
+        requestGeolocationPermissionFor origin: WKSecurityOrigin,
         initiatedByFrame frame: WKFrameInfo,
-        decisionHandler: @escaping (WKPermissionDecision) -> Void
+        decisionHandler: @escaping @MainActor (WKPermissionDecision) -> Void
     ) {
         LocationPermissionController.shared.handleWebAsk(
             origin: origin.protocol + "://" + origin.host,
