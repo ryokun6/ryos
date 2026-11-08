@@ -2950,7 +2950,7 @@
           "title": "記錄體能訓練"
         },
         "schedule": {
-          "description": "規劃每週各天的訓練重點（上半身、下半身、推、拉、腿部、核心、有氧、全身或休息），並取得相關的運動建議。可從樣板開始。",
+          "description": "規劃每週各天的訓練重點（上半身、下半身、推、拉、腿部、核心、有氧、全身或休息），並取得相關的運動建議。可從樣板開始。 將課表加入所選日期時，不會取代當天已有的運動。",
           "title": "每週排程"
         },
         "sync": {
@@ -3067,13 +3067,30 @@
         "ppl": "推 / 拉 / 腿",
         "upperLower": "上肢 / 下肢"
       },
+      "workoutTemplates": {
+        "add": "加入課表",
+        "lowerControl": "全身＋下肢控制",
+        "scapularControl": "全身＋肩胛控制",
+        "guidance": "每次重量抓RIR3–4（剩餘次數）；組間休息60–90秒；以身體動作穩定為主，再慢慢加重量。",
+        "phase": {
+          "warmup": "暖身",
+          "main": "主項"
+        },
+        "cues": {
+          "holdEachRep3s": "每下停留3秒",
+          "hold2s": "停留2秒",
+          "eachSide": "一邊"
+        }
+      },
       "title": "健身",
       "toasts": {
         "addedToDay": "已將 {{name}} 加入 {{date}}",
         "addedToWorkout": "已將 {{name}} 加入今天的體能訓練",
         "foodSaved": "已將 {{name}} 儲存至飲食記錄",
         "statsSaved": "已儲存身體數據",
-        "templateApplied": "已套用 {{name}} 計畫"
+        "templateApplied": "已套用 {{name}} 計畫",
+        "workoutTemplateAdded": "已將{{name}}加入{{date}}",
+        "workoutTemplatePresent": "{{date}}已有{{name}}"
       },
       "units": {
         "imperial": "英制 (磅, 英寸)",
@@ -3105,7 +3122,9 @@
         "reps": "次數",
         "set": "組",
         "suggested": "針對「{{focus}}」的建議",
-        "weight": "重量 ({{unit}})"
+        "weight": "重量 ({{unit}})",
+        "done": "完成",
+        "markSetDone": "標記這組完成"
       }
     },
     "infinite-mac": {

@@ -37,9 +37,23 @@ export interface ScheduleDay {
 
 export type WeeklySchedule = ScheduleDay[];
 
+export const WORKOUT_PHASES = ["warmup", "main"] as const;
+export type WorkoutPhase = (typeof WORKOUT_PHASES)[number];
+
+/** Prescription cues stored on an entry and translated in the UI. */
+export const WORKOUT_CUES = ["holdEachRep3s", "hold2s", "eachSide"] as const;
+export type WorkoutCue = (typeof WORKOUT_CUES)[number];
+
 export interface WorkoutSet {
   reps: number;
+  /** Inclusive upper bound when the prescription is a range, such as 10–12. */
+  repsMax?: number;
   weightKg: number;
+  /**
+   * `false` is a planned set from a template and does not count as logged.
+   * Omitted or `true` is a completed set. Existing history omits the field.
+   */
+  completed?: boolean;
 }
 
 export interface WorkoutEntry {
@@ -47,6 +61,10 @@ export interface WorkoutEntry {
   exerciseId: string;
   name: string;
   sets: WorkoutSet[];
+  /** Warm-up versus main, when the entry came from a workout template. */
+  phase?: WorkoutPhase;
+  /** Hold, per-side, or other prescription cue. */
+  cue?: WorkoutCue;
 }
 
 export interface Workout {
@@ -56,6 +74,11 @@ export interface Workout {
   focus: FocusArea | null;
   entries: WorkoutEntry[];
   notes: string;
+  /**
+   * The day carries the program coaching (reps in reserve, rest, stability).
+   * The sentence itself is translated; this flag only records that it applies.
+   */
+  guidance?: boolean;
   createdAt: number;
   updatedAt: number;
 }

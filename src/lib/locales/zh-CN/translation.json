@@ -2950,7 +2950,7 @@
           "title": "记录锻炼"
         },
         "schedule": {
-          "description": "规划每个工作日的重点（上肢、下肢、推、拉、腿部、核心、有氧、全身或休息），并获取相应的训练推荐。可从模板开始。",
+          "description": "规划每个工作日的重点（上肢、下肢、推、拉、腿部、核心、有氧、全身或休息），并获取相应的训练推荐。可从模板开始。 将课表加入所选日期时，不会替换当天已有的训练。",
           "title": "每周计划"
         },
         "sync": {
@@ -3067,13 +3067,30 @@
         "ppl": "推 / 拉 / 腿",
         "upperLower": "上肢 / 下肢"
       },
+      "workoutTemplates": {
+        "add": "添加课表",
+        "lowerControl": "全身＋下肢控制",
+        "scapularControl": "全身＋肩胛控制",
+        "guidance": "每次重量抓RIR3–4（剩余次数）；组间休息60–90秒；以身体动作稳定为主，再慢慢加重量。",
+        "phase": {
+          "warmup": "热身",
+          "main": "主项"
+        },
+        "cues": {
+          "holdEachRep3s": "每下停留3秒",
+          "hold2s": "停留2秒",
+          "eachSide": "每侧"
+        }
+      },
       "title": "健身",
       "toasts": {
         "addedToDay": "已将 {{name}} 添加到 {{date}}",
         "addedToWorkout": "已将 {{name}} 添加到今天的体能训练",
         "foodSaved": "已将 {{name}} 保存到饮食日志",
         "statsSaved": "身体数据已保存",
-        "templateApplied": "已应用 {{name}} 计划"
+        "templateApplied": "已应用 {{name}} 计划",
+        "workoutTemplateAdded": "已将{{name}}加入{{date}}",
+        "workoutTemplatePresent": "{{date}}已有{{name}}"
       },
       "units": {
         "imperial": "英制 (磅, 英寸)",
@@ -3105,7 +3122,9 @@
         "reps": "次数",
         "set": "组",
         "suggested": "针对{{focus}}的建议",
-        "weight": "重量 ({{unit}})"
+        "weight": "重量 ({{unit}})",
+        "done": "完成",
+        "markSetDone": "标记这组完成"
       }
     },
     "infinite-mac": {

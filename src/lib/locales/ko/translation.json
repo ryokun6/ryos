@@ -2950,7 +2950,7 @@
           "title": "운동 기록"
         },
         "schedule": {
-          "description": "각 요일의 집중 부위(상체, 하체, 밀기, 당기기, 다리, 코어, 유산소, 전신 또는 휴식)를 계획하고 그에 맞는 운동 추천을 받으십시오. 템플릿에서 시작할 수 있습니다.",
+          "description": "각 요일의 집중 부위(상체, 하체, 밀기, 당기기, 다리, 코어, 유산소, 전신 또는 휴식)를 계획하고 그에 맞는 운동 추천을 받으십시오. 템플릿에서 시작할 수 있습니다. 선택한 날에 운동 템플릿을 추가해도 이미 있는 운동은 바꾸지 않습니다.",
           "title": "주간 일정"
         },
         "sync": {
@@ -3067,13 +3067,30 @@
         "ppl": "밀기 / 당기기 / 하체",
         "upperLower": "상체 / 하체"
       },
+      "workoutTemplates": {
+        "add": "템플릿 추가",
+        "lowerControl": "전신＋하체 제어",
+        "scapularControl": "전신＋견갑 제어",
+        "guidance": "무게는 RIR 3–4(남은 횟수)로 고릅니다. 세트 사이 휴식은 60–90초입니다. 동작이 안정된 뒤에 무게를 조금씩 올립니다.",
+        "phase": {
+          "warmup": "워밍업",
+          "main": "본운동"
+        },
+        "cues": {
+          "holdEachRep3s": "반복마다 3초 정지",
+          "hold2s": "2초 정지",
+          "eachSide": "한쪽"
+        }
+      },
       "title": "피트니스",
       "toasts": {
         "addedToDay": "{{date}}에 {{name}} 추가됨",
         "addedToWorkout": "오늘의 운동에 {{name}} 추가됨",
         "foodSaved": "{{name}}을(를) 음식 기록에 저장했습니다",
         "statsSaved": "신체 통계 저장됨",
-        "templateApplied": "{{name}} 플랜이 적용되었습니다"
+        "templateApplied": "{{name}} 플랜이 적용되었습니다",
+        "workoutTemplateAdded": "{{date}}에 {{name}}을(를) 추가했습니다",
+        "workoutTemplatePresent": "{{date}}에 이미 {{name}}이(가) 있습니다"
       },
       "units": {
         "imperial": "야드파운드법 (lb, in)",
@@ -3105,7 +3122,9 @@
         "reps": "횟수",
         "set": "세트",
         "suggested": "{{focus}} 추천 운동",
-        "weight": "중량 ({{unit}})"
+        "weight": "중량 ({{unit}})",
+        "done": "완료",
+        "markSetDone": "세트 완료 표시"
       }
     },
     "infinite-mac": {

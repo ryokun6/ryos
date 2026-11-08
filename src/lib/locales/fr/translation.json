@@ -2958,7 +2958,7 @@
           "title": "Enregistrer les séances"
         },
         "schedule": {
-          "description": "Planifiez l’objectif de chaque jour de la semaine (haut du corps, bas du corps, poussée, tirage, jambes, sangle abdominale, cardio, corps complet ou repos) et obtenez des recommandations d’exercices. Commencez à partir d’un modèle.",
+          "description": "Planifiez l’objectif de chaque jour de la semaine (haut du corps, bas du corps, poussée, tirage, jambes, sangle abdominale, cardio, corps complet ou repos) et obtenez des recommandations d’exercices. Commencez à partir d’un modèle. Ajoutez un modèle de séance au jour choisi sans remplacer les exercices déjà présents.",
           "title": "Programme hebdomadaire"
         },
         "sync": {
@@ -3077,13 +3077,30 @@
         "ppl": "Pousser / Tirer / Jambes",
         "upperLower": "Haut / Bas"
       },
+      "workoutTemplates": {
+        "add": "Ajouter un modèle",
+        "lowerControl": "Corps entier + contrôle du bas du corps",
+        "scapularControl": "Corps entier + contrôle des omoplates",
+        "guidance": "Choisissez une charge qui laisse 3 à 4 répétitions en réserve. Reposez-vous 60 à 90 secondes entre les séries. Stabilisez le mouvement, puis ajoutez de la charge lentement.",
+        "phase": {
+          "warmup": "Échauffement",
+          "main": "Principal"
+        },
+        "cues": {
+          "holdEachRep3s": "Tenir chaque répétition 3 secondes",
+          "hold2s": "Tenir 2 secondes",
+          "eachSide": "Chaque côté"
+        }
+      },
       "title": "Fitness",
       "toasts": {
         "addedToDay": "{{name}} ajouté au {{date}}",
         "addedToWorkout": "{{name}} ajouté à l’entraînement d’aujourd’hui",
         "foodSaved": "Enregistré {{name}} dans votre journal alimentaire",
         "statsSaved": "Données corporelles enregistrées",
-        "templateApplied": "Programme {{name}} appliqué"
+        "templateApplied": "Programme {{name}} appliqué",
+        "workoutTemplateAdded": "{{name}} ajouté au {{date}}",
+        "workoutTemplatePresent": "{{name}} est déjà le {{date}}"
       },
       "units": {
         "imperial": "Impérial (lb, po)",
@@ -3116,7 +3133,9 @@
         "reps": "Répétitions",
         "set": "Série",
         "suggested": "Suggéré pour {{focus}}",
-        "weight": "Poids ({{unit}})"
+        "weight": "Poids ({{unit}})",
+        "done": "Terminé",
+        "markSetDone": "Marquer la série comme terminée"
       }
     },
     "infinite-mac": {

@@ -39,6 +39,7 @@ import {
   weeklyStreak,
   type ScheduleTemplateId,
 } from "../utils/schedule";
+import { AddWorkoutTemplate, WorkoutGuidance } from "./FitnessWorkoutTemplate";
 import {
   EmptyNote,
   FITNESS_CARD_CLASS,
@@ -532,20 +533,24 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
                 </p>
               ) : null}
             </div>
-            {selected.focus !== "rest" ? (
-              <Button
-                size="sm"
-                variant="default"
-                className="h-6 shrink-0 text-[11px]"
-                onClick={() => {
-                  l.setWorkoutDate(selected.date);
-                  l.setView("workouts");
-                }}
-              >
-                {t("apps.fitness.schedule.startWorkout")}
-              </Button>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <AddWorkoutTemplate l={l} date={selected.date} />
+              {selected.focus !== "rest" ? (
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="h-6 shrink-0 text-[11px]"
+                  onClick={() => {
+                    l.setWorkoutDate(selected.date);
+                    l.setView("workouts");
+                  }}
+                >
+                  {t("apps.fitness.schedule.startWorkout")}
+                </Button>
+              ) : null}
+            </div>
           </div>
+          <WorkoutGuidance l={l} />
           {selected.focus === "rest" ? (
             <EmptyNote>{t("apps.fitness.schedule.restDay")}</EmptyNote>
           ) : (

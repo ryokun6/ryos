@@ -1,28 +1,33 @@
-import { useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Trash, X } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
+import { CaretLeft, CaretRight, Check, Circle, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
 import { cn } from "@/lib/utils";
 import { exerciseImageUrl } from "@/shared/fitness";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
-import { FOCUS_AREAS, type FocusArea, type Workout, type WorkoutEntry } from "../types";
+import { FOCUS_AREAS, type FocusArea, type Workout, type WorkoutEntry, type WorkoutSet } from "../types";
 import { addDays } from "../utils/dates";
 import { DEFAULT_EXERCISE_FILTERS, exerciseQueryMatches, filterExercises } from "../utils/exerciseLibrary";
 import { formatLongDate, formatShortDate } from "../utils/format";
 import {
   estimateOneRepMax,
+  isLoggedSet,
   lastSetsFor,
   loggedExerciseIds,
   personalRecords,
   workoutVolume,
 } from "../utils/progression";
 import { focusForDate, recommendExercises } from "../utils/schedule";
+import { formatReps, parseRepsInput } from "../utils/workoutTemplates";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
+import { AddWorkoutTemplate, WorkoutGuidance } from "./FitnessWorkoutTemplate";
 import {
   EmptyNote,
   ExerciseNameLines,
   FITNESS_CHIP_CLASS,
+  FITNESS_INPUT_CLASS,
   FITNESS_MUTED_CLASS,
   NumberField,
   Section,
@@ -52,6 +57,63 @@ function ExerciseThumb({ path }: { path: string | undefined }) {
   );
 }
 
+function RepsField({
+  set,
+  label,
+  onCommit,
+}: {
+  set: WorkoutSet;
+  label: string;
+  onCommit: (next: { reps: number; repsMax?: number }) => void;
+}) {
+  const text = formatReps(set);
+  const [draft, setDraft] = useState(text);
+  useEffect(() => {
+    setDraft(text);
+  }, [text]);
+  const commit = () => {
+    const parsed = parseRepsInput(draft);
+    if (!parsed) {
+      setDraft(text);
+      return;
+    }
+    if (parsed.reps !== set.reps || parsed.repsMax !== set.repsMax) onCommit(parsed);
+    else setDraft(text);
+  };
+  return (
+    <Input
+      value={draft}
+      aria-label={label}
+      title={label}
+      inputMode="numeric"
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        }
+      }}
+      className={cn(FITNESS_INPUT_CLASS, "w-16 min-w-0")}
+    />
+  );
+}
+
+function setPatch(
+  set: WorkoutSet,
+  patch: Partial<Omit<WorkoutSet, "repsMax">> & { repsMax?: number | null }
+): WorkoutSet {
+  const next: WorkoutSet = {
+    reps: patch.reps ?? set.reps,
+    weightKg: patch.weightKg ?? set.weightKg,
+  };
+  const repsMax = patch.repsMax === undefined ? set.repsMax : patch.repsMax;
+  if (repsMax != null && repsMax > next.reps) next.repsMax = repsMax;
+  const completed = patch.completed === undefined ? set.completed : patch.completed;
+  if (completed === false) next.completed = false;
+  return next;
+}
+
 function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; entry: WorkoutEntry }) {
   const { t, units, displayName } = l;
   const names = displayName(entry.exerciseId, entry.name);
@@ -63,7 +125,13 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
 
   const addSet = () => {
     const template = entry.sets[entry.sets.length - 1] ?? previous?.[entry.sets.length] ?? previous?.[0];
-    store.addSet(workout.id, entry.id, template ?? { reps: 10, weightKg: 0 });
+    store.addSet(
+      workout.id,
+      entry.id,
+      template
+        ? setPatch(template, { completed: true })
+        : { reps: 10, weightKg: 0 }
+    );
   };
 
   return (
@@ -99,11 +167,18 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
         </>
       }
     >
+      {entry.cue ? (
+        <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
+          {t(`apps.fitness.workoutTemplates.cues.${entry.cue}`)}
+        </p>
+      ) : null}
       {previous ? (
         <p className={cn("text-[11px]", FITNESS_MUTED_CLASS)}>
           {t("apps.fitness.workouts.lastTime", {
             sets: previous
-              .map((s) => (s.weightKg > 0 ? `${s.reps}×${l.formatWeight(s.weightKg)}` : `${s.reps}`))
+              .map((s) =>
+                s.weightKg > 0 ? `${formatReps(s)}×${l.formatWeight(s.weightKg)}` : formatReps(s)
+              )
               .join(", "),
           })}
         </p>
@@ -116,36 +191,68 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
               <th className="font-normal">{t("apps.fitness.workouts.reps")}</th>
               <th className="font-normal">{t("apps.fitness.workouts.weight", { unit: l.weightUnit })}</th>
               <th className="font-normal">{t("apps.fitness.workouts.e1rm")}</th>
+              <th className="w-6 font-normal">{t("apps.fitness.workouts.done")}</th>
               <th className="w-6" />
             </tr>
           </thead>
           <tbody>
-            {entry.sets.map((set, index) => (
+            {entry.sets.map((set, index) => {
+              const logged = isLoggedSet(set);
+              return (
               <tr key={index}>
                 <td className={FITNESS_MUTED_CLASS}>{index + 1}</td>
                 <td className="py-0.5">
-                  <NumberField
+                  <RepsField
+                    set={set}
                     label={t("apps.fitness.workouts.reps")}
-                    value={set.reps}
-                    onCommit={(reps) =>
-                      store.updateSet(workout.id, entry.id, index, { ...set, reps: Math.round(reps ?? 0) })
+                    onCommit={(next) =>
+                      store.updateSet(
+                        workout.id,
+                        entry.id,
+                        index,
+                        setPatch(set, { reps: next.reps, repsMax: next.repsMax ?? null })
+                      )
                     }
                   />
                 </td>
                 <td className="py-0.5">
                   <NumberField
                     label={t("apps.fitness.workouts.weight", { unit: l.weightUnit })}
-                    value={tidy(kgToDisplay(set.weightKg, units), 2)}
+                    value={!logged && set.weightKg === 0 ? null : tidy(kgToDisplay(set.weightKg, units), 2)}
+                    placeholder="—"
                     onCommit={(value) =>
-                      store.updateSet(workout.id, entry.id, index, {
-                        ...set,
-                        weightKg: value == null ? 0 : displayToKg(value, units),
-                      })
+                      store.updateSet(
+                        workout.id,
+                        entry.id,
+                        index,
+                        setPatch(set, { weightKg: value == null ? 0 : displayToKg(value, units) })
+                      )
                     }
                   />
                 </td>
                 <td className={FITNESS_MUTED_CLASS}>
-                  {set.weightKg > 0 ? l.formatWeight(estimateOneRepMax(set.weightKg, set.reps), 0) : "—"}
+                  {logged && set.weightKg > 0
+                    ? l.formatWeight(estimateOneRepMax(set.weightKg, set.reps), 0)
+                    : "—"}
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className={cn(ICON_BUTTON_CLASS, logged && "text-emerald-600 dark:text-emerald-400")}
+                    aria-pressed={logged}
+                    aria-label={t("apps.fitness.workouts.markSetDone")}
+                    title={t("apps.fitness.workouts.markSetDone")}
+                    onClick={() =>
+                      store.updateSet(
+                        workout.id,
+                        entry.id,
+                        index,
+                        setPatch(set, { completed: !logged })
+                      )
+                    }
+                  >
+                    {logged ? <Check size={12} weight="bold" /> : <Circle size={12} />}
+                  </button>
                 </td>
                 <td>
                   <button
@@ -159,7 +266,8 @@ function EntryCard({ l, workout, entry }: { l: FitnessLogic; workout: Workout; e
                   </button>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       ) : null}
@@ -248,7 +356,7 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
   const history = useMemo(
     () =>
       [...l.workouts]
-        .filter((w) => w.entries.some((e) => e.sets.length))
+        .filter((w) => w.entries.some((e) => e.sets.some(isLoggedSet)))
         .sort((a, b) => b.date.localeCompare(a.date))
         .slice(0, 12),
     [l.workouts]
@@ -287,6 +395,7 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
             </button>
           ) : null}
           <div className="flex-1" />
+          <AddWorkoutTemplate l={l} date={workoutDate} />
           <SmallSelect
             label={t("apps.fitness.workouts.focus")}
             value={focus}
@@ -298,6 +407,8 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
             options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
           />
         </div>
+
+        {workout?.guidance ? <WorkoutGuidance l={l} /> : null}
 
         <AddExercise l={l} onAdd={add} />
 
@@ -315,7 +426,20 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
         ) : null}
 
         {workout?.entries.length ? (
-          workout.entries.map((entry) => <EntryCard key={entry.id} l={l} workout={workout} entry={entry} />)
+          workout.entries.map((entry, index) => {
+            const phase = entry.phase;
+            const showPhase = phase != null && phase !== workout.entries[index - 1]?.phase;
+            return (
+              <div key={entry.id} className="flex flex-col gap-2">
+                {showPhase ? (
+                  <h3 className={cn("text-[11px] font-bold", FITNESS_MUTED_CLASS)}>
+                    {t(`apps.fitness.workoutTemplates.phase.${phase}`)}
+                  </h3>
+                ) : null}
+                <EntryCard l={l} workout={workout} entry={entry} />
+              </div>
+            );
+          })
         ) : (
           <EmptyNote>{t("apps.fitness.workouts.empty")}</EmptyNote>
         )}

@@ -2958,7 +2958,7 @@
           "title": "Registrar entrenamientos"
         },
         "schedule": {
-          "description": "Planifica el enfoque de cada día de la semana (superior, inferior, empuje, tracción, piernas, core, cardio, cuerpo completo o descanso) y recibe recomendaciones de ejercicios. Empieza desde una plantilla.",
+          "description": "Planifica el enfoque de cada día de la semana (superior, inferior, empuje, tracción, piernas, core, cardio, cuerpo completo o descanso) y recibe recomendaciones de ejercicios. Empieza desde una plantilla. Añade una plantilla de sesión al día elegido sin reemplazar los ejercicios que ya están.",
           "title": "Horario semanal"
         },
         "sync": {
@@ -3077,13 +3077,30 @@
         "ppl": "Empuje / Tracción / Piernas",
         "upperLower": "Tren superior / Tren inferior"
       },
+      "workoutTemplates": {
+        "add": "Añadir plantilla",
+        "lowerControl": "Cuerpo completo + control de tren inferior",
+        "scapularControl": "Cuerpo completo + control escapular",
+        "guidance": "Elige un peso que deje 3–4 repeticiones en reserva. Descansa 60–90 segundos entre series. Estabiliza el movimiento y luego añade peso poco a poco.",
+        "phase": {
+          "warmup": "Calentamiento",
+          "main": "Principal"
+        },
+        "cues": {
+          "holdEachRep3s": "Mantén cada repetición 3 segundos",
+          "hold2s": "Mantén 2 segundos",
+          "eachSide": "Cada lado"
+        }
+      },
       "title": "Fitness",
       "toasts": {
         "addedToDay": "Añadido {{name}} al {{date}}",
         "addedToWorkout": "Añadido {{name}} al entreno de hoy",
         "foodSaved": "Se ha guardado {{name}} en el registro de comidas",
         "statsSaved": "Estadísticas corporales guardadas",
-        "templateApplied": "Se ha aplicado el plan {{name}}"
+        "templateApplied": "Se ha aplicado el plan {{name}}",
+        "workoutTemplateAdded": "Se añadió {{name}} al {{date}}",
+        "workoutTemplatePresent": "{{name}} ya está el {{date}}"
       },
       "units": {
         "imperial": "Imperial (lb, in)",
@@ -3116,7 +3133,9 @@
         "reps": "Reps",
         "set": "Serie",
         "suggested": "Sugerido para {{focus}}",
-        "weight": "Peso ({{unit}})"
+        "weight": "Peso ({{unit}})",
+        "done": "Hecho",
+        "markSetDone": "Marcar la serie como hecha"
       }
     },
     "infinite-mac": {

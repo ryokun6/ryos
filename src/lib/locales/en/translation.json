@@ -5564,7 +5564,9 @@
         "addedToDay": "Added {{name}} to {{date}}",
         "templateApplied": "Applied the {{name}} plan",
         "statsSaved": "Body stats saved",
-        "foodSaved": "Saved {{name}} to your food log"
+        "foodSaved": "Saved {{name}} to your food log",
+        "workoutTemplateAdded": "Added {{name}} to {{date}}",
+        "workoutTemplatePresent": "{{name}} is already on {{date}}"
       },
       "categories": {
         "strength": "Strength",
@@ -5690,7 +5692,9 @@
         "exerciseCount_one": "{{count}} exercise",
         "exerciseCount_other": "{{count}} exercises",
         "records": "Personal Records",
-        "noRecords": "Log weighted sets to see records."
+        "noRecords": "Log weighted sets to see records.",
+        "done": "Done",
+        "markSetDone": "Mark Set Done"
       },
       "schedule": {
         "thisWeek": "This Week",
@@ -5723,6 +5727,21 @@
         "ppl": "Push / Pull / Legs",
         "fullBody": "Full Body ×3",
         "balanced": "Balanced"
+      },
+      "workoutTemplates": {
+        "add": "Add Template",
+        "lowerControl": "Full Body + Lower-Body Control",
+        "scapularControl": "Full Body + Scapular Control",
+        "guidance": "Choose a weight with 3–4 reps in reserve. Rest 60–90 seconds between sets. Keep the movement stable, then add weight slowly.",
+        "phase": {
+          "warmup": "Warm-Up",
+          "main": "Main"
+        },
+        "cues": {
+          "holdEachRep3s": "Hold each rep for 3 seconds",
+          "hold2s": "Hold for 2 seconds",
+          "eachSide": "Each Side"
+        }
       },
       "goals": {
         "title": "Goals",
@@ -5860,7 +5879,7 @@
         },
         "schedule": {
           "title": "Weekly Schedule",
-          "description": "Plan each weekday's focus (upper, lower, push, pull, legs, core, cardio, full body, or rest) and get exercise recommendations for it. Start from a template."
+          "description": "Plan each weekday's focus (upper, lower, push, pull, legs, core, cardio, full body, or rest) and get exercise recommendations for it. Weekly plans start from a template. Add a workout template to the selected day without replacing exercises already there."
         },
         "body": {
           "title": "Body & Goals",

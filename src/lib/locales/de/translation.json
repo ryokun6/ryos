@@ -2950,7 +2950,7 @@
           "title": "Workouts protokollieren"
         },
         "schedule": {
-          "description": "Plane den Fokus für jeden Wochentag (Oberkörper, Unterkörper, Druck, Zug, Beine, Core, Cardio, Ganzkörper oder Pause) und erhalte passende Übungsempfehlungen. Beginne mit einer Vorlage.",
+          "description": "Plane den Fokus für jeden Wochentag (Oberkörper, Unterkörper, Druck, Zug, Beine, Core, Cardio, Ganzkörper oder Pause) und erhalte passende Übungsempfehlungen. Beginne mit einer Vorlage. Füge eine Trainingseinheit zum gewählten Tag hinzu, ohne vorhandene Übungen zu ersetzen.",
           "title": "Wochenplan"
         },
         "sync": {
@@ -3067,13 +3067,30 @@
         "ppl": "Push / Pull / Legs",
         "upperLower": "Oberkörper / Unterkörper"
       },
+      "workoutTemplates": {
+        "add": "Vorlage hinzufügen",
+        "lowerControl": "Ganzkörper + Unterkörperkontrolle",
+        "scapularControl": "Ganzkörper + Schulterblattkontrolle",
+        "guidance": "Wähle ein Gewicht mit 3–4 Wiederholungen in Reserve. Pause 60–90 Sekunden zwischen den Sätzen. Stabilisiere die Bewegung, dann steigere das Gewicht langsam.",
+        "phase": {
+          "warmup": "Aufwärmen",
+          "main": "Hauptteil"
+        },
+        "cues": {
+          "holdEachRep3s": "Jede Wiederholung 3 Sekunden halten",
+          "hold2s": "2 Sekunden halten",
+          "eachSide": "Pro Seite"
+        }
+      },
       "title": "Fitness",
       "toasts": {
         "addedToDay": "{{name}} zu {{date}} hinzugefügt",
         "addedToWorkout": "{{name}} zum heutigen Training hinzugefügt",
         "foodSaved": "{{name}} im Ernährungstagebuch gesichert",
         "statsSaved": "Körperdaten gesichert",
-        "templateApplied": "Plan „{{name}}“ angewendet"
+        "templateApplied": "Plan „{{name}}“ angewendet",
+        "workoutTemplateAdded": "{{name}} zu {{date}} hinzugefügt",
+        "workoutTemplatePresent": "{{name}} ist am {{date}} schon vorhanden"
       },
       "units": {
         "imperial": "Imperial (lb, Zoll)",
@@ -3105,7 +3122,9 @@
         "reps": "Wdh.",
         "set": "Satz",
         "suggested": "Vorgeschlagen für {{focus}}",
-        "weight": "Gewicht ({{unit}})"
+        "weight": "Gewicht ({{unit}})",
+        "done": "Fertig",
+        "markSetDone": "Satz als erledigt markieren"
       }
     },
     "infinite-mac": {
