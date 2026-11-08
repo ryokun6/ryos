@@ -16,6 +16,7 @@ ios/
 │   ├── DesktopBridge.swift    # JS injected at document start (window.ryosDesktop)
 │   ├── ShellViewModel.swift   # Origin, boot/splash state, notification state
 │   ├── RelayClient.swift      # APNs token -> /api/push/register, notification routing
+│   ├── BatteryBridgeController.swift  # Device battery -> window.__ryosSetBattery
 │   └── MediaHapticsController.swift  # Haptics
 ├── ryOSTests/             # XCTest target
 ├── scripts/make-icon.swift    # Flattens AppIconSource.png onto black for the asset catalog
@@ -72,6 +73,14 @@ Later launches go straight to the web view and use the WebKit cache.
     notification.
   - `window.__ryosEmitAuthPopupStatus(status)` reports popup sheet outcomes to
     `onAuthPopupStatus` subscribers.
+  - `window.__ryosSetBattery(level, charging, lowPowerMode)` keeps the device
+    battery current (seeded at document start as `window.__ryosInitialBattery`,
+    pushed on change, after boot, and on foreground). The page reads it with
+    `ryosDesktop.getBattery()` / `ryosDesktop.onBatteryChange(cb)` or the
+    `ryos-battery` window event, and the bridge backs a `navigator.getBattery()`
+    polyfill with it (only when the page has none), so Battery Status API code
+    works unchanged. An unknown battery (the simulator) reads as level 1,
+    charging.
 - **Lifecycle messages:** `boot-finished` hides the splash. `app-active` flushes
   a pending notification-tap room.
 - **Push:** after sign-in, the shell requests notification permission and sends
