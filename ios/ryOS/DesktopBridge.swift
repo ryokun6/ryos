@@ -51,7 +51,27 @@ enum DesktopBridge {
         onFullscreenChange: function () { return function () {}; },
         toggleMaximize: function () { return invoke('toggleMaximize'); },
         openFile: function (o) { return invoke('openFile', { options: o }); },
-        saveFile: function (o) { return invoke('saveFile', { options: o }); },
+        // A script message can't carry an ArrayBuffer, so the bytes go as
+        // base64, encoded in 3-byte-aligned chunks. The user is picking a
+        // location in the save sheet, so the reply can take minutes.
+        saveFile: function (o) {
+          var d = o && o.data;
+          var bytes = !d ? new Uint8Array(0)
+            : ArrayBuffer.isView(d) ? new Uint8Array(d.buffer, d.byteOffset, d.byteLength)
+            : new Uint8Array(d);
+          var parts = [];
+          for (var i = 0; i < bytes.length; i += 24576) {
+            parts.push(btoa(String.fromCharCode.apply(null, bytes.subarray(i, i + 24576))));
+          }
+          return invoke('saveFile', {
+            options: {
+              title: (o && o.title) || '',
+              defaultPath: (o && o.defaultPath) || '',
+              filters: (o && o.filters) || []
+            },
+            data: parts.join('')
+          }, 600000);
+        },
         getVersion: function () { return invoke('getVersion'); },
         canShowNotifications: function () { return invoke('canShowNotifications'); },
         shouldShowNativeNotification: function () { return invoke('shouldShowNativeNotification'); },

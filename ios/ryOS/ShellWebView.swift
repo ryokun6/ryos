@@ -238,7 +238,7 @@ final class ShellWebHolderController: UIViewController {
     }
 }
 
-final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, ASWebAuthenticationPresentationContextProviding {
+final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKDownloadDelegate, ASWebAuthenticationPresentationContextProviding {
     private weak var shell: ShellViewModel?
     private weak var webView: WKWebView?
     private let pathMonitor = NWPathMonitor()
@@ -251,6 +251,16 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     /// Held until the page's file picker finishes. WebKit waits on the
     /// completion handler, so dropping this early cancels the pick.
     private var fileOpenPanel: FileOpenPanel?
+    /// The save sheet on screen. One at a time: later exports wait for it.
+    private var fileExportPanel: FileExportPanel?
+    /// Page downloads still writing to their staged file, and the ones done
+    /// and waiting for the save sheet.
+    private var downloadFiles: [ObjectIdentifier: URL] = [:]
+    private var finishedDownloads: [URL] = []
+    /// A cancelled `saveFile` sheet sends the page to its blob-link fallback
+    /// for the same file. That download is dropped so the sheet the user just
+    /// closed doesn't come straight back.
+    private var declinedSaveUntil: Date?
 
     init(shell: ShellViewModel) {
         self.shell = shell
@@ -492,6 +502,140 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         }
     }
 
+    // MARK: Save sheet
+
+    /// Bridge `saveFile`: an app's export goes to the system save sheet
+    /// (Save to Files), the sheet Safari shows for a download. Replies when
+    /// the sheet closes. A canceled reply sends the page to its blob-link
+    /// fallback, which the download path below also brings to the sheet.
+    private func runSaveSheet(id: String, args: [String: Any]?) {
+        let options = args?["options"] as? [String: Any]
+        let name = FileExportPanel.fileName(
+            options?["defaultPath"] as? String,
+            filters: options?["filters"] as? [[String: Any]]
+        )
+        guard fileExportPanel == nil,
+              let webView,
+              let data = (args?["data"] as? String).flatMap({ Data(base64Encoded: $0) }),
+              let file = FileExportPanel.stage(data, named: name) else {
+            saveLog("save sheet skipped for \(name); the page falls back to a download")
+            reply(id, ["canceled": true])
+            return
+        }
+        presentExport([file], from: webView) { [weak self] outcome in
+            guard let self else { return }
+            switch outcome {
+            case .saved(let savedName):
+                self.reply(id, ["canceled": false, "filePath": savedName])
+            case .cancelled:
+                self.declinedSaveUntil = Date().addingTimeInterval(3)
+                self.reply(id, ["canceled": true])
+            case .unavailable:
+                self.reply(id, ["canceled": true])
+            }
+        }
+    }
+
+    private func presentExport(
+        _ files: [URL],
+        from webView: WKWebView,
+        completion: @escaping (FileExportPanel.Outcome) -> Void
+    ) {
+        let panel = FileExportPanel(files: files)
+        fileExportPanel = panel
+        saveLog("save sheet presenting \(files.map(\.lastPathComponent))")
+        panel.present(from: webView) { [weak self] outcome in
+            saveLog("save sheet closed: \(outcome)")
+            if self?.fileExportPanel === panel {
+                self?.fileExportPanel = nil
+            }
+            completion(outcome)
+            self?.presentFinishedDownloads()
+        }
+    }
+
+    /// `<a download>` links (blob:, data:, https) and attachment responses.
+    /// WebKit makes them downloads but drops them unless a delegate picks a
+    /// destination, so each one is staged and then offered in the save sheet.
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+    ) {
+        decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+    ) {
+        let disposition = (navigationResponse.response as? HTTPURLResponse)?
+            .value(forHTTPHeaderField: "Content-Disposition") ?? ""
+        let attachment = disposition.lowercased().hasPrefix("attachment")
+        decisionHandler(!navigationResponse.canShowMIMEType || attachment ? .download : .allow)
+    }
+
+    func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+
+    func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+        download.delegate = self
+    }
+
+    // MARK: WKDownloadDelegate
+
+    func download(
+        _ download: WKDownload,
+        decideDestinationUsing response: URLResponse,
+        suggestedFilename: String,
+        completionHandler: @escaping @MainActor @Sendable (URL?) -> Void
+    ) {
+        if download.originalRequest?.url?.scheme == "blob",
+           let until = declinedSaveUntil, until > Date() {
+            declinedSaveUntil = nil
+            saveLog("download dropped: its save sheet was just cancelled")
+            completionHandler(nil)
+            return
+        }
+        let name = FileExportPanel.fileName(suggestedFilename, filters: nil)
+        guard let file = FileExportPanel.stagingURL(named: name) else {
+            saveLog("download dropped: no staging folder for \(name)")
+            completionHandler(nil)
+            return
+        }
+        downloadFiles[ObjectIdentifier(download)] = file
+        completionHandler(file)
+    }
+
+    func downloadDidFinish(_ download: WKDownload) {
+        guard let file = downloadFiles.removeValue(forKey: ObjectIdentifier(download)) else { return }
+        finishedDownloads.append(file)
+        // An app exporting several files clicks several links in a row; a
+        // short wait lets them share one sheet.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            self?.presentFinishedDownloads()
+        }
+    }
+
+    func download(_ download: WKDownload, didFailWithError error: any Error, resumeData: Data?) {
+        if let file = downloadFiles.removeValue(forKey: ObjectIdentifier(download)) {
+            FileExportPanel.discard(file)
+        }
+        saveLog("download failed: \(error.localizedDescription)")
+        presentFinishedDownloads()
+    }
+
+    private func presentFinishedDownloads() {
+        guard downloadFiles.isEmpty, fileExportPanel == nil, !finishedDownloads.isEmpty,
+              let webView else { return }
+        let files = finishedDownloads
+        finishedDownloads = []
+        presentExport(files, from: webView) { _ in }
+    }
+
     // MARK: WKNavigationDelegate
 
     /// Resources fully loaded but the web client never reports boot-finished
@@ -582,8 +726,10 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         // The page treats a missing dialog as "use the file input instead".
         // Null is not that result: the page reads `.canceled` and throws,
         // so the input never opens. A cancel lets it fall through.
-        case "openFile", "saveFile":
+        case "openFile":
             reply(id, ["canceled": true])
+        case "saveFile":
+            runSaveSheet(id: id, args: args as? [String: Any])
         case "openAuthSheet":
             runAuthSheet(id: id, args: args as? [String: Any])
         case "playHaptic":
@@ -1026,7 +1172,7 @@ final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewContr
         presenter.present(controller, animated: true)
     }
 
-    private static func frontmost(for webView: WKWebView) -> UIViewController? {
+    static func frontmost(for webView: WKWebView) -> UIViewController? {
         var responder: UIResponder? = webView
         var found: UIViewController?
         while let next = responder?.next {
@@ -1200,6 +1346,120 @@ final class FileOpenPanel: NSObject, UIDocumentPickerDelegate, PHPickerViewContr
         }
         return dest
     }
+}
+
+/// The system save sheet (Save to Files) for files the page exports. Each
+/// file is staged in a temporary folder of its own so it keeps the page's
+/// name, handed to the picker as a copy, and removed when the picker closes.
+/// `finish` reports the outcome exactly once.
+final class FileExportPanel: NSObject, UIDocumentPickerDelegate {
+    enum Outcome {
+        case saved(String)
+        case cancelled
+        /// The sheet never came up.
+        case unavailable
+    }
+
+    private let files: [URL]
+    private var completion: ((Outcome) -> Void)?
+    /// Held until the picker reports back; its presenter lets go of it as
+    /// soon as it dismisses.
+    private var picker: UIDocumentPickerViewController?
+
+    init(files: [URL]) {
+        self.files = files
+        super.init()
+    }
+
+    func present(from webView: WKWebView, completion: @escaping (Outcome) -> Void) {
+        self.completion = completion
+        guard let presenter = FileOpenPanel.frontmost(for: webView) else {
+            finish(.unavailable)
+            return
+        }
+        let picker = UIDocumentPickerViewController(forExporting: files, asCopy: true)
+        picker.delegate = self
+        picker.modalPresentationStyle = .formSheet
+        self.picker = picker
+        presenter.present(picker, animated: true)
+        // UIKit drops a refused present() without calling back. The picker
+        // connects to its remote view first (a few seconds, the first time),
+        // so give it time before deciding it never came up.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard let self, self.picker?.viewIfLoaded?.window == nil else { return }
+            self.finish(.unavailable)
+        }
+    }
+
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        // After "Keep Both" the picker hands back the folder, not the file.
+        let picked = urls.first.flatMap { $0.hasDirectoryPath ? nil : $0.lastPathComponent }
+        finish(.saved(picked ?? files.first?.lastPathComponent ?? ""))
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        finish(.cancelled)
+    }
+
+    private func finish(_ outcome: Outcome) {
+        guard let handler = completion else { return }
+        completion = nil
+        picker = nil
+        files.forEach(Self.discard)
+        handler(outcome)
+    }
+
+    /// The last component of the page's path, safe as a file name. A name
+    /// without an extension takes the first one the page's filters list.
+    static func fileName(_ path: String?, filters: [[String: Any]]?) -> String {
+        let unsafe = CharacterSet(charactersIn: "/:").union(.controlCharacters)
+        var name = ((path ?? "") as NSString).lastPathComponent
+            .components(separatedBy: unsafe).joined(separator: "-")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        while name.hasPrefix(".") { name.removeFirst() }
+        if name.isEmpty { name = "Untitled" }
+        if (name as NSString).pathExtension.isEmpty,
+           let ext = (filters?.first?["extensions"] as? [String])?.first,
+           !ext.isEmpty, ext != "*" {
+            name += "." + ext
+        }
+        return name
+    }
+
+    /// A path in a fresh temporary folder. Nothing exists there yet, which
+    /// WKDownload requires of its destination.
+    static func stagingURL(named name: String) -> URL? {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("export-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        } catch {
+            return nil
+        }
+        return folder.appendingPathComponent(name)
+    }
+
+    static func stage(_ data: Data, named name: String) -> URL? {
+        guard let url = stagingURL(named: name) else { return nil }
+        do {
+            try data.write(to: url)
+        } catch {
+            discard(url)
+            return nil
+        }
+        return url
+    }
+
+    /// Removes a staged file with its folder.
+    static func discard(_ file: URL) {
+        try? FileManager.default.removeItem(at: file.deletingLastPathComponent())
+    }
+}
+
+/// Save-sheet and download trail; filter the device console on "[save]".
+func saveLog(_ message: String) {
+    NSLog("ryOS: [save] %@", message)
 }
 
 /// Photos load off the main thread. The bucket is the only thing that crosses.
