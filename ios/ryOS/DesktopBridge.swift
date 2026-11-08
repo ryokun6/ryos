@@ -45,6 +45,31 @@ enum DesktopBridge {
         }
         return function () { callbacks.delete(key); };
       }
+      // Device battery: seeded at document start (__ryosInitialBattery) and
+      // kept current by the shell through __ryosSetBattery below. A missing
+      // or unknown battery reads as level 1, charging — the Battery Status
+      // API's values for a device without one.
+      function normalizeBattery(level, charging, lowPowerMode) {
+        level = Number(level);
+        if (level !== level) level = 1;
+        return {
+          level: Math.min(1, Math.max(0, level)),
+          charging: charging === undefined ? true : !!charging,
+          lowPowerMode: !!lowPowerMode
+        };
+      }
+      var batterySeed = window.__ryosInitialBattery || {};
+      var battery = normalizeBattery(
+        batterySeed.level === undefined ? 1 : batterySeed.level,
+        batterySeed.charging,
+        batterySeed.lowPowerMode
+      );
+      function batterySnapshot() {
+        return { level: battery.level, charging: battery.charging, lowPowerMode: battery.lowPowerMode };
+      }
+      function batteryChargingTime() {
+        return battery.charging && battery.level >= 1 ? 0 : Infinity;
+      }
       window.ryosDesktop = {
         platform: 'ios',
         isFullscreen: function () { return invoke('isFullscreen'); },
@@ -84,6 +109,10 @@ enum DesktopBridge {
         setStatusBarTone: function (tone) {
           return invoke('setStatusBarTone', { tone: tone === 'dark' ? 'dark' : 'light' });
         },
+        // {level 0..1, charging, lowPowerMode}; changes also fire a
+        // `ryos-battery` CustomEvent (detail = the same object).
+        getBattery: function () { return Promise.resolve(batterySnapshot()); },
+        onBatteryChange: function (cb) { return register('batteryChange', cb); },
         // Vertical status-bar cluster extent inside the trailing side bar, in
         // CSS px, and whether the camera dot is part of the cluster: 0/false
         // wherever a vertical bar doesn't exist; on the iPhone Duo poses the
@@ -112,6 +141,94 @@ enum DesktopBridge {
           window.dispatchEvent(new CustomEvent('ryos-status-bar-extent', {
             detail: { extent: v, hasCamera: cam }
           }));
+        } catch (e) {}
+      };
+      // WKWebView has no navigator.getBattery; back one with the shell's
+      // values so the web client's Battery Status API code works unchanged.
+      // A page that already has one keeps it.
+      var batteryManager = null;
+      function makeBatteryManager() {
+        var manager = null;
+        try { manager = new EventTarget(); } catch (e) {}
+        if (!manager) {
+          var listeners = [];
+          manager = {
+            addEventListener: function (type, fn) {
+              if (!fn) return;
+              for (var i = 0; i < listeners.length; i++) {
+                if (listeners[i].type === type && listeners[i].fn === fn) return;
+              }
+              listeners.push({ type: type, fn: fn });
+            },
+            removeEventListener: function (type, fn) {
+              listeners = listeners.filter(function (l) { return !(l.type === type && l.fn === fn); });
+            },
+            dispatchEvent: function (event) {
+              listeners.slice().forEach(function (l) {
+                if (l.type !== event.type) return;
+                try {
+                  if (typeof l.fn === 'function') l.fn.call(manager, event);
+                  else if (typeof l.fn.handleEvent === 'function') l.fn.handleEvent(event);
+                } catch (e) {}
+              });
+              return true;
+            }
+          };
+        }
+        var getters = {
+          level: function () { return battery.level; },
+          charging: function () { return battery.charging; },
+          chargingTime: batteryChargingTime,
+          dischargingTime: function () { return Infinity; }
+        };
+        Object.keys(getters).forEach(function (key) {
+          Object.defineProperty(manager, key, { enumerable: true, get: getters[key] });
+        });
+        manager.onlevelchange = null;
+        manager.onchargingchange = null;
+        manager.onchargingtimechange = null;
+        manager.ondischargingtimechange = null;
+        return manager;
+      }
+      function fireBatteryEvent(type) {
+        if (!batteryManager) return;
+        var event;
+        try { event = new Event(type); } catch (e) { event = { type: type, target: batteryManager }; }
+        try { batteryManager.dispatchEvent(event); } catch (e) {}
+        var handler = batteryManager['on' + type];
+        if (typeof handler === 'function') {
+          try { handler.call(batteryManager, event); } catch (e) {}
+        }
+      }
+      var nav = window.navigator;
+      if (nav && !('getBattery' in nav)) {
+        try {
+          var manager = makeBatteryManager();
+          Object.defineProperty(nav, 'getBattery', {
+            configurable: true,
+            writable: true,
+            value: function getBattery() { return Promise.resolve(manager); }
+          });
+          batteryManager = manager;
+        } catch (e) {}
+      }
+      window.__ryosSetBattery = function (level, charging, lowPowerMode) {
+        var next = normalizeBattery(level, charging, lowPowerMode);
+        var prev = battery;
+        if (next.level === prev.level && next.charging === prev.charging &&
+            next.lowPowerMode === prev.lowPowerMode) return;
+        var prevChargingTime = batteryChargingTime();
+        battery = next;
+        if (next.level !== prev.level) fireBatteryEvent('levelchange');
+        if (next.charging !== prev.charging) fireBatteryEvent('chargingchange');
+        if (batteryChargingTime() !== prevChargingTime) fireBatteryEvent('chargingtimechange');
+        callbacks.forEach(function (entry) {
+          if (entry.name === 'batteryChange') {
+            try { entry.cb(batterySnapshot()); } catch (e) {}
+          }
+        });
+        try {
+          window.dispatchEvent(new CustomEvent('ryos-battery', { detail: batterySnapshot() }));
         } catch (e) {}
       };
       window.__ryosEmitOpenRoom = function (roomId) {

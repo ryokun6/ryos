@@ -232,6 +232,26 @@ export interface RyosDesktopApi {
   onAuthPopupStatus?: (
     callback: (status: RyosAuthPopupStatus) => void
   ) => () => void;
+  /**
+   * iOS shell: device battery. The shell also backs `navigator.getBattery()`
+   * with it when the page has none (WKWebView). Changes fire a
+   * `ryos-battery` window event (detail = the same object).
+   */
+  getBattery?: () => Promise<RyosBatteryStatus>;
+  /** iOS shell: subscribe to battery changes. Returns an unsubscribe fn. */
+  onBatteryChange?: (callback: (status: RyosBatteryStatus) => void) => () => void;
+}
+
+/**
+ * iOS shell device battery. An unknown battery (the simulator) reads as
+ * level 1, charging — the Battery Status API's no-battery values.
+ */
+export interface RyosBatteryStatus {
+  /** 0..1 */
+  level: number;
+  charging: boolean;
+  /** iOS Low Power Mode. */
+  lowPowerMode: boolean;
 }
 
 /** Detail of the iOS shell's `ryos-status-bar-extent` window event. */
