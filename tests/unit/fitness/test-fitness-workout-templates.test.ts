@@ -286,7 +286,10 @@ describe("applying a workout template to a day", () => {
 
 describe("workout template copy", () => {
   test("English labels use title case and Traditional Chinese uses the source names", () => {
+    expect(en.apps.fitness.schedule.applyTemplate).toBe("Apply Template");
+    expect(zhTW.apps.fitness.schedule.applyTemplate).toBe("加入課表");
     expect(en.apps.fitness.workoutTemplates.add).toBe("Add Template");
+    expect(zhTW.apps.fitness.workoutTemplates.add).toBe("加入課表");
     expect(en.apps.fitness.workoutTemplates.lowerControl).toBe("Full Body + Lower-Body Control");
     expect(en.apps.fitness.workoutTemplates.scapularControl).toBe("Full Body + Scapular Control");
     expect(en.apps.fitness.workoutTemplates.phase.warmup).toBe("Warm-Up");

@@ -3037,7 +3037,7 @@
       },
       "schedule": {
         "addToDay": "加入體能訓練",
-        "applyTemplate": "套用樣板",
+        "applyTemplate": "加入課表",
         "cardioHint": "目標為 20–40 分鐘的穩定心肺訓練或間歇訓練。",
         "dayFocus": "{{day}} 重點",
         "done": "完成",

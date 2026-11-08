@@ -39,7 +39,7 @@ import {
   weeklyStreak,
   type ScheduleTemplateId,
 } from "../utils/schedule";
-import { AddWorkoutTemplate, WorkoutGuidance } from "./FitnessWorkoutTemplate";
+import { AddWorkoutTemplate } from "./FitnessWorkoutTemplate";
 import {
   EmptyNote,
   FITNESS_CARD_CLASS,
@@ -550,7 +550,6 @@ export function FitnessScheduleView({ l, isMobileLayout }: { l: FitnessLogic; is
               ) : null}
             </div>
           </div>
-          <WorkoutGuidance l={l} />
           {selected.focus === "rest" ? (
             <EmptyNote>{t("apps.fitness.schedule.restDay")}</EmptyNote>
           ) : (

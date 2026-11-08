@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CaretLeft, CaretRight, Check, Circle, Trash, X } from "@phosphor-icons/react";
+import { Barbell, CaretLeft, CaretRight, Check, Circle, Trash, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -22,7 +22,7 @@ import {
 import { focusForDate, recommendExercises } from "../utils/schedule";
 import { formatReps, parseRepsInput } from "../utils/workoutTemplates";
 import { displayToKg, kgToDisplay, tidy } from "../utils/units";
-import { AddWorkoutTemplate, WorkoutGuidance } from "./FitnessWorkoutTemplate";
+import { AddWorkoutTemplate } from "./FitnessWorkoutTemplate";
 import {
   EmptyNote,
   ExerciseNameLines,
@@ -41,8 +41,18 @@ const ICON_BUTTON_CLASS =
 
 function ExerciseThumb({ path }: { path: string | undefined }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+  }, [path]);
   if (!path || failed) {
-    return <div className="size-6 shrink-0 rounded bg-black/5 dark:bg-white/10" aria-hidden />;
+    return (
+      <span
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded bg-black/5 text-black/45 dark:bg-white/10 dark:text-white/50"
+        aria-hidden
+      >
+        <Barbell size={14} />
+      </span>
+    );
   }
   return (
     <img
@@ -407,8 +417,6 @@ export function FitnessWorkoutsView({ l }: { l: FitnessLogic; isMobileLayout: bo
             options={FOCUS_AREAS.map((f) => ({ value: f, label: t(`apps.fitness.focus.${f}`) }))}
           />
         </div>
-
-        {workout?.guidance ? <WorkoutGuidance l={l} /> : null}
 
         <AddExercise l={l} onAdd={add} />
 

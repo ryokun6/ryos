@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { useFitnessStore } from "@/stores/useFitnessStore";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import { formatShortDate } from "../utils/format";
 import { WORKOUT_TEMPLATE_IDS, type WorkoutTemplateId } from "../utils/workoutTemplates";
-import { FITNESS_MUTED_CLASS, SmallSelect } from "./FitnessUi";
+import { SmallSelect } from "./FitnessUi";
 
 /** One click appends a full session template to `date` without replacing entries already there. */
 export function AddWorkoutTemplate({ l, date }: { l: FitnessLogic; date: string }) {
@@ -35,13 +34,5 @@ export function AddWorkoutTemplate({ l, date }: { l: FitnessLogic; date: string 
         label: t(`apps.fitness.workoutTemplates.${id}`),
       }))}
     />
-  );
-}
-
-export function WorkoutGuidance({ l }: { l: FitnessLogic }) {
-  return (
-    <p className={cn("text-[11px] leading-snug", FITNESS_MUTED_CLASS)}>
-      {l.t("apps.fitness.workoutTemplates.guidance")}
-    </p>
   );
 }
