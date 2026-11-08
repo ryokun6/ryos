@@ -2759,7 +2759,9 @@
     "fitness": {
       "attribution": {
         "license": "(公有领域，Unlicense)。",
-        "prefix": "练习数据和图像来自"
+        "prefix": "练习数据和图像来自",
+        "image": "图片：{{author}}（{{license}}）。",
+        "source": "来源"
       },
       "body": {
         "bodyFatPct": "体脂率 (%)",

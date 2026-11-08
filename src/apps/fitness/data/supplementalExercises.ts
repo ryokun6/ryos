@@ -40,7 +40,7 @@ export const SUPPLEMENTAL_EXERCISES: readonly FitnessExercise[] = [
       "Stop when your body forms a straight line from your shoulders to your knees. Don't overarch your lower back.",
       "Pause and squeeze your glutes, then lower your hips with control.",
     ],
-    images: [],
+    images: ["Bodyweight_Glute_Bridge/0.jpg"],
   },
   {
     id: "Machine_Hip_Thrust",
@@ -94,7 +94,7 @@ export const SUPPLEMENTAL_EXERCISES: readonly FitnessExercise[] = [
       "Rotate that elbow down toward the opposite arm, then open your chest and rotate the elbow toward the ceiling.",
       "Move from your upper back and keep your hips quiet. Repeat, then switch sides.",
     ],
-    images: [],
+    images: ["Quadruped_Thoracic_Rotation/0.jpg"],
   },
   {
     id: "Dumbbell_Romanian_Deadlift",

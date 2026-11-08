@@ -2763,7 +2763,9 @@
     "fitness": {
       "attribution": {
         "license": "(domínio público, Unlicense).",
-        "prefix": "Dados de exercícios e imagens de"
+        "prefix": "Dados de exercícios e imagens de",
+        "image": "Imagem de {{author}} ({{license}}).",
+        "source": "Fonte"
       },
       "body": {
         "bodyFatPct": "Gordura Corporal (%)",

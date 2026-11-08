@@ -2763,7 +2763,9 @@
     "fitness": {
       "attribution": {
         "license": "(dominio pubblico, Unlicense).",
-        "prefix": "Dati degli esercizi e immagini da"
+        "prefix": "Dati degli esercizi e immagini da",
+        "image": "Immagine di {{author}} ({{license}}).",
+        "source": "Fonte"
       },
       "body": {
         "bodyFatPct": "Massa grassa (%)",

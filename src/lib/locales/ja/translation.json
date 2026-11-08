@@ -2759,7 +2759,9 @@
     "fitness": {
       "attribution": {
         "license": "(パブリックドメイン、Unlicense)。",
-        "prefix": "エクササイズデータおよび画像の提供元："
+        "prefix": "エクササイズデータおよび画像の提供元：",
+        "image": "画像：{{author}}（{{license}}）。",
+        "source": "出典"
       },
       "body": {
         "bodyFatPct": "体脂肪率 (%)",

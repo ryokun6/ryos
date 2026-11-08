@@ -5662,7 +5662,9 @@
       },
       "attribution": {
         "prefix": "Exercise data and images from",
-        "license": "(public domain, Unlicense)."
+        "license": "(public domain, Unlicense).",
+        "image": "Image by {{author}} ({{license}}).",
+        "source": "Source"
       },
       "filters": {
         "all": "All",

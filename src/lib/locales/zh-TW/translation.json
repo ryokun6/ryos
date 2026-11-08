@@ -2759,7 +2759,9 @@
     "fitness": {
       "attribution": {
         "license": "(公有領域，Unlicense)。",
-        "prefix": "運動資料與影像來自"
+        "prefix": "運動資料與影像來自",
+        "image": "圖片：{{author}}（{{license}}）。",
+        "source": "來源"
       },
       "body": {
         "bodyFatPct": "體脂 (%)",
