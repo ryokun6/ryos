@@ -13,7 +13,6 @@ import {
   FREE_EXERCISE_DB_URL,
   type FitnessExercise,
 } from "@/shared/fitness";
-import { EXERCISE_IMAGE_CREDITS } from "../data/exerciseImageCredits";
 import type { FitnessLogic } from "../hooks/useFitnessLogic";
 import {
   DEFAULT_EXERCISE_FILTERS,
@@ -269,30 +268,13 @@ function ExerciseDetail({ l, exercise }: { l: FitnessLogic; exercise: FitnessExe
         )}
       </Section>
 
-      {EXERCISE_IMAGE_CREDITS[exercise.id] ? (
-        <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
-          {t("apps.fitness.attribution.image", {
-            author: EXERCISE_IMAGE_CREDITS[exercise.id].author,
-            license: EXERCISE_IMAGE_CREDITS[exercise.id].license,
-          })}{" "}
-          <a
-            href={EXERCISE_IMAGE_CREDITS[exercise.id].sourcePage}
-            target="_blank"
-            rel="noreferrer"
-            className="text-os-link underline"
-          >
-            {t("apps.fitness.attribution.source")}
-          </a>
-        </p>
-      ) : (
-        <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
-          {t("apps.fitness.attribution.prefix")}{" "}
-          <a href={FREE_EXERCISE_DB_URL} target="_blank" rel="noreferrer" className="text-os-link underline">
-            free-exercise-db
-          </a>{" "}
-          {t("apps.fitness.attribution.license")}
-        </p>
-      )}
+      <p className={cn("text-[10px]", FITNESS_MUTED_CLASS)}>
+        {t("apps.fitness.attribution.prefix")}{" "}
+        <a href={FREE_EXERCISE_DB_URL} target="_blank" rel="noreferrer" className="text-os-link underline">
+          free-exercise-db
+        </a>{" "}
+        {t("apps.fitness.attribution.license")}
+      </p>
     </div>
   );
 }

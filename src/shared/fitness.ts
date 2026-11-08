@@ -137,25 +137,11 @@ export function normalizeExerciseRecord(value: unknown): FitnessExercise | null 
   };
 }
 
-/**
- * Supplemental movements whose photos live in `public/fitness/exercises/`
- * instead of free-exercise-db. See `public/fitness/exercises/ATTRIBUTION.md`.
- */
-export const LOCAL_EXERCISE_IMAGE_IDS = [
-  "Bodyweight_Glute_Bridge",
-  "Quadruped_Thoracic_Rotation",
-] as const;
-
 export function exerciseImageUrl(path: string): string {
-  const encoded = path
+  return `${EXERCISE_IMAGE_BASE_URL}${path
     .split("/")
     .map((segment) => encodeURIComponent(segment))
-    .join("/");
-  const id = path.split("/")[0] ?? "";
-  if ((LOCAL_EXERCISE_IMAGE_IDS as readonly string[]).includes(id)) {
-    return `/fitness/exercises/${encoded}`;
-  }
-  return `${EXERCISE_IMAGE_BASE_URL}${encoded}`;
+    .join("/")}`;
 }
 
 // ---------------------------------------------------------------------------

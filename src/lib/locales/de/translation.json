@@ -2759,9 +2759,7 @@
     "fitness": {
       "attribution": {
         "license": "(Public Domain, Unlicense).",
-        "prefix": "Übungsdaten und Bilder von",
-        "image": "Bild von {{author}} ({{license}}).",
-        "source": "Quelle"
+        "prefix": "Übungsdaten und Bilder von"
       },
       "body": {
         "bodyFatPct": "Körperfett (%)",

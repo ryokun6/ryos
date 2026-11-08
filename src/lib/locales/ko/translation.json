@@ -2759,9 +2759,7 @@
     "fitness": {
       "attribution": {
         "license": "(퍼블릭 도메인, Unlicense).",
-        "prefix": "운동 데이터 및 이미지 출처:",
-        "image": "이미지: {{author}} ({{license}}).",
-        "source": "출처"
+        "prefix": "운동 데이터 및 이미지 출처:"
       },
       "body": {
         "bodyFatPct": "체지방률(%)",
