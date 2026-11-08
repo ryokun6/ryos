@@ -503,6 +503,64 @@ describe("auth popups and the auth sheet", () => {
   });
 });
 
+describe("save sheet", () => {
+  test("saveFile posts the bytes as base64 and outlives the default bridge timeout", async () => {
+    const bytes = Uint8Array.from({ length: 70_000 }, (_, i) => i % 251);
+    const filters = [{ name: "TXT", extensions: ["txt"] }];
+    const result = page.window.ryosDesktop.saveFile({
+      title: "Export",
+      defaultPath: "notes.txt",
+      filters,
+      data: bytes.buffer,
+    }) as Promise<unknown>;
+    const [[name, args]] = invokes(page);
+    expect(name).toBe("saveFile");
+    const { options, data } = args as { options: unknown; data: string };
+    expect(options).toEqual({ title: "Export", defaultPath: "notes.txt", filters });
+    expect(new Uint8Array(Buffer.from(data, "base64"))).toEqual(bytes);
+    expect(page.timers.at(-1)).toBe(600_000);
+    page.replyAll(() => ({ canceled: false, filePath: "notes.txt" }));
+    expect(await result).toEqual({ canceled: false, filePath: "notes.txt" });
+  });
+
+  test("a typed-array view sends only its own bytes; no data sends none", () => {
+    const backing = new Uint8Array([1, 2, 3, 4, 5]);
+    void page.window.ryosDesktop.saveFile({ defaultPath: "a.bin", data: backing.subarray(1, 4) });
+    void page.window.ryosDesktop.saveFile({ defaultPath: "b.bin" });
+    const [first, second] = invokes(page).map(([, args]) => (args as { data: string }).data);
+    expect([...Buffer.from(first, "base64")]).toEqual([2, 3, 4]);
+    expect(second).toBe("");
+  });
+
+  test("the shell runs the save sheet itself; openFile still falls back to the file input", () => {
+    const handler = swiftFunctionBody(shellWebViewSwift, "private func handleInvoke(");
+    expect(handler).toMatch(/case "openFile":\s*reply\(id, \["canceled": true\]\)/);
+    expect(handler).toMatch(/case "saveFile":\s*runSaveSheet\(id: id, args:/);
+    const sheet = swiftFunctionBody(shellWebViewSwift, "private func runSaveSheet(");
+    expect(sheet).toContain('args?["data"]');
+    expect(sheet).toContain('options?["defaultPath"]');
+    expect(sheet).toContain("Data(base64Encoded:");
+    expect(sheet).toContain('reply(id, ["canceled": false, "filePath": savedName])');
+    expect(shellWebViewSwift).toContain(
+      "UIDocumentPickerViewController(forExporting: files, asCopy: true)"
+    );
+  });
+
+  test("download links and attachments are routed to the save sheet", () => {
+    const coordinator = shellWebViewSwift.slice(
+      shellWebViewSwift.indexOf("final class Coordinator"),
+      shellWebViewSwift.indexOf("enum AuthPopupPresenter")
+    );
+    expect(coordinator).toContain("WKDownloadDelegate");
+    expect(coordinator).toContain("navigationAction.shouldPerformDownload ? .download : .allow");
+    expect(coordinator).toContain("!navigationResponse.canShowMIMEType || attachment ? .download");
+    expect(coordinator.match(/didBecome download: WKDownload\) \{\s*download\.delegate = self/g))
+      .toHaveLength(2);
+    expect(coordinator).toContain("decideDestinationUsing response: URLResponse");
+    expect(coordinator).toContain("func downloadDidFinish(_ download: WKDownload)");
+  });
+});
+
 describe("side status-bar extent", () => {
   test("starts at 0 without a camera until the shell reports a side bar", () => {
     expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(0);
