@@ -144,7 +144,11 @@ final class ShellWebHolderController: UIViewController {
     private func applyTopInset() {
         guard !applying, view.bounds.width > 0 else { return }
         let already = additionalSafeAreaInsets.top
-        let systemTop = max(0, view.safeAreaInsets.top - already)
+        // The SwiftUI parent ignores the safe area, so this view's own
+        // safeAreaInsets.top is often 0 on a regular iPhone even though the
+        // window still has the real status-bar inset. Prefer the window (and
+        // the webview) so we do not mistake "unread" for "no inset".
+        let systemTop = resolvedSystemTopInset(already: already)
         // The SwiftUI read of the status-bar height can be 0 on the first
         // pass. Read it again here, on every layout, and only when the system
         // itself reported no top inset (iPad full screen). A reported inset
@@ -161,9 +165,14 @@ final class ShellWebHolderController: UIViewController {
             statusBarHeight: ShellView.currentStatusBarHeight()
         )
         // SwiftUI's reader is full-bleed and reports no insets, so its
-        // requested top can be 0 on the cover. The view's own insets are
-        // the ones the page will see.
-        let floor = max(minimumTopInset, measuredTop)
+        // requested top can be the status-bar height on a regular iPhone
+        // (the "no inset but bar still drawn" branch). When the window
+        // already exposes a real top inset, WebKit will put that into
+        // env(safe-area-inset-top) on its own — adding minimumTopInset on
+        // top stacks a second status-bar of clearance (~118pt). iPad and
+        // Duo still need the virtual path (system top stays 0 there).
+        let wanted = max(minimumTopInset, measuredTop)
+        let floor = systemTop > 1 ? 0 : wanted
         publishSideStatus(side: side)
         if view.bounds.size != lastSize {
             lastSize = view.bounds.size
@@ -174,6 +183,15 @@ final class ShellWebHolderController: UIViewController {
                 applying = false
                 return
             }
+        }
+        // Regular iPhone: do not let the corner-adaptation guide raise an
+        // extra top inset on top of the system status bar.
+        if systemTop > 1 {
+            guard abs(floor - already) > 0.5 else { return }
+            applying = true
+            additionalSafeAreaInsets.top = floor
+            applying = false
+            return
         }
         let guideTop = view.layoutGuide(for: .safeArea(cornerAdaptation: .horizontal)).layoutFrame.minY
         let extra = guideTop - view.safeAreaInsets.top
@@ -188,6 +206,20 @@ final class ShellWebHolderController: UIViewController {
         applying = true
         additionalSafeAreaInsets.top = needed
         applying = false
+    }
+
+    /// True system top inset, even when this view's own safeAreaInsets are
+    /// still 0 under a full-bleed SwiftUI parent. The window keeps the real
+    /// status-bar inset; the webview may too once laid out.
+    private func resolvedSystemTopInset(already: CGFloat) -> CGFloat {
+        var best = max(0, view.safeAreaInsets.top - already)
+        if let window = view.window {
+            best = max(best, window.safeAreaInsets.top)
+        }
+        for subview in view.subviews {
+            best = max(best, max(0, subview.safeAreaInsets.top - already))
+        }
+        return best
     }
 
     /// The holder sits in a reader that ignores the safe area, so its own
