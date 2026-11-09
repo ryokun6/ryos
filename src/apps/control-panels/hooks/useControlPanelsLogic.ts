@@ -20,6 +20,7 @@ import { settlePersistWrites } from "@/utils/indexedDBPersistStorage";
 import { useAppStoreShallow } from "@/stores/useAppStore";
 import { useAudioSettingsStoreShallow } from "@/stores/useAudioSettingsStore";
 import { useDisplaySettingsStoreShallow } from "@/stores/useDisplaySettingsStore";
+import { resolveReplaceAppleLogos } from "@/utils/replaceAppleLogos";
 import { DEFAULT_WALLPAPER_PATH } from "@/stores/useDisplaySettingsStore";
 import { setNextBootMessage, clearNextBootMessage } from "@/utils/bootMessage";
 import { clearPrefetchFlag, forceRefreshCache } from "@/utils/prefetch";
@@ -359,6 +360,8 @@ export function useControlPanelsLogic({
     setDebugMode,
     showResizers,
     setShowResizers,
+    replaceAppleLogos,
+    setReplaceAppleLogos,
     shaderEffectEnabled,
     setShaderEffectEnabled,
     setCurrentWallpaper,
@@ -367,6 +370,8 @@ export function useControlPanelsLogic({
     setDebugMode: s.setDebugMode,
     showResizers: s.showResizers,
     setShowResizers: s.setShowResizers,
+    replaceAppleLogos: s.replaceAppleLogos,
+    setReplaceAppleLogos: s.setReplaceAppleLogos,
     shaderEffectEnabled: s.shaderEffectEnabled,
     setShaderEffectEnabled: s.setShaderEffectEnabled,
     setCurrentWallpaper: s.setCurrentWallpaper,
@@ -1293,6 +1298,8 @@ export function useControlPanelsLogic({
     setDebugMode: handleSetDebugMode,
     showResizers,
     setShowResizers,
+    replaceAppleLogos: resolveReplaceAppleLogos(replaceAppleLogos),
+    setReplaceAppleLogos,
     shaderEffectEnabled,
     setShaderEffectEnabled,
     currentTheme,

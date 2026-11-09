@@ -2096,6 +2096,8 @@
       "showBootScreen": "显示启动画面",
       "showResizers": "显示窗口大小调整手柄",
       "showResizersDescription": "突出显示窗口大小调整手柄",
+      "replaceAppleLogos": "替换 Apple 标志",
+      "replaceAppleLogosDescription": "菜单栏使用主题光球；关于本机使用 ryOS 图标。在 iOS 外壳中默认开启。",
       "signUp": "注册",
       "softwareUpdateDescription": "检查是否有较新版本的 ryOS 可供使用",
       "sound": "音效",

@@ -2096,6 +2096,8 @@
       "showBootScreen": "Startbildschirm anzeigen",
       "showResizers": "Größenänderungsgriffe anzeigen",
       "showResizersDescription": "Fenster-Größenänderungsgriffe hervorheben",
+      "replaceAppleLogos": "Apple-Logos ersetzen",
+      "replaceAppleLogosDescription": "Menüleiste zeigt einen Themen-Orb; Über diesen Computer den ryOS-Icon. In der iOS-Shell standardmäßig an.",
       "signUp": "Registrieren",
       "softwareUpdateDescription": "Prüfen, ob eine neuere Version von ryOS verfügbar ist",
       "sound": "Ton",

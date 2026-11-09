@@ -3408,6 +3408,8 @@
       "debugModeDescription": "Turn on debugging options",
       "showResizers": "Show Resizers",
       "showResizersDescription": "Highlight window resize handles",
+      "replaceAppleLogos": "Replace Apple logos",
+      "replaceAppleLogosDescription": "Menu bar uses a theme orb; About uses the ryOS icon. On by default in the iOS shell.",
       "systemFont": "System Font",
       "systemFontDescription": "Override the OS UI font stack",
       "systemFontThemeDefault": "Theme",

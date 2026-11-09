@@ -2098,6 +2098,8 @@
       "showBootScreen": "Mostrar Tela de Inicialização",
       "showResizers": "Mostrar redimensionadores",
       "showResizersDescription": "Destacar alças de redimensionamento de janelas",
+      "replaceAppleLogos": "Substituir logos da Apple",
+      "replaceAppleLogosDescription": "A barra de menus usa um orbe do tema; Sobre usa o ícone do ryOS. Ligado por padrão no shell iOS.",
       "signUp": "Cadastrar-se",
       "softwareUpdateDescription": "Buscar se uma versão mais recente do ryOS está disponível",
       "sound": "Som",

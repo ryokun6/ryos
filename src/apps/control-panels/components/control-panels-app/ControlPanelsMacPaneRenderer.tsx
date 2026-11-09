@@ -149,6 +149,8 @@ export type ControlPanelsMacPaneRendererProps = {
   setDebugMode: (enabled: boolean) => void;
   showResizers: boolean;
   setShowResizers: (enabled: boolean) => void;
+  replaceAppleLogos: boolean;
+  setReplaceAppleLogos: (enabled: boolean) => void;
   shaderEffectEnabled: boolean;
   setShaderEffectEnabled: (enabled: boolean) => void;
   systemFont: import("@/themes/systemFonts").SystemFontId;
@@ -358,6 +360,8 @@ export function ControlPanelsMacPaneRenderer(
           setDebugMode={props.setDebugMode}
           showResizers={props.showResizers}
           setShowResizers={props.setShowResizers}
+          replaceAppleLogos={props.replaceAppleLogos}
+          setReplaceAppleLogos={props.setReplaceAppleLogos}
           systemFont={props.systemFont}
           setSystemFont={props.setSystemFont}
           AI_MODELS={props.AI_MODELS}

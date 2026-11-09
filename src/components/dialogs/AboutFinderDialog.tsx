@@ -21,6 +21,7 @@ import {
   getSupportedDesktopDownloadTarget,
 } from "@/utils/desktopDownload";
 import { getDocsBaseUrl } from "@/utils/runtimeConfig";
+import { useReplaceAppleLogos } from "@/hooks/useReplaceAppleLogos";
 
 interface AboutFinderDialogProps {
   isOpen: boolean;
@@ -147,6 +148,7 @@ export function AboutFinderDialog({
   }, [isMac]);
 
   const isAdmin = useIsRyoAdmin();
+  const replaceAppleLogos = useReplaceAppleLogos();
 
   // Poll the real memory metrics while the dialog is open so the live JS heap
   // usage stays current. Falls back to simulated values when unavailable.
@@ -249,11 +251,19 @@ export function AboutFinderDialog({
         <div className="space-y-3 flex-1 ">
           <div className="flex flex-row items-center space-x-2 p-2 px-4">
             <div className="about-finder-branding flex flex-col w-1/3 items-center">
-              <ThemedIcon
-                name="mac-classic.png"
-                alt="Happy Mac"
-                className="size-10 mb-1 mr-0"
-              />
+              {replaceAppleLogos ? (
+                <img
+                  src="/icons/mac-512.png"
+                  alt="ryOS"
+                  className="size-10 mb-1 mr-0 [image-rendering:auto]"
+                />
+              ) : (
+                <ThemedIcon
+                  name="mac-classic.png"
+                  alt="Happy Mac"
+                  className="size-10 mb-1 mr-0"
+                />
+              )}
               <div
                 className={cn(
                   isWindowsTheme

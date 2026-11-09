@@ -2096,6 +2096,8 @@
       "showBootScreen": "起動画面を表示",
       "showResizers": "リサイザーを表示",
       "showResizersDescription": "ウインドウのサイズ変更ハンドルを強調表示",
+      "replaceAppleLogos": "Appleロゴを置き換える",
+      "replaceAppleLogosDescription": "メニューバーはテーマのオーブ、このコンピュータについてはryOSアイコンを表示。iOSシェルではデフォルトでオン。",
       "signUp": "新規登録",
       "softwareUpdateDescription": "ryOSの新しいバージョンが利用可能か確認します",
       "sound": "サウンド",

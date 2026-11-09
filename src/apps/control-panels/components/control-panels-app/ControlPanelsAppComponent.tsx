@@ -71,6 +71,8 @@ export function ControlPanelsAppComponent({
     setDebugMode,
     showResizers,
     setShowResizers,
+    replaceAppleLogos,
+    setReplaceAppleLogos,
     shaderEffectEnabled,
     setShaderEffectEnabled,
     currentTheme,
@@ -391,6 +393,8 @@ export function ControlPanelsAppComponent({
       setDebugMode={setDebugMode}
       showResizers={showResizers}
       setShowResizers={setShowResizers}
+      replaceAppleLogos={replaceAppleLogos}
+      setReplaceAppleLogos={setReplaceAppleLogos}
       shaderEffectEnabled={shaderEffectEnabled}
       setShaderEffectEnabled={setShaderEffectEnabled}
       systemFont={systemFont}

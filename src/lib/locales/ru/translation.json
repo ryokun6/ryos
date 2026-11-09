@@ -2103,6 +2103,8 @@
       "showBootScreen": "Показывать экран загрузки",
       "showResizers": "Показать манипуляторы размера",
       "showResizersDescription": "Подсвечивать манипуляторы изменения размера окна",
+      "replaceAppleLogos": "Заменить логотипы Apple",
+      "replaceAppleLogosDescription": "В меню — тема-орб; в «Об этом компьютере» — значок ryOS. По умолчанию включено в iOS-оболочке.",
       "signUp": "Зарегистрироваться",
       "softwareUpdateDescription": "Проверить наличие новой версии ryOS",
       "sound": "Звук",
