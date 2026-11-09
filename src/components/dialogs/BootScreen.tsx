@@ -9,6 +9,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useSound, Sounds } from "@/hooks/useSound";
 import { useTranslation } from "react-i18next";
+import { useReplaceAppleLogos } from "@/hooks/useReplaceAppleLogos";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 
 interface BootScreenProps {
@@ -49,6 +50,7 @@ export function BootScreen({
   };
   const [{ progress }, dispatch] = useReducer(reducer, initialState);
   const { t } = useTranslation();
+  const replaceAppleLogos = useReplaceAppleLogos();
   const {
     currentTheme,
     isWindowsTheme,
@@ -224,7 +226,11 @@ export function BootScreen({
             >
               {/* Apple logo */}
               <img
-                src="/icons/macosx/apple.png"
+                src={
+                  replaceAppleLogos
+                    ? "/icons/macosx/apple-orb-large.png"
+                    : "/icons/macosx/apple.png"
+                }
                 alt="Apple"
                 className="boot-screen-apple-logo size-[120px] object-contain"
                 style={{ marginBottom: "-30px" }}

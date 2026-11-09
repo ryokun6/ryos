@@ -130,6 +130,10 @@ interface DisplaySettingsState {
   showResizers: boolean;
   setShowResizers: (v: boolean) => void;
 
+  // Replace Apple logos (debug sub-setting). null = auto (on in iOS shell).
+  replaceAppleLogos: boolean | null;
+  setReplaceAppleLogos: (v: boolean) => void;
+
   // HTML preview
   htmlPreviewSplit: boolean;
   setHtmlPreviewSplit: (v: boolean) => void;
@@ -359,6 +363,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
       showResizers: false,
       setShowResizers: (enabled) => set({ showResizers: enabled }),
 
+      // Replace Apple logos (null = auto: on in iOS shell, off elsewhere)
+      replaceAppleLogos: null,
+      setReplaceAppleLogos: (enabled) => set({ replaceAppleLogos: enabled }),
+
       // HTML preview
       htmlPreviewSplit: true,
       setHtmlPreviewSplit: (v) => set({ htmlPreviewSplit: v }),
@@ -381,6 +389,7 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
         screenSaverIdleTime: state.screenSaverIdleTime,
         debugMode: state.debugMode,
         showResizers: state.showResizers,
+        replaceAppleLogos: state.replaceAppleLogos,
         htmlPreviewSplit: state.htmlPreviewSplit,
       }),
       onRehydrateStorage: () => (state) => {
@@ -398,6 +407,10 @@ export const useDisplaySettingsStore = create<DisplaySettingsState>()(
           // Only the canonical boolean true enables debugging. Legacy strings
           // such as "false"/"0" and malformed values hydrate as disabled.
           debugMode: normalizeDebugMode(persisted?.debugMode),
+          replaceAppleLogos:
+            typeof persisted?.replaceAppleLogos === "boolean"
+              ? persisted.replaceAppleLogos
+              : null,
         };
         const cw = merged.currentWallpaper;
         const ws = merged.wallpaperSource;

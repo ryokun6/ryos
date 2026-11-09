@@ -402,6 +402,11 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
   },
   {
     paneId: "accounts",
+    labelKey: `${CP}.replaceAppleLogos`,
+    keywords: ["apple", "logo", "orb", "branding", "debug", "developer"],
+  },
+  {
+    paneId: "accounts",
     labelKey: `${CP}.bootScreen`,
     keywords: ["boot", "boot screen", "startup", "splash", "debug"],
   },

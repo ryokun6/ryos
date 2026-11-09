@@ -67,6 +67,8 @@ export type AccountsPaneContentProps = {
   setDebugMode: (enabled: boolean) => void;
   showResizers: boolean;
   setShowResizers: (enabled: boolean) => void;
+  replaceAppleLogos: boolean;
+  setReplaceAppleLogos: (enabled: boolean) => void;
   systemFont: SystemFontId;
   setSystemFont: (font: SystemFontId) => void;
   AI_MODELS: AIModelInfo[];
@@ -112,6 +114,8 @@ export function AccountsPaneContent({
   setDebugMode,
   showResizers,
   setShowResizers,
+  replaceAppleLogos,
+  setReplaceAppleLogos,
   systemFont,
   setSystemFont,
   AI_MODELS,
@@ -407,6 +411,16 @@ export function AccountsPaneContent({
                       <Switch
                         checked={showResizers}
                         onCheckedChange={setShowResizers}
+                        className="data-[state=checked]:bg-[#000000]"
+                      />
+                    </ControlPanelsPrefFormRow>
+                    <ControlPanelsPrefFormRow
+                      label={t("apps.control-panels.replaceAppleLogos")}
+                      description={t("apps.control-panels.replaceAppleLogosDescription")}
+                    >
+                      <Switch
+                        checked={replaceAppleLogos}
+                        onCheckedChange={setReplaceAppleLogos}
                         className="data-[state=checked]:bg-[#000000]"
                       />
                     </ControlPanelsPrefFormRow>

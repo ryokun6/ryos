@@ -2098,6 +2098,8 @@
       "showBootScreen": "Afficher l’écran de démarrage",
       "showResizers": "Afficher les poignées de redimensionnement",
       "showResizersDescription": "Mettre en évidence les poignées de redimensionnement des fenêtres",
+      "replaceAppleLogos": "Remplacer les logos Apple",
+      "replaceAppleLogosDescription": "La barre de menus utilise une orbe du thème ; À propos utilise l’icône ryOS. Activé par défaut dans le shell iOS.",
       "signUp": "S’inscrire",
       "softwareUpdateDescription": "Vérifier si une version plus récente de ryOS est disponible",
       "sound": "Son",

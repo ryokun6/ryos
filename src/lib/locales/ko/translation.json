@@ -2096,6 +2096,8 @@
       "showBootScreen": "부팅 화면 표시",
       "showResizers": "크기 조절기 표시",
       "showResizersDescription": "윈도우 크기 조절 핸들 강조 표시",
+      "replaceAppleLogos": "Apple 로고 바꾸기",
+      "replaceAppleLogosDescription": "메뉴 막대는 테마 오브, 이 컴퓨터에 관하여는 ryOS 아이콘을 사용합니다. iOS 셸에서는 기본으로 켜짐.",
       "signUp": "회원가입",
       "softwareUpdateDescription": "ryOS의 최신 버전을 사용할 수 있는지 확인합니다",
       "sound": "사운드",

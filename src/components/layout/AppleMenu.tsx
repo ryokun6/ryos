@@ -22,6 +22,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { getDesktopCapabilities } from "@/utils/platform";
 import { cn } from "@/lib/utils";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { AppleMenuMark } from "@/components/icons/AppleMenuMark";
 import { getTranslatedAppName } from "@/utils/i18n";
 
 // Helper to check if an icon is an emoji
@@ -154,18 +155,7 @@ export function AppleMenu() {
             isMacOSTheme ? "px-1" : "px-3"
           )}
         >
-          {isMacOSTheme ? (
-            // The 30px image overflows the menubar row, so it must not take
-            // taps outside the trigger (e.g. in the iOS shell's top band).
-            <ThemedIcon
-              name="apple.png"
-              alt="Apple Menu"
-              className="pointer-events-none"
-              style={{ width: 30, height: 30 }}
-            />
-          ) : (
-            "\uf8ff" // 
-          )}
+          <AppleMenuMark />
         </MenubarTrigger>
         <MenubarContent align="start" sideOffset={1} className="px-0">
           {/* About This Computer */}

@@ -2096,6 +2096,8 @@
       "showBootScreen": "顯示啟動畫面",
       "showResizers": "顯示調整大小控點",
       "showResizersDescription": "醒目提示視窗調整大小控點",
+      "replaceAppleLogos": "取代 Apple 標誌",
+      "replaceAppleLogosDescription": "選單列使用主題光球；關於本機使用 ryOS 圖示。在 iOS 外殼中預設開啟。",
       "signUp": "註冊",
       "softwareUpdateDescription": "檢查是否有較新版本的 ryOS 可供使用",
       "sound": "音效",
