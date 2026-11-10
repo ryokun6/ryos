@@ -27,6 +27,12 @@ async function* parts(
  * Reproduce H11's textStream blind spot: a fullStream that ends with an
  * error still looks like a clean finish if you only read text-delta chunks
  * (what `result.textStream` / toTextStream does).
+ *
+ * Production paths (`streamTranslation`, `streamFurigana`, and the three
+ * SSE actions in api/songs/[id].ts) iterate via textDeltasFromFullStream, so
+ * these failures throw into existing catch blocks that skip Redis saves.
+ * Do not mock.module("ai") / "@ai-sdk/openai" here — that pollutes the
+ * aggregate unit suite (openai.tools / getModelInstance).
  */
 async function* textDeltasOnly(
   stream: AsyncIterable<LyricsAiStreamPart>
