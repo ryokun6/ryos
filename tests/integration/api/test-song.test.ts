@@ -1,13 +1,17 @@
 /**
  * Tests for /api/songs endpoints (unified song API)
- * Tests: GET song, fetch-lyrics, translate, furigana, search-lyrics
+ * Tests: GET song, fetch-lyrics, translate, furigana, search-lyrics,
+ * clear-cached-data auth
  */
 
 import { describe, test, expect } from "bun:test";
 import {
   BASE_URL,
+  ensureUserAuth,
+  fetchWithAuth,
   fetchWithOrigin,
   makeRateLimitBypassHeaders,
+  uniqueTestUsername,
 } from "../../helpers/test-utils";
 
 // Test song ID (a known YouTube video)
@@ -509,6 +513,131 @@ describe("POST /api/songs/{id} action: furigana", () => {
         expect(Array.isArray(data.furigana[0])).toBe(true);
       }
     }
+  });
+});
+
+describe("POST /api/songs/{id} action: clear-cached-data", () => {
+  const password = "TestPassword123!";
+
+  /** Fresh YouTube-format 11-char id so catalog leftovers cannot collide. */
+  const freshSongId = (prefix: string) => {
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
+    let id = prefix.slice(0, 3);
+    while (id.length < 11) {
+      id += alphabet[Math.floor(Math.random() * alphabet.length)];
+    }
+    return id;
+  };
+
+  test("anonymous clear-cached-data returns 401", async () => {
+    const res = await fetchWithOrigin(`${BASE_URL}/api/songs/${TEST_SONG_ID}`, {
+      method: "POST",
+      headers: makeRateLimitBypassHeaders(),
+      body: JSON.stringify({
+        action: "clear-cached-data",
+        clearTranslations: true,
+      }),
+    });
+    expect(res.status).toBe(401);
+    const data = await res.json();
+    expect(String(data.error)).toMatch(/authentication required/i);
+  });
+
+  test("owner can clear cached data", async () => {
+    const owner = uniqueTestUsername("h12own");
+    const token = await ensureUserAuth(owner, password);
+    expect(token).toBeTruthy();
+    if (!token) return;
+
+    const ownedSongId = freshSongId("h12");
+    const createRes = await fetchWithAuth(
+      `${BASE_URL}/api/songs`,
+      owner,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          id: ownedSongId,
+          title: "H12 Clear Cache Owner Song",
+          artist: "H12 Tests",
+        }),
+      }
+    );
+    expect(createRes.status).toBe(200);
+    const created = await createRes.json();
+    expect(created.success).toBe(true);
+    expect(created.skipped).toBeFalsy();
+    expect(String(created.createdBy).toLowerCase()).toBe(owner.toLowerCase());
+
+    const clearRes = await fetchWithAuth(
+      `${BASE_URL}/api/songs/${ownedSongId}`,
+      owner,
+      token,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearTranslations: true,
+          clearFurigana: true,
+          clearSoramimi: true,
+          clearCoverColor: true,
+        }),
+      }
+    );
+    expect(clearRes.status).toBe(200);
+    const cleared = await clearRes.json();
+    expect(cleared.success).toBe(true);
+    expect(Array.isArray(cleared.cleared)).toBe(true);
+  });
+
+  test("non-owner clear-cached-data returns 403", async () => {
+    const owner = uniqueTestUsername("h12ownb");
+    const other = uniqueTestUsername("h12oth");
+    const ownerToken = await ensureUserAuth(owner, password);
+    const otherToken = await ensureUserAuth(other, password);
+    expect(ownerToken).toBeTruthy();
+    expect(otherToken).toBeTruthy();
+    if (!ownerToken || !otherToken) return;
+
+    const otherOwnedId = freshSongId("h12");
+    const createRes = await fetchWithAuth(
+      `${BASE_URL}/api/songs`,
+      owner,
+      ownerToken,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          id: otherOwnedId,
+          title: "H12 Clear Cache Forbidden Song",
+          artist: "H12 Tests",
+        }),
+      }
+    );
+    expect(createRes.status).toBe(200);
+    const created = await createRes.json();
+    expect(created.success).toBe(true);
+    expect(created.skipped).toBeFalsy();
+    expect(String(created.createdBy).toLowerCase()).toBe(owner.toLowerCase());
+
+    const clearRes = await fetchWithAuth(
+      `${BASE_URL}/api/songs/${otherOwnedId}`,
+      other,
+      otherToken,
+      {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({
+          action: "clear-cached-data",
+          clearTranslations: true,
+        }),
+      }
+    );
+    expect(clearRes.status).toBe(403);
+    const data = await clearRes.json();
+    expect(data.error).toBeTruthy();
   });
 });
 
