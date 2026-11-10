@@ -27,6 +27,7 @@ import {
 import { simplifyTelegramCitationDisplay } from "../_utils/telegram-format.js";
 import {
   collectTelegramReplyText,
+  normalizeTelegramReplyText,
   streamTelegramReply,
 } from "../_utils/telegram-streaming.js";
 import {

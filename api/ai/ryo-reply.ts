@@ -8,7 +8,8 @@ import { generateText } from "ai";
 import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
-import { roomExists, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
+import { getRoom, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
+import { getRoomWriteAccessError } from "../rooms/_helpers/_access.js";
 import { broadcastNewMessage } from "../rooms/_helpers/_pusher.js";
 import type { Message } from "../rooms/_helpers/_types.js";
 import { apiHandler } from "../_utils/api-handler.js";
@@ -77,11 +78,19 @@ export default apiHandler<RyoReplyRequest>(
       return;
     }
 
-    const exists = await roomExists(roomId, redis);
-    if (!exists) {
+    const room = await getRoom(roomId, redis);
+    if (!room) {
       logger.warn("Room not found", { roomId });
       logger.response(404, Date.now() - startTime);
       res.status(404).json({ error: "Room not found" });
+      return;
+    }
+
+    const writeAccessError = getRoomWriteAccessError(room, user);
+    if (writeAccessError) {
+      logger.warn("Forbidden Ryo reply room write", { roomId, username });
+      logger.response(writeAccessError.status, Date.now() - startTime);
+      res.status(writeAccessError.status).json({ error: writeAccessError.error });
       return;
     }
 

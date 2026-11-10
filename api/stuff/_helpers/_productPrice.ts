@@ -55,7 +55,7 @@ export function parseMoneyAmount(
   const currency = normalizeCurrencyCode(symbol, fallbackCurrency);
 
   // Prefer the first number-looking token; support 1,234.56 and 1.234,56.
-  const match = text.match(/(\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/);
+  const match = text.match(/(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?|\d+(?:[.,]\d{1,2})?)/);
   if (!match) return undefined;
 
   let numeric = match[1];
