@@ -407,19 +407,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}} Eintrag",
         "auditLogCount_other": "{{count}} Einträge",
-        "cursorAgentsCount": "{{count}} Cursor-Agent",
-        "cursorAgentsCount_plural": "{{count}} Cursor-Agenten",
+        "cursorAgentsCount_one": "{{count}} Cursor-Agent",
+        "cursorAgentsCount_other": "{{count}} Cursor-Agenten",
         "loggedInAs": "Angemeldet als {{username}}",
-        "messagesCount": "{{count}} Nachricht",
-        "messagesCount_plural": "{{count}} Nachrichten",
+        "messagesCount_one": "{{count}} Nachricht",
+        "messagesCount_other": "{{count}} Nachrichten",
         "redis": "Redis-Browser",
         "redisKeysCount_one": "{{count}} Schlüssel",
         "redisKeysCount_other": "{{count}} Schlüssel",
-        "roomsCount": "{{count}} Raum",
-        "roomsCount_plural": "{{count}} Räume",
+        "roomsCount_one": "{{count}} Raum",
+        "roomsCount_other": "{{count}} Räume",
         "songsCount": "{{count}} Lieder",
-        "usersCount": "{{count}} Benutzer",
-        "usersCount_plural": "{{count}} Benutzer"
+        "usersCount_one": "{{count}} Benutzer",
+        "usersCount_other": "{{count}} Benutzer"
       },
       "tableHeaders": {
         "added": "Hinzugefügt",

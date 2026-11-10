@@ -407,19 +407,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}}件",
         "auditLogCount_other": "{{count}}件",
-        "cursorAgentsCount": "{{count}}個のCursorエージェント",
-        "cursorAgentsCount_plural": "{{count}}個のCursorエージェント",
+        "cursorAgentsCount_one": "{{count}}個のCursorエージェント",
+        "cursorAgentsCount_other": "{{count}}個のCursorエージェント",
         "loggedInAs": "{{username}}としてログイン中",
-        "messagesCount": "メッセージ{{count}}件",
-        "messagesCount_plural": "メッセージ{{count}}件",
+        "messagesCount_one": "メッセージ{{count}}件",
+        "messagesCount_other": "メッセージ{{count}}件",
         "redis": "Redisブラウザ",
         "redisKeysCount_one": "{{count}}個のキー",
         "redisKeysCount_other": "{{count}}個のキー",
-        "roomsCount": "{{count}}部屋",
-        "roomsCount_plural": "{{count}}部屋",
+        "roomsCount_one": "{{count}}部屋",
+        "roomsCount_other": "{{count}}部屋",
         "songsCount": "{{count}}曲",
-        "usersCount": "{{count}}人",
-        "usersCount_plural": "{{count}}人"
+        "usersCount_one": "{{count}}人",
+        "usersCount_other": "{{count}}人"
       },
       "tableHeaders": {
         "added": "追加済み",

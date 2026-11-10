@@ -407,19 +407,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}} 筆項目",
         "auditLogCount_other": "{{count}} 筆項目",
-        "cursorAgentsCount": "{{count}} 個 Cursor 智能體",
-        "cursorAgentsCount_plural": "{{count}} 個 Cursor 智能體",
+        "cursorAgentsCount_one": "{{count}} 個 Cursor 智能體",
+        "cursorAgentsCount_other": "{{count}} 個 Cursor 智能體",
         "loggedInAs": "已登入為 {{username}}",
-        "messagesCount": "{{count}} 則訊息",
-        "messagesCount_plural": "{{count}} 則訊息",
+        "messagesCount_one": "{{count}} 則訊息",
+        "messagesCount_other": "{{count}} 則訊息",
         "redis": "Redis 瀏覽器",
         "redisKeysCount_one": "{{count}} 個鍵",
         "redisKeysCount_other": "{{count}} 個鍵",
-        "roomsCount": "{{count}} 個房間",
-        "roomsCount_plural": "{{count}} 個房間",
+        "roomsCount_one": "{{count}} 個房間",
+        "roomsCount_other": "{{count}} 個房間",
         "songsCount": "{{count}} 首歌曲",
-        "usersCount": "{{count}} 個使用者",
-        "usersCount_plural": "{{count}} 個使用者"
+        "usersCount_one": "{{count}} 個使用者",
+        "usersCount_other": "{{count}} 個使用者"
       },
       "tableHeaders": {
         "added": "已加入",

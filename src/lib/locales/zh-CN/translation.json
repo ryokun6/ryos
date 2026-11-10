@@ -407,19 +407,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}} 条记录",
         "auditLogCount_other": "{{count}} 条记录",
-        "cursorAgentsCount": "{{count}} 个 Cursor 智能体",
-        "cursorAgentsCount_plural": "{{count}} 个 Cursor 智能体",
+        "cursorAgentsCount_one": "{{count}} 个 Cursor 智能体",
+        "cursorAgentsCount_other": "{{count}} 个 Cursor 智能体",
         "loggedInAs": "当前登录用户：{{username}}",
-        "messagesCount": "{{count}} 条消息",
-        "messagesCount_plural": "{{count}} 条消息",
+        "messagesCount_one": "{{count}} 条消息",
+        "messagesCount_other": "{{count}} 条消息",
         "redis": "Redis 浏览器",
         "redisKeysCount_one": "{{count}} 个键",
         "redisKeysCount_other": "{{count}} 个键",
-        "roomsCount": "{{count}} 个房间",
-        "roomsCount_plural": "{{count}} 个房间",
+        "roomsCount_one": "{{count}} 个房间",
+        "roomsCount_other": "{{count}} 个房间",
         "songsCount": "{{count}} 首歌曲",
-        "usersCount": "{{count}} 个用户",
-        "usersCount_plural": "{{count}} 个用户"
+        "usersCount_one": "{{count}} 个用户",
+        "usersCount_other": "{{count}} 个用户"
       },
       "tableHeaders": {
         "added": "已添加",
