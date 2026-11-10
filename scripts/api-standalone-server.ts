@@ -1106,7 +1106,15 @@ async function bootstrap(): Promise<void> {
         });
       }
 
-      const matched = matchRoute(pathname, routes);
+      let matched: ReturnType<typeof matchRoute>;
+      try {
+        matched = matchRoute(pathname, routes);
+      } catch (error) {
+        // decodeURIComponent rejects malformed percent-encoding in a path
+        // parameter; that is a client error, not a server fault.
+        if (!(error instanceof URIError)) throw error;
+        return jsonResponse({ error: "Bad request" }, 400);
+      }
       if (!matched) {
         standaloneDebug("No API route matched request", {
           method: request.method,
