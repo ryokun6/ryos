@@ -294,6 +294,7 @@
         "noMessages": "没有消息"
       },
       "search": {
+        "clear": "清除搜索",
         "noResults": "找不到用户",
         "placeholder": "搜索用户…",
         "songsPlaceholder": "搜索歌曲…"
@@ -407,19 +408,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}} 条记录",
         "auditLogCount_other": "{{count}} 条记录",
-        "cursorAgentsCount": "{{count}} 个 Cursor 智能体",
-        "cursorAgentsCount_plural": "{{count}} 个 Cursor 智能体",
+        "cursorAgentsCount_one": "{{count}} 个 Cursor 智能体",
+        "cursorAgentsCount_other": "{{count}} 个 Cursor 智能体",
         "loggedInAs": "当前登录用户：{{username}}",
-        "messagesCount": "{{count}} 条消息",
-        "messagesCount_plural": "{{count}} 条消息",
+        "messagesCount_one": "{{count}} 条消息",
+        "messagesCount_other": "{{count}} 条消息",
         "redis": "Redis 浏览器",
         "redisKeysCount_one": "{{count}} 个键",
         "redisKeysCount_other": "{{count}} 个键",
-        "roomsCount": "{{count}} 个房间",
-        "roomsCount_plural": "{{count}} 个房间",
+        "roomsCount_one": "{{count}} 个房间",
+        "roomsCount_other": "{{count}} 个房间",
         "songsCount": "{{count}} 首歌曲",
-        "usersCount": "{{count}} 个用户",
-        "usersCount_plural": "{{count}} 个用户"
+        "usersCount_one": "{{count}} 个用户",
+        "usersCount_other": "{{count}} 个用户"
       },
       "tableHeaders": {
         "added": "已添加",
@@ -1161,6 +1162,7 @@
         "nudgeSent": "👋 *轻推已发送*",
         "pleaseLoginToDeleteRooms": "请登录以删除聊天室。",
         "pleaseLoginToSendMessages": "请登录以发送消息。",
+        "processingImage": "正在处理图像…",
         "recording": "正在录音…",
         "retry": "再试一次",
         "ryo": "@ryo",
@@ -2656,6 +2658,7 @@
         "quicktimeMovie": "QuickTime 视频",
         "svgImage": "SVG 图像",
         "unknown": "未知",
+        "volume": "宗卷",
         "webpImage": "WebP 图像"
       },
       "folders": {
@@ -3891,6 +3894,7 @@
       },
       "locateMe": "我的位置",
       "mapAriaLabel": "地图",
+      "mapToolbar": "地图控件",
       "menu": {
         "about": "关于地图",
         "help": "地图帮助",
@@ -4055,7 +4059,9 @@
         "thenStepAria": "然后 {{label}}",
         "warningNoBikes": "最近的起点站目前可能没有单车。",
         "warningNoDocks": "最近的终点站目前可能没有空车位。"
-      }
+      },
+      "zoomIn": "放大",
+      "zoomOut": "缩小"
     },
     "minesweeper": {
       "description": "经典益智游戏",
@@ -4607,7 +4613,17 @@
       },
       "name": "音效板",
       "newSoundboardDefault": "新建音效板",
-      "soundboards": "音效板"
+      "slot": {
+        "addTitle": "添加标题",
+        "editTitle": "编辑标题",
+        "record": "录音",
+        "recording": "正在录音…"
+      },
+      "soundboards": "音效板",
+      "waveform": {
+        "errorLoading": "加载波形时出错",
+        "label": "波形"
+      }
     },
     "stickies": {
       "colors": {
@@ -5919,6 +5935,8 @@
       "appRequiresInternet": "{{appName}}需要互联网连接。",
       "title": "您已离线"
     },
+    "retry": "再试一次",
+    "search": "搜索",
     "startMenu": {
       "aboutThisComputer": "关于这台电脑",
       "run": "运行…",

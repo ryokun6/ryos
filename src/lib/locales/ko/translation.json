@@ -294,6 +294,7 @@
         "noMessages": "메시지 없음"
       },
       "search": {
+        "clear": "검색 지우기",
         "noResults": "사용자를 찾을 수 없습니다.",
         "placeholder": "사용자 검색…",
         "songsPlaceholder": "곡 검색…"
@@ -324,7 +325,7 @@
       },
       "sidebar": {
         "auditLog": "감사 로그",
-        "cursorAgents": "커서 에이전트",
+        "cursorAgents": "Cursor 에이전트",
         "dashboard": "대시보드",
         "messagesCount": "{{count}}개 메시지",
         "online": "온라인",
@@ -407,19 +408,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}}개 항목",
         "auditLogCount_other": "{{count}}개 항목",
-        "cursorAgentsCount": "{{count}}개 커서 에이전트",
-        "cursorAgentsCount_plural": "{{count}}개 커서 에이전트",
+        "cursorAgentsCount_one": "{{count}}개 Cursor 에이전트",
+        "cursorAgentsCount_other": "{{count}}개 Cursor 에이전트",
         "loggedInAs": "{{username}}님으로 로그인됨",
-        "messagesCount": "{{count}}개 메시지",
-        "messagesCount_plural": "{{count}}개 메시지",
+        "messagesCount_one": "{{count}}개 메시지",
+        "messagesCount_other": "{{count}}개 메시지",
         "redis": "Redis 브라우저",
         "redisKeysCount_one": "{{count}}개 키",
         "redisKeysCount_other": "{{count}}개 키",
-        "roomsCount": "{{count}}개",
-        "roomsCount_plural": "{{count}}개",
+        "roomsCount_one": "{{count}}개",
+        "roomsCount_other": "{{count}}개",
         "songsCount": "{{count}}곡",
-        "usersCount": "{{count}}명",
-        "usersCount_plural": "{{count}}명"
+        "usersCount_one": "{{count}}명",
+        "usersCount_other": "{{count}}명"
       },
       "tableHeaders": {
         "added": "추가됨",
@@ -1161,6 +1162,7 @@
         "nudgeSent": "👋 *콕 찌르기 보냄*",
         "pleaseLoginToDeleteRooms": "방을 삭제하려면 로그인하세요.",
         "pleaseLoginToSendMessages": "메시지를 보내려면 로그인하세요.",
+        "processingImage": "이미지 처리 중…",
         "recording": "녹음 중…",
         "retry": "재시도",
         "ryo": "@ryo",
@@ -2656,6 +2658,7 @@
         "quicktimeMovie": "QuickTime 동영상",
         "svgImage": "SVG 이미지",
         "unknown": "알 수 없음",
+        "volume": "볼륨",
         "webpImage": "WebP 이미지"
       },
       "folders": {
@@ -4016,6 +4019,7 @@
       },
       "locateMe": "내 위치 찾기",
       "mapAriaLabel": "지도",
+      "mapToolbar": "지도 제어기",
       "menu": {
         "about": "지도에 관하여",
         "help": "지도 도움말",
@@ -4180,7 +4184,9 @@
         "thenStepAria": "그런 다음 {{label}}",
         "warningNoBikes": "현재 가장 가까운 출발 대여소에 자전거가 없을 수도 있습니다.",
         "warningNoDocks": "현재 가장 가까운 도착 대여소에 빈 거치대가 없을 수도 있습니다."
-      }
+      },
+      "zoomIn": "확대",
+      "zoomOut": "축소"
     },
     "minesweeper": {
       "description": "클래식 퍼즐 게임",
@@ -4732,7 +4738,17 @@
       },
       "name": "사운드보드",
       "newSoundboardDefault": "새로운 사운드보드",
-      "soundboards": "사운드보드"
+      "slot": {
+        "addTitle": "제목 추가",
+        "editTitle": "제목 편집",
+        "record": "녹음",
+        "recording": "녹음 중…"
+      },
+      "soundboards": "사운드보드",
+      "waveform": {
+        "errorLoading": "파형 로드 오류",
+        "label": "파형"
+      }
     },
     "stickies": {
       "colors": {
@@ -5919,6 +5935,8 @@
       "appRequiresInternet": "{{appName}}은(는) 인터넷 연결이 필요합니다.",
       "title": "오프라인 상태입니다."
     },
+    "retry": "재시도",
+    "search": "검색",
     "startMenu": {
       "aboutThisComputer": "이 컴퓨터에 관하여",
       "run": "실행…",

@@ -294,6 +294,7 @@
         "noMessages": "No hay mensajes"
       },
       "search": {
+        "clear": "Borrar búsqueda",
         "noResults": "No se encontraron usuarios",
         "placeholder": "Buscar usuarios…",
         "songsPlaceholder": "Buscar canciones…"
@@ -324,7 +325,7 @@
       },
       "sidebar": {
         "auditLog": "Registro de auditoría",
-        "cursorAgents": "Agentes de cursor",
+        "cursorAgents": "Agentes de Cursor",
         "dashboard": "Panel",
         "messagesCount": "{{count}} mensajes",
         "online": "en línea",
@@ -408,20 +409,24 @@
         "auditLogCount_many": "{{count}} entradas",
         "auditLogCount_one": "{{count}} entrada",
         "auditLogCount_other": "{{count}} entradas",
-        "cursorAgentsCount": "{{count}} agente de cursor",
-        "cursorAgentsCount_plural": "{{count}} agentes de cursor",
+        "cursorAgentsCount_many": "{{count}} agentes de Cursor",
+        "cursorAgentsCount_one": "{{count}} agente de Cursor",
+        "cursorAgentsCount_other": "{{count}} agentes de Cursor",
         "loggedInAs": "Sesión iniciada como {{username}}",
-        "messagesCount": "{{count}} mensaje",
-        "messagesCount_plural": "{{count}} mensajes",
+        "messagesCount_many": "{{count}} mensajes",
+        "messagesCount_one": "{{count}} mensaje",
+        "messagesCount_other": "{{count}} mensajes",
         "redis": "Explorador de Redis",
         "redisKeysCount_many": "{{count}} claves",
         "redisKeysCount_one": "{{count}} clave",
         "redisKeysCount_other": "{{count}} claves",
-        "roomsCount": "{{count}} habitación",
-        "roomsCount_plural": "{{count}} habitaciones",
+        "roomsCount_many": "{{count}} habitaciones",
+        "roomsCount_one": "{{count}} habitación",
+        "roomsCount_other": "{{count}} habitaciones",
         "songsCount": "{{count}} canciones",
-        "usersCount": "{{count}} usuario",
-        "usersCount_plural": "{{count}} usuarios"
+        "usersCount_many": "{{count}} usuarios",
+        "usersCount_one": "{{count}} usuario",
+        "usersCount_other": "{{count}} usuarios"
       },
       "tableHeaders": {
         "added": "Añadido",
@@ -1163,6 +1168,7 @@
         "nudgeSent": "👋 *toque enviado*",
         "pleaseLoginToDeleteRooms": "Inicia sesión para eliminar salas.",
         "pleaseLoginToSendMessages": "Inicia sesión para enviar mensajes.",
+        "processingImage": "Procesando imagen…",
         "recording": "Grabando…",
         "retry": "Reintentar",
         "ryo": "@ryo",
@@ -2660,6 +2666,7 @@
         "quicktimeMovie": "Película QuickTime",
         "svgImage": "Imagen SVG",
         "unknown": "Desconocido",
+        "volume": "Volumen",
         "webpImage": "Imagen WebP"
       },
       "folders": {
@@ -3400,10 +3407,10 @@
       "dialogs": {
         "addSongDescription": "Pega un enlace de YouTube para añadirlo a tu iPod.",
         "addSongTitle": "Añadir Canción",
-        "addedNewSongsToTop": "Se añadió{{newPlural}} {{newCount}} canción{{newPlural}} nueva{{newPlural}} al inicio{{updatedText}}. Total: {{total}} canción{{newPlural}}",
-        "addedSongsToTop": "Se han añadido {{count}} canción{{plural}} al principio. ¡Primera canción lista para reproducir!",
+        "addedNewSongsToTop": "Canciones nuevas añadidas al inicio: {{newCount}}{{updatedText}}. Total: {{total}} canciones",
+        "addedSongsToTop": "Canciones añadidas al principio: {{count}}. ¡Primera canción lista para reproducir!",
         "addingNewTrack": "Añadiendo nueva pista desde URL…",
-        "andUpdated": " y se actualizó{{plural}} {{count}} pista{{plural}}",
+        "andUpdated": ", pistas actualizadas: {{count}}",
         "appleMusicAddToFavoritesFailed": "Error al añadir a favoritos",
         "appleMusicAddedToFavorites": "Añadido a Favoritos",
         "appleMusicFavoritesFailed": "Error al cargar las canciones favoritas",
@@ -3428,7 +3435,7 @@
         "appleMusicSearchUnavailable": "La búsqueda de Apple Music no está disponible",
         "appleMusicSignInFailed": "Error al iniciar sesión",
         "autoUpdateFailed": "Error de Autoactualización",
-        "autoUpdatedLibraryAddedSongs": "Biblioteca autoactualizada: se añadió{{newPlural}} {{newCount}} canción{{newPlural}} nueva{{newPlural}} al inicio{{updatedText}}",
+        "autoUpdatedLibraryAddedSongs": "Biblioteca autoactualizada. Canciones nuevas añadidas al inicio: {{newCount}}{{updatedText}}",
         "autoUpdatedTrackMetadata": "Metadatos de pistas actualizados automáticamente: {{count}}",
         "clearLibraryDescription": "¿Estás seguro de que quieres vaciar toda tu biblioteca de música? Esta acción no se puede deshacer.",
         "clearLibraryTitle": "Vaciar Biblioteca",
@@ -4028,6 +4035,7 @@
       },
       "locateMe": "Ubicarme",
       "mapAriaLabel": "Mapa",
+      "mapToolbar": "Controles del mapa",
       "menu": {
         "about": "Acerca de Mapas",
         "help": "Ayuda de Mapas",
@@ -4192,7 +4200,9 @@
         "thenStepAria": "Después, {{label}}",
         "warningNoBikes": "Es posible que la estación de inicio más cercana no tenga bicicletas en este momento.",
         "warningNoDocks": "Es posible que la estación de destino más cercana no tenga anclajes libres en este momento."
-      }
+      },
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar"
     },
     "minesweeper": {
       "description": "Juego de puzle clásico",
@@ -4744,7 +4754,17 @@
       },
       "name": "Mesa de sonido",
       "newSoundboardDefault": "Nueva mesa de sonido",
-      "soundboards": "Mesas de sonido"
+      "slot": {
+        "addTitle": "Añadir título",
+        "editTitle": "Editar título",
+        "record": "Grabar",
+        "recording": "Grabando…"
+      },
+      "soundboards": "Mesas de sonido",
+      "waveform": {
+        "errorLoading": "Error al cargar la forma de onda",
+        "label": "Forma de onda"
+      }
     },
     "stickies": {
       "colors": {
@@ -5932,6 +5952,8 @@
       "appRequiresInternet": "{{appName}} requiere una conexión a internet.",
       "title": "Sin conexión"
     },
+    "retry": "Reintentar",
+    "search": "Buscar",
     "startMenu": {
       "aboutThisComputer": "Acerca de Este Equipo",
       "run": "Ejecutar…",

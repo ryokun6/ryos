@@ -294,6 +294,7 @@
         "noMessages": "Nenhuma mensagem"
       },
       "search": {
+        "clear": "Limpar pesquisa",
         "noResults": "Nenhum usuário encontrado",
         "placeholder": "Buscar usuários…",
         "songsPlaceholder": "Buscar músicas…"
@@ -408,20 +409,24 @@
         "auditLogCount_many": "{{count}} entradas",
         "auditLogCount_one": "{{count}} entrada",
         "auditLogCount_other": "{{count}} entradas",
-        "cursorAgentsCount": "{{count}} agente do Cursor",
-        "cursorAgentsCount_plural": "{{count}} agentes do Cursor",
+        "cursorAgentsCount_many": "{{count}} agentes do Cursor",
+        "cursorAgentsCount_one": "{{count}} agente do Cursor",
+        "cursorAgentsCount_other": "{{count}} agentes do Cursor",
         "loggedInAs": "Sessão iniciada como {{username}}",
-        "messagesCount": "{{count}} mensagem",
-        "messagesCount_plural": "{{count}} mensagens",
+        "messagesCount_many": "{{count}} mensagens",
+        "messagesCount_one": "{{count}} mensagem",
+        "messagesCount_other": "{{count}} mensagens",
         "redis": "Navegador Redis",
         "redisKeysCount_many": "{{count}} chaves",
         "redisKeysCount_one": "{{count}} chave",
         "redisKeysCount_other": "{{count}} chaves",
-        "roomsCount": "{{count}} sala",
-        "roomsCount_plural": "{{count}} salas",
+        "roomsCount_many": "{{count}} salas",
+        "roomsCount_one": "{{count}} sala",
+        "roomsCount_other": "{{count}} salas",
         "songsCount": "{{count}} músicas",
-        "usersCount": "{{count}} usuário",
-        "usersCount_plural": "{{count}} usuários"
+        "usersCount_many": "{{count}} usuários",
+        "usersCount_one": "{{count}} usuário",
+        "usersCount_other": "{{count}} usuários"
       },
       "tableHeaders": {
         "added": "Adicionado",
@@ -1163,6 +1168,7 @@
         "nudgeSent": "👋 *cutucada enviada*",
         "pleaseLoginToDeleteRooms": "Por favor, faça login para excluir salas.",
         "pleaseLoginToSendMessages": "Por favor, faça login para enviar mensagens.",
+        "processingImage": "Processando imagem…",
         "recording": "Gravando…",
         "retry": "Tentar novamente",
         "ryo": "@ryo",
@@ -2660,6 +2666,7 @@
         "quicktimeMovie": "Filme QuickTime",
         "svgImage": "Imagem SVG",
         "unknown": "Desconhecido",
+        "volume": "Volume",
         "webpImage": "Imagem WebP"
       },
       "folders": {
@@ -3400,10 +3407,10 @@
       "dialogs": {
         "addSongDescription": "Cole um link do YouTube para adicionar ao seu iPod",
         "addSongTitle": "Adicionar Música",
-        "addedNewSongsToTop": "Adicionada{{newPlural}} {{newCount}} nova{{newPlural}} música{{newPlural}} ao topo{{updatedText}}. Total: {{total}} música{{newPlural}}",
-        "addedSongsToTop": "Adicionadas {{count}} música{{plural}} ao topo. Primeira música pronta para tocar!",
+        "addedNewSongsToTop": "Novas músicas adicionadas ao topo: {{newCount}}{{updatedText}}. Total: {{total}} músicas",
+        "addedSongsToTop": "Músicas adicionadas ao topo: {{count}}. Primeira música pronta para tocar!",
         "addingNewTrack": "Adicionando nova faixa do URL…",
-        "andUpdated": "e atualizada{{plural}} {{count}} faixa{{plural}}",
+        "andUpdated": ", faixas atualizadas: {{count}}",
         "appleMusicAddToFavoritesFailed": "Falha ao adicionar aos favoritos",
         "appleMusicAddedToFavorites": "Adicionado aos Favoritos",
         "appleMusicFavoritesFailed": "Falha ao carregar músicas favoritas",
@@ -3428,7 +3435,7 @@
         "appleMusicSearchUnavailable": "A busca do Apple Music está indisponível",
         "appleMusicSignInFailed": "Falha ao iniciar sessão",
         "autoUpdateFailed": "Falha na Atualização Automática",
-        "autoUpdatedLibraryAddedSongs": "Biblioteca atualizada automaticamente: adicionada{{newPlural}} {{newCount}} nova{{newPlural}} música{{newPlural}} ao topo{{updatedText}}",
+        "autoUpdatedLibraryAddedSongs": "Biblioteca atualizada automaticamente. Novas músicas adicionadas ao topo: {{newCount}}{{updatedText}}",
         "autoUpdatedTrackMetadata": "Metadados de faixas atualizados automaticamente: {{count}}",
         "clearLibraryDescription": "Tem certeza de que deseja limpar toda a sua biblioteca de músicas? Esta ação não pode ser desfeita.",
         "clearLibraryTitle": "Limpar Biblioteca",
@@ -4028,6 +4035,7 @@
       },
       "locateMe": "Localizar-me",
       "mapAriaLabel": "Mapa",
+      "mapToolbar": "Controles do mapa",
       "menu": {
         "about": "Sobre o Mapas",
         "help": "Ajuda do Mapas",
@@ -4192,7 +4200,9 @@
         "thenStepAria": "Depois, {{label}}",
         "warningNoBikes": "A estação de partida mais próxima pode não ter bicicletas no momento.",
         "warningNoDocks": "A estação de destino mais próxima pode não ter vagas disponíveis no momento."
-      }
+      },
+      "zoomIn": "Ampliar",
+      "zoomOut": "Reduzir"
     },
     "minesweeper": {
       "description": "Jogo clássico de quebra-cabeça",
@@ -4744,7 +4754,17 @@
       },
       "name": "Mesa de Som",
       "newSoundboardDefault": "Nova Mesa de Som",
-      "soundboards": "Mesas de Som"
+      "slot": {
+        "addTitle": "Adicionar título",
+        "editTitle": "Editar título",
+        "record": "Gravar",
+        "recording": "Gravando…"
+      },
+      "soundboards": "Mesas de Som",
+      "waveform": {
+        "errorLoading": "Erro ao carregar a forma de onda",
+        "label": "Forma de onda"
+      }
     },
     "stickies": {
       "colors": {
@@ -5932,6 +5952,8 @@
       "appRequiresInternet": "{{appName}} requer uma conexão com a internet.",
       "title": "Você está offline"
     },
+    "retry": "Tentar novamente",
+    "search": "Buscar",
     "startMenu": {
       "aboutThisComputer": "Sobre Este Computador",
       "run": "Executar…",

@@ -294,6 +294,7 @@
         "noMessages": "Нет сообщений"
       },
       "search": {
+        "clear": "Очистить поиск",
         "noResults": "Пользователи не найдены",
         "placeholder": "Поиск пользователей…",
         "songsPlaceholder": "Поиск песен…"
@@ -324,7 +325,7 @@
       },
       "sidebar": {
         "auditLog": "Журнал аудита",
-        "cursorAgents": "Агенты курсора",
+        "cursorAgents": "Агенты Cursor",
         "dashboard": "Дашборд",
         "messagesCount": "{{count}} сообщений",
         "online": "онлайн",
@@ -409,21 +410,29 @@
         "auditLogCount_many": "{{count}} записей",
         "auditLogCount_one": "{{count}} запись",
         "auditLogCount_other": "{{count}} записей",
-        "cursorAgentsCount": "{{count}} агент курсора",
-        "cursorAgentsCount_plural": "{{count}} агентов курсора",
+        "cursorAgentsCount_few": "{{count}} агента Cursor",
+        "cursorAgentsCount_many": "{{count}} агентов Cursor",
+        "cursorAgentsCount_one": "{{count}} агент Cursor",
+        "cursorAgentsCount_other": "{{count}} агентов Cursor",
         "loggedInAs": "Вы вошли как {{username}}",
-        "messagesCount": "{{count}} сообщение",
-        "messagesCount_plural": "{{count}} сообщений",
+        "messagesCount_few": "{{count}} сообщения",
+        "messagesCount_many": "{{count}} сообщений",
+        "messagesCount_one": "{{count}} сообщение",
+        "messagesCount_other": "{{count}} сообщений",
         "redis": "Браузер Redis",
         "redisKeysCount_few": "{{count}} ключа",
         "redisKeysCount_many": "{{count}} ключей",
         "redisKeysCount_one": "{{count}} ключ",
         "redisKeysCount_other": "{{count}} ключей",
-        "roomsCount": "{{count}} комната",
-        "roomsCount_plural": "{{count}} комнат",
+        "roomsCount_few": "{{count}} комнаты",
+        "roomsCount_many": "{{count}} комнат",
+        "roomsCount_one": "{{count}} комната",
+        "roomsCount_other": "{{count}} комнат",
         "songsCount": "{{count}} песен",
-        "usersCount": "{{count}} пользователь",
-        "usersCount_plural": "{{count}} пользователей"
+        "usersCount_few": "{{count}} пользователя",
+        "usersCount_many": "{{count}} пользователей",
+        "usersCount_one": "{{count}} пользователь",
+        "usersCount_other": "{{count}} пользователей"
       },
       "tableHeaders": {
         "added": "Добавлено",
@@ -1165,6 +1174,7 @@
         "nudgeSent": "👋 *подталкивание отправлено*",
         "pleaseLoginToDeleteRooms": "Пожалуйста, войдите, чтобы удалить комнаты.",
         "pleaseLoginToSendMessages": "Пожалуйста, войдите, чтобы отправлять сообщения.",
+        "processingImage": "Обработка изображения…",
         "recording": "Запись…",
         "retry": "Повторить",
         "ryo": "@ryo",
@@ -2667,6 +2677,7 @@
         "quicktimeMovie": "Фильм QuickTime",
         "svgImage": "Изображение SVG",
         "unknown": "Неизвестно",
+        "volume": "Том",
         "webpImage": "Изображение WebP"
       },
       "folders": {
@@ -3414,10 +3425,10 @@
       "dialogs": {
         "addSongDescription": "Вставьте ссылку на YouTube, чтобы добавить на ваш iPod",
         "addSongTitle": "Добавить песню",
-        "addedNewSongsToTop": "Добавлено {{newCount}} новая песня{{newPlural}} в начало{{updatedText}}. Всего: {{total}} песен",
-        "addedSongsToTop": "Добавлено {{count}} песня{{plural}} в начало. Первая песня готова к воспроизведению!",
+        "addedNewSongsToTop": "Добавлено новых песен в начало: {{newCount}}{{updatedText}}. Всего песен: {{total}}",
+        "addedSongsToTop": "Добавлено песен в начало: {{count}}. Первая песня готова к воспроизведению!",
         "addingNewTrack": "Добавление нового трека по ссылке…",
-        "andUpdated": " и обновлено {{count}} трек{{plural}}",
+        "andUpdated": ", обновлено треков: {{count}}",
         "appleMusicAddToFavoritesFailed": "Не удалось добавить в избранное",
         "appleMusicAddedToFavorites": "Добавлено в избранное",
         "appleMusicFavoritesFailed": "Не удалось загрузить избранные песни",
@@ -3442,7 +3453,7 @@
         "appleMusicSearchUnavailable": "Поиск в Apple Music недоступен",
         "appleMusicSignInFailed": "Ошибка входа",
         "autoUpdateFailed": "Сбой автообновления",
-        "autoUpdatedLibraryAddedSongs": "Библиотека автоматически обновлена: добавлено {{newCount}} новая песня{{newPlural}} в начало{{updatedText}}",
+        "autoUpdatedLibraryAddedSongs": "Медиатека автоматически обновлена. Добавлено новых песен в начало: {{newCount}}{{updatedText}}",
         "autoUpdatedTrackMetadata": "Метаданные треков обновлены: {{count}}",
         "clearLibraryDescription": "Вы уверены, что хотите очистить всю свою музыкальную библиотеку? Это действие невозможно отменить.",
         "clearLibraryTitle": "Очистить медиатеку",
@@ -4043,6 +4054,7 @@
       },
       "locateMe": "Найти меня",
       "mapAriaLabel": "Карта",
+      "mapToolbar": "Управление картой",
       "menu": {
         "about": "О приложении «Карты»",
         "help": "Справка Карт",
@@ -4207,7 +4219,9 @@
         "thenStepAria": "Затем {{label}}",
         "warningNoBikes": "На ближайшей станции отправления сейчас может не быть велосипедов.",
         "warningNoDocks": "На ближайшей станции прибытия сейчас может не быть свободных мест."
-      }
+      },
+      "zoomIn": "Увеличить",
+      "zoomOut": "Уменьшить"
     },
     "minesweeper": {
       "description": "Классическая головоломка",
@@ -4759,7 +4773,17 @@
       },
       "name": "Звуковая панель",
       "newSoundboardDefault": "Новая звуковая панель",
-      "soundboards": "Звуковые панели"
+      "slot": {
+        "addTitle": "Добавить название",
+        "editTitle": "Изменить название",
+        "record": "Записать",
+        "recording": "Запись…"
+      },
+      "soundboards": "Звуковые панели",
+      "waveform": {
+        "errorLoading": "Ошибка загрузки осциллограммы",
+        "label": "Осциллограмма"
+      }
     },
     "stickies": {
       "colors": {
@@ -5948,6 +5972,8 @@
       "appRequiresInternet": "Для работы приложения {{appName}} требуется подключение к интернету.",
       "title": "Вы не в сети"
     },
+    "retry": "Повторить",
+    "search": "Поиск",
     "startMenu": {
       "aboutThisComputer": "Об этом компьютере",
       "run": "Выполнить…",
