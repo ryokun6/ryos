@@ -141,6 +141,7 @@ const RATE_LIMITS = {
   furiganaStream: { windowSeconds: 60, limit: 10 }, // 10/min for furigana-stream
   soramimiStream: { windowSeconds: 60, limit: 10 }, // 10/min for soramimi-stream
   lyricOffset: { windowSeconds: 60, limit: 60 }, // 60/min per signed-in user
+  clearCachedData: { windowSeconds: 60, limit: 10 }, // 10/min per signed-in user
 };
 
 // Shared across translate/furigana/soramimi cache misses that reach the model.
@@ -1887,11 +1888,47 @@ export default apiHandler<Record<string, unknown>>(
 
       // =======================================================================
       // Handle clear-cached-data action - clears translations and/or furigana
+      // Requires auth + canModifySong (owner/admin, or any signed-in user when
+      // the song has no createdBy), matching other song mutation routes.
       // =======================================================================
       if (action === "clear-cached-data") {
         const parsed = ClearCachedDataSchema.safeParse(bodyObj);
         if (!parsed.success) {
           return errorResponse("Invalid request body");
+        }
+
+        if (!username) {
+          return errorResponse("Unauthorized - authentication required", 401);
+        }
+
+        try {
+          const clearRlKey = RateLimit.makeKey([
+            "rl",
+            "song",
+            "clear-cached-data",
+            "user",
+            username.toLowerCase(),
+          ]);
+          const clearRl = await RateLimit.checkCounterLimit({
+            key: clearRlKey,
+            windowSeconds: RATE_LIMITS.clearCachedData.windowSeconds,
+            limit: RATE_LIMITS.clearCachedData.limit,
+            redis,
+          });
+          if (!clearRl.allowed) {
+            logger.warn("Rate limit exceeded (clear-cached-data)", { username });
+            return jsonResponse(
+              {
+                error: "rate_limit_exceeded",
+                limit: clearRl.limit,
+                retryAfter: clearRl.resetSeconds,
+              },
+              429,
+              { "Retry-After": String(clearRl.resetSeconds) }
+            );
+          }
+        } catch (error) {
+          logger.error("Clear-cached-data rate limit check failed", error);
         }
 
         const {
@@ -1912,6 +1949,14 @@ export default apiHandler<Record<string, unknown>>(
 
         if (!song) {
           return errorResponse("Song not found", 404);
+        }
+
+        const permission = canModifySong(song, username);
+        if (!permission.canModify) {
+          return errorResponse(
+            permission.reason || "Only the song owner can clear cached data",
+            403
+          );
         }
 
         const cleared: string[] = [];
