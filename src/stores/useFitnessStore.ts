@@ -19,8 +19,12 @@ import {
   type ScheduleDay,
   type UnitSystem,
   type WeeklySchedule,
+  WORKOUT_CUES,
+  WORKOUT_PHASES,
   type Workout,
+  type WorkoutCue,
   type WorkoutEntry,
+  type WorkoutPhase,
   type WorkoutSet,
 } from "@/apps/fitness/types";
 import { isDateKey } from "@/apps/fitness/utils/dates";
@@ -32,6 +36,12 @@ import {
   scheduleFromTemplate,
   type ScheduleTemplateId,
 } from "@/apps/fitness/utils/schedule";
+import {
+  entriesForTemplate,
+  isWorkoutTemplateId,
+  mergeTemplateEntries,
+  type WorkoutTemplateId,
+} from "@/apps/fitness/utils/workoutTemplates";
 
 const STORE_VERSION = 1;
 const MAX_SETS_PER_ENTRY = 50;
@@ -77,13 +87,30 @@ function timestamp(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+function pickPhase(value: unknown): WorkoutPhase | null {
+  return typeof value === "string" && (WORKOUT_PHASES as readonly string[]).includes(value)
+    ? (value as WorkoutPhase)
+    : null;
+}
+
+function pickCue(value: unknown): WorkoutCue | null {
+  return typeof value === "string" && (WORKOUT_CUES as readonly string[]).includes(value)
+    ? (value as WorkoutCue)
+    : null;
+}
+
 export function sanitizeWorkoutSet(value: unknown): WorkoutSet | null {
   if (!value || typeof value !== "object") return null;
   const raw = value as Partial<WorkoutSet>;
   const reps = num(raw.reps, 0, 1000);
   const weightKg = num(raw.weightKg, 0, 1000);
   if (reps == null || weightKg == null) return null;
-  return { reps: Math.round(reps), weightKg };
+  const set: WorkoutSet = { reps: Math.round(reps), weightKg };
+  const repsMax = num(raw.repsMax, 0, 1000);
+  if (repsMax != null && Math.round(repsMax) > set.reps) set.repsMax = Math.round(repsMax);
+  // Only the explicit planned flag is stored. Older logs stay completed.
+  if (raw.completed === false) set.completed = false;
+  return set;
 }
 
 export function sanitizeWorkout(value: unknown, id: string, now = Date.now()): Workout | null {
@@ -95,19 +122,22 @@ export function sanitizeWorkout(value: unknown, id: string, now = Date.now()): W
         const entry = (e ?? {}) as Partial<WorkoutEntry>;
         const exerciseId = str(entry.exerciseId, 120);
         if (!exerciseId) return [];
-        return [
-          {
-            id: str(entry.id, 64) || crypto.randomUUID(),
-            exerciseId,
-            name: str(entry.name, 120) || exerciseId,
-            sets: Array.isArray(entry.sets)
-              ? entry.sets.slice(0, MAX_SETS_PER_ENTRY).flatMap((s) => {
-                  const set = sanitizeWorkoutSet(s);
-                  return set ? [set] : [];
-                })
-              : [],
-          },
-        ];
+        const phase = pickPhase(entry.phase);
+        const cue = pickCue(entry.cue);
+        const clean: WorkoutEntry = {
+          id: str(entry.id, 64) || crypto.randomUUID(),
+          exerciseId,
+          name: str(entry.name, 120) || exerciseId,
+          sets: Array.isArray(entry.sets)
+            ? entry.sets.slice(0, MAX_SETS_PER_ENTRY).flatMap((s) => {
+                const set = sanitizeWorkoutSet(s);
+                return set ? [set] : [];
+              })
+            : [],
+        };
+        if (phase) clean.phase = phase;
+        if (cue) clean.cue = cue;
+        return [clean];
       })
     : [];
   return {
@@ -116,6 +146,7 @@ export function sanitizeWorkout(value: unknown, id: string, now = Date.now()): W
     focus: isFocusArea(raw.focus) ? raw.focus : null,
     entries,
     notes: str(raw.notes, 2000),
+    ...(raw.guidance === true ? { guidance: true } : {}),
     createdAt: timestamp(raw.createdAt, now),
     updatedAt: timestamp(raw.updatedAt, now),
   };
@@ -278,6 +309,8 @@ interface FitnessStoreState {
   addSet: (workoutId: string, entryId: string, set: WorkoutSet) => void;
   updateSet: (workoutId: string, entryId: string, index: number, set: WorkoutSet) => void;
   removeSet: (workoutId: string, entryId: string, index: number) => void;
+  /** Append a workout template to the day. Exercises already on that day are left as they are. */
+  applyWorkoutTemplate: (date: string, templateId: WorkoutTemplateId) => { added: number };
 
   setScheduleDay: (index: number, patch: Partial<ScheduleDay>) => void;
   applyScheduleTemplate: (id: ScheduleTemplateId) => void;
@@ -421,6 +454,20 @@ export const useFitnessStore = create<FitnessStoreState>()(
             sets: e.sets.filter((_, i) => i !== index),
           })),
         })),
+      applyWorkoutTemplate: (date, templateId) => {
+        if (!isDateKey(date) || !isWorkoutTemplateId(templateId)) return { added: 0 };
+        const workoutId = get().ensureWorkout(date);
+        const incoming = entriesForTemplate(templateId, () => crypto.randomUUID());
+        let added = 0;
+        set((s) => ({
+          workouts: mapWorkout(s.workouts, workoutId, (w) => {
+            const merged = mergeTemplateEntries(w.entries, incoming, MAX_ENTRIES_PER_WORKOUT);
+            added = merged.added;
+            return { ...w, entries: merged.entries, guidance: true };
+          }),
+        }));
+        return { added };
+      },
 
       setScheduleDay: (index, patch) => {
         if (index < 0 || index > 6) return;

@@ -2952,7 +2952,7 @@
           "title": "ワークアウトを記録"
         },
         "schedule": {
-          "description": "各曜日の重点項目（上半身、下半身、プッシュ、プル、脚、体幹、有酸素、全身、または休息）を計画し、それに応じたエクササイズの推奨事項を確認できます。テンプレートから開始できます。",
+          "description": "各曜日の重点項目（上半身、下半身、プッシュ、プル、脚、体幹、有酸素、全身、または休息）を計画し、それに応じたエクササイズの推奨事項を確認できます。テンプレートから開始できます。 選択した日にワークアウトテンプレートを追加しても、その日の既存の種目は置き換わりません。",
           "title": "週間スケジュール"
         },
         "sync": {
@@ -3069,13 +3069,30 @@
         "ppl": "プッシュ / プル / レッグ",
         "upperLower": "上半身 / 下半身"
       },
+      "workoutTemplates": {
+        "add": "テンプレートを追加",
+        "lowerControl": "全身＋下肢コントロール",
+        "scapularControl": "全身＋肩甲骨コントロール",
+        "guidance": "重量はRIR3–4（残り回数）で選ぶ。セット間は60–90秒休む。動作を安定させてから、少しずつ重量を増やす。",
+        "phase": {
+          "warmup": "ウォームアップ",
+          "main": "メイン"
+        },
+        "cues": {
+          "holdEachRep3s": "1回ごとに3秒キープ",
+          "hold2s": "2秒キープ",
+          "eachSide": "左右それぞれ"
+        }
+      },
       "title": "フィットネス",
       "toasts": {
         "addedToDay": "{{date}}に{{name}}を追加しました",
         "addedToWorkout": "今日のワークアウトに{{name}}を追加しました",
         "foodSaved": "{{name}}を食事ログに保存しました",
         "statsSaved": "身体データを保存しました",
-        "templateApplied": "{{name}}プランを適用しました"
+        "templateApplied": "{{name}}プランを適用しました",
+        "workoutTemplateAdded": "{{date}}に{{name}}を追加しました",
+        "workoutTemplatePresent": "{{date}}にはすでに{{name}}があります"
       },
       "units": {
         "imperial": "ヤード・ポンド法 (lb, in)",
@@ -3107,7 +3124,9 @@
         "reps": "レップ数",
         "set": "セット",
         "suggested": "{{focus}}におすすめ",
-        "weight": "重量 ({{unit}})"
+        "weight": "重量 ({{unit}})",
+        "done": "完了",
+        "markSetDone": "セットを完了にする"
       }
     },
     "infinite-mac": {

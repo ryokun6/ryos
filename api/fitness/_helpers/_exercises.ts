@@ -1,3 +1,4 @@
+import { mergeSupplementalExercises } from "../../../src/apps/fitness/data/supplementalExercises.js";
 import {
   FREE_EXERCISE_DB_COMMIT,
   FREE_EXERCISE_DB_REPO,
@@ -55,7 +56,7 @@ async function fetchSource(
       if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);
       const text = await response.text();
       if (text.length > MAX_SOURCE_BYTES) throw new Error("exercise source too large");
-      const exercises = parseExerciseLibrary(JSON.parse(text));
+      const exercises = mergeSupplementalExercises(parseExerciseLibrary(JSON.parse(text)));
       if (exercises.length === 0) throw new Error("exercise source empty");
       return exercises;
     } catch (error) {

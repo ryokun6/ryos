@@ -854,6 +854,15 @@
       "Nachdem du die Stangen so weit wie möglich auseinander bewegt hast, kehre in die Ausgangsposition zurück, indem du sie wieder zusammenziehst. Atme bei dieser Bewegung aus."
     ]
   },
+  "Bodyweight_Glute_Bridge": {
+    "name": "Gesäßbrücke mit dem eigenen Körpergewicht",
+    "instructions": [
+      "Lege dich auf den Rücken, Knie gebeugt, Füße etwa hüftbreit und flach auf dem Boden.",
+      "Spanne den Rumpf an und drücke über die Fersen die Hüfte nach oben.",
+      "Stoppe, wenn Schultern und Knie eine Linie bilden. Überstrecke den unteren Rücken nicht.",
+      "Halte oben und spanne das Gesäß an, dann senke die Hüfte kontrolliert ab."
+    ]
+  },
   "Bodyweight_Mid_Row": {
     "name": "Rudern mittlerer Rücken mit dem eigenen Körpergewicht",
     "instructions": [
@@ -2250,6 +2259,15 @@
       "Treten Sie mit dem rechten Bein etwa zwei Fuß (ca. 60 cm) vom linken Fuß zurück und senken Sie Ihren Oberkörper ab, während Sie den Oberkörper aufrecht halten und das Gleichgewicht bewahren. Atmen Sie beim Absenken ein. Tipp: Wie bei den anderen Übungen sollten Sie Ihr Knie beim Absenken nicht über Ihre Zehen hinaus nach vorne gehen lassen, da dies die Kniegelenke unnötig belasten würde. Achten Sie darauf, dass Ihr vorderes Schienbein senkrecht zum Boden bleibt. Halten Sie den Oberkörper während des Ausfallschritts aufrecht; flexible Hüftbeuger sind wichtig. Ein langer Ausfallschritt betont den Gluteus Maximus; ein kurzer Ausfallschritt betont die Quadrizeps.",
       "Drücken Sie sich beim Ausatmen nach oben und kehren Sie in die Ausgangsposition zurück. Tipp: Verwenden Sie den Fußballen, um sich abzustoßen und die Quadrizeps zu betonen. Um sich auf die Gesäßmuskulatur zu konzentrieren, drücken Sie mit den Fersen.",
       "Wiederholen Sie dies nun mit dem anderen Bein."
+    ]
+  },
+  "Dumbbell_Romanian_Deadlift": {
+    "name": "Rumänisches Kreuzheben mit Kurzhanteln",
+    "instructions": [
+      "Stehe und halte in jeder Hand eine Kurzhantel vor den Oberschenkeln, die Handflächen zeigen zu dir.",
+      "Beuge die Knie leicht und lass sie nicht nach vorn wandern.",
+      "Beuge dich in der Hüfte, schiebe sie nach hinten und führe die Hanteln nah an den Beinen hinab, bis die hintere Oberschenkelmuskulatur dehnt. Die Wirbelsäule bleibt neutral.",
+      "Schiebe die Hüfte nach vorn, richte dich auf und spanne das Gesäß an."
     ]
   },
   "Dumbbell_Scaption": {
@@ -4248,6 +4266,15 @@
       "Vermeiden Sie es, das Gewicht bis zum Ende des Satzes vollständig in die Endposition zurückzuführen, um die Spannung auf die trainierten Muskeln aufrechtzuerhalten."
     ]
   },
+  "Machine_Hip_Thrust": {
+    "name": "Hip Thrust an der Maschine",
+    "instructions": [
+      "Setze dich in die Hüftstemm-Maschine, der obere Rücken am Polster, die Füße etwa hüftbreit und flach.",
+      "Lege den Gurt oder das Polster über die Hüfte.",
+      "Drücke über die Fersen und strecke die Hüfte, bis Rumpf und Oberschenkel eine Linie bilden, ohne den unteren Rücken zu überstrecken.",
+      "Halte und spanne das Gesäß an, dann senke kontrolliert ab."
+    ]
+  },
   "Machine_Preacher_Curls": {
     "name": "Maschinen-Preacher-Curls",
     "instructions": [
@@ -5324,6 +5351,15 @@
     "instructions": [
       "Legen Sie sich bäuchlings auf den Boden, das Gewicht wird von Ihren Händen oder Unterarmen gestützt. Legen Sie eine Faszienrolle unter ein Bein auf den Quadrizeps und halten Sie den Fuß vom Boden fern. Entspannen Sie das Bein so weit wie möglich. Dies ist Ihre Ausgangsposition.",
       "Verlagern Sie so viel Gewicht wie erträglich auf das zu dehnende Bein und rollen Sie über die Faszienrolle von oberhalb des Knies bis unterhalb der Hüfte. Halten Sie Spannungspunkte für 10-30 Sekunden. Seiten wechseln."
+    ]
+  },
+  "Quadruped_Thoracic_Rotation": {
+    "name": "Brustwirbelrotation im Vierfüßlerstand",
+    "instructions": [
+      "Gehe in den Vierfüßlerstand, Handgelenke unter den Schultern und Knie unter der Hüfte.",
+      "Lege eine Hand hinter den Kopf.",
+      "Drehe diesen Ellbogen zur gegenüberliegenden Seite, dann öffne die Brust und drehe den Ellbogen zur Decke.",
+      "Die Bewegung kommt aus dem oberen Rücken, die Hüfte bleibt ruhig. Wechsle die Seite."
     ]
   },
   "Quick_Leap": {
@@ -7466,6 +7502,15 @@
       "Wiederholen Sie die in Ihrem Programm vorgeschriebene Anzahl von Wiederholungen."
     ]
   },
+  "Supine_Adductor_Ball_Squeeze": {
+    "name": "Adduktoren-Balldrücken in Rückenlage",
+    "instructions": [
+      "Lege dich auf den Rücken, die Knie gebeugt und die Füße flach auf dem Boden.",
+      "Klemme einen Ball oder ein Kissen zwischen die Knie.",
+      "Drücke die Knie in den Ball, um die Adduktoren anzuspannen, ohne die Hüfte anzuheben.",
+      "Halte den Druck, löse ihn etwas und wiederhole. Der untere Rücken bleibt ruhig."
+    ]
+  },
   "Supine_Chest_Throw": {
     "name": "Rückenlage Brustwurf",
     "instructions": [
@@ -7834,6 +7879,15 @@
     "instructions": [
       "Zum Start auf das Laufband steigen und die gewünschte Option im Menü wählen. Die meisten Laufbänder haben eine manuelle Einstellung, oder Sie können ein Programm auswählen. Typischerweise können Sie Alter und Gewicht eingeben, um die während des Trainings verbrannten Kalorien zu schätzen. Die Steigung kann angepasst werden, um die Intensität des Trainings zu ändern.",
       "Laufbänder bieten Komfort, kardiovaskuläre Vorteile und haben in der Regel weniger Auswirkungen als Gehen im Freien. Beim Gehen sollten Sie sich in einem moderaten bis schnellen Tempo bewegen, nicht gemächlich. Als Aktivität geringerer Intensität verbrennt Gehen nicht so viele Kalorien wie einige andere Aktivitäten, bietet aber dennoch große Vorteile. Eine 150 Pfund schwere Person verbrennt etwa 175 Kalorien, wenn sie 30 Minuten lang 4 Meilen pro Stunde geht, verglichen mit 450 Kalorien, wenn sie doppelt so schnell läuft. Halten Sie beim Gehen eine korrekte Haltung bei und halten Sie sich nur bei Bedarf an den Griffen fest, z. B. beim Absteigen oder Überprüfen der Herzfrequenz."
+    ]
+  },
+  "Wall_Slide": {
+    "name": "Wandgleiten",
+    "instructions": [
+      "Stehe mit Rücken, Hüfte und Hinterkopf an der Wand, die Füße etwas nach vorn.",
+      "Lege Handrücken und Ellbogen an die Wand, die Ellbogen etwa 90 Grad gebeugt.",
+      "Schiebe die Arme an der Wand nach oben, ohne dass unterer Rücken, Rippen oder Ellbogen die Wand verlassen.",
+      "Gleite zurück zum Start und wiederhole."
     ]
   },
   "Weighted_Ball_Hyperextension": {
