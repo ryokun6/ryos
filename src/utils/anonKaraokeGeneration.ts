@@ -104,11 +104,12 @@ export function getAnonKaraokeClientId(
   } catch {
     // Fall through and mint an id for this call.
   }
-  const id = createAnonClientId();
+  const id = memoryClientId ?? createAnonClientId();
   try {
     storage.setItem(ANON_KARAOKE_CLIENT_ID_KEY, id);
   } catch {
     // The request can still carry the in-memory id for this page load.
+    memoryClientId = id;
   }
   return id;
 }

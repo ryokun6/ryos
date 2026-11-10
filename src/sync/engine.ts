@@ -1970,15 +1970,18 @@ export class CloudSyncEngine {
 
     const syncStore = useCloudSyncStore.getState();
     const categories = new Set(namespaces.map(getSyncNamespaceCategory));
-    for (const category of categories) {
-      syncStore.markCategorySyncing(category, "upload", true);
-    }
 
     const needsDb = namespaces.some((ns) => SYNC_CODECS[ns].usesIndexedDb);
     const db = needsDb ? await ensureIndexedDBInitialized() : undefined;
     const ctx: CodecContext = { db };
     let uploaded = 0;
     let deleted = 0;
+
+    // Set after the DB opens so a failed open cannot leave these flags on;
+    // only the `finally` below clears them.
+    for (const category of categories) {
+      syncStore.markCategorySyncing(category, "upload", true);
+    }
 
     try {
       cloudSyncLog.debug("Manual restore promotion started", { namespaces });

@@ -97,10 +97,10 @@ export function showAiMessageNotification(
   params: ShowAiMessageNotificationParams
 ): void {
   const { content, messageId } = params;
-  const preview = content.replace(/\s+/g, " ").trim().slice(0, 100);
+  const collapsed = content.replace(/\s+/g, " ").trim();
   const title = "@Ryo";
   const tag = "chat-ai";
-  const body = preview + (content.length > 100 ? "…" : "");
+  const body = collapsed.slice(0, 100) + (collapsed.length > 100 ? "…" : "");
 
   showNotificationFallback({
     title,

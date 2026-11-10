@@ -317,6 +317,7 @@ export const useListenSessionStore = create<ListenSessionState>((set, get) => {
     channelRef.unbind("session-ended");
     channelRef.unbind("queue");
     channelRef.unbind("lyric-offset");
+    channelRef.unbind("remote-command");
     channelRef.unbind("pusher:subscription_succeeded");
 
     channelRef.bind("sync", (payload: ListenSyncPayload) => {

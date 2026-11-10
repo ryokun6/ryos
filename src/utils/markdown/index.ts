@@ -123,7 +123,7 @@ export const htmlToMarkdown = (html: string): string => {
       const listMarkdown = processList(list as HTMLElement);
       
       // Replace the list HTML with its markdown equivalent
-      output = output.replace(listHtml, listMarkdown);
+      output = output.replace(listHtml, () => listMarkdown);
     });
     
     return output;

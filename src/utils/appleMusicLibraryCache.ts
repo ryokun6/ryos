@@ -10,7 +10,11 @@
 // The cache is keyed under a single record so we can replace the whole
 // library atomically and load it in one round-trip.
 
-import { STORES, dbOperations } from "@/utils/indexedDB";
+import {
+  STORES,
+  dbOperations,
+  ensureIndexedDBInitialized,
+} from "@/utils/indexedDB";
 import type { AppleMusicPlaylist } from "@/stores/useIpodStore";
 import type { Track } from "@/shared/media/library";
 
@@ -189,7 +193,6 @@ export async function loadAllAppleMusicPlaylistTracks(): Promise<
   Record<string, CachedAppleMusicPlaylistTracks>
 > {
   try {
-    const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
     const db = await ensureIndexedDBInitialized();
     return await new Promise((resolve, reject) => {
       try {
@@ -247,7 +250,6 @@ export async function pruneAppleMusicPlaylistTracksCache(
 ): Promise<void> {
   let db: IDBDatabase | null = null;
   try {
-    const { ensureIndexedDBInitialized } = await import("@/utils/indexedDB");
     db = await ensureIndexedDBInitialized();
     const database = db;
     if (!database) return;

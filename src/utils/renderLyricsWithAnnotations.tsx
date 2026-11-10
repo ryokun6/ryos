@@ -273,15 +273,3 @@ export function renderLyricsWithAnnotations(
   // Render furigana segments with all romanization options (ruby annotations)
   return renderFuriganaSegments(segments, romanization);
 }
-
-/**
- * Creates a memoization-friendly render function for use in React components.
- *
- * @param options - Rendering options
- * @returns A function that renders a line with annotations
- */
-export function createLyricsRenderer(options: RenderLyricsOptions) {
-  return (line: LyricLine, processedText: string): React.ReactNode => {
-    return renderLyricsWithAnnotations(line, processedText, options);
-  };
-}

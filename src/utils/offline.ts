@@ -32,17 +32,3 @@ export function checkOfflineAndShowError(message?: string): boolean {
   return false;
 }
 
-/**
- * List of features that require network access
- */
-export const NETWORK_DEPENDENT_FEATURES = {
-  INTERNET_EXPLORER_NAVIGATION: "Internet Explorer navigation",
-  CHATS_AI: "AI chat",
-  CHATS_ROOMS: "Chat rooms",
-  LYRICS_FETCH: "Lyrics fetching",
-  AI_GENERATION: "AI website generation",
-  SPEECH_TTS: "Text-to-speech",
-  AUDIO_TRANSCRIPTION: "Audio transcription",
-  APPLET_NETWORK: "Applet network features",
-} as const;
-

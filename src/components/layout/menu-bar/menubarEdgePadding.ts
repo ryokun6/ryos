@@ -92,12 +92,6 @@ export function shouldApplyFoldedStatusBarInset(input: {
   return portraitCover || landscapeCover;
 }
 
-const COARSE_TOUCH_MEDIA = "(hover: none) and (pointer: coarse)";
-
-export function displayCornerFloorMediaQuery(): string {
-  return COARSE_TOUCH_MEDIA;
-}
-
 export function shouldApplyDisplayCornerFloor(input: {
   iosShell: boolean;
   coarseTouch: boolean;
