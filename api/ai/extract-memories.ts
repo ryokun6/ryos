@@ -14,6 +14,7 @@ import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import type { Redis } from "../_utils/redis.js";
 import { z } from "zod";
 import { apiHandler } from "../_utils/api-handler.js";
+import { getStoredUserRecord } from "../_utils/auth/_user-record.js";
 import { consolidateMemoryContent } from "./_memory-consolidation.js";
 import {
   getMemoryIndex,
