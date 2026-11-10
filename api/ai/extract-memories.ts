@@ -1,8 +1,9 @@
 /**
- * POST /api/ai/extract-memories
+ * Conversation memory extraction helper (not an HTTP route).
  *
  * Analyzes a conversation and extracts both daily notes and long-term memories.
- * Called asynchronously when user clears their chat history.
+ * Invoked server-side when a conversation is cleared (`reset-memory.ts`) and from
+ * the Telegram heartbeat cron for new Telegram chat deltas.
  *
  * Single-pass extraction: one AI call reads the conversation + existing state
  * and outputs both daily notes and long-term memories together.
@@ -13,7 +14,6 @@ import { generateText, Output } from "ai";
 import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import type { Redis } from "../_utils/redis.js";
 import { z } from "zod";
-import { apiHandler } from "../_utils/api-handler.js";
 import { consolidateMemoryContent } from "./_memory-consolidation.js";
 import {
   getMemoryIndex,
@@ -577,51 +577,3 @@ export async function extractMemoriesFromConversation({
         : "No noteworthy information found",
   };
 }
-
-export default apiHandler<{ messages?: ChatMessage[]; timeZone?: string }>(
-  {
-    methods: ["POST"],
-    auth: "required",
-    parseJsonBody: true,
-  },
-  async ({ req, res, redis, logger, startTime, user, body }) => {
-    const username = user?.username || "";
-    const messages = body?.messages;
-    const bodyTimeZone = body?.timeZone;
-    const headerTimeZoneRaw = req.headers["x-user-timezone"];
-    const headerTimeZone = Array.isArray(headerTimeZoneRaw)
-      ? headerTimeZoneRaw[0]
-      : headerTimeZoneRaw;
-    const account = await getStoredUserRecord(redis, username);
-    const userTimeZone = normalizeTimeZone(
-      bodyTimeZone || headerTimeZone || account?.timeZone
-    );
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      logger.warn("No messages provided");
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Messages array required" });
-      return;
-    }
-
-    try {
-      const result = await extractMemoriesFromConversation({
-        redis,
-        username,
-        messages,
-        timeZone: userTimeZone,
-        storeLongTermMemories: true,
-        markTodayProcessed: true,
-        log: (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-        logError: (...args: unknown[]) => logger.error(String(args[0]), args[1]),
-      });
-
-      logger.response(200, Date.now() - startTime);
-      res.status(200).json(result);
-    } catch (error) {
-      logger.error("Memory extraction failed", error);
-      logger.response(500, Date.now() - startTime);
-      res.status(500).json({ error: "Failed to extract memories" });
-    }
-  }
-);

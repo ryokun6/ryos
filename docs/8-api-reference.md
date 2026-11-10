@@ -78,8 +78,6 @@ graph LR
 | `/api/fitness/food-analyze` | POST a meal photo or text for an editable calorie and macro estimate |
 | `/api/ie-generate` | Time-travel page generation |
 | `/api/parse-title` | Music metadata extraction |
-| `/api/ai/extract-memories` | Daily-note and long-term memory extraction |
-| `/api/ai/process-daily-notes` | Background daily-note processing |
 | `/api/ai/cursor-run-status` | Cursor Cloud agent run polling |
 | `/api/ai/cursor-run-followup` | Follow-up prompt for an existing Cursor run |
 

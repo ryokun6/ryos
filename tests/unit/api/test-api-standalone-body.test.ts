@@ -25,8 +25,10 @@ describe("standalone API request body limits", () => {
     expect(getRequestBodyLimit("/api/chat/")).toBe(
       MAX_AI_CONVERSATION_REQUEST_BYTES,
     );
+    // Memory helpers are no longer HTTP routes; their former path uses the
+    // default standalone body limit (55 MiB), same as other gone AI paths.
     expect(getRequestBodyLimit("/api/ai/extract-memories///")).toBe(
-      MAX_AI_CONVERSATION_REQUEST_BYTES,
+      55 * MEBIBYTE,
     );
     // The legacy import route is gone; conversation routes use the default
     // standalone body limit (55 MiB) rather than a dedicated AI limit.

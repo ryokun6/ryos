@@ -4,7 +4,7 @@ import { z } from "zod";
 
 /**
  * Shared long-term-memory consolidation, used by both `extract-memories.ts`
- * and `process-daily-notes.ts`. Both endpoints previously kept byte-identical
+ * and `process-daily-notes.ts`. Both helpers previously kept byte-identical
  * copies of the schema, prompt, and `generateText` consolidation call.
  */
 

@@ -1,28 +1,28 @@
 /**
- * POST /api/ai/process-daily-notes
- * 
+ * Daily-notes → long-term memory processing helper (not an HTTP route).
+ *
  * Processes unprocessed daily notes (excluding today) into long-term memories.
- * 
+ *
  * Daily notes accumulate throughout each day as the user chats. Once a day is
  * complete (i.e. it's no longer "today"), its notes should be reviewed and any
  * stable, lasting facts should be extracted into long-term memory.
- * 
- * This endpoint:
+ *
+ * This helper:
  * 1. Finds all unprocessed daily notes from past days (not today)
  * 2. Feeds each day's entries to an AI model to extract long-term memories
  * 3. Consolidates extracted memories with existing ones (dedup/merge)
  * 4. Marks each processed daily note as processed
- * 
- * Trigger points:
- * - Called from /api/chat as background fire-and-forget on authenticated requests
- * - Called from frontend on chat clear (fire-and-forget)
+ *
+ * Trigger points (direct helper calls, no public HTTP surface):
+ * - Proactive greeting (`api/ai/conversations/[channel]/greeting.ts`)
+ * - Telegram heartbeat cron (`api/cron/telegram-heartbeat.ts`)
+ * - Admin force-reprocess (`api/admin.ts`)
  */
 
 import { generateText, Output } from "ai";
 import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
 import { z } from "zod";
 import type { Redis } from "../_utils/redis.js";
-import { apiHandler } from "../_utils/api-handler.js";
 import { consolidateMemoryContent } from "./_memory-consolidation.js";
 import {
   getMemoryIndex,
@@ -37,7 +37,6 @@ import {
   isMemoryAccountActive,
   withMemoryAccountMutation,
 } from "../_utils/_memory.js";
-import { getStoredUserTimeZone } from "../_utils/auth/_user-record.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
 
 // ============================================================================
@@ -132,10 +131,8 @@ return 0
 
 /**
  * Process unprocessed past daily notes for a user into long-term memories.
- * This is the core logic extracted so it can be called from:
- * - The HTTP handler (POST /api/ai/process-daily-notes)
- * - The chat endpoint as a background fire-and-forget call
- * 
+ * Called from greeting, Telegram heartbeat, and admin force-reprocess.
+ *
  * @returns Summary of processing results
  */
 export async function processDailyNotesForUser(
@@ -602,73 +599,3 @@ async function _processSingleDayBatch(
     updated: longTermUpdated,
   };
 }
-
-// ============================================================================
-// Handler
-// ============================================================================
-
-export default apiHandler<{ timeZone?: string }>(
-  {
-    methods: ["POST"],
-    auth: "required",
-    parseJsonBody: true,
-  },
-  async ({ req, res, redis, logger, startTime, user, body }) => {
-    const username = user?.username || "";
-    const requestTimeZone = body?.timeZone;
-    const headerTimeZoneRaw = req.headers["x-user-timezone"];
-    const headerTimeZone = Array.isArray(headerTimeZoneRaw)
-      ? headerTimeZoneRaw[0]
-      : headerTimeZoneRaw;
-    const storedTimeZone = await getStoredUserTimeZone(redis, username);
-
-    try {
-      const result = await processDailyNotesForUser(
-        redis,
-        username,
-        (...args: unknown[]) => logger.info(String(args[0]), args[1]),
-        (...args: unknown[]) => logger.error(String(args[0]), args[1]),
-        requestTimeZone || headerTimeZone || storedTimeZone,
-      );
-
-      if (result.skippedReason === "account_deleted") {
-        logger.response(409, Date.now() - startTime);
-        res.status(409).json({ error: "account_deleted" });
-        return;
-      }
-
-      const totalExtracted = result.created + result.updated;
-
-      logger.info("Daily notes processing complete", {
-        username,
-        notesProcessed: result.processed,
-        memoriesCreated: result.created,
-        memoriesUpdated: result.updated,
-      });
-      logger.response(200, Date.now() - startTime);
-
-      const skippedCount = result.skippedDates.length;
-
-      res.status(200).json({
-        processed: result.processed,
-        extracted: totalExtracted,
-        created: result.created,
-        updated: result.updated,
-        dates: result.dates,
-        skippedDates: result.skippedDates,
-        message:
-          result.processed === 0
-            ? "No unprocessed daily notes to process"
-            : totalExtracted > 0
-              ? `Processed ${result.processed} daily notes → ${result.created} new memories, ${result.updated} updated` +
-                (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : "")
-              : `Processed ${result.processed} daily notes — no new long-term memories extracted` +
-                (skippedCount > 0 ? ` (${skippedCount} days deferred to next run)` : ""),
-      });
-    } catch (error) {
-      logger.error("Daily notes processing failed", error);
-      logger.response(500, Date.now() - startTime);
-      res.status(500).json({ error: "Failed to process daily notes" });
-    }
-  }
-);
