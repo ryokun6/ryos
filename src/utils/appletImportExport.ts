@@ -147,7 +147,7 @@ export async function importAppletFile(
   importFileName = remainingText;
 
   // Ensure the file has .app extension
-  if (importFileName.endsWith(".html") || importFileName.endsWith(".htm") || importFileName.endsWith(".json") || importFileName.endsWith(".gz")) {
+  if (/\.(html|htm|json|gz)$/i.test(importFileName)) {
     importFileName = importFileName.replace(/\.(html|htm|json|gz)$/i, ".app");
   } else if (!importFileName.endsWith(".app")) {
     importFileName = `${importFileName}.app`;

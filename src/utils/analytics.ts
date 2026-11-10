@@ -459,13 +459,15 @@ export function initializeAnalytics(): void {
     }
   };
   document.addEventListener("visibilitychange", flushOnHide);
-  window.addEventListener("pagehide", () => {
+  const flushOnPageHide = () => {
     void flushAnalytics(true);
-  });
+  };
+  window.addEventListener("pagehide", flushOnPageHide);
 
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       document.removeEventListener("visibilitychange", flushOnHide);
+      window.removeEventListener("pagehide", flushOnPageHide);
       void flushAnalytics(true);
       initialized = false;
     });
