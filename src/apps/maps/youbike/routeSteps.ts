@@ -58,7 +58,7 @@ const MANEUVER_PHRASES: Record<
   },
   fork: {
     withDirection: "apps.maps.youbike.maneuver.fork",
-    plain: "apps.maps.youbike.maneuver.fork",
+    plain: "apps.maps.youbike.maneuver.forkPlain",
     fallback: "Keep {{direction}}",
     fallbackPlain: "Fork",
   },

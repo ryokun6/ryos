@@ -15,7 +15,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useTvStore, type CustomChannel } from "@/stores/useTvStore";
 import {
   buildTvChannelLineup,
-  DEFAULT_CHANNELS,
+  isDefaultChannelId,
   type Channel,
 } from "@/apps/tv/data/channels";
 import type { Video } from "@/stores/useVideoStore";
@@ -230,7 +230,7 @@ export const handleTvChannelAction = async (
         const all: Array<{ ch: Channel; isCustom: boolean }> = lineup.map(
           (ch) => ({
             ch,
-            isCustom: !DEFAULT_CHANNELS.some((d) => d.id === ch.id),
+            isCustom: !isDefaultChannelId(ch.id),
           })
         );
 
@@ -302,7 +302,7 @@ export const handleTvChannelAction = async (
           tvStore.setIsPlaying(true);
         }
 
-        const isCustom = !DEFAULT_CHANNELS.some((c) => c.id === target!.id);
+        const isCustom = !isDefaultChannelId(target!.id);
         const shortId =
           tvChannelIdMap?.fullToShort.get(target.id) ?? target.id;
 
@@ -570,7 +570,7 @@ export const handleTvChannelAction = async (
           return;
         }
         const resolvedId = resolveChannelId(input.channelId);
-        if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
+        if (isDefaultChannelId(resolvedId)) {
           context.addToolOutput({
             tool: emitToolName,
             toolCallId,
@@ -673,7 +673,7 @@ export const handleTvChannelAction = async (
           return;
         }
         const resolvedId = resolveChannelId(input.channelId);
-        if (DEFAULT_CHANNELS.some((c) => c.id === resolvedId)) {
+        if (isDefaultChannelId(resolvedId)) {
           context.addToolOutput({
             tool: emitToolName,
             toolCallId,

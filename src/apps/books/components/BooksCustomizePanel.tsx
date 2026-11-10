@@ -299,7 +299,6 @@ export function BooksCustomizePanel({
     label: string;
     background: string;
     text: string;
-    showGlyph: boolean;
     /** Checkerboard preview for a transparent (glassy) custom background. */
     transparent?: boolean;
     /** Rainbow ring marking the editable custom swatch. */
@@ -313,14 +312,12 @@ export function BooksCustomizePanel({
       // Follows the OS light/dark setting.
       background: autoPalette.background,
       text: autoPalette.text,
-      showGlyph: true,
     },
     {
       id: "accent" as const,
       label: t("apps.books.theme.accent"),
       background: accentPalette.background,
       text: accentPalette.text,
-      showGlyph: true,
       accent: true,
     },
     ...BOOK_THEME_PRESET_IDS.map((id) => {
@@ -330,7 +327,6 @@ export function BooksCustomizePanel({
         label: t(`apps.books.theme.${id}`),
         background: palette.background,
         text: palette.text,
-        showGlyph: true,
       };
     }),
     {
@@ -338,7 +334,6 @@ export function BooksCustomizePanel({
       label: t("apps.books.theme.custom"),
       background: customBackground,
       text: customPalette.text,
-      showGlyph: true,
       transparent: settings.customThemeTransparent,
       custom: true,
     },
@@ -508,7 +503,7 @@ export function BooksCustomizePanel({
                       : { background: swatch.background, color: swatch.text }
                   }
                 >
-                  {swatch.showGlyph ? themeSwatchGlyph : null}
+                  {themeSwatchGlyph}
                 </span>
               </button>
             );

@@ -34,10 +34,6 @@ export const adminDetailHeaderClass =
 export const adminSectionLabelClass =
   "text-[10px] uppercase tracking-wide text-os-text-disabled";
 
-/** Collapsible section headers in profile / song panels. */
-export const adminSectionHeaderClass =
-  "!text-[11px] uppercase tracking-wide text-os-text-secondary";
-
 /** Theme-aware vertical list dividers. */
 export const adminListDividerClass = "admin-soft-list-dividers";
 

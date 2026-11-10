@@ -59,14 +59,6 @@ export const resolveFinderSelectionSnapshot = (
   localSelection: FinderSelectionSnapshot
 ): FinderSelectionSnapshot => instanceSelection ?? localSelection;
 
-export const DEFAULT_FILE_PATHS = new Set([
-  "/Documents/README.md",
-  "/Documents/Quick Tips.md",
-  "/Books/Meditations - Marcus Aurelius.epub",
-  "/Images/steve-jobs.png",
-  "/Images/susan-kare.png",
-]);
-
 export const BOOK_FILE_ICON_PATH = "/icons/default/books.png";
 
 export function isEpubFile(fileName: string, type?: string): boolean {

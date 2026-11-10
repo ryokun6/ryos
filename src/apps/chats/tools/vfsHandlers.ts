@@ -114,7 +114,7 @@ const recentlyCreatedTextEditInstances = new Map<
 >();
 
 // Helper to add a newly created instance to tracking
-export const trackNewTextEditInstance = (instanceId: string, path: string) => {
+const trackNewTextEditInstance = (instanceId: string, path: string) => {
   recentlyCreatedTextEditInstances.set(instanceId, {
     instanceId,
     path,
@@ -902,7 +902,8 @@ export async function handleVfsWrite(
       appStore.bringInstanceToForeground(targetInstanceId);
     } else {
       // Create new TextEdit instance with initialData (same pattern as Finder)
-      const windowTitle = fileName.replace(/\.md$/, "") || "Untitled";
+      const windowTitle =
+        fileName.replace(/\.md$/, "") || i18n.t("apps.textedit.untitled");
       targetInstanceId = appStore.launchApp(
         "textedit",
         { path, content: finalContent },
@@ -1021,9 +1022,10 @@ export async function handleVfsEdit(
       }
 
       // Replace exactly one occurrence
+      // Replacer function: a string replacement would expand `$&`, `$$`, etc.
       const updatedContent = normalizedExisting.replace(
         normalizedOldString,
-        normalizedNewString
+        () => normalizedNewString
       );
 
       await persistChatDocument({
@@ -1110,9 +1112,10 @@ export async function handleVfsEdit(
       }
 
       // Replace exactly one occurrence
+      // Replacer function: a string replacement would expand `$&`, `$$`, etc.
       const updatedContent = normalizedExisting.replace(
         normalizedOldString,
-        normalizedNewString
+        () => normalizedNewString
       );
 
       await persistChatApplet({

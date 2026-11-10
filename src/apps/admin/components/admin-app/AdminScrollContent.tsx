@@ -48,10 +48,6 @@ export interface AdminScrollContentProps {
   SONGS_PER_PAGE: number;
   roomMessages: MessageRow[];
   formatRelativeTime: (ts: number) => string;
-  formatKugouImageUrl: (
-    imgUrl: string | undefined,
-    size?: number,
-  ) => string | null;
   promptDelete: (
     type: "user" | "room" | "message" | "song",
     id: string,
@@ -85,7 +81,6 @@ export function AdminScrollContent({
   SONGS_PER_PAGE,
   roomMessages,
   formatRelativeTime,
-  formatKugouImageUrl,
   promptDelete,
   deleteMessage,
 }: AdminScrollContentProps) {
@@ -148,7 +143,6 @@ export function AdminScrollContent({
             setVisibleSongsCount={setVisibleSongsCount}
             SONGS_PER_PAGE={SONGS_PER_PAGE}
             setSelectedSongId={setSelectedSongId}
-            formatKugouImageUrl={formatKugouImageUrl}
             promptDelete={promptDelete}
           />
         )}

@@ -8,14 +8,14 @@ import { adminListDividerClass, adminTrackBgClass } from "../../utils/adminStyle
 export function BreakdownList({
   items,
   nameClassName,
-  barClassName = "bg-neutral-400",
-  emptyMessage = "No data yet",
+  barClassName,
+  emptyMessage,
   renderName,
 }: {
   items: ProductBreakdown[];
   nameClassName?: string;
-  barClassName?: string;
-  emptyMessage?: string;
+  barClassName: string;
+  emptyMessage: string;
   renderName?: (name: string) => ReactNode;
 }) {
   if (items.length === 0) {

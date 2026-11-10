@@ -1,6 +1,5 @@
 // Shared constants for the iPod app
 
-import { LyricsAlignment } from "@/types/lyrics";
 import type { Track } from "@/shared/media/library";
 import { parseYouTubeVideoId } from "@/utils/youtubeUrl";
 import { resolveMediaCoverUrl } from "@/utils/coverArt";
@@ -88,26 +87,15 @@ export function isModernIpodUiVariant(
 }
 
 // Timing constants
-export const BACKLIGHT_TIMEOUT_MS = 5000;
-export const STATUS_MESSAGE_DURATION_MS = 2000;
-export const CONTROLS_HIDE_DELAY_MS = 2000;
 export const PLAYER_PROGRESS_INTERVAL_MS = 200;
 
 // Wheel interaction constants
 export const ROTATION_STEP_DEG = 15; // Degrees of rotation per scroll step
-export const SEEK_AMOUNT_SECONDS = 5;
 
 // Swipe gesture thresholds
 export const SWIPE_THRESHOLD = 80; // Minimum swipe distance in pixels
 export const MAX_SWIPE_TIME = 500; // Maximum time for a swipe in ms
 export const MAX_VERTICAL_DRIFT = 100; // Maximum cross-directional drift
-
-// Lyrics alignment cycle order
-export const LYRICS_ALIGNMENT_CYCLE: LyricsAlignment[] = [
-  LyricsAlignment.FocusThree,
-  LyricsAlignment.Center,
-  LyricsAlignment.Alternating,
-];
 
 // Helper to extract YouTube video ID from URL. Delegates to the canonical,
 // host-safe parser in `@/utils/youtubeUrl`.

@@ -105,10 +105,6 @@ export function resolveStuffItemVisualKind(
   return "other";
 }
 
-export function isStuffBookItem(item: StuffItem, tags: StuffTag[]): boolean {
-  return resolveStuffItemVisualKind(item, tags) === "book";
-}
-
 export function isStuffCdItem(item: StuffItem, tags: StuffTag[]): boolean {
   return resolveStuffItemVisualKind(item, tags) === "cd";
 }

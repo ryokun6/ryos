@@ -8,9 +8,3 @@ export function getPcPresetName(preset: PcPreset, t: TFunction): string {
 export function getPcPresetYear(preset: PcPreset, t: TFunction): string {
   return t(`apps.pc.presets.${preset.id}.year`, { defaultValue: preset.year });
 }
-
-export function getPcPresetDescription(preset: PcPreset, t: TFunction): string {
-  return t(`apps.pc.presets.${preset.id}.description`, {
-    defaultValue: preset.description,
-  });
-}

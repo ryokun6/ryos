@@ -109,10 +109,6 @@ export interface AdminMainPaneProps {
   fetchStats: () => void;
   fetchSongs: () => void;
   formatRelativeTime: (ts: number) => string;
-  formatKugouImageUrl: (
-    imgUrl: string | undefined,
-    size?: number,
-  ) => string | null;
   deleteMessage: (roomId: string, messageId: string) => void;
   username: string | null | undefined;
 }
@@ -176,7 +172,6 @@ export function AdminMainPane({
   fetchStats,
   fetchSongs,
   formatRelativeTime,
-  formatKugouImageUrl,
   deleteMessage,
   username,
 }: AdminMainPaneProps) {
@@ -305,7 +300,6 @@ export function AdminMainPane({
             SONGS_PER_PAGE={SONGS_PER_PAGE}
             roomMessages={roomMessages}
             formatRelativeTime={formatRelativeTime}
-            formatKugouImageUrl={formatKugouImageUrl}
             promptDelete={promptDelete}
             deleteMessage={deleteMessage}
           />

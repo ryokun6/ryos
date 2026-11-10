@@ -58,10 +58,6 @@ export function sampleJournalTitle(dayId: string, language: string | undefined):
   return day ? journalText(day.title, language) : "";
 }
 
-export function fragmentsForDay(dayId: string): JournalFragment[] {
-  return JOURNAL_FRAGMENTS.filter((fragment) => fragment.dayId === dayId);
-}
-
 export function sampleDoc(text: string): JournalDoc {
   const blocks = text.length > 0 ? text.split(/\n{2,}/) : [""];
   return {

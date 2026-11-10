@@ -105,7 +105,9 @@ export function UserProfilePanelHeartbeatsSection({
                                   hb.shouldSend ? "text-green-700" : "text-neutral-400"
                                 )}
                               >
-                                {hb.shouldSend ? "sent" : "skipped"}
+                                {hb.shouldSend
+                                  ? t("apps.admin.profile.heartbeatSent")
+                                  : t("apps.admin.profile.heartbeatSkipped")}
                               </span>
                               <CaretRight
                                 className={cn(

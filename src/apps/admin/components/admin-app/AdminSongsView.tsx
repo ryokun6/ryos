@@ -24,10 +24,6 @@ export interface AdminSongsViewProps {
   setVisibleSongsCount: Dispatch<SetStateAction<number>>;
   SONGS_PER_PAGE: number;
   setSelectedSongId: (id: string) => void;
-  formatKugouImageUrl: (
-    imgUrl: string | undefined,
-    size?: number,
-  ) => string | null;
   promptDelete: (
     type: "user" | "room" | "message" | "song",
     id: string,

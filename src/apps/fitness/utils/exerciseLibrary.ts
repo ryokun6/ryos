@@ -101,11 +101,6 @@ export function indexExercises(
   return new Map(exercises.map((exercise) => [exercise.id, exercise]));
 }
 
-/** Readable fallback name for an id when the library is not loaded. */
-export function exerciseNameFromId(id: string): string {
-  return id.replace(/_/g, " ").replace(/\s+/g, " ").trim();
-}
-
 let libraryCache: FitnessExerciseLibraryResponse | null = null;
 let libraryPromise: Promise<FitnessExerciseLibraryResponse> | null = null;
 

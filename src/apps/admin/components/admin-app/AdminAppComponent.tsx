@@ -4,6 +4,7 @@ import { AppWindowShell } from "@/components/shared/AppWindowShell";
 import { AdminMenuBar } from "../AdminMenuBar";
 import { useMemo } from "react";
 import { useAdminLogic } from "../../hooks/useAdminLogic";
+import { isRyoAdminUsername } from "@/shared/aiModels";
 import { AdminRestrictedView } from "./AdminRestrictedView";
 import { AdminMainPane } from "./AdminMainPane";
 import { AdminAppDialogs } from "./AdminAppDialogs";
@@ -90,7 +91,6 @@ export function AdminAppComponent({
     handleRefresh,
     promptDelete,
     formatRelativeTime,
-    formatKugouImageUrl,
   } = useAdminLogic({ isWindowOpen, initialData });
 
   const menuBar = (
@@ -113,7 +113,7 @@ export function AdminAppComponent({
     const normalizedSearch = songSearch.toLowerCase();
 
     return songs.filter((song) => {
-      if (songsFilterByRyoOnly && song.createdBy?.toLowerCase() !== "ryo") {
+      if (songsFilterByRyoOnly && !isRyoAdminUsername(song.createdBy)) {
         return false;
       }
 
@@ -259,7 +259,6 @@ export function AdminAppComponent({
           fetchStats={fetchStats}
           fetchSongs={fetchSongs}
           formatRelativeTime={formatRelativeTime}
-          formatKugouImageUrl={formatKugouImageUrl}
           deleteMessage={deleteMessage}
           username={username}
         />

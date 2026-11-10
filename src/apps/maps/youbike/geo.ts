@@ -77,15 +77,6 @@ export function padBBox(bbox: GeoBBox, factor: number): GeoBBox {
   };
 }
 
-export function bboxContains(outer: GeoBBox, inner: GeoBBox): boolean {
-  return (
-    inner.south >= outer.south &&
-    inner.north <= outer.north &&
-    inner.west >= outer.west &&
-    inner.east <= outer.east
-  );
-}
-
 export function filterStationsInBBox<T extends GeoPoint>(
   stations: T[],
   bbox: GeoBBox
@@ -105,28 +96,6 @@ export function estimateDurationSeconds(
   if (!Number.isFinite(distanceMeters) || distanceMeters <= 0) return 0;
   if (!Number.isFinite(speedMps) || speedMps <= 0) return 0;
   return Math.round(distanceMeters / speedMps);
-}
-
-/**
- * Evenly sample a great-circle path so MapKit can stroke a smooth bike
- * hop without a cycling directions API.
- */
-export function interpolateGreatCircle(
-  from: GeoPoint,
-  to: GeoPoint,
-  segments = 16
-): GeoPoint[] {
-  const count = Math.max(1, Math.floor(segments));
-  if (count === 1) return [from, to];
-  const path: GeoPoint[] = [];
-  for (let i = 0; i <= count; i += 1) {
-    const t = i / count;
-    path.push({
-      latitude: from.latitude + (to.latitude - from.latitude) * t,
-      longitude: from.longitude + (to.longitude - from.longitude) * t,
-    });
-  }
-  return path;
 }
 
 export interface FittedMapRegion {

@@ -1,9 +1,7 @@
 import type { CSSProperties } from "react";
 import {
-  boostGlowColor,
   makeGlowFromColor,
   makeOutlineFillFromGlowColor,
-  pickPrimaryColor,
 } from "@/apps/ipod/components/lyrics-display/colorUtils";
 
 export const TITLE_CARD_BASE_SHADOW = "0 0 6px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.5)";
@@ -50,10 +48,6 @@ export function getTitleCardStyleCategory(className: string): TitleCardStyleCate
 
 export function makeTitleCardGlow(hex: string) {
   return makeGlowFromColor(hex);
-}
-
-export function pickBoostedTitleCardGlow(palette: string[]) {
-  return makeTitleCardGlow(boostGlowColor(pickPrimaryColor(palette)));
 }
 
 export const TITLE_CARD_SECONDARY_TEXT_STYLE: CSSProperties = {

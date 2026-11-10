@@ -38,6 +38,19 @@ export function AdminAppDialogs({
   onDeleteConfirm,
   t,
 }: AdminAppDialogsProps) {
+  const deleteTypeLabel =
+    deleteTarget?.type === "allSongs"
+      ? t("apps.admin.songs.allSongs", "all songs")
+      : deleteTarget?.type === "song"
+        ? t("common.dialog.share.itemTypes.song")
+        : deleteTarget?.type === "user"
+          ? t("apps.admin.user.user")
+          : deleteTarget?.type === "room"
+            ? t("apps.admin.profile.room")
+            : deleteTarget?.type === "message"
+              ? t("apps.admin.tableHeaders.message")
+              : deleteTarget?.type;
+
   return (
     <>
       <AppHelpAboutDialogs
@@ -54,32 +67,10 @@ export function AdminAppDialogs({
         onOpenChange={setIsDeleteDialogOpen}
         onConfirm={onDeleteConfirm}
         title={t("apps.admin.dialogs.deleteTitle", {
-          type:
-            deleteTarget?.type === "allSongs"
-              ? t("apps.admin.songs.allSongs", "all songs")
-              : deleteTarget?.type === "song"
-                ? t("common.dialog.share.itemTypes.song")
-                : deleteTarget?.type === "user"
-                  ? t("apps.admin.user.user")
-                  : deleteTarget?.type === "room"
-                    ? t("apps.admin.profile.room")
-                    : deleteTarget?.type === "message"
-                      ? t("apps.admin.tableHeaders.message")
-                      : deleteTarget?.type,
+          type: deleteTypeLabel,
         })}
         description={t("apps.admin.dialogs.deleteDescription", {
-          type:
-            deleteTarget?.type === "allSongs"
-              ? t("apps.admin.songs.allSongs", "all songs")
-              : deleteTarget?.type === "song"
-                ? t("common.dialog.share.itemTypes.song")
-                : deleteTarget?.type === "user"
-                  ? t("apps.admin.user.user")
-                  : deleteTarget?.type === "room"
-                    ? t("apps.admin.profile.room")
-                    : deleteTarget?.type === "message"
-                      ? t("apps.admin.tableHeaders.message")
-                      : deleteTarget?.type,
+          type: deleteTypeLabel,
           name: deleteTarget?.name,
         })}
       />

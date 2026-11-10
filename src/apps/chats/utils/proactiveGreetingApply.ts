@@ -31,10 +31,6 @@ export function applyFreshProactiveGreeting(
   currentMessages: AIChatMessage[],
   proactiveMessage: AIChatMessage
 ): AIChatMessage[] | null {
-  if (!shouldApplyFreshProactiveGreeting(currentMessages)) {
-    return null;
-  }
-
   const greetingIndex = currentMessages.findIndex(isDefaultGreetingMessage);
   if (greetingIndex === -1) return null;
 

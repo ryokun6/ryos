@@ -87,10 +87,6 @@ function getHighlightCtor(): HighlightCtor | null {
   return ctor ?? null;
 }
 
-export function isTtsHighlightSupported(): boolean {
-  return getHighlightsRegistry() !== null && getHighlightCtor() !== null;
-}
-
 // Clear the registered highlight. If `owner` is supplied, only clears when
 // that token still owns the active highlight — this is what consumer effect
 // cleanups should pass to avoid stomping on a sibling's freshly-applied

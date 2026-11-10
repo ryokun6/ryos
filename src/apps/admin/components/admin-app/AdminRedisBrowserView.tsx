@@ -331,7 +331,7 @@ export function AdminRedisBrowserView({ t }: AdminRedisBrowserViewProps) {
           onChange={setPattern}
           className="min-w-[220px] flex-1"
           inputClassName="h-7 text-[12px] font-os-mono"
-          clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
+          clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
         />
         <Button
           type="button"

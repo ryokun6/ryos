@@ -93,6 +93,7 @@ import {
   BOOKS_HIGHLIGHT_CLASS,
   BOOKS_HIGHLIGHT_UNDER_TEXT_CSS,
   BOOKS_SELECTION_CONTENT_CSS,
+  listAnnotationContents,
   useBooksAnnotations,
 } from "../hooks/useBooksAnnotations";
 import {
@@ -1702,14 +1703,8 @@ export const BooksReaderPane = forwardRef<
     if (!isReady || !rendition) return;
     let cancelled = false;
     const target = effectiveChineseScript;
-    const renditionContents = rendition.getContents() as unknown;
-    const contentsList = (
-      Array.isArray(renditionContents)
-        ? renditionContents
-        : renditionContents
-          ? [renditionContents]
-          : []
-    ) as Array<{ document?: Document }>;
+    const contentsList: Array<{ document?: Document }> =
+      listAnnotationContents(rendition);
 
     void Promise.all(
       contentsList.map(async (contents) => {
@@ -1760,14 +1755,8 @@ export const BooksReaderPane = forwardRef<
       }
     });
 
-    const renditionContents = rendition.getContents() as unknown;
-    const contentsList = (
-      Array.isArray(renditionContents)
-        ? renditionContents
-        : renditionContents
-          ? [renditionContents]
-          : []
-    ) as Array<{ document?: Document }>;
+    const contentsList: Array<{ document?: Document }> =
+      listAnnotationContents(rendition);
     for (const contents of contentsList) {
       if (contents.document) {
         applyEpubTextLayout(contents.document, effectiveTextLayout);
@@ -2164,15 +2153,7 @@ export const BooksReaderPane = forwardRef<
     };
 
     const attachToCurrentContents = () => {
-      const renditionContents = rendition.getContents() as unknown;
-      const contentsList = (
-        Array.isArray(renditionContents)
-          ? renditionContents
-          : renditionContents
-            ? [renditionContents]
-            : []
-      ) as Contents[];
-      contentsList.forEach(attachPageTurnListeners);
+      listAnnotationContents(rendition).forEach(attachPageTurnListeners);
     };
 
     const handleRendered = () => attachToCurrentContents();
@@ -2757,12 +2738,8 @@ export const BooksReaderPane = forwardRef<
               askRyoActive
                 ? t("apps.books.selection.askRyo")
                 : selectionBarActive
-                  ? t("apps.books.selection.controls", {
-                      defaultValue: "Selection controls",
-                    })
-                  : t("apps.books.speech.controls", {
-                      defaultValue: "Read-aloud controls",
-                    })
+                  ? t("apps.books.selection.controls")
+                  : t("apps.books.speech.controls")
             }
             aria-expanded={barOpen ? undefined : false}
             className={cn(

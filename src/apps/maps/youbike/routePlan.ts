@@ -8,6 +8,7 @@ import {
   DEFAULT_MAX_STATION_WALK_METERS,
   rankNearbyStations,
 } from "./nearestStations";
+import { displayStationName } from "./parseStations";
 import type {
   GeoPoint,
   YouBikeRouteLeg,
@@ -101,18 +102,6 @@ function walkOnlyPlan(
   };
 }
 
-function stationLabel(
-  station: YouBikeStation,
-  language: string | undefined
-): string {
-  const useChinese =
-    !!language &&
-    (language.toLowerCase().startsWith("zh") ||
-      language.toLowerCase().includes("hant") ||
-      language.toLowerCase().includes("hans"));
-  return useChinese ? station.name : station.nameEn || station.name;
-}
-
 /**
  * Build a YouBike-aware trip: walk to a nearby station with bikes, bike to
  * a station with docks near the destination, then walk the last block.
@@ -138,20 +127,23 @@ export function planYouBikeTrip(
     maxDistanceMeters: maxWalk,
     requireBikes: true,
   });
-  const originAny = rankNearbyStations(input.origin, input.stations, {
-    maxDistanceMeters: maxWalk,
-  });
   const destWithDocks = rankNearbyStations(input.destination, input.stations, {
     maxDistanceMeters: maxWalk,
     requireDocks: true,
   });
-  const destAny = rankNearbyStations(input.destination, input.stations, {
-    maxDistanceMeters: maxWalk,
-  });
 
   const originCandidates =
-    originWithBikes.length > 0 ? originWithBikes : originAny;
-  const destCandidates = destWithDocks.length > 0 ? destWithDocks : destAny;
+    originWithBikes.length > 0
+      ? originWithBikes
+      : rankNearbyStations(input.origin, input.stations, {
+          maxDistanceMeters: maxWalk,
+        });
+  const destCandidates =
+    destWithDocks.length > 0
+      ? destWithDocks
+      : rankNearbyStations(input.destination, input.stations, {
+          maxDistanceMeters: maxWalk,
+        });
 
   if (originCandidates.length === 0) {
     return { error: "no_origin_station" };
@@ -169,8 +161,8 @@ export function planYouBikeTrip(
         continue;
       }
 
-      const fromName = stationLabel(originHit.station, input.language);
-      const toName = stationLabel(destHit.station, input.language);
+      const fromName = displayStationName(originHit.station, input.language);
+      const toName = displayStationName(destHit.station, input.language);
       const legs: YouBikeRouteLeg[] = [];
 
       if (originHit.distanceMeters > 25) {
