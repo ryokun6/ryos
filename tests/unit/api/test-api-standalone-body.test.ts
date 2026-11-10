@@ -207,6 +207,89 @@ describe("Bun fetch brotli guard", () => {
     expect(response.headers.get("x-ae")).toBe("identity");
   });
 
+  test("mid-stream gzip source errors reject the body without hanging", async () => {
+    const previousFetch = globalThis.fetch;
+    const partialGzip = gzipSync(Buffer.from("hello-world-payload")).subarray(0, 6);
+    // Install the guard over an unguarded stub so decodeResponse wraps it.
+    globalThis.fetch = (async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(partialGzip);
+          controller.error(new Error("socket reset"));
+        },
+      });
+      return new Response(body, {
+        headers: {
+          "content-encoding": "gzip",
+          "content-type": "text/plain",
+        },
+      });
+    }) as typeof fetch;
+    restoreGuard = installBunFetchBrotliGuard();
+
+    let unhandled = 0;
+    const onUnhandled = () => {
+      unhandled += 1;
+    };
+    process.on("unhandledRejection", onUnhandled);
+    try {
+      const response = await fetch("http://example.invalid/gz");
+      const raced = await Promise.race([
+        response.text().then(
+          (text) => ({ ok: true as const, text }),
+          (error: unknown) => ({ ok: false as const, error }),
+        ),
+        new Promise<{ ok: false; error: string }>((resolve) =>
+          setTimeout(() => resolve({ ok: false, error: "still-pending" }), 1500),
+        ),
+      ]);
+      expect(raced.ok).toBe(false);
+      expect((raced as { error: unknown }).error).not.toBe("still-pending");
+      expect(unhandled).toBe(0);
+    } finally {
+      process.off("unhandledRejection", onUnhandled);
+      restoreGuard();
+      restoreGuard = () => {};
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  test("cancelling a decoded gzip body cancels the upstream source", async () => {
+    const previousFetch = globalThis.fetch;
+    let upstreamCancelled = false;
+    const gz = gzipSync(Buffer.from("abcdefghijklmnop"));
+    globalThis.fetch = (async () => {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(gz);
+        },
+        cancel() {
+          upstreamCancelled = true;
+        },
+      });
+      return new Response(body, {
+        headers: {
+          "content-encoding": "gzip",
+          "content-type": "text/plain",
+        },
+      });
+    }) as typeof fetch;
+    restoreGuard = installBunFetchBrotliGuard();
+
+    try {
+      const response = await fetch("http://example.invalid/gz");
+      const reader = response.body!.getReader();
+      await reader.read();
+      await reader.cancel();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(upstreamCancelled).toBe(true);
+    } finally {
+      restoreGuard();
+      restoreGuard = () => {};
+      globalThis.fetch = previousFetch;
+    }
+  });
+
   test("standalone server installs the guard before it serves", async () => {
     const source = await Bun.file("scripts/api-standalone-server.ts").text();
     const bootstrap = source.slice(source.indexOf("async function bootstrap"));

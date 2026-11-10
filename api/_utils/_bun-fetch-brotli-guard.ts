@@ -1,6 +1,3 @@
-import { Readable } from "node:stream";
-import { createGunzip, createInflate } from "node:zlib";
-
 /**
  * Bun's fetch() decodes `Content-Encoding: br` with google/brotli, including
  * when the request did not advertise `br`. That decoder is missing the
@@ -8,9 +5,13 @@ import { createGunzip, createInflate } from "node:zlib";
  * 22.23.4 / 24.22.1 / 26.12.1; no Bun release has it yet.
  *
  * The API process refuses brotli (and any other coding it cannot decode with
- * Node's zlib) and inflates gzip/deflate itself. `decompress: false` is a
- * Bun fetch extension; without it the vulnerable decoder runs inside fetch
- * before this wrapper can see the body.
+ * a safe web DecompressionStream) and inflates gzip/deflate itself.
+ * `decompress: false` is a Bun fetch extension; without it the vulnerable
+ * decoder runs inside fetch before this wrapper can see the body.
+ *
+ * Decoding uses `DecompressionStream` (not `Readable.fromWeb` + zlib `.pipe`)
+ * so mid-stream source errors reject the body reader cleanly, cancellation
+ * reaches the upstream body, and we do not surface unhandled rejections.
  */
 
 const SAFE_CODINGS = new Set(["gzip", "x-gzip", "deflate", "identity"]);
@@ -59,19 +60,51 @@ const buildGuardedHeaders = (
   return headers;
 };
 
+const decompressionFormat = (
+  coding: string,
+): CompressionFormat | null => {
+  if (coding === "gzip" || coding === "x-gzip") return "gzip";
+  if (coding === "deflate") return "deflate";
+  return null;
+};
+
+/**
+ * Decode a compressed body with web TransformStreams. Errors from the source
+ * or the decoder surface via `controller.error` on the readable side; cancel
+ * propagates to the upstream reader.
+ */
 const inflateStream = (
   body: ReadableStream<Uint8Array>,
   codings: readonly string[],
 ): ReadableStream<Uint8Array> => {
-  let stream: Readable = Readable.fromWeb(body);
+  let stream = body;
   for (const coding of [...codings].reverse()) {
     if (coding === "identity") continue;
-    stream =
-      coding === "deflate"
-        ? stream.pipe(createInflate())
-        : stream.pipe(createGunzip());
+    const format = decompressionFormat(coding);
+    if (!format) {
+      // Caller already rejected unknown encodings; defend in depth.
+      throw new RejectedContentEncodingError([coding]);
+    }
+    stream = stream.pipeThrough(new DecompressionStream(format));
   }
-  return Readable.toWeb(stream) as ReadableStream<Uint8Array>;
+  return stream;
+};
+
+const copyResponseUrl = (from: Response, to: Response): Response => {
+  try {
+    const url = from.url;
+    if (url) {
+      Object.defineProperty(to, "url", {
+        value: url,
+        writable: false,
+        enumerable: true,
+        configurable: true,
+      });
+    }
+  } catch {
+    // Some runtimes make `url` non-configurable; leave the empty default.
+  }
+  return to;
 };
 
 const decodeResponse = async (response: Response): Promise<Response> => {
@@ -92,11 +125,12 @@ const decodeResponse = async (response: Response): Promise<Response> => {
   const headers = new Headers(response.headers);
   headers.delete("content-encoding");
   headers.delete("content-length");
-  return new Response(inflateStream(response.body, codings), {
+  const decoded = new Response(inflateStream(response.body, codings), {
     status: response.status,
     statusText: response.statusText,
     headers,
   });
+  return copyResponseUrl(response, decoded);
 };
 
 export const installBunFetchBrotliGuard = (): (() => void) => {

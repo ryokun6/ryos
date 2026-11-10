@@ -4,6 +4,11 @@ import { getClientIp } from "./_utils/_rate-limit.js";
 import { decodeHtmlEntitiesOnce } from "./_utils/html-entities.js";
 import { safeFetchWithRedirects, validatePublicUrl, SsrfBlockedError } from "./_utils/_ssrf.js";
 import { resolveSongShareLinkPreview } from "./_utils/og-share.js";
+import { readResponseTextPrefix } from "./_utils/_ie-html.js";
+import { extractLinkMetadataLinear } from "./_utils/_html-linear.js";
+
+/** OG / Twitter tags live in <head>; refuse to buffer multi‑MB bodies. */
+const LINK_PREVIEW_MAX_HTML_BYTES = 256_000;
 
 interface LinkMetadata {
   title?: string;
@@ -213,91 +218,55 @@ export default apiHandler(
         return;
       }
 
-      const html = await response.text();
+      const contentType = (response.headers.get("content-type") || "").toLowerCase();
+      if (
+        contentType &&
+        !contentType.includes("text/html") &&
+        !contentType.includes("application/xhtml")
+      ) {
+        try {
+          response.body?.cancel();
+        } catch {
+          /* ignore */
+        }
+        logger.warn("Non-HTML content type for link preview", { contentType });
+        logger.response(415, Date.now() - startTime);
+        res.status(415).json({ error: "URL did not return HTML" });
+        return;
+      }
+
+      // Bound the read and use linear tag scans — unbounded response.text()
+      // plus `/<meta[^>]*…/` regexes stalled the process on crafted pages.
+      const html = await readResponseTextPrefix(
+        response,
+        LINK_PREVIEW_MAX_HTML_BYTES
+      );
+      const extracted = extractLinkMetadataLinear(
+        html,
+        LINK_PREVIEW_MAX_HTML_BYTES
+      );
 
       const metadata: LinkMetadata = {
         url: finalUrl,
       };
 
-      const titleMatch = html.match(/<title[^>]*>(.*?)<\/title>/is);
-      if (titleMatch) {
-        metadata.title = titleMatch[1].trim().replace(/\s+/g, ' ');
+      if (extracted.title) {
+        metadata.title = decodeHtmlEntitiesOnce(extracted.title);
       }
-
-      const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (ogTitleMatch) {
-        metadata.title = ogTitleMatch[1].trim();
+      if (extracted.description) {
+        metadata.description = decodeHtmlEntitiesOnce(extracted.description);
       }
-
-      const ogDescriptionMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (ogDescriptionMatch) {
-        metadata.description = ogDescriptionMatch[1].trim();
-      }
-
-      const ogImageMatch = html.match(
-        /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i
-      );
-      if (ogImageMatch) {
-        const imageUrl = ogImageMatch[1].trim();
+      if (extracted.image) {
         try {
-          metadata.image = new URL(imageUrl, finalUrl).href;
+          metadata.image = new URL(extracted.image, finalUrl).href;
         } catch {
-          metadata.image = imageUrl;
+          metadata.image = extracted.image;
         }
       }
-
-      const ogSiteNameMatch = html.match(/<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-      if (ogSiteNameMatch) {
-        metadata.siteName = ogSiteNameMatch[1].trim();
-      }
-
-      if (!metadata.title) {
-        const twitterTitleMatch = html.match(/<meta[^>]*name=["']twitter:title["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-        if (twitterTitleMatch) {
-          metadata.title = twitterTitleMatch[1].trim();
-        }
-      }
-
-      if (!metadata.description) {
-        const twitterDescriptionMatch = html.match(/<meta[^>]*name=["']twitter:description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-        if (twitterDescriptionMatch) {
-          metadata.description = twitterDescriptionMatch[1].trim();
-        }
-      }
-
-      if (!metadata.image) {
-        const twitterImageMatch = html.match(
-          /<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["'][^>]*>/i
-        );
-        if (twitterImageMatch) {
-          const imageUrl = twitterImageMatch[1].trim();
-          try {
-            metadata.image = new URL(imageUrl, finalUrl).href;
-          } catch {
-            metadata.image = imageUrl;
-          }
-        }
-      }
-
-      if (!metadata.description) {
-        const metaDescriptionMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i);
-        if (metaDescriptionMatch) {
-          metadata.description = metaDescriptionMatch[1].trim();
-        }
-      }
-
-      if (!metadata.siteName) {
+      if (extracted.siteName) {
+        metadata.siteName = decodeHtmlEntitiesOnce(extracted.siteName);
+      } else {
         metadata.siteName = new URL(finalUrl).hostname;
-      }
-
-      if (metadata.title) {
-        metadata.title = decodeHtmlEntitiesOnce(metadata.title);
-      }
-      if (metadata.description) {
-        metadata.description = decodeHtmlEntitiesOnce(metadata.description);
-      }
-      if (metadata.siteName) {
-        metadata.siteName = decodeHtmlEntitiesOnce(metadata.siteName);
       }
 
       logger.info("Metadata extracted", { title: metadata.title, siteName: metadata.siteName });
@@ -317,7 +286,7 @@ export default apiHandler(
       } else if (error instanceof Error) {
         errorMessage = error.message;
 
-        if (error.name === "AbortError") {
+        if (error.name === "AbortError" || error.name === "TimeoutError") {
           errorMessage = "Request timeout";
           status = 408;
         } else if (error.name === "TypeError" && error.message.includes("fetch")) {
