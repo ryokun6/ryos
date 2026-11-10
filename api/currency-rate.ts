@@ -7,6 +7,7 @@ const RL_BURST_WINDOW = 60;
 const RL_DAILY_WINDOW = 60 * 60 * 24;
 
 const FRANKFURTER_V2 = "https://api.frankfurter.dev/v2";
+const ALLRATESTODAY_OPEN = "https://allratestoday.com/api/open";
 
 /** `GET /v2/rate/{base}/{quote}` — see https://frankfurter.dev/ */
 interface FrankfurterV2RateResponse {
@@ -21,6 +22,14 @@ interface OpenErApiResponse {
   base_code: string;
   rates?: Record<string, number>;
   time_last_update_utc?: string;
+}
+
+/** `GET /api/open/latest/{base}` — see https://allratestoday.com/docs/ */
+interface AllRatesTodayLatestResponse {
+  result: string;
+  base_code: string;
+  date: string;
+  rates?: Record<string, number>;
 }
 
 function normalizeCurrency(code: unknown): string | null {
@@ -75,6 +84,32 @@ async function fetchOpenErApiPair(
   }
   const rate = crossRateFromUsdRates(data.rates, from, to);
   return { rate, rateDate: erApiRateDate(data) };
+}
+
+async function fetchAllRatesTodayPair(
+  from: string,
+  to: string,
+  signal: AbortSignal
+): Promise<{ rate: number; rateDate: string }> {
+  const url = `${ALLRATESTODAY_OPEN}/latest/${encodeURIComponent(from)}`;
+  const res = await fetch(url, {
+    redirect: "follow",
+    signal,
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`AllRatesToday HTTP ${res.status}`);
+  const data = (await res.json()) as AllRatesTodayLatestResponse;
+  if (data.result !== "success" || !data.rates) {
+    throw new Error("AllRatesToday: bad payload");
+  }
+  const rate = data.rates[to];
+  if (typeof rate !== "number" || !Number.isFinite(rate)) {
+    throw new Error("AllRatesToday: missing rate");
+  }
+  const rateDate = /^\d{4}-\d{2}-\d{2}$/.test(data.date)
+    ? data.date
+    : new Date().toISOString().slice(0, 10);
+  return { rate, rateDate };
 }
 
 export default apiHandler(
@@ -143,7 +178,21 @@ export default apiHandler(
       res.status(200).json({ ...fallback, source: "open.er-api" });
       return;
     } catch (fallbackErr) {
-      logger.error("Currency rate fetch failed (both sources)", fallbackErr);
+      logger.info("open.er-api currency fetch failed, trying AllRatesToday", {
+        from,
+        to,
+        error: fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr),
+      });
+    }
+
+    try {
+      const signalTertiary = AbortSignal.timeout(10_000);
+      const tertiary = await fetchAllRatesTodayPair(from, to, signalTertiary);
+      logger.response(200, Date.now() - startTime);
+      res.status(200).json({ ...tertiary, source: "allratestoday" });
+      return;
+    } catch (tertiaryErr) {
+      logger.error("Currency rate fetch failed (all sources)", tertiaryErr);
       logger.response(502, Date.now() - startTime);
       res.status(502).json({ error: "Could not load exchange rate" });
     }
