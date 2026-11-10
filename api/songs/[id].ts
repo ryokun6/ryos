@@ -1985,8 +1985,7 @@ export default apiHandler<Record<string, unknown>>(
             ...existingSong,
             createdBy: undefined,
           },
-          { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true },
-          existingSong
+          { preserveLyrics: true, preserveTranslations: true, preserveFurigana: true }
         );
 
         logger.info("Song unshared (createdBy cleared)", { duration: `${Date.now() - startTime}ms` });
@@ -2051,8 +2050,7 @@ export default apiHandler<Record<string, unknown>>(
             preserveTranslations: true,
             preserveFurigana: true,
             preserveSoramimi: true,
-          },
-          existingSong
+          }
         );
         logger.info(existingSong ? "Lyric offset updated" : "Lyric offset created", {
           duration: `${Date.now() - startTime}ms`,
