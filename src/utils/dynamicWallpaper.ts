@@ -169,20 +169,6 @@ export function getShuffleCandidatePaths(
   return relative.map((p) => `/wallpapers/${p}`);
 }
 
-/** Pick a random candidate, preferring one different from `exclude`. */
-export function pickRandomCandidate(
-  candidates: string[],
-  exclude?: string | null
-): string | null {
-  if (candidates.length === 0) return null;
-  if (candidates.length === 1) return candidates[0];
-  const pool = exclude
-    ? candidates.filter((c) => c !== exclude)
-    : candidates;
-  const list = pool.length > 0 ? pool : candidates;
-  return list[Math.floor(Math.random() * list.length)];
-}
-
 /**
  * Wall-clock bucket index for shuffle rotation. The bucket advances once every
  * {@link SHUFFLE_INTERVAL_MS} and is aligned to the Unix epoch, so it is the

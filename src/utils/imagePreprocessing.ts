@@ -129,15 +129,3 @@ export async function preprocessImage(
   const quality = outputFormat === "image/png" ? undefined : opts.quality;
   return canvas.toDataURL(outputFormat, quality);
 }
-
-/**
- * Get the approximate size of a data URL in bytes
- */
-export function getDataUrlSize(dataUrl: string): number {
-  // Remove the data URL prefix to get just the base64 part
-  const base64 = dataUrl.split(",")[1];
-  if (!base64) return 0;
-
-  // Base64 encoding adds ~33% overhead, so actual byte size is ~75% of base64 length
-  return Math.round((base64.length * 3) / 4);
-}

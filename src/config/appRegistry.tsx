@@ -745,11 +745,6 @@ function resolveRegistryAppId(appId: AppId): AppId {
   return resolveAppId(appId) ?? appId;
 }
 
-// Helper function to get app metadata
-export const getAppMetadata = (appId: AppId) => {
-  return appRegistry[resolveRegistryAppId(appId)].metadata;
-};
-
 // Helper function to get app component
 export const getAppComponent = (appId: AppId) => {
   return appRegistry[resolveRegistryAppId(appId)].component;

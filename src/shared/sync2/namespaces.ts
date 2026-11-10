@@ -118,14 +118,6 @@ export function getSyncNamespaceCategory(namespace: SyncNamespace): SyncCategory
   return NAMESPACE_TO_CATEGORY[namespace];
 }
 
-export function getSyncNamespacesForCategory(
-  category: SyncCategory
-): SyncNamespace[] {
-  return SYNC_NAMESPACES.filter(
-    (namespace) => NAMESPACE_TO_CATEGORY[namespace] === category
-  );
-}
-
 export function getSyncKeyNamespace(key: string): SyncNamespace | null {
   const slash = key.indexOf("/");
   if (slash <= 0) return null;

@@ -66,14 +66,6 @@ export function hasKanaTextLocal(text: string): boolean {
   return KANA_REGEX.test(text);
 }
 
-/**
- * Check if text contains any Chinese characters (using local regex)
- */
-export function hasChineseTextLocal(text: string): boolean {
-  CHINESE_REGEX.lastIndex = 0;
-  return CHINESE_REGEX.test(text);
-}
-
 // ============================================================================
 // Ruby Rendering Functions
 // ============================================================================
@@ -214,20 +206,6 @@ export function renderChineseWithReadings(
   );
 }
 
-export function renderChineseWithPinyin(
-  text: string,
-  keyPrefix: string = "cn"
-): React.ReactNode {
-  return renderChineseWithPhonetics(text, keyPrefix, "pinyin");
-}
-
-export function renderChineseWithZhuyin(
-  text: string,
-  keyPrefix: string = "cn"
-): React.ReactNode {
-  return renderChineseWithPhonetics(text, keyPrefix, "zhuyin");
-}
-
 /**
  * Render Japanese kana with romaji as ruby annotation
  * Converts hiragana/katakana to Latin letters
@@ -332,35 +310,6 @@ export function renderFuriganaSegments(
       })()}
     </>
   );
-}
-
-/**
- * Render text with applicable romanization based on detected language
- * Returns plain text if no romanization matches
- */
-export function renderTextWithRomanization(
-  text: string,
-  options: RomanizationOptions,
-  keyPrefix: string = "rom"
-): React.ReactNode {
-  const { koreanRomanization = false, japaneseRomaji = false } = options;
-  const chinesePhonetic = resolveChinesePhonetic(options);
-  
-  if (chinesePhonetic && isChineseText(text)) {
-    return renderChineseWithPhonetics(text, keyPrefix, chinesePhonetic);
-  }
-  
-  // Check for Korean text and render with romanization if enabled
-  if (koreanRomanization && hasKoreanText(text)) {
-    return renderKoreanWithRomanization(text, keyPrefix);
-  }
-  
-  // Check for Japanese kana and render with romaji if enabled
-  if (japaneseRomaji && hasKanaTextLocal(text)) {
-    return renderKanaWithRomaji(text, keyPrefix);
-  }
-  
-  return text;
 }
 
 // ============================================================================
@@ -491,43 +440,4 @@ export function getFuriganaSegmentsPronunciationOnly(
   }
   
   return parts.join("");
-}
-
-/**
- * Render furigana segments as pronunciation-only (plain text replacement)
- * Returns only the phonetic content without ruby annotations
- */
-export function renderFuriganaSegmentsPronunciationOnly(
-  segments: FuriganaSegment[],
-  options: RomanizationOptions = {},
-  keyPrefix: string = "pron"
-): React.ReactNode {
-  return <span key={keyPrefix}>{getFuriganaSegmentsPronunciationOnly(segments, options)}</span>;
-}
-
-/**
- * Get pronunciation-only text based on detected language
- */
-export function getPronunciationOnlyText(
-  text: string,
-  options: RomanizationOptions
-): string {
-  const { koreanRomanization = false, japaneseRomaji = false } = options;
-  const chinesePhonetic = resolveChinesePhonetic(options);
-  
-  if (chinesePhonetic && isChineseText(text)) {
-    return getChinesePronunciationOnly(text, chinesePhonetic);
-  }
-  
-  // Check for Korean text and get romanization
-  if (koreanRomanization && hasKoreanText(text)) {
-    return getKoreanPronunciationOnly(text);
-  }
-  
-  // Check for Japanese kana and get romaji
-  if (japaneseRomaji && hasKanaTextLocal(text)) {
-    return getKanaPronunciationOnly(text);
-  }
-  
-  return text;
 }
