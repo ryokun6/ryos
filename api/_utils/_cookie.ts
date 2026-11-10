@@ -170,7 +170,12 @@ export function parseAuthCookie(
     const colonIdx = value.indexOf(":");
     if (colonIdx === -1) return null;
 
-    const username = decodeURIComponent(value.slice(0, colonIdx));
+    let username: string;
+    try {
+      username = decodeURIComponent(value.slice(0, colonIdx));
+    } catch {
+      return null;
+    }
     const token = value.slice(colonIdx + 1);
     if (username && token) return { username: username.toLowerCase(), token };
   }

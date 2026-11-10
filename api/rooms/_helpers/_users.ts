@@ -156,8 +156,16 @@ export async function handleGetUsers(
             try {
               if (!user) continue;
               const parsedUser = typeof user === "string" ? JSON.parse(user) : user;
-              if (parsedUser?.username) {
-                users.set(parsedUser.username.toLowerCase(), parsedUser);
+              if (parsedUser?.username && typeof parsedUser.username === "string") {
+                // The stored value is the auth profile (recovery email, ban
+                // state); only the public ChatUser fields may leave the server.
+                users.set(parsedUser.username.toLowerCase(), {
+                  username: parsedUser.username,
+                  lastActive:
+                    typeof parsedUser.lastActive === "number"
+                      ? parsedUser.lastActive
+                      : 0,
+                });
               }
             } catch {
               continue;

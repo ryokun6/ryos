@@ -105,6 +105,9 @@ export async function consumeRealtimeTicket(
   const key = redisKeys.realtime.ticket(await sha256RedisIdentifier(ticket));
   const username = await redis.get<string>(key);
   if (!username) return null;
-  await redis.del(key);
+  // Only the caller whose DEL removes the key wins; a concurrent consumer
+  // that read the same value sees 0 and is rejected.
+  const deleted = await redis.del(key);
+  if (deleted !== 1) return null;
   return typeof username === "string" ? username : String(username);
 }

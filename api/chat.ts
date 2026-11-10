@@ -456,10 +456,15 @@ export default apiHandler<{
     };
     const requestSocket = req.socket;
     req.once("aborted", abortGeneration);
+    // The standalone Bun server reports a client disconnect as "aborted" on
+    // the response; by the time it emits "close" there, writableEnded is
+    // already true.
+    res.once("aborted", abortGeneration);
     res.once("close", handleResponseClose);
     requestSocket?.once("close", abortGeneration);
     removeGenerationAbortListeners = () => {
       req.off("aborted", abortGeneration);
+      res.off("aborted", abortGeneration);
       res.off("close", handleResponseClose);
       requestSocket?.off("close", abortGeneration);
     };
