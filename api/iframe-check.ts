@@ -28,6 +28,10 @@ import {
   readResponseTextWithLimit,
   sanitizeProxiedHtml,
 } from "./_utils/_ie-html.js";
+import {
+  IE_MAX_RAW_PASSTHROUGH_BYTES,
+  streamBodyToResponse,
+} from "./_utils/_ie-stream.js";
 import { extractTitleText } from "./_utils/_html-linear.js";
 import {
   buildIeNavigationInterceptorScript,
@@ -303,99 +307,6 @@ async function resolveClosestWaybackSnapshot(
     return null;
   } finally {
     clearTimeout(timeout);
-  }
-}
-
-type StreamableResponse = {
-  write: (chunk: Buffer) => unknown;
-  end: () => unknown;
-  on?: (event: string, listener: (...args: unknown[]) => void) => unknown;
-  off?: (event: string, listener: (...args: unknown[]) => void) => unknown;
-};
-
-/**
- * Stream an undici/web `ReadableStream` response body to the Node-style
- * response without buffering the whole payload in memory. Works with the
- * standalone Bun server's response shim (`write`/`end`) as well as a plain
- * Node `ServerResponse`. Returns true if streaming succeeded.
- *
- * Stops and cancels the upstream reader when the client disconnects
- * (`aborted`/`close`) or when `write` returns false (shim sets this after
- * `writableEnded`, i.e. the client went away).
- *
- * TODO(H9): a hard byte ceiling for raw/non-HTML passthrough is still pending
- * product confirmation (audit suggested ~25MB). Leave unimplemented until
- * that decision lands — do not treat any local constant as final.
- */
-async function streamBodyToResponse(
-  body: ReadableStream<Uint8Array> | null,
-  res: StreamableResponse
-): Promise<boolean> {
-  if (!body) {
-    res.end();
-    return true;
-  }
-  const reader = body.getReader();
-  let aborted = false;
-  const markAborted = () => {
-    aborted = true;
-  };
-  res.on?.("aborted", markAborted);
-  res.on?.("close", markAborted);
-
-  const cancelReader = async () => {
-    try {
-      await reader.cancel();
-    } catch {
-      /* ignore */
-    }
-  };
-
-  try {
-    for (;;) {
-      if (aborted) {
-        await cancelReader();
-        return false;
-      }
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (aborted) {
-        await cancelReader();
-        return false;
-      }
-      if (value && value.length > 0) {
-        const ok = res.write(Buffer.from(value));
-        // Honor write=false: client gone / stream closed. Do not keep reading
-        // upstream into a dead response.
-        if (ok === false) {
-          aborted = true;
-          await cancelReader();
-          return false;
-        }
-      }
-    }
-    if (aborted) {
-      await cancelReader();
-      return false;
-    }
-    res.end();
-    return true;
-  } catch {
-    await cancelReader();
-    try {
-      res.end();
-    } catch {
-      /* ignore */
-    }
-    return false;
-  } finally {
-    res.off?.("aborted", markAborted);
-    res.off?.("close", markAborted);
-    try {
-      reader.releaseLock();
-    } catch {
-      /* ignore */
-    }
   }
 }
 
@@ -1440,10 +1351,28 @@ export default apiHandler(
         res.status(upstreamRes.status);
         const streamed = await streamBodyToResponse(
           upstreamRes.body as ReadableStream<Uint8Array> | null,
-          res
+          res,
+          {
+            maxBytes: IE_MAX_RAW_PASSTHROUGH_BYTES,
+            abortUpstream: () => {
+              try {
+                controller.abort();
+              } catch {
+                /* ignore */
+              }
+            },
+          }
         );
-        if (!streamed) {
-          logger.warn(`${label} proxy stream interrupted for ${targetUrl}`);
+        if (!streamed.ok) {
+          if (streamed.reason === "too_large") {
+            logger.warn(
+              `${label} proxy stream hit ${IE_MAX_RAW_PASSTHROUGH_BYTES}-byte ceiling for ${targetUrl} (wrote ${streamed.bytesWritten} bytes; truncating)`
+            );
+          } else {
+            logger.warn(
+              `${label} proxy stream interrupted for ${targetUrl} (${streamed.reason})`
+            );
+          }
         }
         logger.response(upstreamRes.status, Date.now() - startTime);
       };
