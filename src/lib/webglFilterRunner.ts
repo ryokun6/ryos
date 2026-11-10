@@ -1,8 +1,6 @@
-// New file with a simple WebGL filter runner utility.
-// This utility creates a minimal WebGL context, compiles shaders, and renders
-// a source (video or canvas) onto a temporary WebGL canvas with specified
-// filter uniforms. The resulting canvas can then be used to extract pixels.
-// This is significantly faster than CPU-based pixel manipulation for filters.
+// WebGL filter runner utility.
+// Reuses one compiled program + GL resources per fragment shader so Photo Booth
+// preview (~30fps) does not create/lose a WebGL context every frame.
 
 type Uniforms = {
   // Color filters
@@ -16,6 +14,47 @@ type Uniforms = {
   kaleidoscope?: number; ripple?: number; glitch?: number;
   center?: [number, number]; // Center point for distortions (default: [0.5, 0.5])
 };
+
+type FilterRunner = {
+  canvas: HTMLCanvasElement;
+  gl: WebGLRenderingContext;
+  program: WebGLProgram;
+  buffer: WebGLBuffer;
+  texture: WebGLTexture;
+  attribLocation: number;
+  colorUniformLocations: Map<string, WebGLUniformLocation | null>;
+  distortUniformLocations: Map<string, WebGLUniformLocation | null>;
+  centerUniformLocation: WebGLUniformLocation | null;
+};
+
+const VERTEX_SHADER_SOURCE =
+  "attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0,1);}";
+
+const COLOR_UNIFORM_NAMES = [
+  "brightness",
+  "contrast",
+  "hue",
+  "saturate",
+  "grayscale",
+  "sepia",
+  "invert",
+] as const;
+
+const DISTORT_UNIFORM_NAMES = [
+  "bulge",
+  "pinch",
+  "twist",
+  "fisheye",
+  "stretch",
+  "squeeze",
+  "tunnel",
+  "kaleidoscope",
+  "ripple",
+  "glitch",
+] as const;
+
+/** One runner per fragment source; Photo Booth reuses the same shader string. */
+const runnersByFragmentSource = new Map<string, FilterRunner>();
 
 // Helper to map CSS filter string to WebGL uniforms object
 // This is a simplified parser that only handles the filter functions
@@ -109,73 +148,181 @@ export function mapCssFilterStringToUniforms(filterString: string): Record<strin
   return uniforms;
 }
 
+function loseRunnerContext(runner: FilterRunner): void {
+  const loseContext = runner.gl.getExtension("WEBGL_lose_context");
+  loseContext?.loseContext();
+}
+
+function disposeRunner(runner: FilterRunner): void {
+  const { gl, program, buffer, texture } = runner;
+  try {
+    gl.deleteTexture(texture);
+    gl.deleteBuffer(buffer);
+    gl.deleteProgram(program);
+  } catch {
+    // Context may already be lost.
+  }
+  loseRunnerContext(runner);
+}
+
+/** Test helper: drop cached GL resources between suites. */
+export function resetWebglFilterRunnersForTests(): void {
+  for (const runner of runnersByFragmentSource.values()) {
+    disposeRunner(runner);
+  }
+  runnersByFragmentSource.clear();
+}
+
+function createRunner(fragmentSource: string): FilterRunner {
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl");
+  if (!gl) throw new Error("WebGL unavailable");
+
+  const vs = gl.createShader(gl.VERTEX_SHADER);
+  const fs = gl.createShader(gl.FRAGMENT_SHADER);
+  const prog = gl.createProgram();
+  if (!vs || !fs || !prog) {
+    if (vs) gl.deleteShader(vs);
+    if (fs) gl.deleteShader(fs);
+    if (prog) gl.deleteProgram(prog);
+    throw new Error("WebGL shader allocation failed.");
+  }
+
+  try {
+    gl.shaderSource(vs, VERTEX_SHADER_SOURCE);
+    gl.compileShader(vs);
+    if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+      console.error("Vertex shader compilation error:", gl.getShaderInfoLog(vs));
+      throw new Error("Vertex shader compilation failed.");
+    }
+
+    gl.shaderSource(fs, fragmentSource);
+    gl.compileShader(fs);
+    if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+      console.error(
+        "Fragment shader compilation error:",
+        gl.getShaderInfoLog(fs)
+      );
+      throw new Error("Fragment shader compilation failed.");
+    }
+
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.error("Shader program linking error:", gl.getProgramInfoLog(prog));
+      throw new Error("Shader program linking failed.");
+    }
+  } catch (error) {
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    gl.deleteProgram(prog);
+    const loseContext = gl.getExtension("WEBGL_lose_context");
+    loseContext?.loseContext();
+    throw error;
+  }
+
+  // Shaders are no longer needed once the program has linked.
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
+
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  if (!buf) {
+    gl.deleteProgram(prog);
+    throw new Error("WebGL buffer allocation failed.");
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, +1, -1, -1, +1, +1, +1]),
+    gl.STATIC_DRAW
+  );
+  const attribLocation = gl.getAttribLocation(prog, "a");
+  gl.enableVertexAttribArray(attribLocation);
+  gl.vertexAttribPointer(attribLocation, 2, gl.FLOAT, false, 0, 0);
+
+  const tex = gl.createTexture();
+  if (!tex) {
+    gl.deleteBuffer(buf);
+    gl.deleteProgram(prog);
+    throw new Error("WebGL texture allocation failed.");
+  }
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const colorUniformLocations = new Map<string, WebGLUniformLocation | null>();
+  for (const name of COLOR_UNIFORM_NAMES) {
+    colorUniformLocations.set(name, gl.getUniformLocation(prog, `u_${name}`));
+  }
+  const distortUniformLocations = new Map<
+    string,
+    WebGLUniformLocation | null
+  >();
+  for (const name of DISTORT_UNIFORM_NAMES) {
+    distortUniformLocations.set(name, gl.getUniformLocation(prog, `u_${name}`));
+  }
+
+  return {
+    canvas,
+    gl,
+    program: prog,
+    buffer: buf,
+    texture: tex,
+    attribLocation,
+    colorUniformLocations,
+    distortUniformLocations,
+    centerUniformLocation: gl.getUniformLocation(prog, "u_center"),
+  };
+}
+
+function getRunner(fragmentSource: string): FilterRunner {
+  const existing = runnersByFragmentSource.get(fragmentSource);
+  if (existing) {
+    // Context can be lost when the browser hits its live-context cap.
+    if (!existing.gl.isContextLost()) {
+      return existing;
+    }
+    runnersByFragmentSource.delete(fragmentSource);
+    disposeRunner(existing);
+  }
+
+  const runner = createRunner(fragmentSource);
+  runnersByFragmentSource.set(fragmentSource, runner);
+  return runner;
+}
+
 export async function runFilter(
   source: HTMLCanvasElement | HTMLVideoElement,
   uniforms: Uniforms,
   fragmentSource: string
 ): Promise<HTMLCanvasElement> {
-  const w = source instanceof HTMLVideoElement ? source.videoWidth  : source.width;
-  const h = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+  // Prefer duck-typing over `instanceof HTMLVideoElement` so unit tests (and
+  // non-DOM hosts) can supply a canvas-like source without a full DOM.
+  const isVideo =
+    typeof HTMLVideoElement !== "undefined" &&
+    source instanceof HTMLVideoElement;
+  const w = isVideo ? source.videoWidth : (source as HTMLCanvasElement).width;
+  const h = isVideo ? source.videoHeight : (source as HTMLCanvasElement).height;
 
-  const glCanvas = document.createElement("canvas");
-  glCanvas.width = w;
-  glCanvas.height = h;
-  const gl = glCanvas.getContext("webgl");
-  if (!gl) throw new Error("WebGL unavailable");
+  const runner = getRunner(fragmentSource);
+  const { canvas: glCanvas, gl, program } = runner;
 
-  // ––– compile shader pair –––
-  const vs = gl.createShader(gl.VERTEX_SHADER)!;
-  gl.shaderSource(vs, `attribute vec2 a;varying vec2 v;void main(){v=a*0.5+0.5;gl_Position=vec4(a,0,1);}`);
-  gl.compileShader(vs);
-
-  const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-  gl.shaderSource(fs, fragmentSource);
-  gl.compileShader(fs);
-
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
-
-  // Check compilation and linking status *after* creation/linking
-  if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
-    console.error('Vertex shader compilation error:', gl.getShaderInfoLog(vs));
-    gl.deleteShader(vs);
-    gl.deleteProgram(prog);
-    throw new Error("Vertex shader compilation failed.");
+  if (glCanvas.width !== w || glCanvas.height !== h) {
+    glCanvas.width = w;
+    glCanvas.height = h;
   }
 
-   if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-    console.error('Fragment shader compilation error:', gl.getShaderInfoLog(fs));
-    gl.deleteShader(fs);
-     gl.deleteProgram(prog);
-    throw new Error("Fragment shader compilation failed.");
-  }
-
-   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error('Shader program linking error:', gl.getProgramInfoLog(prog));
-    gl.deleteProgram(prog);
-    throw new Error("Shader program linking failed.");
-  }
-
-  gl.useProgram(prog);
-
-  // ––– supply quad –––
-  const buf = gl.createBuffer()!;
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-      -1,-1, +1,-1, -1,+1, +1,+1,
-  ]), gl.STATIC_DRAW);
-  const loc = gl.getAttribLocation(prog, "a");
-  gl.enableVertexAttribArray(loc);
-  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.useProgram(program);
+  gl.bindBuffer(gl.ARRAY_BUFFER, runner.buffer);
+  gl.enableVertexAttribArray(runner.attribLocation);
+  gl.vertexAttribPointer(runner.attribLocation, 2, gl.FLOAT, false, 0, 0);
 
   // ––– upload texture –––
-  const tex = gl.createTexture()!;
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.bindTexture(gl.TEXTURE_2D, runner.texture);
   // Use `unpackFlipYWEBGL` to correctly orient video texture
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
@@ -207,23 +354,19 @@ export async function runFilter(
     glitch: uniforms.glitch ?? 0.0
   };
 
-  // Set all color filter uniforms
-  Object.entries(colorUniforms).forEach(([k, v]) => {
-    const u = gl.getUniformLocation(prog, `u_${k}`); 
-    if (u) gl.uniform1f(u, v as number);
-  });
+  for (const [k, v] of Object.entries(colorUniforms)) {
+    const u = runner.colorUniformLocations.get(k);
+    if (u) gl.uniform1f(u, v);
+  }
 
-  // Set all distortion effect uniforms
-  Object.entries(distortUniforms).forEach(([k, v]) => {
-    const u = gl.getUniformLocation(prog, `u_${k}`);
-    if (u) gl.uniform1f(u, v as number);
-  });
+  for (const [k, v] of Object.entries(distortUniforms)) {
+    const u = runner.distortUniformLocations.get(k);
+    if (u) gl.uniform1f(u, v);
+  }
 
-  // Set center point for distortions
-  const centerU = gl.getUniformLocation(prog, 'u_center');
-  if (centerU) {
+  if (runner.centerUniformLocation) {
     const center = uniforms.center ?? [0.5, 0.5];
-    gl.uniform2f(centerU, center[0], center[1]);
+    gl.uniform2f(runner.centerUniformLocation, center[0], center[1]);
   }
 
   // ––– draw –––
@@ -234,4 +377,4 @@ export async function runFilter(
 
   // Return the canvas containing the rendered GL output
   return glCanvas;
-} 
+}

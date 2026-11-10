@@ -136,12 +136,36 @@ export interface SyncCodec {
   isReady?(): boolean;
 }
 
+/** Details passed to blob `afterApply` after a put/delete batch lands. */
+export interface BlobAfterApplyDetails {
+  deletedKeys: string[];
+  putKeys: string[];
+}
+
 /** Blob codecs additionally expose raw item access for content uploads. */
 export interface BlobSyncCodec extends SyncCodec {
   storeName: string;
   putItems(items: StoreItemWithKey[], ctx: CodecContext): Promise<void>;
   deleteItems(keys: string[], ctx: CodecContext): Promise<void>;
-  afterApply?(ctx: CodecContext): Promise<void>;
+  afterApply?(
+    ctx: CodecContext,
+    details?: BlobAfterApplyDetails
+  ): Promise<void>;
+}
+
+/**
+ * Decide what to do with the selected `indexeddb://` wallpaper after a
+ * wallpaper blob batch. Catalog-first sync applies settings before bytes
+ * land, so "missing from the local store" alone must not mean "deleted".
+ */
+export function resolveCustomWallpaperSelectionAction(options: {
+  wallpaperId: string;
+  localKeys: ReadonlySet<string>;
+  deletedKeys: readonly string[];
+}): "refresh" | "reset" | "keep" {
+  if (options.localKeys.has(options.wallpaperId)) return "refresh";
+  if (options.deletedKeys.includes(options.wallpaperId)) return "reset";
+  return "keep";
 }
 
 /** Maps v1 deletion-marker buckets to v2 key prefixes (for corroboration). */
@@ -2560,9 +2584,12 @@ const booksHighlightsCodec: SyncCodec = {
 // Blob codecs (images / trash / applets / wallpapers)
 // ---------------------------------------------------------------------------
 
-async function finalizeCustomWallpaperSync(ctx: CodecContext): Promise<void> {
+async function finalizeCustomWallpaperSync(
+  ctx: CodecContext,
+  details?: BlobAfterApplyDetails
+): Promise<void> {
   const db = requireDb(ctx, "wallpapers");
-  const remoteKeys = new Set(
+  const localKeys = new Set(
     (await readStoreItems(db, STORES.CUSTOM_WALLPAPERS)).map((item) => item.key)
   );
   const displayStore = useDisplaySettingsStore.getState();
@@ -2570,9 +2597,17 @@ async function finalizeCustomWallpaperSync(ctx: CodecContext): Promise<void> {
 
   if (current?.startsWith("indexeddb://")) {
     const id = current.substring("indexeddb://".length);
-    if (remoteKeys.has(id)) {
+    const action = resolveCustomWallpaperSelectionAction({
+      wallpaperId: id,
+      localKeys,
+      deletedKeys: details?.deletedKeys ?? [],
+    });
+    if (action === "refresh") {
       await displayStore.setWallpaper(current);
-    } else {
+    } else if (action === "reset") {
+      // Only reset when this wallpaper was explicitly deleted in the batch.
+      // A sibling blob finishing while this one's download is still queued
+      // used to look like a remote delete and sync the default to every device.
       useDisplaySettingsStore.setState({
         currentWallpaper: DEFAULT_WALLPAPER_PATH,
         wallpaperSource: "",
@@ -2596,7 +2631,12 @@ function createBlobCodec(
     | "wallpapers"
     | "stuff-images",
   storeName: string,
-  options?: { afterApply?: (ctx: CodecContext) => Promise<void> }
+  options?: {
+    afterApply?: (
+      ctx: CodecContext,
+      details?: BlobAfterApplyDetails
+    ) => Promise<void>;
+  }
 ): BlobSyncCodec {
   return {
     namespace,
@@ -2699,7 +2739,10 @@ export function isBlobCodec(codec: SyncCodec): codec is BlobSyncCodec {
 
 /**
  * Namespace apply order within a batch: wallpapers before settings so
- * indexeddb:// wallpaper references resolve during the same sync pass.
+ * indexeddb:// wallpaper references prefer a blob that already landed.
+ * Catalog-first sync may still apply settings before deferred wallpaper
+ * bytes arrive; `finalizeCustomWallpaperSync` must not treat that gap as
+ * a remote delete.
  */
 export const NAMESPACE_APPLY_ORDER: SyncNamespace[] = [
   "wallpapers",

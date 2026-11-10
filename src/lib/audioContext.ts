@@ -31,6 +31,14 @@ let audioContext: AudioContext | null = null;
 // Concurrency control for resumeAudioContext to prevent race conditions
 let resumeInProgress: Promise<void> | null = null;
 
+/**
+ * Chrome (and Chromium-based browsers) leave `AudioContext.resume()` pending
+ * forever when called without a user gesture. Without a timeout, that pending
+ * promise pins `resumeInProgress` and every later caller — including ones
+ * inside a real click — waits forever, so UI sounds stay silent until reload.
+ */
+export const AUDIO_RESUME_TIMEOUT_MS = 750;
+
 // Context change event system for modules that need to reset state when context is recreated
 type ContextChangeListener = (newContext: AudioContext) => void;
 const contextChangeListeners = new Set<ContextChangeListener>();
@@ -144,6 +152,54 @@ export type ResumeAudioContextOptions = {
   allowRecreate?: boolean;
 };
 
+type ResumeAttemptResult = "running" | "failed" | "timeout";
+
+/**
+ * Race a resume() promise against a timeout. Exported for unit tests —
+ * Chromium leaves resume() pending forever without user activation.
+ */
+export async function raceAudioContextResume(
+  resume: () => Promise<void>,
+  timeoutMs = AUDIO_RESUME_TIMEOUT_MS
+): Promise<"settled" | "failed" | "timeout"> {
+  return Promise.race([
+    resume()
+      .then(() => "settled" as const)
+      .catch(() => "failed" as const),
+    new Promise<"timeout">((resolve) => {
+      setTimeout(() => resolve("timeout"), timeoutMs);
+    }),
+  ]);
+}
+
+/**
+ * Call `ctx.resume()` but never hang forever. Chromium leaves the promise
+ * pending when there is no user activation; treat that as a timeout so the
+ * shared `resumeInProgress` lock can clear and a later gesture can retry.
+ */
+async function attemptResume(
+  ctx: AudioContext,
+  timeoutMs = AUDIO_RESUME_TIMEOUT_MS
+): Promise<ResumeAttemptResult> {
+  try {
+    const outcome = await raceAudioContextResume(() => ctx.resume(), timeoutMs);
+
+    if (outcome === "timeout") {
+      log.debug("AudioContext.resume() timed out; likely no user gesture");
+      return "timeout";
+    }
+    if (outcome === "failed") {
+      return "failed";
+    }
+
+    const resumed = await waitForRunningState(ctx);
+    return resumed ? "running" : "failed";
+  } catch (err) {
+    log.debug("Failed to resume AudioContext", err);
+    return "failed";
+  }
+}
+
 /**
  * Ensure the global `AudioContext` is in the `running` state. If it is
  * `suspended`/`interrupted`, attempt `resume()`. If that fails, optionally
@@ -165,12 +221,7 @@ export const resumeAudioContext = async (
     if (!allowRecreate) {
       const ctx = getAudioContext();
       if (ctx.state !== "running" && ctx.state !== "closed") {
-        try {
-          await ctx.resume();
-          await waitForRunningState(ctx);
-        } catch {
-          // Still need a user gesture; keep the existing context.
-        }
+        await attemptResume(ctx);
       }
       return;
     }
@@ -183,19 +234,16 @@ export const resumeAudioContext = async (
     let state = ctx.state as AudioContextState | "interrupted";
 
     if (state === "suspended" || state === "interrupted") {
-      try {
-        await ctx.resume();
-        // Safari may need a moment for the state to actually update
-        const resumed = await waitForRunningState(ctx);
-        if (resumed) {
-          log.debug("Resumed AudioContext");
-          return; // Successfully resumed, exit early
-        }
-      } catch (err) {
-        // Expected on iOS Safari when the context is "interrupted"/"suspended"
-        // (e.g. returning from background). We immediately recreate the context
-        // below, so keep this at debug level to avoid alarming error noise.
-        log.debug("Failed to resume AudioContext", err);
+      const result = await attemptResume(ctx);
+      if (result === "running") {
+        log.debug("Resumed AudioContext");
+        return;
+      }
+      // A timeout means resume() never settled (no user activation). Keep the
+      // existing context so a later gesture-scoped resume can unlock it —
+      // closing/recreating here would just create another suspended context.
+      if (result === "timeout") {
+        return;
       }
     }
 
@@ -222,12 +270,13 @@ export const resumeAudioContext = async (
 
       // The new context may also start suspended on Safari - try to resume it
       if (ctx.state !== "running") {
-        try {
-          await ctx.resume();
-          await waitForRunningState(ctx);
+        const result = await attemptResume(ctx);
+        if (result === "running") {
           log.debug("Resumed newly created AudioContext");
-        } catch (err) {
-          log.debug("Could not resume new context; may need user gesture", err);
+        } else {
+          log.debug("Could not resume new context; may need user gesture", {
+            result,
+          });
         }
       }
     }

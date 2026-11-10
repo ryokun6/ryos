@@ -1863,6 +1863,7 @@ export class CloudSyncEngine {
         if (item.uuid && item.name) namesByUuid.set(item.uuid, item.name);
       }
 
+      const putKeys: string[] = [];
       await forEachTransfer(downloads, async ({ op, contentHash, size }, index) => {
         this.abortController.signal.throwIfAborted();
         const storeKey = op.k.slice(prefix.length);
@@ -1913,11 +1914,23 @@ export class CloudSyncEngine {
         if (pendingContent) return;
         await codec.putItems([item], ctx);
         this.state.setShadow(op.k, { t: op.t, h: contentHash || digest });
+        putKeys.push(storeKey);
       });
+
+      if (codec.afterApply) {
+        await codec.afterApply(ctx, {
+          deletedKeys: deletes,
+          putKeys,
+        });
+        return;
+      }
     }
 
-    if ((deletes.length > 0 || downloads.length > 0) && codec.afterApply) {
-      await codec.afterApply(ctx);
+    if (deletes.length > 0 && codec.afterApply) {
+      await codec.afterApply(ctx, {
+        deletedKeys: deletes,
+        putKeys: [],
+      });
     }
   }
 
