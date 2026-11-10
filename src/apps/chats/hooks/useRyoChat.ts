@@ -36,9 +36,10 @@ export function useRyoChat({
 
   const handleRyoMention = useCallback(
     async (messageContent: string) => {
-      // Get recent chat room messages as context (last 20 messages)
+      // Get recent chat room messages as context (last 10; matches
+      // MAX_RYO_REPLY_RECENT_MESSAGES on /api/ai/ryo-reply).
       const recentMessages = roomMessages
-        .slice(-20)
+        .slice(-10)
         .map((msg) => `${msg.username}: ${msg.content}`)
         .join("\n");
 
