@@ -368,5 +368,3 @@ export const TvVideoDrawer = memo(function TvVideoDrawer({
     </AppDrawer>
   );
 });
-
-export const TV_DRAWER_WIDTH = DRAWER_WIDTH;

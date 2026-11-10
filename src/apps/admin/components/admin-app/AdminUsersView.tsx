@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { MagnifyingGlass, Trash, Prohibit } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { isRyoAdminUsername } from "@/shared/aiModels";
 import {
   adminAvatarWellClass,
   adminGhostIconBtnClass,
@@ -106,7 +107,7 @@ export function AdminUsersView({
                         <Prohibit className="size-2.5" weight="bold" />
                         {t("apps.admin.user.banned")}
                       </span>
-                    ) : user.username.toLowerCase() === "ryo" ? (
+                    ) : isRyoAdminUsername(user.username) ? (
                       <span className="px-1.5 py-0.5 text-[9px] bg-blue-100 text-blue-700 rounded">
                         {t("apps.admin.user.admin")}
                       </span>
@@ -120,7 +121,7 @@ export function AdminUsersView({
                     {formatRelativeTime(user.lastActive)}
                   </TableCell>
                   <TableCell>
-                    {user.username !== "ryo" && (
+                    {!isRyoAdminUsername(user.username) && (
                       <Button
                         variant="ghost"
                         size="sm"

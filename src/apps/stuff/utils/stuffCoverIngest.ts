@@ -112,12 +112,13 @@ export function isLikelyPlainImageUrl(url: string): boolean {
 }
 
 function decodeHtmlAttr(value: string): string {
+  // `&amp;` last so `&amp;lt;` decodes to `&lt;`, not `<`.
   return value
-    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 }
 
 /** Pull the first `<img src>` from clipboard HTML (Chrome "Copy image"). */

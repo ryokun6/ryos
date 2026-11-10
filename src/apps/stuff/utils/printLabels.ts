@@ -127,13 +127,6 @@ export async function renderBarcodeSvg(
   }
 }
 
-export async function renderStuffIdBarcodeSvg(
-  kind: StuffLabelKind,
-  id: string
-): Promise<string | null> {
-  return renderBarcodeSvg(encodeStuffId(kind, id), "CODE128");
-}
-
 /**
  * Square QR for ryOS Stuff ids (print labels). Rendered with the client
  * renderer that is already loaded; `react-dom/server` would add the whole

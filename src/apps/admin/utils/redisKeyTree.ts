@@ -1,15 +1,15 @@
 /**
  * Pure helpers that turn a flat list of Redis keys into a navigable,
- * prefix-grouped tree (folders + leaves), breadcrumb segments, and a
- * breadcrumb segments. Kept free of React/UI so it can be unit tested.
+ * prefix-grouped tree (folders + leaves) and breadcrumb segments. Kept free of React/UI so it can be unit tested.
  *
  * Redis keys in ryOS are namespaced with `:` (e.g. `chat:room:abc`), so we
  * group keys by that separator and let the UI drill into one level at a time.
  */
 
-import { CANONICAL_REDIS_PREFIXES } from "../../../shared/redisKeys";
-
-export const REDIS_KEY_SEPARATOR = ":";
+import {
+  CANONICAL_REDIS_PREFIXES,
+  REDIS_KEY_SEPARATOR,
+} from "../../../shared/redisKeys";
 
 /**
  * Top-level Redis namespaces ryOS is known to use, surfaced as instant

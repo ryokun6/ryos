@@ -147,7 +147,7 @@ function highlightWindow(doc: Document | null | undefined) {
   };
 }
 
-function listAnnotationContents(rendition: Rendition): Contents[] {
+export function listAnnotationContents(rendition: Rendition): Contents[] {
   const raw = rendition.getContents() as unknown;
   if (!raw) return [];
   return (Array.isArray(raw) ? raw : [raw]) as Contents[];
@@ -379,15 +379,7 @@ export function useBooksAnnotations({
   const clearDocumentSelections = useCallback(() => {
     const rendition = getRendition();
     if (!rendition) return;
-    const renditionContents = rendition.getContents() as unknown;
-    const contentsList = (
-      Array.isArray(renditionContents)
-        ? renditionContents
-        : renditionContents
-          ? [renditionContents]
-          : []
-    ) as Contents[];
-    for (const contents of contentsList) {
+    for (const contents of listAnnotationContents(rendition)) {
       try {
         contents.window?.getSelection()?.removeAllRanges();
       } catch {
@@ -641,15 +633,7 @@ export function useBooksAnnotations({
     };
 
     const attachToCurrentContents = () => {
-      const renditionContents = rendition.getContents() as unknown;
-      const contentsList = (
-        Array.isArray(renditionContents)
-          ? renditionContents
-          : renditionContents
-            ? [renditionContents]
-            : []
-      ) as Contents[];
-      contentsList.forEach(attachSelectionClearListener);
+      listAnnotationContents(rendition).forEach(attachSelectionClearListener);
     };
 
     const handleRendered = () => attachToCurrentContents();

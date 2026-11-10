@@ -160,10 +160,15 @@ export async function detectCoverImageTransparency(
 
   try {
     const result = await probe;
-    if (key) transparencyCache.set(key, result);
+    // Skip the write when the key was invalidated (or re-probed) meanwhile.
+    if (key && transparencyInflight.get(key) === probe) {
+      transparencyCache.set(key, result);
+    }
     return result;
   } finally {
-    if (key) transparencyInflight.delete(key);
+    if (key && transparencyInflight.get(key) === probe) {
+      transparencyInflight.delete(key);
+    }
   }
 }
 

@@ -27,7 +27,6 @@ export type FocusArea = (typeof FOCUS_AREAS)[number];
 
 /** 0 = Monday … 6 = Sunday. */
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export const WEEKDAYS: readonly Weekday[] = [0, 1, 2, 3, 4, 5, 6];
 
 export interface ScheduleDay {
   focus: FocusArea;

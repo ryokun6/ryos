@@ -26,16 +26,6 @@ export function formatTextEditWindowTitle({
   return dirty ? `${base} •` : base;
 }
 
-export const getContentAsString = async (
-  content: string | Blob | undefined
-): Promise<string> => {
-  if (!content) return "";
-  if (content instanceof Blob) {
-    return await content.text();
-  }
-  return content;
-};
-
 export const generateSuggestedFilename = (
   customTitle: string | undefined,
   editor: Editor | null

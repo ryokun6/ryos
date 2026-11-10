@@ -49,7 +49,6 @@ import {
   type DispatchToolCallResult,
 } from "./toolOpenResult";
 
-export { trackNewTextEditInstance } from "./vfsHandlers";
 
 export interface SharedToolCall {
   toolName: string;

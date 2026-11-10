@@ -114,12 +114,16 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
       setServerInfo(serverRes);
     } catch (err) {
       console.error("Failed to fetch server info:", err);
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("apps.admin.dashboard.failedToLoad")
+      );
       setServerInfo(null);
     } finally {
       setIsLoading(false);
     }
-  }, [username, isAuthenticated]);
+  }, [username, isAuthenticated, t]);
 
   useEffect(() => {
     void fetchData();
@@ -153,7 +157,7 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
         <div className="flex flex-col items-center gap-2 py-6">
           <span className="text-[11px] text-red-600">{error}</span>
           <Button variant="outline" size="sm" onClick={() => void fetchData()}>
-            {t("common.retry", "Retry")}
+            {t("apps.admin.dashboard.retry")}
           </Button>
         </div>
       ) : (

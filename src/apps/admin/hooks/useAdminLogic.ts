@@ -38,20 +38,6 @@ import type { AdminInitialData } from "../types";
 import { formatAdminRelativeTime } from "../utils/adminTime";
 import { helpItems } from "..";
 
-/**
- * Format Kugou image URL with size and HTTPS
- * Kugou URLs contain {size} placeholder that needs to be replaced
- */
-function formatKugouImageUrl(
-  imgUrl: string | undefined,
-  size: number = 100
-): string | null {
-  if (!imgUrl) return null;
-  let url = imgUrl.replace("{size}", String(size));
-  url = url.replace(/^http:\/\//, "https://");
-  return url;
-}
-
 interface User {
   username: string;
   lastActive: number;
@@ -1184,7 +1170,7 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
 
   const handleRefresh = useCallback(() => {
     if (isOffline) {
-      toast.error(t("common.offline", "You are offline"));
+      toast.error(t("common.offline.title"));
       return;
     }
     void loadIndependentAdminDatasets();
@@ -1333,6 +1319,5 @@ export function useAdminLogic({ isWindowOpen, initialData }: UseAdminLogicProps)
     handleRefresh,
     promptDelete,
     formatRelativeTime,
-    formatKugouImageUrl,
   };
 }

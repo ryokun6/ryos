@@ -3,11 +3,6 @@ import type { UnitSystem } from "../types";
 export const KG_PER_LB = 0.45359237;
 export const CM_PER_IN = 2.54;
 
-export function roundTo(value: number, step: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.round(value / step) * step;
-}
-
 /** Trim floating-point noise (e.g. 72.30000000001 → 72.3). */
 export function tidy(value: number, decimals = 1): number {
   const factor = 10 ** decimals;

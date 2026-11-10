@@ -14,12 +14,6 @@ import type { StuffItem } from "../types";
 import { prepareStuffCoverBlob } from "./stuffCoverCompress";
 import { invalidateCoverTransparencyCache } from "./stuffCoverCutout";
 
-export {
-  prepareStuffCoverBlob,
-  STUFF_COVER_MAX_EDGE,
-  STUFF_IMAGE_MAX_BYTES,
-} from "./stuffCoverCompress";
-
 export interface StuffCoverRecord {
   name: string;
   content: Blob;
@@ -134,9 +128,7 @@ export async function putStuffCoverBlob(
   };
   await dbOperations.put(STORES.STUFF_IMAGES, record, coverBlobId);
   useCloudSyncStore.getState().clearDeletedKeys("stuffCoverKeys", [coverBlobId]);
-  invalidateCoverTransparencyCache(coverBlobId);
-  revokeObjectUrl(coverBlobId);
-  bumpStuffCoversRevision();
+  invalidateStuffCoverCache(coverBlobId);
   emitCoverDirty(coverBlobId);
 }
 
@@ -157,9 +149,7 @@ export async function deleteStuffCoverBlob(
   } catch (error) {
     console.error("[StuffCovers] Failed to delete cover blob:", error);
   }
-  invalidateCoverTransparencyCache(coverBlobId);
-  revokeObjectUrl(coverBlobId);
-  bumpStuffCoversRevision();
+  invalidateStuffCoverCache(coverBlobId);
   if (options?.tombstone !== false) {
     emitCoverDirty(coverBlobId);
   }
@@ -182,6 +172,9 @@ export async function getStuffCoverObjectUrl(
   const record = await getStuffCoverRecord(coverBlobId);
   const content = record?.content;
   if (!(content instanceof Blob) || content.size === 0) return undefined;
+  // A concurrent caller may have resolved the same cover while we awaited.
+  const raced = objectUrls.get(coverBlobId);
+  if (raced) return raced;
   const url = URL.createObjectURL(content);
   objectUrls.set(coverBlobId, url);
   return url;

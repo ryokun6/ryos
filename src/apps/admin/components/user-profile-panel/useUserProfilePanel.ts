@@ -14,6 +14,7 @@ import {
   unbanAdminUser,
 } from "@/api/admin";
 import { ApiRequestError } from "@/api/core";
+import { isRyoAdminUsername } from "@/shared/aiModels";
 import {
   HEARTBEAT_LOOKBACK_DAYS,
   RECENT_MESSAGES_LIMIT,
@@ -315,7 +316,7 @@ export function useUserProfilePanel({
     return new Date(timestamp).toLocaleString();
   };
 
-  const isTargetAdmin = username.toLowerCase() === "ryo";
+  const isTargetAdmin = isRyoAdminUsername(username);
   const roomsCount = profile?.rooms?.length ?? 0;
   const messagesCount = hasLoadedMessages
     ? messages.length
@@ -342,7 +343,6 @@ export function useUserProfilePanel({
     isMessagesOpen,
     isMemoriesOpen,
     isHeartbeatsOpen,
-    hasLoadedMessages,
     hasLoadedMemories,
     hasLoadedHeartbeats,
     isMessagesLoading,

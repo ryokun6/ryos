@@ -1,5 +1,6 @@
 import type { ChatMessage, ChatRoom } from "@/types/chat";
 import { getPrivateRoomDisplayName } from "@/utils/chat";
+import { getRoomRecentActivityAt } from "./roomActivitySignature";
 
 type RoomMessagesById = Record<string, ChatMessage[] | undefined>;
 
@@ -30,21 +31,6 @@ export function isPrivateRoomOnline(
     const normalizedMember = normalizeUsername(member);
     return normalizedMember !== self && onlineUsersSet.has(normalizedMember);
   });
-}
-
-function getRoomRecentActivityAt(
-  room: ChatRoom,
-  roomMessages: RoomMessagesById
-): number {
-  const newestLocalMessageAt = (roomMessages[room.id] ?? []).reduce(
-    (newest, message) =>
-      Number.isFinite(message.timestamp)
-        ? Math.max(newest, message.timestamp)
-        : newest,
-    0
-  );
-
-  return Math.max(newestLocalMessageAt, room.lastMessageAt ?? 0, room.createdAt);
 }
 
 export function sortPrivateRoomsForSidebar(

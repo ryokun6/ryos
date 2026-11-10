@@ -25,7 +25,6 @@ import type { SongDetail, SongDetailPanelProps } from "./types";
 import {
   initialEditState,
   songEditReducer,
-  type SongEditAction,
 } from "./song-edit-reducer";
 import { formatAdminRelativeTime } from "../../utils/adminTime";
 
@@ -580,8 +579,6 @@ export function useSongDetailPanel({
   const formatRelativeTime = (timestamp: number) =>
     formatAdminRelativeTime(timestamp, t);
 
-  const dispatchSongEdit = (action: SongEditAction) => dispatchEdit(action);
-
   return {
     t,
     youtubeId,
@@ -611,7 +608,7 @@ export function useSongDetailPanel({
     editAlbum,
     editOffset,
     isSaving,
-    dispatchSongEdit,
+    dispatchSongEdit: dispatchEdit,
     fetchSong,
     handleForceRefresh,
     handleLyricsSearchSelect,

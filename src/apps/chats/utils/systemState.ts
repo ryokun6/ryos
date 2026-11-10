@@ -8,7 +8,7 @@ import { useChatsStore } from "@/stores/useChatsStore";
 import { useLanguageStore } from "@/stores/useLanguageStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { useTvStore } from "@/stores/useTvStore";
-import { buildTvChannelLineup, DEFAULT_CHANNELS } from "@/apps/tv/data/channels";
+import { buildTvChannelLineup, isDefaultChannelId } from "@/apps/tv/data/channels";
 import { htmlToMarkdown } from "@/utils/markdown";
 import { generateHtmlFromJsonSync } from "@/utils/tiptapHtml";
 import { getEffectiveTimezone } from "@/lib/timezoneConfig";
@@ -56,7 +56,7 @@ export const getSystemState = () => {
     tvStore.hiddenDefaultChannelIds
   ).map((ch) => ({
     ch,
-    isCustom: !DEFAULT_CHANNELS.some((defaultChannel) => defaultChannel.id === ch.id),
+    isCustom: !isDefaultChannelId(ch.id),
   }));
   const tvCurrentEntry =
     tvChannelLineup.find(({ ch }) => ch.id === tvStore.currentChannelId) ??
@@ -77,30 +77,15 @@ export const getSystemState = () => {
               : tvCurrentEntry.ch.videos.length,
       }
     : null;
-  const tvCustomChannels = buildTvChannelLineup(
-    tvStore.customChannels,
-    tvStore.hiddenDefaultChannelIds
-  ).reduce<
-    {
-      id: string;
-      number: number;
-      name: string;
-      description: string;
-      videoCount: number;
-    }[]
-  >((acc, channel) => {
-    if (DEFAULT_CHANNELS.some((defaultChannel) => defaultChannel.id === channel.id)) {
-      return acc;
-    }
-    acc.push({
-      id: channel.id,
-      number: channel.number,
-      name: channel.name,
-      description: channel.description ?? "",
-      videoCount: channel.videos.length,
-    });
-    return acc;
-  }, []);
+  const tvCustomChannels = tvChannelLineup
+    .filter(({ isCustom }) => isCustom)
+    .map(({ ch }) => ({
+      id: ch.id,
+      number: ch.number,
+      name: ch.name,
+      description: ch.description ?? "",
+      videoCount: ch.videos.length,
+    }));
 
   const runningInstances = Object.entries(appStore.instances).reduce<
     {
@@ -144,11 +129,13 @@ export const getSystemState = () => {
   const nowClient = new Date();
   const userTimeZone = getEffectiveTimezone();
   const userTimeString = nowClient.toLocaleTimeString([], {
+    timeZone: userTimeZone,
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
   });
   const userDateString = nowClient.toLocaleDateString([], {
+    timeZone: userTimeZone,
     weekday: "long",
     year: "numeric",
     month: "long",

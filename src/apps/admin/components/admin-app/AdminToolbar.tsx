@@ -106,7 +106,7 @@ export function AdminToolbar({
           onChange={setUserSearch}
           className="flex-1"
           inputClassName="h-7 text-[12px]"
-          clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
+          clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
         />
       )}
 
@@ -121,7 +121,7 @@ export function AdminToolbar({
             onChange={setSongSearch}
             className="flex-1"
             inputClassName="h-7 text-[12px]"
-            clearAriaLabel={t("apps.admin.search.clear", "Clear search")}
+            clearAriaLabel={t("spotlight.ariaLabels.clearSearch")}
           />
           <Button
             variant="ghost"

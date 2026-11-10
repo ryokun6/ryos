@@ -211,12 +211,19 @@ export async function prepareStuffCoverBlob(
       throw new Error("Invalid cover image dimensions");
     }
 
+    let previousWidth = 0;
+    let previousHeight = 0;
     for (const maxEdge of STUFF_COVER_EDGE_STEPS) {
       const { width, height } = getStuffCoverOutputSize(
         image.width,
         image.height,
         maxEdge
       );
+      // Sources smaller than the step are never upscaled, so an unchanged
+      // size would just repeat the encode that already failed.
+      if (width === previousWidth && height === previousHeight) continue;
+      previousWidth = width;
+      previousHeight = height;
       const { canvas, context } = createCanvas(width, height);
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = "high";
