@@ -8,7 +8,7 @@ This project uses **Bun** as the package manager and runtime. Local API testing 
 
 ### Package Manager
 
-- **Bun** is required (version 1.3.5+)
+- **Bun 1.4.4** is required (pinned by `packageManager` in `package.json`, `.mise.toml`, CI, and the Dockerfile). Older Bun releases rewrite `bun.lock` in an older lockfile format on `bun install`; if `bun.lock` shows as modified after install, check `bun --version` and restore the file.
 - Use `bun install` to install dependencies
 - Use `bun run <script>` to run package.json scripts
 
