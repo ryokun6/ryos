@@ -341,7 +341,9 @@ export async function executeContactsControl(
             : `Found ${result.contacts.length} ${
                 result.contacts.length === 1 ? "contact" : "contacts"
               }.`,
-        contacts: result.contacts.map(serializeContactToolRecord),
+        contacts: result.contacts.map((contact) =>
+          serializeContactToolRecord(contact)
+        ),
       };
 
     case "get":
