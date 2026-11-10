@@ -71,8 +71,6 @@ graph TD
 | Endpoint | Purpose |
 |----------|---------|
 | [`/api/chat`](/docs/chat-api) | Main chat with streaming, tool-calling, and context-aware prompt assembly |
-| [`/api/ai/extract-memories`](/docs/chat-api) | Single-pass extraction of daily notes + long-term memories from chat history |
-| [`/api/ai/process-daily-notes`](/docs/chat-api) | Background processing of past daily notes into long-term memories |
 | [`/api/ai/ryo-reply`](/docs/chat-api) | Auto-reply generation for chat rooms |
 | `/api/ai/cursor-run-status` | Poll Cursor Cloud agent run events for live cards |
 | `/api/ai/cursor-run-followup` | Send follow-up prompts to an existing Cursor Cloud agent run |
@@ -221,11 +219,11 @@ ryOS uses a two-tier Redis-backed memory model:
 
 ```mermaid
 flowchart TD
-    A[Conversation / tool writes] --> B[/api/ai/extract-memories]
+    A[Conversation clear / Telegram chat delta] --> B[extractMemoriesFromConversation]
     B --> C[Append daily notes + optional long-term updates]
     C --> D[Unprocessed daily notes accumulate]
-    D --> E[/api/chat proactive greeting trigger]
-    E --> F[/api/ai/process-daily-notes]
+    D --> E[Proactive greeting / Telegram heartbeat / admin reprocess]
+    E --> F[processDailyNotesForUser]
     F --> G[Cleanup stale temporary memories]
     G --> H[Process past days only, oldest first]
     H --> I[Extract + consolidate long-term memories]
@@ -233,11 +231,12 @@ flowchart TD
 ```
 
 Pipeline behavior:
-1. `extract-memories` performs single-pass extraction from chat history (daily notes + candidate long-term facts).
-2. Daily notes continue collecting while a day is active.
-3. `process-daily-notes` processes unprocessed past days (excludes today), consolidates overlaps, and marks each processed day.
-4. Chat endpoint can trigger `process-daily-notes` in the background during proactive greeting flow.
-5. Telegram heartbeat cron also triggers `process-daily-notes` and extracts memories from new Telegram chat messages since the last heartbeat.
+1. `extractMemoriesFromConversation` performs single-pass extraction from chat history (daily notes + candidate long-term facts) when a conversation is cleared, and from new Telegram chat deltas on heartbeat.
+2. Daily notes continue collecting while a day is active (chat tools / extraction).
+3. `processDailyNotesForUser` processes unprocessed past days (excludes today), consolidates overlaps, and marks each processed day.
+4. Proactive greeting triggers `processDailyNotesForUser` in the background.
+5. Telegram heartbeat cron also triggers `processDailyNotesForUser` and extracts memories from new Telegram chat messages since the last heartbeat.
+6. Admin can force-reprocess a user's daily notes via the admin panel.
 
 ## apiHandler Pattern
 
@@ -255,8 +254,6 @@ Common endpoint configurations in this AI stack:
 - `/api/chat`: `auth: "optional"`, `allowExpiredAuth: true`, `parseJsonBody: true`, `contentType: null`
 - `/api/applet-ai`: `auth: "optional"`, `parseJsonBody: true`, `contentType: null`
 - `/api/ie-generate`: `auth: "none"`, `parseJsonBody: true`, `contentType: null`
-- `/api/ai/extract-memories`: `auth: "required"`, `parseJsonBody: true`
-- `/api/ai/process-daily-notes`: `auth: "required"`, `parseJsonBody: true`
 - `/api/ai/ryo-reply`: `auth: "required"`, `parseJsonBody: true`
 - `/api/webhooks/telegram`: Custom handler (webhook secret validation, Telegram-specific auth via linked accounts)
 - `/api/cron/telegram-heartbeat`: Custom handler (cron secret via `Authorization: Bearer` header)

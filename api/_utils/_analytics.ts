@@ -49,6 +49,7 @@ const AI_PATH_PREFIXES = [
   "/api/speech",
   "/api/audio-transcribe",
   "/api/ai/ryo-reply",
+  // Historical public paths (helpers only now); keep for past analytics rows.
   "/api/ai/extract-memories",
   "/api/ai/process-daily-notes",
   "/api/stuff/remove-background",

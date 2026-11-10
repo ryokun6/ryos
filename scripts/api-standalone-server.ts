@@ -540,10 +540,7 @@ export function getRequestBodyLimit(pathname: string): number {
   if (normalizedPathname === "/api/ai/attachments") {
     return AI_ATTACHMENT_MAX_BYTES;
   }
-  if (
-    normalizedPathname === "/api/chat" ||
-    normalizedPathname === "/api/ai/extract-memories"
-  ) {
+  if (normalizedPathname === "/api/chat") {
     return MAX_AI_CONVERSATION_REQUEST_BYTES;
   }
   return MAX_STANDALONE_BODY_BYTES;

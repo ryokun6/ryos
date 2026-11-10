@@ -101,7 +101,7 @@ When you use an AI feature, the relevant input is sent to an AI provider to prod
 
 Some AI processing happens without a message from you:
 
-- For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (via `/api/ai/extract-memories` and `/api/ai/process-daily-notes`) so the assistant can remember context across sessions. An AI provider produces them: past conversations and daily notes are sent to a model to extract them. This data is tied to your account and can be removed by deleting your account.
+- For signed-in users, ryOS may store long-term "memories" and daily notes derived from your interactions (for example when a chat is cleared, during proactive greeting, or on the Telegram heartbeat) so the assistant can remember context across sessions. An AI provider produces them: past conversations and daily notes are sent to a model to extract them. This data is tied to your account and can be removed by deleting your account.
 - When a signed-in user who has memories opens Chats, ryOS sends those memories and recent daily notes to an AI provider (currently Google) to write a greeting. Signed-in messages to Ryo in Chats or the desktop assistant also include your memories, so Ryo can use them in the reply.
 - AI requests are processed by third-party model providers (see below). Do not share information through AI features that you would not want processed by those providers.
 
