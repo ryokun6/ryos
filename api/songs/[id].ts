@@ -118,6 +118,7 @@ import {
   clampLyricOffset,
   isLyricOffsetOnlyPatch,
 } from "../../src/shared/songs/lyricOffsetWrite.js";
+import { textDeltasFromFullStream } from "./_ai-text-stream.js";
 
 // Helper for SSE responses with Node.js ApiResponse
 function sendSSEResponse(res: ApiResponse, origin: string | null, data: unknown): void {
@@ -1323,8 +1324,9 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.3,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          // Prefer fullStream so provider error/abort parts fail instead of
+          // looking like a successful empty/partial textStream end (H11).
+          for await (const textChunk of textDeltasFromFullStream(result.fullStream)) {
             currentLineBuffer += textChunk;
             
             // Process complete lines
@@ -1554,8 +1556,9 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.1,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          // Prefer fullStream so provider error/abort parts fail instead of
+          // looking like a successful empty/partial textStream end (H11).
+          for await (const textChunk of textDeltasFromFullStream(result.fullStream)) {
             currentLineBuffer += textChunk;
             
             // Process complete lines
@@ -1841,8 +1844,9 @@ export default apiHandler<Record<string, unknown>>(
             temperature: 0.7,
           });
 
-          // Manually iterate textStream to process and emit custom events
-          for await (const textChunk of result.textStream) {
+          // Prefer fullStream so provider error/abort parts fail instead of
+          // looking like a successful empty/partial textStream end (H11).
+          for await (const textChunk of textDeltasFromFullStream(result.fullStream)) {
             currentLineBuffer += textChunk;
             
             // Process complete lines

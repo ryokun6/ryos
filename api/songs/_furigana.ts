@@ -10,6 +10,7 @@ import { decodeAnnotatedSegments } from "../_utils/html-entities.js";
 import { logInfo, logError, type LyricLine } from "./_utils.js";
 import type { FuriganaSegment } from "../_utils/_song-service.js";
 import { normalizeFuriganaSegments as normalizeSharedFuriganaSegments } from "../../src/utils/furigana";
+import { textDeltasFromFullStream } from "./_ai-text-stream.js";
 
 // =============================================================================
 // Language Detection
@@ -271,8 +272,9 @@ export async function streamFurigana(
       abortSignal: abortController.signal,
     });
 
-    // Process streaming text
-    for await (const chunk of result.textStream) {
+    // Prefer fullStream so provider error/abort parts fail the generation
+    // instead of looking like a successful empty/partial textStream end.
+    for await (const chunk of textDeltasFromFullStream(result.fullStream)) {
       currentLineBuffer += chunk;
       
       // Process complete lines (ending with newline)
