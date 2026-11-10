@@ -294,6 +294,7 @@
         "noMessages": "沒有訊息"
       },
       "search": {
+        "clear": "清除搜尋",
         "noResults": "找不到使用者",
         "placeholder": "搜尋使用者⋯",
         "songsPlaceholder": "搜尋歌曲⋯"
@@ -1161,6 +1162,7 @@
         "nudgeSent": "👋 *輕推已送出*",
         "pleaseLoginToDeleteRooms": "請登入以刪除聊天室。",
         "pleaseLoginToSendMessages": "請登入以傳送訊息。",
+        "processingImage": "正在處理影像⋯",
         "recording": "正在錄音⋯",
         "retry": "再試一次",
         "ryo": "@ryo",
@@ -2656,6 +2658,7 @@
         "quicktimeMovie": "QuickTime影片",
         "svgImage": "SVG影像",
         "unknown": "未知",
+        "volume": "卷宗",
         "webpImage": "WebP 影像"
       },
       "folders": {
@@ -3891,6 +3894,7 @@
       },
       "locateMe": "我的位置",
       "mapAriaLabel": "地圖",
+      "mapToolbar": "地圖控制項",
       "menu": {
         "about": "關於地圖",
         "help": "地圖輔助說明",
@@ -4055,7 +4059,9 @@
         "thenStepAria": "接著 {{label}}",
         "warningNoBikes": "最近的起點站目前可能沒有自行車。",
         "warningNoDocks": "最近的終點站目前可能沒有空位。"
-      }
+      },
+      "zoomIn": "放大",
+      "zoomOut": "縮小"
     },
     "minesweeper": {
       "description": "經典益智遊戲",
@@ -4607,7 +4613,17 @@
       },
       "name": "音效板",
       "newSoundboardDefault": "新增音效板",
-      "soundboards": "音效板"
+      "slot": {
+        "addTitle": "加入標題",
+        "editTitle": "編輯標題",
+        "record": "錄音",
+        "recording": "正在錄音⋯"
+      },
+      "soundboards": "音效板",
+      "waveform": {
+        "errorLoading": "載入波形時發生錯誤",
+        "label": "波形"
+      }
     },
     "stickies": {
       "colors": {
@@ -5919,6 +5935,8 @@
       "appRequiresInternet": "{{appName}} 需要網際網路連線。",
       "title": "你已離線"
     },
+    "retry": "再試一次",
+    "search": "搜尋",
     "startMenu": {
       "aboutThisComputer": "關於這部電腦",
       "run": "執行⋯",

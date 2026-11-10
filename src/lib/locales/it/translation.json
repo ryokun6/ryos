@@ -294,6 +294,7 @@
         "noMessages": "Nessun messaggio"
       },
       "search": {
+        "clear": "Cancella ricerca",
         "noResults": "Nessun utente trovato",
         "placeholder": "Cerca utenti…",
         "songsPlaceholder": "Cerca brani…"
@@ -1167,6 +1168,7 @@
         "nudgeSent": "👋 *sollecito inviato*",
         "pleaseLoginToDeleteRooms": "Accedi per eliminare le stanze.",
         "pleaseLoginToSendMessages": "Accedi per inviare messaggi.",
+        "processingImage": "Elaborazione immagine…",
         "recording": "Registrazione…",
         "retry": "Riprova",
         "ryo": "@ryo",
@@ -2664,6 +2666,7 @@
         "quicktimeMovie": "Filmato QuickTime",
         "svgImage": "Immagine SVG",
         "unknown": "Sconosciuto",
+        "volume": "Volume",
         "webpImage": "Immagine WebP"
       },
       "folders": {
@@ -4032,6 +4035,7 @@
       },
       "locateMe": "La mia posizione",
       "mapAriaLabel": "Mappa",
+      "mapToolbar": "Controlli mappa",
       "menu": {
         "about": "Informazioni su Mappe",
         "help": "Aiuto Mappe",
@@ -4196,7 +4200,9 @@
         "thenStepAria": "Poi {{label}}",
         "warningNoBikes": "La stazione di partenza più vicina potrebbe non avere bici al momento.",
         "warningNoDocks": "La stazione di arrivo più vicina potrebbe non avere postazioni libere al momento."
-      }
+      },
+      "zoomIn": "Ingrandisci",
+      "zoomOut": "Rimpicciolisci"
     },
     "minesweeper": {
       "description": "Classico rompicapo",
@@ -4748,7 +4754,17 @@
       },
       "name": "Pannello Suoni",
       "newSoundboardDefault": "Nuovo Pannello Suoni",
-      "soundboards": "Pannelli Suoni"
+      "slot": {
+        "addTitle": "Aggiungi titolo",
+        "editTitle": "Modifica titolo",
+        "record": "Registra",
+        "recording": "Registrazione…"
+      },
+      "soundboards": "Pannelli Suoni",
+      "waveform": {
+        "errorLoading": "Errore durante il caricamento della forma d'onda",
+        "label": "Forma d'onda"
+      }
     },
     "stickies": {
       "colors": {
@@ -5936,6 +5952,8 @@
       "appRequiresInternet": "{{appName}} richiede una connessione a Internet.",
       "title": "Sei offline"
     },
+    "retry": "Riprova",
+    "search": "Cerca",
     "startMenu": {
       "aboutThisComputer": "Informazioni su questo computer",
       "run": "Esegui…",

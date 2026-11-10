@@ -2,6 +2,8 @@
   "common": {
     "auto": "Auto",
     "noResults": "No results",
+    "retry": "Retry",
+    "search": "Search",
     "loading": {
       "default": "Loading…",
       "openingAppletStore": "Opening Applet Store…",
@@ -464,6 +466,7 @@
         "directory": "Directory",
         "file": "File",
         "folder": "Folder",
+        "volume": "Volume",
         "mp3Audio": "MP3 Audio",
         "quicktimeMovie": "QuickTime Movie",
         "internetShortcut": "Internet Shortcut",
@@ -582,6 +585,16 @@
       "soundboards": "Soundboards",
       "newSoundboardDefault": "New Soundboard",
       "importedSoundboard": "Imported Soundboard",
+      "slot": {
+        "record": "Record",
+        "recording": "Recording…",
+        "addTitle": "Add title",
+        "editTitle": "Edit title"
+      },
+      "waveform": {
+        "label": "Waveform",
+        "errorLoading": "Error loading waveform"
+      },
       "menu": {
         "newSoundboard": "New Soundboard",
         "importSoundboards": "Import Soundboards…",
@@ -926,6 +939,7 @@
         "typeMessage": "Type a message…",
         "describeThisImage": "Describe this image",
         "uploadingImage": "Uploading image…",
+        "processingImage": "Processing image…",
         "typeOrPushSpace": "Type or push 'space' to talk…",
         "scrollToBottom": "Scroll to bottom",
         "nudgeSent": "👋 *nudge sent*"
@@ -4464,7 +4478,8 @@
       "search": {
         "placeholder": "Search users…",
         "songsPlaceholder": "Search songs…",
-        "noResults": "No users found"
+        "noResults": "No users found",
+        "clear": "Clear search"
       },
       "loadMore": "Load more ({{remaining}} remaining)",
       "room": {
@@ -4746,6 +4761,9 @@
       "searchFailed": "Search failed",
       "locateMe": "Locate Me",
       "mapAriaLabel": "Map",
+      "mapToolbar": "Map controls",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
       "places": {
         "title": "Places",
         "home": "Home",

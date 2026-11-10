@@ -294,6 +294,7 @@
         "noMessages": "Nenhuma mensagem"
       },
       "search": {
+        "clear": "Limpar pesquisa",
         "noResults": "Nenhum usuário encontrado",
         "placeholder": "Buscar usuários…",
         "songsPlaceholder": "Buscar músicas…"
@@ -1167,6 +1168,7 @@
         "nudgeSent": "👋 *cutucada enviada*",
         "pleaseLoginToDeleteRooms": "Por favor, faça login para excluir salas.",
         "pleaseLoginToSendMessages": "Por favor, faça login para enviar mensagens.",
+        "processingImage": "Processando imagem…",
         "recording": "Gravando…",
         "retry": "Tentar novamente",
         "ryo": "@ryo",
@@ -2664,6 +2666,7 @@
         "quicktimeMovie": "Filme QuickTime",
         "svgImage": "Imagem SVG",
         "unknown": "Desconhecido",
+        "volume": "Volume",
         "webpImage": "Imagem WebP"
       },
       "folders": {
@@ -4032,6 +4035,7 @@
       },
       "locateMe": "Localizar-me",
       "mapAriaLabel": "Mapa",
+      "mapToolbar": "Controles do mapa",
       "menu": {
         "about": "Sobre o Mapas",
         "help": "Ajuda do Mapas",
@@ -4196,7 +4200,9 @@
         "thenStepAria": "Depois, {{label}}",
         "warningNoBikes": "A estação de partida mais próxima pode não ter bicicletas no momento.",
         "warningNoDocks": "A estação de destino mais próxima pode não ter vagas disponíveis no momento."
-      }
+      },
+      "zoomIn": "Ampliar",
+      "zoomOut": "Reduzir"
     },
     "minesweeper": {
       "description": "Jogo clássico de quebra-cabeça",
@@ -4748,7 +4754,17 @@
       },
       "name": "Mesa de Som",
       "newSoundboardDefault": "Nova Mesa de Som",
-      "soundboards": "Mesas de Som"
+      "slot": {
+        "addTitle": "Adicionar título",
+        "editTitle": "Editar título",
+        "record": "Gravar",
+        "recording": "Gravando…"
+      },
+      "soundboards": "Mesas de Som",
+      "waveform": {
+        "errorLoading": "Erro ao carregar a forma de onda",
+        "label": "Forma de onda"
+      }
     },
     "stickies": {
       "colors": {
@@ -5936,6 +5952,8 @@
       "appRequiresInternet": "{{appName}} requer uma conexão com a internet.",
       "title": "Você está offline"
     },
+    "retry": "Tentar novamente",
+    "search": "Buscar",
     "startMenu": {
       "aboutThisComputer": "Sobre Este Computador",
       "run": "Executar…",
