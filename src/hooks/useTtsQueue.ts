@@ -421,7 +421,8 @@ export function useTtsQueue({
         /* ignore */
       }
     });
-    activeRequestsCountRef.current = 0;
+    // In-flight requests were aborted above; each one decrements the active
+    // count in its own `finally`, so it must not be zeroed here as well.
 
     // Micro-fade before stopping to avoid clicks
     if (gainNodeRef.current && ctxRef.current) {

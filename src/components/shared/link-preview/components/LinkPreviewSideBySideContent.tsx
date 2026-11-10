@@ -1,7 +1,7 @@
 import type { Dispatch, MouseEvent, TouchEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { LinkMetadata, LinkPreviewAction } from "../types";
-import { getFaviconUrl, isYouTubeUrl } from "../utils";
+import { getFaviconUrl, getUrlHostname, isYouTubeUrl } from "../utils";
 import { LinkPreviewActionButtons } from "./LinkPreviewActionButtons";
 
 export function LinkPreviewSideBySideContent({
@@ -107,7 +107,7 @@ export function LinkPreviewSideBySideContent({
               />
               <div className="size-4 bg-neutral-300 dark:bg-neutral-600 rounded-full flex-shrink-0 hidden"></div>
               <p className="text-[10px] text-neutral-500 dark:text-neutral-400 truncate">
-                {metadata.siteName || new URL(url).hostname}
+                {metadata.siteName || getUrlHostname(url)}
               </p>
             </div>
           )}

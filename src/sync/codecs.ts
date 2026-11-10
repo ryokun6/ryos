@@ -858,13 +858,21 @@ const settingsCodec: SyncCodec = {
         }
       }),
       useDashboardStore.subscribe((state, prev) => {
-        if (state.widgets !== prev.widgets) onChange();
+        if (
+          state.widgets !== prev.widgets ||
+          state.mobileOrder !== prev.mobileOrder
+        ) {
+          onChange();
+        }
       }),
       useAssistantStore.subscribe((state, prev) => {
         if (
           state.enabled !== prev.enabled ||
           state.characterId !== prev.characterId ||
-          state.speechEnabled !== prev.speechEnabled
+          state.speechEnabled !== prev.speechEnabled ||
+          state.greetOnSummon !== prev.greetOnSummon ||
+          state.responseStyle !== prev.responseStyle ||
+          state.customInstructions !== prev.customInstructions
         ) {
           onChange();
         }

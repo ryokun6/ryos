@@ -66,4 +66,13 @@ export function getFaviconUrl(url: string): string {
   }
 }
 
+/** Hostname for display; falls back to the raw string when it is not a URL. */
+export function getUrlHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
 export { isTouchDevice } from "@/utils/device";

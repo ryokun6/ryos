@@ -56,10 +56,16 @@ const agentDataCache = new Map<string, Promise<AgentData>>();
 export function loadAgentData(url: string): Promise<AgentData> {
   let cached = agentDataCache.get(url);
   if (!cached) {
-    cached = fetch(url).then((res) => {
-      if (!res.ok) throw new Error(`Failed to load agent data: ${res.status}`);
-      return res.json() as Promise<AgentData>;
-    });
+    cached = fetch(url)
+      .then((res) => {
+        if (!res.ok) throw new Error(`Failed to load agent data: ${res.status}`);
+        return res.json() as Promise<AgentData>;
+      })
+      .catch((error) => {
+        // Let the next caller retry instead of replaying this failure forever.
+        agentDataCache.delete(url);
+        throw error;
+      });
     agentDataCache.set(url, cached);
   }
   return cached;
