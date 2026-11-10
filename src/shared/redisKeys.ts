@@ -261,7 +261,7 @@ export const redisKeys = {
       redisKey("integration", "telegram", "heartbeat", username, slot),
     telegramHeartbeatSettings: (username: string) =>
       redisKey("integration", "telegram", "heartbeat", "settings", username),
-    /** KOReader Progress Sync (kosync) MD5 auth key for a ryOS username. */
+    /** KOReader Progress Sync (kosync) auth verifier (bcrypt of md5) for a ryOS username. */
     kosyncUserKey: (username: string) =>
       redisKey("integration", "kosync", "user", username, "key"),
     /** Per-document reading progress hash (KOReader protocol fields). */

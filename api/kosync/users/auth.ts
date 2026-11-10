@@ -4,7 +4,10 @@
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
-import { authorizeKosyncRequest } from "../_helpers/_auth.js";
+import {
+  authorizeKosyncRequest,
+  sendKosyncAuthFailure,
+} from "../_helpers/_auth.js";
 import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import { KOSYNC_CORS_HEADERS } from "../_helpers/_types.js";
 
@@ -17,9 +20,11 @@ export default apiHandler(
   },
   async ({ req, res, redis, logger, startTime }) => {
     try {
-      const username = await authorizeKosyncRequest(req, redis);
-      if (!username) {
-        sendKosyncError(res, KosyncErrorCode.UNAUTHORIZED);
+      const auth = await authorizeKosyncRequest(req, redis);
+      if (auth.kind !== "authenticated") {
+        sendKosyncAuthFailure(res, auth, (status) =>
+          logger.response(status, Date.now() - startTime)
+        );
         return;
       }
       logger.response(200, Date.now() - startTime);

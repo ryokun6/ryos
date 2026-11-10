@@ -11,6 +11,13 @@ import {
   fetchWithOrigin,
   makeRateLimitBypassHeaders,
 } from "../../helpers/test-utils";
+import { createRedis } from "../../../api/_utils/redis";
+import {
+  getKosyncAuthKey,
+  isHashedKosyncAuthKey,
+  isLegacyKosyncAuthKey,
+  kosyncUserKey,
+} from "../../../api/kosync/_helpers/_auth";
 import { filenameMd5FromPath, md5Hex } from "../../../src/shared/kosync/md5";
 import { hlcFromTimestamp } from "../../../src/shared/sync2/hlc";
 
@@ -46,88 +53,92 @@ describe("kosync API", () => {
     expect(await res.json()).toEqual({ state: "OK" });
   });
 
-  test("ryOS password unlocks kosync register, auth, and progress", async () => {
-    const username = `kosync${Date.now().toString(36)}`.slice(0, 20);
-    const password = `Password1!${username}`;
-    const key = md5Hex(password);
-    const document = filenameMd5FromPath(
-      "/Books/Test Book For Kosync.epub"
-    );
+  test(
+    "ryOS password unlocks kosync register, auth, and progress",
+    async () => {
+      const username = `kosync${Date.now().toString(36)}`.slice(0, 20);
+      const password = `Password1!${username}`;
+      const key = md5Hex(password);
+      const document = filenameMd5FromPath(
+        "/Books/Test Book For Kosync.epub"
+      );
 
-    // Creating a ryOS account syncs md5(password) for kosync.
-    const token = await ensureUserAuth(username, password);
-    expect(token).toBeTruthy();
+      // Creating a ryOS account syncs bcrypt(md5(password)) for kosync.
+      const token = await ensureUserAuth(username, password);
+      expect(token).toBeTruthy();
 
-    const beforeLogin = await createKosyncUser(
-      `nouser${Date.now().toString(36)}`.slice(0, 20),
-      key
-    );
-    expect(beforeLogin.status).toBe(403);
+      const beforeLogin = await createKosyncUser(
+        `nouser${Date.now().toString(36)}`.slice(0, 20),
+        key
+      );
+      expect(beforeLogin.status).toBe(403);
 
-    const createRes = await createKosyncUser(username, key);
-    expect(createRes.status).toBe(201);
-    expect(await createRes.json()).toEqual({ username });
+      const createRes = await createKosyncUser(username, key);
+      expect(createRes.status).toBe(201);
+      expect(await createRes.json()).toEqual({ username });
 
-    const wrongPass = await createKosyncUser(username, "0".repeat(32));
-    expect(wrongPass.status).toBe(401);
+      const wrongPass = await createKosyncUser(username, "0".repeat(32));
+      expect(wrongPass.status).toBe(401);
 
-    const badAuth = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
-      headers: kosyncHeaders(username, "0".repeat(32)),
-    });
-    expect(badAuth.status).toBe(401);
+      const badAuth = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+        headers: kosyncHeaders(username, "0".repeat(32)),
+      });
+      expect(badAuth.status).toBe(401);
 
-    const authOk = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
-      headers: kosyncHeaders(username, key),
-    });
-    expect(authOk.status).toBe(200);
-    expect(await authOk.json()).toEqual({ authorized: "OK" });
+      const authOk = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+        headers: kosyncHeaders(username, key),
+      });
+      expect(authOk.status).toBe(200);
+      expect(await authOk.json()).toEqual({ authorized: "OK" });
 
-    const empty = await fetchWithOrigin(
-      `${KOSYNC}/syncs/progress/${document}`,
-      { headers: kosyncHeaders(username, key) }
-    );
-    expect(empty.status).toBe(200);
-    expect(await empty.json()).toEqual({});
+      const empty = await fetchWithOrigin(
+        `${KOSYNC}/syncs/progress/${document}`,
+        { headers: kosyncHeaders(username, key) }
+      );
+      expect(empty.status).toBe(200);
+      expect(await empty.json()).toEqual({});
 
-    const put = await fetchWithOrigin(`${KOSYNC}/syncs/progress`, {
-      method: "PUT",
-      headers: kosyncHeaders(username, key),
-      body: JSON.stringify({
-        document,
-        progress: "42",
-        percentage: 0.42,
-        device: "KOReader",
-        device_id: "TESTDEVICE",
-      }),
-    });
-    expect(put.status).toBe(200);
-    const putBody = (await put.json()) as {
-      document: string;
-      timestamp: number;
-    };
-    expect(putBody.document).toBe(document);
-    expect(putBody.timestamp).toBeGreaterThan(0);
+      const put = await fetchWithOrigin(`${KOSYNC}/syncs/progress`, {
+        method: "PUT",
+        headers: kosyncHeaders(username, key),
+        body: JSON.stringify({
+          document,
+          progress: "42",
+          percentage: 0.42,
+          device: "KOReader",
+          device_id: "TESTDEVICE",
+        }),
+      });
+      expect(put.status).toBe(200);
+      const putBody = (await put.json()) as {
+        document: string;
+        timestamp: number;
+      };
+      expect(putBody.document).toBe(document);
+      expect(putBody.timestamp).toBeGreaterThan(0);
 
-    const get = await fetchWithOrigin(
-      `${KOSYNC}/syncs/progress/${document}`,
-      { headers: kosyncHeaders(username, key) }
-    );
-    expect(get.status).toBe(200);
-    const progress = (await get.json()) as {
-      document: string;
-      percentage: number;
-      progress: string;
-      device: string;
-      device_id: string;
-      timestamp: number;
-    };
-    expect(progress.document).toBe(document);
-    expect(progress.percentage).toBeCloseTo(0.42);
-    expect(progress.progress).toBe("42");
-    expect(progress.device).toBe("KOReader");
-    expect(progress.device_id).toBe("TESTDEVICE");
-    expect(progress.timestamp).toBe(putBody.timestamp);
-  });
+      const get = await fetchWithOrigin(
+        `${KOSYNC}/syncs/progress/${document}`,
+        { headers: kosyncHeaders(username, key) }
+      );
+      expect(get.status).toBe(200);
+      const progress = (await get.json()) as {
+        document: string;
+        percentage: number;
+        progress: string;
+        device: string;
+        device_id: string;
+        timestamp: number;
+      };
+      expect(progress.document).toBe(document);
+      expect(progress.percentage).toBeCloseTo(0.42);
+      expect(progress.progress).toBe("42");
+      expect(progress.device).toBe("KOReader");
+      expect(progress.device_id).toBe("TESTDEVICE");
+      expect(progress.timestamp).toBe(putBody.timestamp);
+    },
+    30_000
+  );
 
   test("bridges Books bookshelf progress into kosync GET", async () => {
     const username = `kb${Date.now().toString(36)}`.slice(0, 20);
@@ -473,5 +484,87 @@ describe("kosync API", () => {
       expect(progress.device).toBe("ryOS Books");
     },
     30_000
+  );
+
+  test("login stores a bcrypt kosync verifier, not raw MD5", async () => {
+    const username = `kh${Date.now().toString(36)}`.slice(0, 20);
+    const password = `Password1!${username}`;
+    const key = md5Hex(password);
+    const token = await ensureUserAuth(username, password);
+    expect(token).toBeTruthy();
+
+    const redis = createRedis();
+    const stored = await getKosyncAuthKey(redis, username);
+    expect(stored).toBeTruthy();
+    expect(isHashedKosyncAuthKey(stored!)).toBe(true);
+    expect(isLegacyKosyncAuthKey(stored!)).toBe(false);
+    expect(stored!.toLowerCase()).not.toBe(key);
+
+    const authOk = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+      headers: kosyncHeaders(username, key),
+    });
+    expect(authOk.status).toBe(200);
+  });
+
+  test("legacy unsalted MD5 kosync keys still auth and upgrade", async () => {
+    const username = `kl${Date.now().toString(36)}`.slice(0, 20);
+    const password = `Password1!${username}`;
+    const key = md5Hex(password);
+    const token = await ensureUserAuth(username, password);
+    expect(token).toBeTruthy();
+
+    const redis = createRedis();
+    // Force the pre-migration shape so cutover can be exercised end to end.
+    await redis.set(kosyncUserKey(username), key, { ex: 60 * 60 });
+    expect(await getKosyncAuthKey(redis, username)).toBe(key);
+
+    const authOk = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+      headers: kosyncHeaders(username, key),
+    });
+    expect(authOk.status).toBe(200);
+
+    const upgraded = await getKosyncAuthKey(redis, username);
+    expect(upgraded).toBeTruthy();
+    expect(isHashedKosyncAuthKey(upgraded!)).toBe(true);
+    expect(isLegacyKosyncAuthKey(upgraded!)).toBe(false);
+
+    const authAgain = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+      headers: kosyncHeaders(username, key),
+    });
+    expect(authAgain.status).toBe(200);
+  });
+
+  test(
+    "failed kosync auth shares the login lockout",
+    async () => {
+      const username = `kk${Date.now().toString(36)}`.slice(0, 20);
+      const password = `Password1!${username}`;
+      const token = await ensureUserAuth(username, password);
+      expect(token).toBeTruthy();
+
+      let last = 0;
+      for (let i = 0; i < 21; i += 1) {
+        const res = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+          headers: kosyncHeaders(username, "0".repeat(32)),
+        });
+        last = res.status;
+      }
+      expect([401, 429]).toContain(last);
+
+      const lockedKosync = await fetchWithOrigin(`${KOSYNC}/users/auth`, {
+        headers: kosyncHeaders(username, md5Hex(password)),
+      });
+      expect(lockedKosync.status).toBe(429);
+      expect(lockedKosync.headers.get("Retry-After")).toBeTruthy();
+
+      // Shared lockout: web login is also refused while locked.
+      const lockedLogin = await fetchWithOrigin(`${BASE_URL}/api/auth/login`, {
+        method: "POST",
+        headers: makeRateLimitBypassHeaders(),
+        body: JSON.stringify({ username, password }),
+      });
+      expect(lockedLogin.status).toBe(429);
+    },
+    60_000
   );
 });

@@ -4,7 +4,10 @@
  */
 
 import { apiHandler } from "../../../_utils/api-handler.js";
-import { authorizeKosyncRequest } from "../../_helpers/_auth.js";
+import {
+  authorizeKosyncRequest,
+  sendKosyncAuthFailure,
+} from "../../_helpers/_auth.js";
 import {
   bridgeBooksProgressToKosync,
   pickNewerProgress,
@@ -22,13 +25,16 @@ export default apiHandler(
     corsHeaders: KOSYNC_CORS_HEADERS,
   },
   async ({ req, res, redis, logger, startTime }) => {
-    let username: string | null = null;
+    let username: string;
     try {
-      username = await authorizeKosyncRequest(req, redis);
-      if (!username) {
-        sendKosyncError(res, KosyncErrorCode.UNAUTHORIZED);
+      const auth = await authorizeKosyncRequest(req, redis);
+      if (auth.kind !== "authenticated") {
+        sendKosyncAuthFailure(res, auth, (status) =>
+          logger.response(status, Date.now() - startTime)
+        );
         return;
       }
+      username = auth.username;
     } catch (error) {
       logger.error("kosync get progress auth failed", error);
       sendKosyncError(res, KosyncErrorCode.INTERNAL);

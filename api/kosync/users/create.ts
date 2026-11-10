@@ -2,16 +2,25 @@
  * POST /api/kosync/users/create
  *
  * KOReader "Register". Credentials are the ryOS account password:
- * the client sends `password` as MD5(plain). That MD5 is stored when the
- * user signs in / registers / changes password on ryOS. Register here
- * succeeds when the supplied MD5 already matches that key.
+ * the client sends `password` as MD5(plain). That verifier is stored
+ * (as bcrypt of the MD5) when the user signs in / registers / changes
+ * password on ryOS. Register here succeeds when the supplied MD5 matches.
  */
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { getClientIp } from "../../_utils/_rate-limit.js";
+import {
+  isLoginLocked,
+  recordLoginFailure,
+  resetLoginFailures,
+  PER_USER_LOCKOUT_SECONDS,
+} from "../../_utils/auth/index.js";
 import { getStoredUserRecord } from "../../_utils/auth/_user-record.js";
-import { getKosyncAuthKey } from "../_helpers/_auth.js";
+import {
+  getKosyncAuthKey,
+  verifyKosyncAuthKey,
+} from "../_helpers/_auth.js";
 import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import {
   isValidKosyncField,
@@ -71,8 +80,20 @@ export default apiHandler(
     }
 
     try {
-      const ryosUser = await getStoredUserRecord(redis, username);
-      const existing = await getKosyncAuthKey(redis, username);
+      if (await isLoginLocked(redis, username)) {
+        res.setHeader("Retry-After", String(PER_USER_LOCKOUT_SECONDS));
+        logger.response(429, Date.now() - startTime);
+        res.status(429).json({
+          code: KosyncErrorCode.INTERNAL,
+          message: "Too many authentication attempts.",
+        });
+        return;
+      }
+
+      const [ryosUser, existing] = await Promise.all([
+        getStoredUserRecord(redis, username),
+        getKosyncAuthKey(redis, username),
+      ]);
 
       if (!ryosUser || !existing) {
         res.status(403).json({
@@ -83,11 +104,19 @@ export default apiHandler(
         return;
       }
 
-      if (existing !== password) {
+      const valid = await verifyKosyncAuthKey(
+        redis,
+        username,
+        password,
+        existing
+      );
+      if (!valid) {
+        await recordLoginFailure(redis, username);
         sendKosyncError(res, KosyncErrorCode.UNAUTHORIZED);
         return;
       }
 
+      await resetLoginFailures(redis, username);
       // MD5 matches the ryOS password key — Register succeeds for KOReader.
       logger.info("kosync register matched ryOS password key", { username });
       logger.response(201, Date.now() - startTime);
