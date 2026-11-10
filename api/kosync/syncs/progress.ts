@@ -5,7 +5,10 @@
 
 import { apiHandler } from "../../_utils/api-handler.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
-import { authorizeKosyncRequest } from "../_helpers/_auth.js";
+import {
+  authorizeKosyncRequest,
+  sendKosyncAuthFailure,
+} from "../_helpers/_auth.js";
 import { bridgeKosyncProgressToBooks } from "../_helpers/_books-bridge.js";
 import { KosyncErrorCode, sendKosyncError } from "../_helpers/_errors.js";
 import {
@@ -36,13 +39,16 @@ export default apiHandler(
     corsHeaders: KOSYNC_CORS_HEADERS,
   },
   async ({ req, res, redis, logger, startTime, body }) => {
-    let username: string | null = null;
+    let username: string;
     try {
-      username = await authorizeKosyncRequest(req, redis);
-      if (!username) {
-        sendKosyncError(res, KosyncErrorCode.UNAUTHORIZED);
+      const auth = await authorizeKosyncRequest(req, redis);
+      if (auth.kind !== "authenticated") {
+        sendKosyncAuthFailure(res, auth, (status) =>
+          logger.response(status, Date.now() - startTime)
+        );
         return;
       }
+      username = auth.username;
     } catch (error) {
       logger.error("kosync progress auth failed", error);
       sendKosyncError(res, KosyncErrorCode.INTERNAL);
