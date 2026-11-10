@@ -114,16 +114,12 @@ export function DashboardServerCard({ reloadKey = 0 }: { reloadKey?: number }) {
       setServerInfo(serverRes);
     } catch (err) {
       console.error("Failed to fetch server info:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("apps.admin.dashboard.failedToLoad")
-      );
+      setError(err instanceof Error ? err.message : "Failed to load");
       setServerInfo(null);
     } finally {
       setIsLoading(false);
     }
-  }, [username, isAuthenticated, t]);
+  }, [username, isAuthenticated]);
 
   useEffect(() => {
     void fetchData();
