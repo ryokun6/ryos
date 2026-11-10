@@ -498,8 +498,10 @@ async function testRyoReplyInvalidAuthToken(): Promise<void> {
   expect(res.status).toBe(401);
 }
 
-async function testRyoReplyBlankRoomId(): Promise<void> {
-  // A blank roomId fails ROOM_ID_REGEX validation -> 400.
+async function expectRyoReplyValidationError(
+  body: unknown,
+  expectedPath?: string
+): Promise<void> {
   const res = await fetchWithAuth(
     `${BASE_URL}/api/ai/ryo-reply`,
     ryoReplyUsername,
@@ -507,38 +509,63 @@ async function testRyoReplyBlankRoomId(): Promise<void> {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId: "", prompt: "Hello" }),
+      body: JSON.stringify(body),
     }
   );
   expect(res.status).toBe(400);
+  const data = (await res.json()) as {
+    error?: string;
+    issues?: Array<{ path: string; message: string }>;
+  };
+  expect(data.error).toBe("validation_error");
+  expect(Array.isArray(data.issues)).toBe(true);
+  expect((data.issues ?? []).length).toBeGreaterThan(0);
+  if (expectedPath) {
+    expect(
+      (data.issues ?? []).some((issue) => issue.path === expectedPath)
+    ).toBe(true);
+  }
+}
+
+async function testRyoReplyBlankRoomId(): Promise<void> {
+  // A blank roomId fails ROOM_ID_REGEX via bodySchema -> validation_error.
+  await expectRyoReplyValidationError({ roomId: "", prompt: "Hello" }, "roomId");
 }
 
 async function testRyoReplyMissingPrompt(): Promise<void> {
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/ai/ryo-reply`,
-    ryoReplyUsername,
-    ryoReplyToken ?? "",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId: "testroom123" }),
-    }
-  );
-  expect(res.status).toBe(400);
+  await expectRyoReplyValidationError({ roomId: "testroom123" }, "prompt");
 }
 
 async function testRyoReplyInvalidRoomId(): Promise<void> {
-  const res = await fetchWithAuth(
-    `${BASE_URL}/api/ai/ryo-reply`,
-    ryoReplyUsername,
-    ryoReplyToken ?? "",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId: "invalid/room/id!", prompt: "Hello" }),
-    }
+  await expectRyoReplyValidationError(
+    { roomId: "invalid/room/id!", prompt: "Hello" },
+    "roomId"
   );
-  expect(res.status).toBe(400);
+}
+
+async function testRyoReplyPromptTooLong(): Promise<void> {
+  // Caps match /api/applet-ai (4000 chars).
+  await expectRyoReplyValidationError(
+    { roomId: "testroom123", prompt: "x".repeat(4001) },
+    "prompt"
+  );
+}
+
+async function testRyoReplyTooManyRecentMessages(): Promise<void> {
+  const recentMessages = Array.from(
+    { length: 11 },
+    (_, i) => `user${i}: message ${i}`
+  ).join("\n");
+  await expectRyoReplyValidationError(
+    {
+      roomId: "testroom123",
+      prompt: "Hello",
+      systemState: {
+        chatRoomContext: { recentMessages },
+      },
+    },
+    "systemState.chatRoomContext.recentMessages"
+  );
 }
 
 async function testRyoReplyInvalidJson(): Promise<void> {
@@ -732,6 +759,12 @@ describe("Ai", () => {
     });
     test("Invalid roomId format", async () => {
       await testRyoReplyInvalidRoomId();
+    });
+    test("Prompt exceeds 4000 characters", async () => {
+      await testRyoReplyPromptTooLong();
+    });
+    test("More than 10 recent messages", async () => {
+      await testRyoReplyTooManyRecentMessages();
     });
     test("Invalid JSON", async () => {
       await testRyoReplyInvalidJson();

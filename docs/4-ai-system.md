@@ -254,7 +254,7 @@ Common endpoint configurations in this AI stack:
 - `/api/chat`: `auth: "optional"`, `allowExpiredAuth: true`, `parseJsonBody: true`, `contentType: null`
 - `/api/applet-ai`: `auth: "optional"`, `parseJsonBody: true`, `contentType: null`
 - `/api/ie-generate`: `auth: "none"`, `parseJsonBody: true`, `contentType: null`
-- `/api/ai/ryo-reply`: `auth: "required"`, `parseJsonBody: true`
+- `/api/ai/ryo-reply`: `auth: "required"`, `parseJsonBody: true`, Zod `bodySchema` (prompt max 4000 chars; at most 10 recent-message lines)
 - `/api/webhooks/telegram`: Custom handler (webhook secret validation, Telegram-specific auth via linked accounts)
 - `/api/cron/telegram-heartbeat`: Custom handler (cron secret via `Authorization: Bearer` header)
 

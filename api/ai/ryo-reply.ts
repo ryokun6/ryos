@@ -1,12 +1,19 @@
 /**
  * POST /api/ai/ryo-reply
- * 
+ *
  * Generate an AI reply as Ryo in chat rooms
  */
 
 import { generateText } from "ai";
+import { z } from "zod";
 import { geminiFlashLiteSettings } from "../_utils/gemini-flash-lite.js";
-import { assertValidRoomId, escapeHTML, filterProfanityPreservingUrls } from "../_utils/_validation.js";
+import {
+  escapeHTML,
+  filterProfanityPreservingUrls,
+  MAX_MESSAGE_LENGTH,
+  MAX_USERNAME_LENGTH,
+  ROOM_ID_REGEX,
+} from "../_utils/_validation.js";
 import * as RateLimit from "../_utils/_rate-limit.js";
 import { getRoom, addMessage, generateId, getCurrentTimestamp } from "../rooms/_helpers/_redis.js";
 import { getRoomWriteAccessError } from "../rooms/_helpers/_access.js";
@@ -15,22 +22,57 @@ import type { Message } from "../rooms/_helpers/_types.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { CHAT_ROOM_REPLY_INSTRUCTIONS } from "../_utils/_aiPrompts.js";
 
-interface RyoReplyRequest {
-  roomId: string;
-  prompt: string;
-  systemState?: {
-    chatRoomContext?: {
-      recentMessages?: string;
-      mentionedMessage?: string;
-    };
-  };
-}
+/**
+ * Prompt character cap. Matches `/api/applet-ai` (`prompt` / message `content`
+ * max 4000) so room @ryo mentions stay in the same ballpark as other AI routes.
+ */
+export const MAX_RYO_REPLY_PROMPT_CHARS = 4000;
+
+/** Max prior room messages the client may include as chat context. */
+export const MAX_RYO_REPLY_RECENT_MESSAGES = 10;
+
+/** One `username: content` line from the client context blob. */
+const MAX_RECENT_MESSAGE_LINE_CHARS =
+  MAX_USERNAME_LENGTH + 2 + MAX_MESSAGE_LENGTH;
+
+/** Upper bound for the newline-joined `recentMessages` string (10 lines). */
+const MAX_RECENT_MESSAGES_CHARS =
+  MAX_RYO_REPLY_RECENT_MESSAGES * (MAX_RECENT_MESSAGE_LINE_CHARS + 1);
+
+const bodySchema = z.object({
+  roomId: z.string().regex(ROOM_ID_REGEX, "Invalid roomId format"),
+  prompt: z.string().min(1).max(MAX_RYO_REPLY_PROMPT_CHARS),
+  systemState: z
+    .object({
+      chatRoomContext: z
+        .object({
+          recentMessages: z
+            .string()
+            .max(MAX_RECENT_MESSAGES_CHARS)
+            .refine(
+              (value) =>
+                value.split("\n").filter((line) => line.length > 0).length <=
+                MAX_RYO_REPLY_RECENT_MESSAGES,
+              {
+                message: `At most ${MAX_RYO_REPLY_RECENT_MESSAGES} recent messages`,
+              }
+            )
+            .optional(),
+          mentionedMessage: z.string().max(MAX_MESSAGE_LENGTH).optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+type RyoReplyRequest = z.infer<typeof bodySchema>;
 
 export default apiHandler<RyoReplyRequest>(
   {
     methods: ["POST"],
     auth: "required",
     parseJsonBody: true,
+    bodySchema,
   },
   async ({ res, redis, logger, startTime, user, body }) => {
     const username = user?.username || "";
@@ -50,6 +92,7 @@ export default apiHandler<RyoReplyRequest>(
       return;
     }
 
+    // bodySchema guarantees a validated body; keep the null check for safety.
     if (!body) {
       logger.warn("Invalid JSON body");
       logger.response(400, Date.now() - startTime);
@@ -58,25 +101,6 @@ export default apiHandler<RyoReplyRequest>(
     }
 
     const { roomId, prompt, systemState } = body;
-
-    try {
-      assertValidRoomId(roomId, "ryo-reply");
-    } catch (e) {
-      logger.warn("Invalid room ID", {
-        roomId,
-        error: e instanceof Error ? e.message : "Invalid",
-      });
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: e instanceof Error ? e.message : "Invalid room ID" });
-      return;
-    }
-
-    if (!prompt || typeof prompt !== "string") {
-      logger.warn("Missing prompt");
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Prompt is required" });
-      return;
-    }
 
     const room = await getRoom(roomId, redis);
     if (!room) {
@@ -114,6 +138,7 @@ export default apiHandler<RyoReplyRequest>(
         ...geminiFlashLiteSettings("low"),
         instructions: CHAT_ROOM_REPLY_INSTRUCTIONS,
         messages,
+        maxOutputTokens: 2000,
       });
       replyText = text;
       logger.info("AI reply generated", { replyLength: replyText.length });
@@ -124,11 +149,17 @@ export default apiHandler<RyoReplyRequest>(
       return;
     }
 
+    // Store with the same length cap as user chat messages.
+    const storedContent =
+      replyText.length > MAX_MESSAGE_LENGTH
+        ? replyText.slice(0, MAX_MESSAGE_LENGTH)
+        : replyText;
+
     const message: Message = {
       id: generateId(),
       roomId,
       username: "ryo",
-      content: escapeHTML(filterProfanityPreservingUrls(replyText)),
+      content: escapeHTML(filterProfanityPreservingUrls(storedContent)),
       timestamp: getCurrentTimestamp(),
     };
 
