@@ -5478,7 +5478,7 @@
       },
       "help": {
         "addVideo": {
-          "description": "YouTubeのURLを貼り付けると、ryOS가メタデータを取得してプレイリストに追加します。",
+          "description": "YouTubeのURLを貼り付けると、ryOSがメタデータを取得してプレイリストに追加します。",
           "title": "YouTubeから追加"
         },
         "loop": {
