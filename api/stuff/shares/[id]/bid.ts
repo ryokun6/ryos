@@ -3,7 +3,10 @@ import { generateAuthToken } from "../../../_utils/auth/index.js";
 import * as RateLimit from "../../../_utils/_rate-limit.js";
 import { apiHandler } from "../../../_utils/api-handler.js";
 import { redisKeys } from "../../../../src/shared/redisKeys.js";
-import { checkBidCurrency } from "../../_helpers/_shareMutations.js";
+import {
+  checkBidCurrency,
+  withStuffShareLock,
+} from "../../_helpers/_shareMutations.js";
 import type { StuffShareRecord } from "../../_helpers/_types.js";
 
 const BodySchema = z.object({
@@ -50,78 +53,89 @@ export default apiHandler(
       return;
     }
 
-    const share = await loadShare(redis, id);
-    if (!share) {
-      logger.response(404, Date.now() - startTime);
-      res.status(404).json({ error: "not_found" });
-      return;
-    }
+    try {
+      await withStuffShareLock(redis, id, async () => {
+        const share = await loadShare(redis, id);
+        if (!share) {
+          logger.response(404, Date.now() - startTime);
+          res.status(404).json({ error: "not_found" });
+          return;
+        }
 
-    const item = share.items.find((entry) => entry.id === body!.itemId);
-    if (!item) {
-      logger.response(404, Date.now() - startTime);
-      res.status(404).json({ error: "item_not_found" });
-      return;
-    }
+        const item = share.items.find((entry) => entry.id === body!.itemId);
+        if (!item) {
+          logger.response(404, Date.now() - startTime);
+          res.status(404).json({ error: "item_not_found" });
+          return;
+        }
 
-    if (share.ownerUsername === user!.username) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "cannot_bid_on_own_item" });
-      return;
-    }
+        if (share.ownerUsername === user!.username) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({ error: "cannot_bid_on_own_item" });
+          return;
+        }
 
-    const currencyCheck = checkBidCurrency({
-      listingCurrency: item.prices.currency,
-      bidCurrency: body!.currency,
-    });
-    if (!currencyCheck.ok) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({
-        error: "currency_mismatch",
-        expected: currencyCheck.expected,
-        received: currencyCheck.received,
+        const currencyCheck = checkBidCurrency({
+          listingCurrency: item.prices.currency,
+          bidCurrency: body!.currency,
+        });
+        if (!currencyCheck.ok) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({
+            error: "currency_mismatch",
+            expected: currencyCheck.expected,
+            received: currencyCheck.received,
+          });
+          return;
+        }
+
+        // Compare amounts only within the listing currency
+        const currentTop = share.bids
+          .filter(
+            (bid) =>
+              bid.itemId === body!.itemId &&
+              (bid.currency || "USD").toUpperCase() === currencyCheck.currency
+          )
+          .sort((a, b) => b.amount - a.amount)[0];
+
+        if (currentTop && body!.amount <= currentTop.amount) {
+          logger.response(400, Date.now() - startTime);
+          res.status(400).json({
+            error: "bid_too_low",
+            currentHigh: currentTop.amount,
+            currency: currentTop.currency,
+          });
+          return;
+        }
+
+        // Keep only the highest offer per user per item
+        share.bids = share.bids.filter(
+          (bid) =>
+            !(bid.itemId === body!.itemId && bid.username === user!.username)
+        );
+
+        const bid = {
+          id: generateAuthToken().substring(0, 24),
+          itemId: body!.itemId,
+          username: user!.username,
+          amount: body!.amount,
+          currency: currencyCheck.currency,
+          createdAt: Date.now(),
+        };
+        share.bids.push(bid);
+        share.updatedAt = Date.now();
+
+        await redis.set(redisKeys.media.stuffShare(id), JSON.stringify(share));
+        logger.response(201, Date.now() - startTime);
+        res.status(201).json({ bid });
       });
-      return;
+    } catch (error) {
+      if (error instanceof Error && error.message === "stuff_share_busy") {
+        logger.response(503, Date.now() - startTime);
+        res.status(503).json({ error: "share_busy" });
+        return;
+      }
+      throw error;
     }
-
-    // Compare amounts only within the listing currency
-    const currentTop = share.bids
-      .filter(
-        (bid) =>
-          bid.itemId === body!.itemId &&
-          (bid.currency || "USD").toUpperCase() === currencyCheck.currency
-      )
-      .sort((a, b) => b.amount - a.amount)[0];
-
-    if (currentTop && body!.amount <= currentTop.amount) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({
-        error: "bid_too_low",
-        currentHigh: currentTop.amount,
-        currency: currentTop.currency,
-      });
-      return;
-    }
-
-    // Keep only the highest offer per user per item
-    share.bids = share.bids.filter(
-      (bid) =>
-        !(bid.itemId === body!.itemId && bid.username === user!.username)
-    );
-
-    const bid = {
-      id: generateAuthToken().substring(0, 24),
-      itemId: body!.itemId,
-      username: user!.username,
-      amount: body!.amount,
-      currency: currencyCheck.currency,
-      createdAt: Date.now(),
-    };
-    share.bids.push(bid);
-    share.updatedAt = Date.now();
-
-    await redis.set(redisKeys.media.stuffShare(id), JSON.stringify(share));
-    logger.response(201, Date.now() - startTime);
-    res.status(201).json({ bid });
   }
 );

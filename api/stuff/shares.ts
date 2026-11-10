@@ -5,7 +5,10 @@ import { getClientIp } from "../_utils/_rate-limit.js";
 import { apiHandler } from "../_utils/api-handler.js";
 import { getAppPublicOrigin } from "../_utils/runtime-config.js";
 import { redisKeys } from "../../src/shared/redisKeys.js";
-import { mergeItemsPreservingActiveReservations } from "./_helpers/_shareMutations.js";
+import {
+  mergeItemsPreservingActiveReservations,
+  withStuffShareLock,
+} from "./_helpers/_shareMutations.js";
 import type { StuffShareRecord } from "./_helpers/_types.js";
 
 const RATE_LIMITS = {
@@ -128,50 +131,74 @@ export default apiHandler(
       }
 
       const now = Date.now();
-      let shareId = parsed.data.shareId || generateId();
-      let existing: StuffShareRecord | null = null;
+      const origin = getAppPublicOrigin();
 
-      if (parsed.data.shareId) {
-        const raw = await redis.get(redisKeys.media.stuffShare(parsed.data.shareId));
-        if (raw) {
-          existing =
-            typeof raw === "string"
-              ? (JSON.parse(raw) as StuffShareRecord)
-              : (raw as StuffShareRecord);
-          if (existing.ownerUsername !== user.username) {
-            // Someone else's share — create a new one instead of hijacking
-            shareId = generateId();
-            existing = null;
-          }
-        }
-      }
+      const persistShare = async (
+        shareId: string,
+        existing: StuffShareRecord | null
+      ) => {
+        const reservations = existing?.reservations ?? [];
+        const record: StuffShareRecord = {
+          id: shareId,
+          ownerUsername: user.username,
+          title: parsed.data.title,
+          description: parsed.data.description,
+          items: mergeItemsPreservingActiveReservations(
+            parsed.data.items,
+            reservations
+          ),
+          reservations,
+          bids: existing?.bids ?? [],
+          createdAt: existing?.createdAt ?? now,
+          updatedAt: now,
+        };
 
-      const reservations = existing?.reservations ?? [];
-      const record: StuffShareRecord = {
-        id: shareId,
-        ownerUsername: user.username,
-        title: parsed.data.title,
-        description: parsed.data.description,
-        items: mergeItemsPreservingActiveReservations(
-          parsed.data.items,
-          reservations
-        ),
-        reservations,
-        bids: existing?.bids ?? [],
-        createdAt: existing?.createdAt ?? now,
-        updatedAt: now,
+        await redis.set(
+          redisKeys.media.stuffShare(shareId),
+          JSON.stringify(record)
+        );
+
+        logger.info("stuff share saved", { shareId, username: user.username });
+        logger.response(existing ? 200 : 201, Date.now() - startTime);
+        res.status(existing ? 200 : 201).json({
+          id: shareId,
+          updated: Boolean(existing),
+          url: `${origin}/stuff/${shareId}`,
+        });
       };
 
-      await redis.set(redisKeys.media.stuffShare(shareId), JSON.stringify(record));
+      // Client-supplied shareId: serialize against concurrent bid/reserve writes.
+      if (parsed.data.shareId) {
+        try {
+          await withStuffShareLock(redis, parsed.data.shareId, async () => {
+            let shareId = parsed.data.shareId!;
+            let existing: StuffShareRecord | null = null;
+            const raw = await redis.get(redisKeys.media.stuffShare(shareId));
+            if (raw) {
+              existing =
+                typeof raw === "string"
+                  ? (JSON.parse(raw) as StuffShareRecord)
+                  : (raw as StuffShareRecord);
+              if (existing.ownerUsername !== user.username) {
+                // Someone else's share — create a new one instead of hijacking
+                shareId = generateId();
+                existing = null;
+              }
+            }
+            await persistShare(shareId, existing);
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === "stuff_share_busy") {
+            logger.response(503, Date.now() - startTime);
+            res.status(503).json({ error: "share_busy" });
+            return;
+          }
+          throw error;
+        }
+        return;
+      }
 
-      const origin = getAppPublicOrigin();
-      logger.info("stuff share saved", { shareId, username: user.username });
-      logger.response(existing ? 200 : 201, Date.now() - startTime);
-      res.status(existing ? 200 : 201).json({
-        id: shareId,
-        updated: Boolean(existing),
-        url: `${origin}/stuff/${shareId}`,
-      });
+      await persistShare(generateId(), null);
       return;
     }
 

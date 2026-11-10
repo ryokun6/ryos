@@ -85,6 +85,28 @@ describe("checkBidCurrency", () => {
   });
 });
 
+type ShareDoc = {
+  reservations: Array<{ id: string }>;
+  bids: Array<{ id: string; amount: number }>;
+};
+
+async function loadShareDoc(
+  redis: FakeRedis,
+  shareId: string
+): Promise<ShareDoc> {
+  const raw = await redis.get(redisKeys.media.stuffShare(shareId));
+  expect(typeof raw).toBe("string");
+  return JSON.parse(raw as string) as ShareDoc;
+}
+
+async function writeShareDoc(
+  redis: FakeRedis,
+  shareId: string,
+  doc: ShareDoc
+): Promise<void> {
+  await redis.set(redisKeys.media.stuffShare(shareId), JSON.stringify(doc));
+}
+
 describe("withStuffShareLock", () => {
   test("serializes concurrent mutations on the same share", async () => {
     const redis = new FakeRedis();
@@ -120,5 +142,78 @@ describe("withStuffShareLock", () => {
     expect(secondResult).toBe("b");
     expect(order).toEqual(["first-enter", "first-exit", "second"]);
     expect(redis.kv.has(redisKeys.media.stuffShareLock(shareId))).toBe(false);
+  });
+
+  test("unlocked concurrent RMW can drop a sibling write; locked RMW keeps both", async () => {
+    const shareId = "ShareRace";
+    const seed: ShareDoc = { reservations: [], bids: [] };
+
+    // Without the lock, an interleaved read-modify-write loses the reservation.
+    const unlockedRedis = new FakeRedis();
+    await writeShareDoc(unlockedRedis, shareId, seed);
+
+    let releaseUnlockedBid!: () => void;
+    const unlockedBidGate = new Promise<void>((resolve) => {
+      releaseUnlockedBid = resolve;
+    });
+
+    const unlockedBid = (async () => {
+      const share = await loadShareDoc(unlockedRedis, shareId);
+      share.bids.push({ id: "bid-1", amount: 35 });
+      await unlockedBidGate;
+      await writeShareDoc(unlockedRedis, shareId, share);
+    })();
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    const unlockedReserve = (async () => {
+      const share = await loadShareDoc(unlockedRedis, shareId);
+      share.reservations.push({ id: "res-1" });
+      await writeShareDoc(unlockedRedis, shareId, share);
+    })();
+
+    await unlockedReserve;
+    releaseUnlockedBid();
+    await unlockedBid;
+
+    const unlockedFinal = await loadShareDoc(unlockedRedis, shareId);
+    expect(unlockedFinal.bids).toEqual([{ id: "bid-1", amount: 35 }]);
+    expect(unlockedFinal.reservations).toEqual([]);
+
+    // With the lock, the same interleaving keeps both mutations.
+    const lockedRedis = new FakeRedis();
+    await writeShareDoc(lockedRedis, shareId, seed);
+
+    let releaseLockedBid!: () => void;
+    const lockedBidGate = new Promise<void>((resolve) => {
+      releaseLockedBid = resolve;
+    });
+
+    const lockedBid = withStuffShareLock(lockedRedis, shareId, async () => {
+      const share = await loadShareDoc(lockedRedis, shareId);
+      share.bids.push({ id: "bid-1", amount: 35 });
+      await lockedBidGate;
+      await writeShareDoc(lockedRedis, shareId, share);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+
+    const lockedReservePromise = withStuffShareLock(
+      lockedRedis,
+      shareId,
+      async () => {
+        const share = await loadShareDoc(lockedRedis, shareId);
+        share.reservations.push({ id: "res-1" });
+        await writeShareDoc(lockedRedis, shareId, share);
+      }
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    releaseLockedBid();
+    await Promise.all([lockedBid, lockedReservePromise]);
+
+    const lockedFinal = await loadShareDoc(lockedRedis, shareId);
+    expect(lockedFinal.bids).toEqual([{ id: "bid-1", amount: 35 }]);
+    expect(lockedFinal.reservations).toEqual([{ id: "res-1" }]);
   });
 });

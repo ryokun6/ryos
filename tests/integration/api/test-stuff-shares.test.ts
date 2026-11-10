@@ -269,6 +269,253 @@ describe("stuff shares", () => {
     ).toBe("reserved");
   });
 
+  test("concurrent bid and reserve both persist on the share record", async () => {
+    const shareId = await createShare([sampleItem("bid-reserve-race")]);
+
+    const [bidRes, reserveRes] = await Promise.all([
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares/${shareId}/bid`,
+        bidderUsername,
+        bidderToken,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({
+            itemId: "bid-reserve-race",
+            amount: 42,
+            currency: "USD",
+          }),
+        }
+      ),
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares/${shareId}/reserve`,
+        bidder2Username,
+        bidder2Token,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({ itemId: "bid-reserve-race" }),
+        }
+      ),
+    ]);
+
+    expect([201, 503]).toContain(bidRes.status);
+    expect([201, 503]).toContain(reserveRes.status);
+    // Lock contention may 503 one caller; at least one mutation must land.
+    expect(bidRes.status === 201 || reserveRes.status === 201).toBe(true);
+
+    const getRes = await fetchWithOrigin(
+      `${BASE_URL}/api/stuff/shares?id=${encodeURIComponent(shareId)}`,
+      { headers: makeRateLimitBypassHeaders() }
+    );
+    expect(getRes.status).toBe(200);
+    const share = await getRes.json();
+
+    if (bidRes.status === 201 && reserveRes.status === 201) {
+      expect(
+        (share.bids as Array<{ itemId: string; amount: number }>).some(
+          (bid) => bid.itemId === "bid-reserve-race" && bid.amount === 42
+        )
+      ).toBe(true);
+      expect(
+        (
+          share.reservations as Array<{ itemId: string; status: string }>
+        ).filter(
+          (reservation) =>
+            reservation.itemId === "bid-reserve-race" &&
+            reservation.status === "active"
+        )
+      ).toHaveLength(1);
+      expect(
+        share.items.find(
+          (item: { id: string }) => item.id === "bid-reserve-race"
+        )?.status
+      ).toBe("reserved");
+      return;
+    }
+
+    // One request hit share_busy: the successful write must still be intact
+    // (not clobbered by a stale unlocked sibling write).
+    if (bidRes.status === 201) {
+      expect(
+        (share.bids as Array<{ itemId: string; amount: number }>).some(
+          (bid) => bid.itemId === "bid-reserve-race" && bid.amount === 42
+        )
+      ).toBe(true);
+    }
+    if (reserveRes.status === 201) {
+      expect(
+        (
+          share.reservations as Array<{ itemId: string; status: string }>
+        ).filter(
+          (reservation) =>
+            reservation.itemId === "bid-reserve-race" &&
+            reservation.status === "active"
+        )
+      ).toHaveLength(1);
+    }
+  });
+
+  test("concurrent bids serialize so the stored high bid matches a winner", async () => {
+    const shareId = await createShare([sampleItem("bid-race")]);
+
+    const [first, second] = await Promise.all([
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares/${shareId}/bid`,
+        bidderUsername,
+        bidderToken,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({
+            itemId: "bid-race",
+            amount: 30,
+            currency: "USD",
+          }),
+        }
+      ),
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares/${shareId}/bid`,
+        bidder2Username,
+        bidder2Token,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({
+            itemId: "bid-race",
+            amount: 50,
+            currency: "USD",
+          }),
+        }
+      ),
+    ]);
+
+    const statuses = [first.status, second.status].toSorted(
+      (a, b) => a - b
+    );
+    // Higher bid always wins when both complete; loser is bid_too_low (400)
+    // or share_busy (503) under contention. Never both 201 with a lost write.
+    expect(statuses[0]).toBeGreaterThanOrEqual(201);
+    expect([201, 400, 503]).toContain(first.status);
+    expect([201, 400, 503]).toContain(second.status);
+    expect(first.status === 201 || second.status === 201).toBe(true);
+
+    const getRes = await fetchWithOrigin(
+      `${BASE_URL}/api/stuff/shares?id=${encodeURIComponent(shareId)}`,
+      { headers: makeRateLimitBypassHeaders() }
+    );
+    expect(getRes.status).toBe(200);
+    const share = await getRes.json();
+    const itemBids = (
+      share.bids as Array<{ itemId: string; amount: number; username: string }>
+    ).filter((bid) => bid.itemId === "bid-race");
+
+    const high = Math.max(...itemBids.map((bid) => bid.amount));
+    expect(high).toBe(
+      second.status === 201 ? 50 : first.status === 201 ? 30 : high
+    );
+    if (second.status === 201) {
+      expect(high).toBe(50);
+      expect(
+        itemBids.some(
+          (bid) => bid.username === bidder2Username && bid.amount === 50
+        )
+      ).toBe(true);
+    }
+    if (first.status === 201 && second.status === 201) {
+      // Both accepted only if the lower bid landed first; both remain stored
+      // (one per user) and the high bid is 50.
+      expect(itemBids).toHaveLength(2);
+      expect(high).toBe(50);
+    }
+    if (first.status === 201 && second.status !== 201) {
+      expect(itemBids).toHaveLength(1);
+      expect(itemBids[0]?.amount).toBe(30);
+    }
+    if (second.status === 201 && first.status === 400) {
+      expect(itemBids.some((bid) => bid.amount === 50)).toBe(true);
+    }
+  });
+
+  test("concurrent republish and reserve keep the reservation", async () => {
+    const shareId = await createShare([sampleItem("republish-race")]);
+
+    const [reserveRes, republishRes] = await Promise.all([
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares/${shareId}/reserve`,
+        bidderUsername,
+        bidderToken,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({ itemId: "republish-race" }),
+        }
+      ),
+      fetchWithAuth(
+        `${BASE_URL}/api/stuff/shares`,
+        ownerUsername,
+        ownerToken,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...makeRateLimitBypassHeaders(),
+          },
+          body: JSON.stringify({
+            title: "Garage Sale Updated",
+            shareId,
+            items: [sampleItem("republish-race")],
+          }),
+        }
+      ),
+    ]);
+
+    expect([201, 503]).toContain(reserveRes.status);
+    expect([200, 503]).toContain(republishRes.status);
+    expect(reserveRes.status === 201 || republishRes.status === 200).toBe(
+      true
+    );
+
+    const getRes = await fetchWithOrigin(
+      `${BASE_URL}/api/stuff/shares?id=${encodeURIComponent(shareId)}`,
+      { headers: makeRateLimitBypassHeaders() }
+    );
+    expect(getRes.status).toBe(200);
+    const share = await getRes.json();
+
+    if (reserveRes.status === 201) {
+      expect(
+        (
+          share.reservations as Array<{ itemId: string; status: string }>
+        ).filter(
+          (reservation) =>
+            reservation.itemId === "republish-race" &&
+            reservation.status === "active"
+        )
+      ).toHaveLength(1);
+      expect(
+        share.items.find(
+          (item: { id: string }) => item.id === "republish-race"
+        )?.status
+      ).toBe("reserved");
+    }
+  });
+
   test("republish preserves reserved status for actively reserved items", async () => {
     const shareId = await createShare([sampleItem("keep-reserved")]);
 
