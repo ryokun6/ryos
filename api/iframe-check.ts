@@ -23,10 +23,12 @@ import {
 } from "./_utils/_ie-live.js";
 import {
   IeHtmlTooLargeError,
+  IE_HTML_HEAD_SCAN_BYTES,
   readResponseTextPrefix,
   readResponseTextWithLimit,
   sanitizeProxiedHtml,
 } from "./_utils/_ie-html.js";
+import { extractTitleText } from "./_utils/_html-linear.js";
 import {
   buildIeNavigationInterceptorScript,
   buildIeProxyCsp,
@@ -304,32 +306,82 @@ async function resolveClosestWaybackSnapshot(
   }
 }
 
+type StreamableResponse = {
+  write: (chunk: Buffer) => unknown;
+  end: () => unknown;
+  on?: (event: string, listener: (...args: unknown[]) => void) => unknown;
+  off?: (event: string, listener: (...args: unknown[]) => void) => unknown;
+};
+
 /**
  * Stream an undici/web `ReadableStream` response body to the Node-style
  * response without buffering the whole payload in memory. Works with the
  * standalone Bun server's response shim (`write`/`end`) as well as a plain
  * Node `ServerResponse`. Returns true if streaming succeeded.
+ *
+ * Stops and cancels the upstream reader when the client disconnects
+ * (`aborted`/`close`) or when `write` returns false (shim sets this after
+ * `writableEnded`, i.e. the client went away).
+ *
+ * TODO(H9): a hard byte ceiling for raw/non-HTML passthrough is still pending
+ * product confirmation (audit suggested ~25MB). Leave unimplemented until
+ * that decision lands — do not treat any local constant as final.
  */
 async function streamBodyToResponse(
   body: ReadableStream<Uint8Array> | null,
-  res: { write: (chunk: Buffer) => unknown; end: () => unknown }
+  res: StreamableResponse
 ): Promise<boolean> {
   if (!body) {
     res.end();
     return true;
   }
   const reader = body.getReader();
+  let aborted = false;
+  const markAborted = () => {
+    aborted = true;
+  };
+  res.on?.("aborted", markAborted);
+  res.on?.("close", markAborted);
+
+  const cancelReader = async () => {
+    try {
+      await reader.cancel();
+    } catch {
+      /* ignore */
+    }
+  };
+
   try {
     for (;;) {
+      if (aborted) {
+        await cancelReader();
+        return false;
+      }
       const { done, value } = await reader.read();
       if (done) break;
-      if (value && value.length > 0) {
-        res.write(Buffer.from(value));
+      if (aborted) {
+        await cancelReader();
+        return false;
       }
+      if (value && value.length > 0) {
+        const ok = res.write(Buffer.from(value));
+        // Honor write=false: client gone / stream closed. Do not keep reading
+        // upstream into a dead response.
+        if (ok === false) {
+          aborted = true;
+          await cancelReader();
+          return false;
+        }
+      }
+    }
+    if (aborted) {
+      await cancelReader();
+      return false;
     }
     res.end();
     return true;
   } catch {
+    await cancelReader();
     try {
       res.end();
     } catch {
@@ -337,6 +389,8 @@ async function streamBodyToResponse(
     }
     return false;
   } finally {
+    res.off?.("aborted", markAborted);
+    res.off?.("close", markAborted);
     try {
       reader.releaseLock();
     } catch {
@@ -890,9 +944,11 @@ export default apiHandler(
     html = html.replace(/<meta[^>]*content\s*=\s*["'][^"']*["'][^>]*http-equiv\s*=\s*["']?Content-Security-Policy["']?[^>]*>/gi, "");
 
     let pageTitle: string | undefined;
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (titleMatch && titleMatch[1]) {
-      pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
+    // Linear title scan over a head-sized window — the previous
+    // `/<title[^>]*>…/` regex is O(n²) on crafted attribute spam.
+    const titleInner = extractTitleText(html, IE_HTML_HEAD_SCAN_BYTES);
+    if (titleInner) {
+      pageTitle = decodeHtmlEntitiesOnce(titleInner).trim();
     }
 
     const baseTag = `<base href="${pageFinalUrl.replace(/"/g, "%22")}">`;
@@ -1050,10 +1106,10 @@ export default apiHandler(
         if (metaTagMatch && metaTagMatch[1]) {
           metaCsp = metaTagMatch[1];
         }
-        // Extract title (case-insensitive)
-        const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-        if (titleMatch && titleMatch[1]) {
-          pageTitle = decodeHtmlEntitiesOnce(titleMatch[1]).trim();
+        // Extract title with a linear scan (prefix already bounded above).
+        const titleInner = extractTitleText(html);
+        if (titleInner) {
+          pageTitle = decodeHtmlEntitiesOnce(titleInner).trim();
         }
       } else {
         try {

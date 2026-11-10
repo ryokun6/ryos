@@ -11,6 +11,12 @@
  */
 
 import { decodeHtmlEntitiesOnce } from "./html-entities.js";
+import {
+  extractTitleText,
+  findCloseTag,
+  findOpenTag,
+  readTagAttr,
+} from "./_html-linear.js";
 
 /** Hard ceiling for buffered HTML. Above this we refuse to embed the page. */
 export const IE_MAX_HTML_BYTES = 2_500_000;
@@ -166,7 +172,8 @@ export async function readResponseTextPrefix(
   return new TextDecoder("utf-8", { fatal: false }).decode(merged);
 }
 
-const TAG_RE = /<\/?([a-zA-Z0-9:-]+)(\s[^>]*)?>/g;
+/** Max open-tag candidates tried by extractBalancedInner before giving up. */
+const EXTRACT_BALANCED_MAX_OPENS = 64;
 
 /** Tags removed entirely from reader-mode article markup. */
 const DROP_TAGS = new Set([
@@ -389,65 +396,121 @@ function escapeHtml(text: string): string {
 }
 
 function stripTags(html: string): string {
-  return decodeHtmlEntitiesOnce(html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+  // Linear tag strip — bare `<` without `>` must not restart an O(n) scan.
+  let pos = 0;
+  let out = "";
+  while (pos < html.length) {
+    const lt = html.indexOf("<", pos);
+    if (lt < 0) {
+      out += html.slice(pos);
+      break;
+    }
+    out += html.slice(pos, lt);
+    const gt = html.indexOf(">", lt + 1);
+    if (gt < 0) {
+      out += " ";
+      break;
+    }
+    out += " ";
+    pos = gt + 1;
+  }
+  return decodeHtmlEntitiesOnce(out.replace(/\s+/g, " ").trim());
 }
 
 function metaContent(html: string, names: string[]): string | null {
-  for (const name of names) {
-    const re = new RegExp(
-      `<meta[^>]+(?:name|property)=["']${name}["'][^>]+content=["']([^"']+)["'][^>]*>|<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']${name}["'][^>]*>`,
-      "i"
-    );
-    const match = html.match(re);
-    const value = match?.[1] || match?.[2];
-    if (value) return decodeHtmlEntitiesOnce(value.trim());
+  const wanted = new Set(names.map((n) => n.toLowerCase()));
+  // Metadata lives in <head>; bound the scan like check-mode does.
+  const window =
+    html.length > IE_HTML_HEAD_SCAN_BYTES
+      ? html.slice(0, IE_HTML_HEAD_SCAN_BYTES)
+      : html;
+  let pos = 0;
+  let guard = 0;
+  while (guard++ < 2_000) {
+    const open = findOpenTag(window, "meta", pos);
+    if (!open) break;
+    pos = open.end;
+    const property = (readTagAttr(open.tag, "property") || "").toLowerCase();
+    const name = (readTagAttr(open.tag, "name") || "").toLowerCase();
+    if (!wanted.has(property) && !wanted.has(name)) continue;
+    const content = readTagAttr(open.tag, "content");
+    if (content) return decodeHtmlEntitiesOnce(content.trim());
   }
   return null;
 }
 
 function extractTitle(html: string): string {
   // Prefer the on-page headline for reader mode when present.
-  const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
-  if (h1Match?.[1]) {
-    const h1 = stripTags(h1Match[1]);
-    if (h1.length >= 8) return h1;
+  const h1Open = findOpenTag(html, "h1", 0);
+  if (h1Open) {
+    const h1Close = findCloseTag(html, "h1", h1Open.end);
+    if (h1Close) {
+      const h1 = stripTags(html.slice(h1Open.end, h1Close.start));
+      if (h1.length >= 8) return h1;
+    }
   }
   const og = metaContent(html, ["og:title", "twitter:title"]);
   if (og) return og;
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch?.[1]) return decodeHtmlEntitiesOnce(titleMatch[1].trim());
+  const titleInner = extractTitleText(html, IE_HTML_HEAD_SCAN_BYTES);
+  if (titleInner) return decodeHtmlEntitiesOnce(titleInner.trim());
   return "Untitled page";
 }
 
 /**
  * Extract the inner HTML of the first balanced match for `tagName`, optionally
  * requiring a predicate on the opening tag attributes.
+ *
+ * Scans forward with `indexOf` so an unclosed opener cannot restart an O(n)
+ * walk of the remainder from every candidate (that was O(n²) on crafted HTML).
+ * After the first matching opener that fails to balance, we stop.
  */
 function extractBalancedInner(
   html: string,
   tagName: string,
   openTagPredicate?: (openTag: string) => boolean
 ): string | null {
-  const openRe = new RegExp(`<${tagName}\\b([^>]*)>`, "gi");
-  let openMatch: RegExpExecArray | null;
-  while ((openMatch = openRe.exec(html))) {
-    const openTag = openMatch[0];
-    if (openTagPredicate && !openTagPredicate(openTag)) continue;
-    const start = openMatch.index + openTag.length;
+  const lowerName = tagName.toLowerCase();
+  let searchFrom = 0;
+  let opensTried = 0;
+
+  while (opensTried < EXTRACT_BALANCED_MAX_OPENS) {
+    const open = findOpenTag(html, tagName, searchFrom);
+    if (!open) return null;
+    searchFrom = open.end;
+    if (openTagPredicate && !openTagPredicate(open.tag)) continue;
+    opensTried += 1;
+
+    const start = open.end;
     let depth = 1;
-    TAG_RE.lastIndex = start;
-    let tagMatch: RegExpExecArray | null;
-    while ((tagMatch = TAG_RE.exec(html))) {
-      const name = tagMatch[1].toLowerCase();
-      if (name !== tagName.toLowerCase()) continue;
-      const isClose = tagMatch[0].startsWith("</");
-      const isSelfClosing = /\/>\s*$/.test(tagMatch[0]);
+    let pos = start;
+    let balanced = false;
+    let innerEnd = -1;
+
+    while (pos < html.length) {
+      const nextLt = html.indexOf("<", pos);
+      if (nextLt < 0) break;
+      const nextGt = html.indexOf(">", nextLt + 1);
+      if (nextGt < 0) break;
+      const raw = html.slice(nextLt, nextGt + 1);
+      const isClose = raw.startsWith("</");
+      const nameStart = nextLt + (isClose ? 2 : 1);
+      const nameMatch = /^[a-zA-Z0-9:-]+/.exec(html.slice(nameStart, nextGt));
+      const name = nameMatch?.[0]?.toLowerCase();
+      pos = nextGt + 1;
+      if (name !== lowerName) continue;
+      const isSelfClosing = !isClose && /\/\s*>$/.test(raw);
       if (isClose) depth -= 1;
       else if (!isSelfClosing) depth += 1;
       if (depth === 0) {
-        return html.slice(start, tagMatch.index);
+        balanced = true;
+        innerEnd = nextLt;
+        break;
       }
     }
+
+    if (balanced) return html.slice(start, innerEnd);
+    // First matching opener never balanced — stop (do not O(n²) retry).
+    return null;
   }
   return null;
 }
@@ -617,15 +680,31 @@ function truncateHtml(html: string, maxBytes: number): string {
 
 function collectFallbackBlocks(html: string): string {
   const parts: string[] = [];
-
-  const paragraphRe = /<(p|h2|h3|blockquote)\b[^>]*>[\s\S]*?<\/\1>/gi;
-  let match: RegExpExecArray | null;
-  while ((match = paragraphRe.exec(html))) {
-    const text = stripTags(match[0]);
+  const tags = ["p", "h2", "h3", "blockquote"] as const;
+  // Walk the document once, picking the earliest next block of any type.
+  let pos = 0;
+  while (parts.join("").length <= IE_LITE_CONTENT_MAX_BYTES) {
+    let best: { start: number; end: number; tag: string } | null = null;
+    for (const tag of tags) {
+      const open = findOpenTag(html, tag, pos);
+      if (!open) continue;
+      if (!best || open.start < best.start) {
+        best = { start: open.start, end: open.end, tag };
+      }
+    }
+    if (!best) break;
+    const close = findCloseTag(html, best.tag, best.end);
+    if (!close) {
+      // Unclosed block — skip past this opener and continue linearly.
+      pos = best.end;
+      continue;
+    }
+    const block = html.slice(best.start, close.end);
+    pos = close.end;
+    const text = stripTags(block);
     if (text.length < 50) continue;
     if (isBoilerplateParagraph(text)) continue;
-    parts.push(match[0]);
-    if (parts.join("").length > IE_LITE_CONTENT_MAX_BYTES) break;
+    parts.push(block);
   }
 
   return parts.join("\n");

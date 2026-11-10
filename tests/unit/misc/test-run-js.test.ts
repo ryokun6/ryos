@@ -141,6 +141,23 @@ describe("runJsInSandbox", () => {
     expect(run.durationMs).toBeLessThan(5_000);
   });
 
+  test("does not freeze the calling thread while a script runs", async () => {
+    let ticks = 0;
+    const timer = setInterval(() => {
+      ticks += 1;
+    }, 20);
+    try {
+      const run = await runJsInSandbox("while (true) {}", { timeoutMs: 400 });
+      expect(run.success).toBe(false);
+      expect(run.error).toBe("Execution timed out after 400ms");
+      // A main-thread eval would see ~0 ticks over 400ms; the Worker path
+      // should keep the event loop alive.
+      expect(ticks).toBeGreaterThan(5);
+    } finally {
+      clearInterval(timer);
+    }
+  });
+
   test("has no host APIs (fetch, process, timers)", async () => {
     for (const expression of ["fetch", "process", "setTimeout", "require"]) {
       const run = await runJsInSandbox(`${expression}("x")`);

@@ -10,6 +10,14 @@
 import { Readability } from "@mozilla/readability";
 import { parseHTML } from "linkedom";
 import { decodeHtmlEntitiesOnce } from "../../_utils/html-entities.js";
+import {
+  collectTagsLinear,
+  extractLinkMetadataLinear,
+  stripEnclosedBlocks,
+  stripHtmlComments,
+  stripTagsLinear,
+  readTagAttr,
+} from "../../_utils/_html-linear.js";
 
 export const DANGEROUS_URL_SCHEMES = /^(?:javascript|data|vbscript|blob):/i;
 
@@ -50,6 +58,9 @@ interface HtmlDocument {
 /**
  * Repeatedly strip tag patterns until no more matches remain,
  * preventing nested-tag bypass (e.g. `<scr<script>ipt>`).
+ *
+ * Prefer the linear scanners below for untrusted full documents; this helper
+ * remains for tests and callers that already pass a bounded RegExp.
  */
 export function stripTagsLoop(
   html: string,
@@ -68,31 +79,40 @@ export function stripTagsLoop(
 
 /**
  * Remove HTML tags until the string stops changing.
- * One pass of `<[^>]+>` turns `<scr<script>ipt>` back into `<script>`.
+ * One pass turns `<scr<script>ipt>` back into `<script>`.
  * Repeat until the string stops changing so a nested tag cannot reassemble.
+ *
+ * Uses a linear `<…>` scan so a body of bare `<` characters cannot go O(n²).
  */
 export function stripTagsUntilStable(value: string): string {
   let current = value;
   let previous: string;
   do {
     previous = current;
-    current = current.replace(/<[^>]+>/g, "");
+    current = stripTagsLinear(current);
   } while (current !== previous);
   return current;
 }
 
+/** How much of a page to scan for `<meta>` / `<title>` / `<link>` metadata. */
+const METADATA_SCAN_BYTES = 256_000;
+
 function stripActiveContent(html: string): string {
   let working = html;
-  const patterns = [
-    /<script\b[\s\S]*?<\/script[^>]*>/gi,
-    /<style\b[\s\S]*?<\/style[^>]*>/gi,
-    /<noscript\b[\s\S]*?<\/noscript[^>]*>/gi,
-    /<svg\b[\s\S]*?<\/svg[^>]*>/gi,
-    /<!--[\s\S]*?-->/g,
-  ];
-  for (const pattern of patterns) {
-    working = stripTagsLoop(working, pattern);
-  }
+  // Linear enclosed-block strippers — never rescans from every unclosed opener.
+  working = stripEnclosedBlocks(working, "<script", "</script", {
+    requireNameBoundary: true,
+  });
+  working = stripEnclosedBlocks(working, "<style", "</style", {
+    requireNameBoundary: true,
+  });
+  working = stripEnclosedBlocks(working, "<noscript", "</noscript", {
+    requireNameBoundary: true,
+  });
+  working = stripEnclosedBlocks(working, "<svg", "</svg", {
+    requireNameBoundary: true,
+  });
+  working = stripHtmlComments(working);
   return working;
 }
 
@@ -434,13 +454,7 @@ export function visibleTextLength(text: string): number {
 }
 
 function readAttr(tag: string, name: string): string | undefined {
-  const match = tag.match(
-    new RegExp(
-      `\\b${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s"'=<>]+))`,
-      "i"
-    )
-  );
-  const value = match?.[1] ?? match?.[2] ?? match?.[3];
+  const value = readTagAttr(tag, name);
   if (!value) return undefined;
   const decoded = decodeHtmlEntitiesOnce(value).trim();
   return decoded || undefined;
@@ -479,8 +493,15 @@ export function findAlternateFeedUrl(html: string, pageUrl: string): string | un
   }
   if (page.protocol !== "http:" && page.protocol !== "https:") return undefined;
 
-  const docLang = html.match(/<html\b[^>]*\blang=["']([^"']+)["']/i)?.[1]?.toLowerCase();
-  const tags = html.match(/<link\b[^>]*>/gi) || [];
+  // Only the document head is useful for alternate feeds; bound the scan so a
+  // multi-MB body of unclosed `<link` tokens cannot stall the process.
+  const headWindow =
+    html.length > METADATA_SCAN_BYTES ? html.slice(0, METADATA_SCAN_BYTES) : html;
+  const htmlOpen = headWindow.match(/<html\b[^>]*>/i)?.[0];
+  const docLang = htmlOpen
+    ? readAttr(htmlOpen, "lang")?.toLowerCase()
+    : undefined;
+  const tags = collectTagsLinear(headWindow, "link", METADATA_SCAN_BYTES);
   let bestUrl: string | undefined;
   let bestScore = -1;
 
@@ -529,34 +550,17 @@ export function extractMetadata(html: string): {
   description?: string;
   siteName?: string;
 } {
+  const extracted = extractLinkMetadataLinear(html, METADATA_SCAN_BYTES);
   const result: { title?: string; description?: string; siteName?: string } =
     {};
 
-  const ogTitle = html.match(
-    /<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["'][^>]*>/i
-  );
-  const titleTag = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  result.title =
-    ogTitle?.[1]?.trim() || titleTag?.[1]?.trim().replace(/\s+/g, " ");
-
-  const ogDesc = html.match(
-    /<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i
-  );
-  const metaDesc = html.match(
-    /<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i
-  );
-  result.description = ogDesc?.[1]?.trim() || metaDesc?.[1]?.trim();
-
-  const ogSite = html.match(
-    /<meta[^>]*property=["']og:site_name["'][^>]*content=["']([^"']+)["'][^>]*>/i
-  );
-  result.siteName = ogSite?.[1]?.trim();
-
-  if (result.title) result.title = decodeHtmlEntitiesOnce(result.title);
-  if (result.description) {
-    result.description = decodeHtmlEntitiesOnce(result.description);
+  if (extracted.title) result.title = decodeHtmlEntitiesOnce(extracted.title);
+  if (extracted.description) {
+    result.description = decodeHtmlEntitiesOnce(extracted.description);
   }
-  if (result.siteName) result.siteName = decodeHtmlEntitiesOnce(result.siteName);
+  if (extracted.siteName) {
+    result.siteName = decodeHtmlEntitiesOnce(extracted.siteName);
+  }
 
   return result;
 }
