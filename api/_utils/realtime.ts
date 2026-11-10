@@ -235,6 +235,9 @@ export function subscribeRealtimeSocket(
 ): void {
   const normalizedChannel = channel.trim();
   if (!normalizedChannel) return;
+  // Channel authorization is async, so the socket may have closed and been
+  // unregistered before we get here; subscribing it would leak the entry.
+  if (!getSockets().has(socket)) return;
 
   const subscriptions = getSocketSubscriptions();
   const socketChannels = subscriptions.get(socket) || new Set<string>();

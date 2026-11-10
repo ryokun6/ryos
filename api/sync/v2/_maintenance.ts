@@ -201,6 +201,19 @@ interface DeleteBudget {
   remaining: number;
 }
 
+/**
+ * Registry URLs are copied from client-written documents, so a row only
+ * authorizes deleting an object under that user's own sync prefix. Non-S3
+ * legacy URLs pass: deleting them is a no-op.
+ */
+function isOwnSyncStorageUrl(url: string, username: string): boolean {
+  if (!url.startsWith("s3://")) return true;
+  const withoutScheme = url.slice("s3://".length);
+  const slash = withoutScheme.indexOf("/");
+  if (slash <= 0) return false;
+  return withoutScheme.slice(slash + 1).startsWith(`sync/${username}/`);
+}
+
 async function sweepBlobRegistry(
   redis: Redis,
   username: string,
@@ -249,6 +262,13 @@ async function sweepBlobRegistry(
         [sync2SeqKey(username), registryKey],
         [referenced.seq, digest, typeof value === "string" ? value : JSON.stringify(value), options.now]);
       if (claimed !== 1) continue;
+      if (!isOwnSyncStorageUrl(entry.url, username)) {
+        console.warn(
+          `[sync2:maint] Dropping blob row ${digest} for ${username}: URL is outside the user's sync prefix`
+        );
+        await redis.hdel(registryKey, digest);
+        continue;
+      }
       budget.remaining -= 1;
       await options.deleteObject(entry.url);
       await redis.hdel(registryKey, digest);

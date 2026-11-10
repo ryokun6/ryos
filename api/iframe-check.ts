@@ -57,6 +57,7 @@ const FORWARDABLE_SUBRESOURCE_HEADERS = [
 
 /** Methods whose body must be forwarded to the upstream origin. */
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const KNOWN_MODES = new Set(["proxy", "check", "ai", "list-cache", "live"]);
 
 /**
  * Whether the caller is permitted to opt into the IE Debug proxy features
@@ -440,7 +441,13 @@ export default apiHandler(
   },
   async ({ req, res, redis, logger, startTime, origin }) => {
   const urlParam = req.query.url as string | undefined;
-  let mode = (req.query.mode as string | undefined) || "proxy"; // "check" | "proxy" | "ai" | "list-cache"
+  // An unrecognised mode ran the proxy path anyway, but matched none of the
+  // mode-specific rate limits; treat it as the proxy request it is.
+  const requestedMode = req.query.mode;
+  let mode =
+    typeof requestedMode === "string" && KNOWN_MODES.has(requestedMode)
+      ? requestedMode
+      : "proxy";
   const year = req.query.year as string | undefined;
   const month = req.query.month as string | undefined;
   const effectiveOrigin = origin;
