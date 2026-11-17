@@ -49,6 +49,9 @@ export function computeWindowChromeInsets(
     dockHeight += glassExtraBarHeight + GLASS_DOCK_LIFT;
   }
 
+  // Bottom of the menubar. Opaque shell bars grow upward into `safeTop`
+  // and Aqua Glass sits below it, so both end at this same y. Do not add
+  // the safe top again on top of a measured menubar element height.
   const topInset = input.menuBarHeight + Math.max(0, input.safeTop);
   const bottomInset =
     input.taskbarHeight + dockHeight + Math.max(0, input.safeAreaBottom);

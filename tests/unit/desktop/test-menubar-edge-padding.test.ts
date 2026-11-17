@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { computeWindowChromeInsets } from "../../../src/utils/windowInsets";
 import {
   DISPLAY_CORNER_FLOOR_PX,
   EXPANDED_DISPLAY_MIN_PX,
@@ -8,8 +9,15 @@ import {
   PHONE_LAYOUT_MAX_WIDTH_PX,
   desktopContentEdge,
   FOLDED_COVER_STATUS_BAR_PX,
+  menubarBoxHeight,
+  menubarBoxLeft,
+  menubarBoxRight,
+  menubarBoxTop,
+  menubarFillsSafeArea,
+  menubarHorizontalPadding,
   menubarInnerPadding,
   menubarLeftEdge,
+  menubarPaddingTop,
   menubarRightEdge,
   menubarSafeTop,
   shouldApplyDisplayCornerFloor,
@@ -125,9 +133,12 @@ describe("menubar edge padding", () => {
       ),
       "utf8"
     );
-    expect(menubar).toContain("top: menubarSafeTop()");
-    expect(menubar).toContain("left: menubarLeftEdge()");
-    expect(menubar).toContain("right: menubarRightEdge()");
+    expect(menubar).toContain("menubarFillsSafeArea(");
+    expect(menubar).toContain("opaqueMenubar: !isAquaGlass");
+    expect(menubar).toContain("top: menubarBoxTop(fillsSafeArea)");
+    expect(menubar).toContain("left: menubarBoxLeft(fillsSafeArea)");
+    expect(menubar).toContain("right: menubarBoxRight(fillsSafeArea)");
+    expect(menubar).toContain("paddingTop: menubarPaddingTop(fillsSafeArea)");
     expect(css).toContain("--menubar-corner-floor: 0px");
     expect(css).toContain("min-width: 500px) and (min-height: 500px)");
     expect(css).toContain("--menubar-corner-floor: 28px");
@@ -271,6 +282,114 @@ describe("menubar edge padding", () => {
       })
     ).toBe(false);
 
+  });
+
+  test("opaque iOS-shell menubars fill the safe area and keep the content row", () => {
+    expect(
+      menubarFillsSafeArea({ iosShell: true, opaqueMenubar: true })
+    ).toBe(true);
+    // Aqua Glass stays inset so the wallpaper shows through the top strip.
+    expect(
+      menubarFillsSafeArea({ iosShell: true, opaqueMenubar: false })
+    ).toBe(false);
+    // Safari and desktop, even with a non-zero env() inset.
+    expect(
+      menubarFillsSafeArea({ iosShell: false, opaqueMenubar: true })
+    ).toBe(false);
+
+    const contentHeight = "var(--os-metrics-menubar-height)";
+    expect(menubarBoxTop(true)).toBe("0px");
+    expect(menubarBoxLeft(true)).toBe("0px");
+    expect(menubarBoxRight(true)).toBe("0px");
+    expect(menubarBoxHeight(true, contentHeight)).toBe(
+      `calc(${contentHeight} + var(--menubar-safe-top, 0px))`
+    );
+    expect(menubarPaddingTop(true)).toBe("var(--menubar-safe-top, 0px)");
+    expect(
+      menubarHorizontalPadding({
+        fillsSafeArea: true,
+        side: "left",
+        trafficLightClearance: false,
+      })
+    ).toBe(
+      "calc(max(var(--desktop-content-left), var(--menubar-corner-floor, 0px)) + 0.5rem)"
+    );
+    expect(
+      menubarHorizontalPadding({
+        fillsSafeArea: true,
+        side: "right",
+        trafficLightClearance: false,
+      })
+    ).toBe(
+      "calc(max(var(--desktop-content-right), var(--menubar-corner-floor, 0px)) + 0.5rem)"
+    );
+    expect(
+      menubarHorizontalPadding({
+        fillsSafeArea: true,
+        side: "left",
+        trafficLightClearance: true,
+      })
+    ).toBe(
+      "calc(max(var(--desktop-content-left), var(--menubar-corner-floor, 0px)) + 78px)"
+    );
+
+    // The filled bar's bottom is still content height + safe top, which is
+    // the y windows are clamped to. A 59px top inset must not be added twice.
+    const chrome = {
+      taskbarHeight: 0,
+      hasDock: true,
+      baseDockHeight: 56,
+      dockScale: 1,
+      dockHiding: false,
+      dockPlacement: "right" as const,
+      isAquaGlass: false,
+      safeAreaBottom: 34,
+    };
+    expect(
+      computeWindowChromeInsets({
+        ...chrome,
+        menuBarHeight: 25,
+        safeTop: 59,
+      }).topInset
+    ).toBe(84);
+    expect(
+      computeWindowChromeInsets({
+        ...chrome,
+        menuBarHeight: 30,
+        safeTop: 47,
+      }).topInset
+    ).toBe(77);
+    expect(
+      computeWindowChromeInsets({
+        ...chrome,
+        menuBarHeight: 25,
+        safeTop: 0,
+      }).topInset
+    ).toBe(25);
+  });
+
+  test("outside the iOS shell the menubar box stays offset, not padded by the insets", () => {
+    const contentHeight = "var(--os-metrics-menubar-height)";
+    expect(menubarBoxTop(false)).toBe("var(--menubar-safe-top, 0px)");
+    expect(menubarBoxLeft(false)).toBe(menubarLeftEdge());
+    expect(menubarBoxRight(false)).toBe(menubarRightEdge());
+    expect(menubarBoxHeight(false, contentHeight)).toBe(contentHeight);
+    expect(menubarBoxHeight(false, "32px")).toBe("32px");
+    expect(menubarPaddingTop(false)).toBe("0px");
+    expect(
+      menubarHorizontalPadding({
+        fillsSafeArea: false,
+        side: "left",
+        trafficLightClearance: false,
+      })
+    ).toBe("0.5rem");
+    expect(
+      menubarHorizontalPadding({
+        fillsSafeArea: false,
+        side: "right",
+        trafficLightClearance: true,
+      })
+    ).toBe("0.5rem");
   });
 
   test("the shell marker is the iOS bridge platform, not a user-agent check", () => {
