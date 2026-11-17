@@ -12,10 +12,17 @@
  * 84px. A regular iPhone portrait is at most ~440pt wide, and the open inner
  * display's shorter side is at least 626pt, so neither matches.
  *
- * The menubar and taskbar are offset by `--desktop-content-*` so their boxes
- * stop at the status bar. Inner padding is only the existing rhythm (or the
- * 78px traffic-light prefix), otherwise the inset would be applied twice.
- * Wallpaper does not use these variables.
+ * Aqua Glass, and every theme outside the iOS shell, offset the menubar box
+ * by `--desktop-content-*` so it stops at the status bar. Inner padding is
+ * only the existing rhythm (or the 78px traffic-light prefix), otherwise the
+ * inset would be applied twice. Wallpaper does not use these variables.
+ *
+ * Opaque Mac chrome in the iOS shell (classic Mac OS X and System 7) does
+ * the opposite with the same insets: the bar's background and bottom border
+ * run to the screen edges, and the insets move into padding so the menu
+ * content stays put. The content row keeps its theme height. The box grows
+ * upward by `--menubar-safe-top`, so its bottom stays at
+ * `menuBarHeight + safeTop` — the same edge window clamping already uses.
  *
  * A 12px left floor applies only on wide coarse-touch viewports, via the
  * `--desktop-content-left` media query in index.css. The menubar rhythm is
@@ -32,10 +39,10 @@
  * Traffic-light clearance stays a separate 78px prefix gated by
  * `needsTrafficLightClearance`.
  *
- * The menubar's top edge is `--menubar-safe-top`, which is
- * `env(safe-area-inset-top)` inside the iOS shell and 0px in the browser.
- * The bar keeps its theme height and sits under that inset. Wallpaper stays
- * full-bleed in the strip above it.
+ * `--menubar-safe-top` is `env(safe-area-inset-top)` inside the iOS shell and
+ * 0px in the browser. Aqua Glass keeps its theme height and sits under that
+ * inset, so wallpaper stays full-bleed in the strip above it. Opaque Mac
+ * chrome in the shell paints that strip with the menubar instead.
  */
 
 export const MENUBAR_HORIZONTAL_RHYTHM = "0.5rem";
@@ -146,6 +153,71 @@ export function menubarRightEdge(): string {
 /** Menubar box top. 0px until the iOS shell consumes the top safe area. */
 export function menubarSafeTop(): string {
   return "var(--menubar-safe-top, 0px)";
+}
+
+/**
+ * Opaque Mac menubars (classic Mac OS X and System 7) inside the iOS shell
+ * paint through the safe-area insets. Aqua Glass stays inset so the
+ * wallpaper shows above a transparent bar. Safari and desktop keep the
+ * inset box even when `env(safe-area-inset-*)` is non-zero, because those
+ * insets are only copied into the menubar variables for the shell.
+ */
+export function menubarFillsSafeArea(input: {
+  iosShell: boolean;
+  /** False for Aqua Glass. Classic Aqua and System 7 are opaque. */
+  opaqueMenubar: boolean;
+}): boolean {
+  return input.iosShell && input.opaqueMenubar;
+}
+
+/** Menubar box top. Edge of the screen when the background fills the inset. */
+export function menubarBoxTop(fillsSafeArea: boolean): string {
+  return fillsSafeArea ? "0px" : menubarSafeTop();
+}
+
+/** Menubar box left. The corner floor and status-bar inset become padding when filling. */
+export function menubarBoxLeft(fillsSafeArea: boolean): string {
+  return fillsSafeArea ? "0px" : menubarLeftEdge();
+}
+
+/** Menubar box right. Same split as {@link menubarBoxLeft}. */
+export function menubarBoxRight(fillsSafeArea: boolean): string {
+  return fillsSafeArea ? "0px" : menubarRightEdge();
+}
+
+/**
+ * Border-box height. Filling adds the top inset on top of the theme height
+ * so the content row stays the same size and the bottom edge does not move.
+ */
+export function menubarBoxHeight(
+  fillsSafeArea: boolean,
+  contentHeight: string,
+): string {
+  if (!fillsSafeArea) return contentHeight;
+  return `calc(${contentHeight} + ${menubarSafeTop()})`;
+}
+
+/** Top padding that holds the content row below the filled safe area. */
+export function menubarPaddingTop(fillsSafeArea: boolean): string {
+  return fillsSafeArea ? menubarSafeTop() : "0px";
+}
+
+/**
+ * Horizontal padding. The inset box already starts at the content edge, so
+ * it only needs the rhythm. The full-bleed box adds that edge as padding.
+ */
+export function menubarHorizontalPadding(input: {
+  fillsSafeArea: boolean;
+  side: "left" | "right";
+  trafficLightClearance: boolean;
+}): string {
+  const inner = menubarInnerPadding({
+    side: input.side,
+    trafficLightClearance: input.trafficLightClearance,
+  });
+  if (!input.fillsSafeArea) return inner;
+  const edge = input.side === "left" ? menubarLeftEdge() : menubarRightEdge();
+  return `calc(${edge} + ${inner})`;
 }
 
 let safeTopProbe: HTMLDivElement | null = null;

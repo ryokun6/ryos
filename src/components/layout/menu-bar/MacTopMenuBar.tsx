@@ -22,10 +22,13 @@ import { useDesktopFullscreen } from "./useDesktopFullscreen";
 import { shouldShowDesktopDragDebugZone } from "./desktopDragDebug";
 import { getMenubarWindowChromeLayout } from "./menubarWindowChrome";
 import {
-  menubarInnerPadding,
-  menubarLeftEdge,
-  menubarRightEdge,
-  menubarSafeTop,
+  menubarBoxHeight,
+  menubarBoxLeft,
+  menubarBoxRight,
+  menubarBoxTop,
+  menubarFillsSafeArea,
+  menubarHorizontalPadding,
+  menubarPaddingTop,
 } from "./menubarEdgePadding";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
@@ -85,9 +88,20 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
       isMacTheme,
       isFullscreen,
     });
+  const fillsSafeArea = menubarFillsSafeArea({
+    iosShell,
+    opaqueMenubar: !isAquaGlass,
+  });
   const menuBarHeight = needsTrafficLightClearance
     ? "32px"
     : "var(--os-metrics-menubar-height)";
+  // Border-box: the top inset is padding, so the content row keeps
+  // `menuBarHeight` and the bar's bottom stays at menuBarHeight + safe top.
+  const menuBarBoxHeight = menubarBoxHeight(fillsSafeArea, menuBarHeight);
+  const horizontalPadding = {
+    trafficLightClearance: needsTrafficLightClearance,
+    fillsSafeArea,
+  };
 
   return (
     <div
@@ -127,20 +141,22 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
               color: glassMenubarText,
             }
           : { color: "var(--os-color-menubar-text)" }),
-        top: menubarSafeTop(),
-        left: menubarLeftEdge(),
-        right: menubarRightEdge(),
-        paddingLeft: menubarInnerPadding({
+        boxSizing: "border-box",
+        top: menubarBoxTop(fillsSafeArea),
+        left: menubarBoxLeft(fillsSafeArea),
+        right: menubarBoxRight(fillsSafeArea),
+        paddingTop: menubarPaddingTop(fillsSafeArea),
+        paddingLeft: menubarHorizontalPadding({
+          ...horizontalPadding,
           side: "left",
-          trafficLightClearance: needsTrafficLightClearance,
         }),
-        paddingRight: menubarInnerPadding({
+        paddingRight: menubarHorizontalPadding({
+          ...horizontalPadding,
           side: "right",
-          trafficLightClearance: needsTrafficLightClearance,
         }),
-        height: menuBarHeight,
-        minHeight: menuBarHeight,
-        maxHeight: menuBarHeight,
+        height: menuBarBoxHeight,
+        minHeight: menuBarBoxHeight,
+        maxHeight: menuBarBoxHeight,
       }}
     >
       <ScrollableMenuWrapper style={noDragRegionStyle}>
