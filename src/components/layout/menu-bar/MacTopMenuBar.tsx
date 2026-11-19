@@ -29,7 +29,9 @@ import {
   menubarFillsSafeArea,
   menubarHorizontalPadding,
   menubarPaddingTop,
+  raisedMenubarBox,
 } from "./menubarEdgePadding";
+import { useRaisedMenubarBesideStatusPill } from "./useRaisedMenubarBesideStatusPill";
 
 const noDragRegionStyle = { WebkitAppRegion: "no-drag" } as CSSProperties;
 const dragRegionStyle = { WebkitAppRegion: "drag" } as CSSProperties;
@@ -102,6 +104,17 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
     trafficLightClearance: needsTrafficLightClearance,
     fillsSafeArea,
   };
+  // Inner display upright in the iOS shell: the row moves up beside the
+  // system clock and wi-fi pill. 0 (no change) everywhere else.
+  const raisedViewportWidth = useRaisedMenubarBesideStatusPill(iosShell);
+  const raised =
+    raisedViewportWidth > 0
+      ? raisedMenubarBox({
+          fillsSafeArea,
+          contentHeight: menuBarHeight,
+          viewportWidth: raisedViewportWidth,
+        })
+      : null;
 
   return (
     <div
@@ -157,6 +170,17 @@ export function MacTopMenuBar({ children }: MacTopMenuBarProps) {
         height: menuBarBoxHeight,
         minHeight: menuBarBoxHeight,
         maxHeight: menuBarBoxHeight,
+        ...(raised
+          ? {
+              top: raised.top,
+              right: raised.right,
+              paddingTop: raised.paddingTop,
+              paddingRight: raised.paddingRight,
+              height: raised.height,
+              minHeight: raised.height,
+              maxHeight: raised.height,
+            }
+          : {}),
       }}
     >
       <ScrollableMenuWrapper style={noDragRegionStyle}>
