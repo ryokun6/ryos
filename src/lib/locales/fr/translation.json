@@ -294,6 +294,7 @@
         "noMessages": "Aucun message"
       },
       "search": {
+        "clear": "Effacer la recherche",
         "noResults": "Aucun utilisateur trouvé",
         "placeholder": "Rechercher des utilisateurs…",
         "songsPlaceholder": "Rechercher des morceaux…"
@@ -324,7 +325,7 @@
       },
       "sidebar": {
         "auditLog": "Journal d’audit",
-        "cursorAgents": "Agents de curseur",
+        "cursorAgents": "Agents Cursor",
         "dashboard": "Tableau de bord",
         "messagesCount": "{{count}} messages",
         "online": "en ligne",
@@ -408,20 +409,24 @@
         "auditLogCount_many": "{{count}} entrées",
         "auditLogCount_one": "{{count}} entrée",
         "auditLogCount_other": "{{count}} entrées",
-        "cursorAgentsCount": "{{count}} agent de curseur",
-        "cursorAgentsCount_plural": "{{count}} agents de curseur",
+        "cursorAgentsCount_many": "{{count}} agents Cursor",
+        "cursorAgentsCount_one": "{{count}} agent Cursor",
+        "cursorAgentsCount_other": "{{count}} agents Cursor",
         "loggedInAs": "Connecté en tant que {{username}}",
-        "messagesCount": "{{count}} message",
-        "messagesCount_plural": "{{count}} messages",
+        "messagesCount_many": "{{count}} messages",
+        "messagesCount_one": "{{count}} message",
+        "messagesCount_other": "{{count}} messages",
         "redis": "Explorateur Redis",
         "redisKeysCount_many": "{{count}} clés",
         "redisKeysCount_one": "{{count}} clé",
         "redisKeysCount_other": "{{count}} clés",
-        "roomsCount": "{{count}} pièce",
-        "roomsCount_plural": "{{count}} pièces",
+        "roomsCount_many": "{{count}} pièces",
+        "roomsCount_one": "{{count}} pièce",
+        "roomsCount_other": "{{count}} pièces",
         "songsCount": "{{count}} morceaux",
-        "usersCount": "{{count}} utilisateur",
-        "usersCount_plural": "{{count}} utilisateurs"
+        "usersCount_many": "{{count}} utilisateurs",
+        "usersCount_one": "{{count}} utilisateur",
+        "usersCount_other": "{{count}} utilisateurs"
       },
       "tableHeaders": {
         "added": "Ajouté",
@@ -1163,6 +1168,7 @@
         "nudgeSent": "👋 *rappel envoyé*",
         "pleaseLoginToDeleteRooms": "Veuillez vous connecter pour supprimer des salons.",
         "pleaseLoginToSendMessages": "Veuillez vous connecter pour envoyer des messages.",
+        "processingImage": "Traitement de l’image…",
         "recording": "Enregistrement…",
         "retry": "Réessayer",
         "ryo": "@ryo",
@@ -2660,6 +2666,7 @@
         "quicktimeMovie": "Séquence QuickTime",
         "svgImage": "Image SVG",
         "unknown": "Inconnu",
+        "volume": "Volume",
         "webpImage": "Image WebP"
       },
       "folders": {
@@ -4028,6 +4035,7 @@
       },
       "locateMe": "Me localiser",
       "mapAriaLabel": "Carte",
+      "mapToolbar": "Commandes de la carte",
       "menu": {
         "about": "À propos de Plans",
         "help": "Aide Plans",
@@ -4192,7 +4200,9 @@
         "thenStepAria": "Ensuite {{label}}",
         "warningNoBikes": "La station de départ la plus proche ne dispose peut-être d’aucun vélo actuellement.",
         "warningNoDocks": "La station d’arrivée la plus proche ne dispose peut-être d’aucune place libre actuellement."
-      }
+      },
+      "zoomIn": "Zoom avant",
+      "zoomOut": "Zoom arrière"
     },
     "minesweeper": {
       "description": "Jeu de puzzle classique",
@@ -4744,7 +4754,17 @@
       },
       "name": "Tableau de sons",
       "newSoundboardDefault": "Nouvelle table de sons",
-      "soundboards": "Tableaux sonores"
+      "slot": {
+        "addTitle": "Ajouter un titre",
+        "editTitle": "Modifier le titre",
+        "record": "Enregistrer",
+        "recording": "Enregistrement…"
+      },
+      "soundboards": "Tableaux sonores",
+      "waveform": {
+        "errorLoading": "Erreur lors du chargement de la forme d’onde",
+        "label": "Forme d’onde"
+      }
     },
     "stickies": {
       "colors": {
@@ -5932,6 +5952,8 @@
       "appRequiresInternet": "{{appName}} nécessite une connexion Internet.",
       "title": "Vous êtes hors ligne"
     },
+    "retry": "Réessayer",
+    "search": "Rechercher",
     "startMenu": {
       "aboutThisComputer": "À propos de cet ordinateur",
       "run": "Exécuter…",

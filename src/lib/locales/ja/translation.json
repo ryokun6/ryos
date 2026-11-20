@@ -294,6 +294,7 @@
         "noMessages": "メッセージはありません"
       },
       "search": {
+        "clear": "検索をクリア",
         "noResults": "ユーザーが見つかりません",
         "placeholder": "ユーザーを検索…",
         "songsPlaceholder": "曲を検索…"
@@ -407,19 +408,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}}件",
         "auditLogCount_other": "{{count}}件",
-        "cursorAgentsCount": "{{count}}個のCursorエージェント",
-        "cursorAgentsCount_plural": "{{count}}個のCursorエージェント",
+        "cursorAgentsCount_one": "{{count}}個のCursorエージェント",
+        "cursorAgentsCount_other": "{{count}}個のCursorエージェント",
         "loggedInAs": "{{username}}としてログイン中",
-        "messagesCount": "メッセージ{{count}}件",
-        "messagesCount_plural": "メッセージ{{count}}件",
+        "messagesCount_one": "メッセージ{{count}}件",
+        "messagesCount_other": "メッセージ{{count}}件",
         "redis": "Redisブラウザ",
         "redisKeysCount_one": "{{count}}個のキー",
         "redisKeysCount_other": "{{count}}個のキー",
-        "roomsCount": "{{count}}部屋",
-        "roomsCount_plural": "{{count}}部屋",
+        "roomsCount_one": "{{count}}部屋",
+        "roomsCount_other": "{{count}}部屋",
         "songsCount": "{{count}}曲",
-        "usersCount": "{{count}}人",
-        "usersCount_plural": "{{count}}人"
+        "usersCount_one": "{{count}}人",
+        "usersCount_other": "{{count}}人"
       },
       "tableHeaders": {
         "added": "追加済み",
@@ -1161,6 +1162,7 @@
         "nudgeSent": "👋 *つつき送信済み*",
         "pleaseLoginToDeleteRooms": "ルームを削除するにはログインしてください",
         "pleaseLoginToSendMessages": "メッセージを送信するにはログインしてください",
+        "processingImage": "画像を処理中…",
         "recording": "録音中…",
         "retry": "再試行",
         "ryo": "@ryo",
@@ -2656,6 +2658,7 @@
         "quicktimeMovie": "QuickTimeムービー",
         "svgImage": "SVGイメージ",
         "unknown": "不明",
+        "volume": "ボリューム",
         "webpImage": "WebP 画像"
       },
       "folders": {
@@ -4016,6 +4019,7 @@
       },
       "locateMe": "現在地を表示",
       "mapAriaLabel": "マップ",
+      "mapToolbar": "マップコントロール",
       "menu": {
         "about": "マップについて",
         "help": "マップヘルプ",
@@ -4180,7 +4184,9 @@
         "thenStepAria": "その先、{{label}}",
         "warningNoBikes": "現在、最寄りの出発ステーションに自転車がない可能性があります。",
         "warningNoDocks": "現在、最寄りの到着ステーションに空きドックがない可能性があります。"
-      }
+      },
+      "zoomIn": "拡大",
+      "zoomOut": "縮小"
     },
     "minesweeper": {
       "description": "クラシックなパズルゲーム",
@@ -4732,7 +4738,17 @@
       },
       "name": "サウンドボード",
       "newSoundboardDefault": "新規サウンドボード",
-      "soundboards": "サウンドボード"
+      "slot": {
+        "addTitle": "タイトルを追加",
+        "editTitle": "タイトルを編集",
+        "record": "録音",
+        "recording": "録音中…"
+      },
+      "soundboards": "サウンドボード",
+      "waveform": {
+        "errorLoading": "波形の読み込みエラー",
+        "label": "波形"
+      }
     },
     "stickies": {
       "colors": {
@@ -5478,7 +5494,7 @@
       },
       "help": {
         "addVideo": {
-          "description": "YouTubeのURLを貼り付けると、ryOS가メタデータを取得してプレイリストに追加します。",
+          "description": "YouTubeのURLを貼り付けると、ryOSがメタデータを取得してプレイリストに追加します。",
           "title": "YouTubeから追加"
         },
         "loop": {
@@ -5919,6 +5935,8 @@
       "appRequiresInternet": "{{appName}}を利用するにはインターネット接続が必要です。",
       "title": "オフラインです"
     },
+    "retry": "再試行",
+    "search": "検索",
     "startMenu": {
       "aboutThisComputer": "このコンピュータについて",
       "run": "ファイル名を指定して実行…",

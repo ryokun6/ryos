@@ -2,6 +2,8 @@
   "common": {
     "auto": "Auto",
     "noResults": "No results",
+    "retry": "Retry",
+    "search": "Search",
     "loading": {
       "default": "Loading…",
       "openingAppletStore": "Opening Applet Store…",
@@ -661,6 +663,7 @@
         "directory": "Directory",
         "file": "File",
         "folder": "Folder",
+        "volume": "Volume",
         "mp3Audio": "MP3 Audio",
         "quicktimeMovie": "QuickTime Movie",
         "internetShortcut": "Internet Shortcut",
