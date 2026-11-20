@@ -13,7 +13,6 @@ import { shouldRequestCloudSyncOnAppLaunch } from "@/utils/cloudSyncLaunch";
 import { createClientLogger } from "@/utils/logger";
 import { playHaptic } from "@/utils/nativeShellBridge";
 import { getRestorablePreviewInitialData } from "@/types/appInitialData";
-import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import {
   applyUserWindowMove,
   layoutForViewport,
@@ -26,7 +25,7 @@ import {
   getDesktopContentBounds,
   type DesktopContentBounds,
 } from "@/utils/desktopContentBounds";
-import { readLiveWindowInsets } from "@/utils/windowInsets";
+import { readLiveWindowInsets, readLiveWindowSafeTop } from "@/utils/windowInsets";
 export type { AIModel } from "@/types/aiModels";
 
 // ---------------- Types ---------------------------------------------------------
@@ -245,7 +244,7 @@ function defaultDesktopWindowRect(
 ): WindowRect {
   const config = readInstanceWindowConfig(appId);
   const safeTop =
-    typeof document === "undefined" ? 0 : measureMenubarSafeTop();
+    typeof document === "undefined" ? 0 : readLiveWindowSafeTop();
   return {
     x: 16 + index * 32,
     y: 40 + safeTop + index * 20,
@@ -424,7 +423,7 @@ const createUseAppStore = () =>
           const offsetStep = 32;
           const isMobile =
             typeof window !== "undefined" && window.innerWidth < 768;
-          const safeTop = measureMenubarSafeTop();
+          const safeTop = readLiveWindowSafeTop();
           const cfg = getWindowConfig(appId);
           const desktopPosition = {
             x: baseOffset + openInstances * offsetStep,
@@ -1066,7 +1065,7 @@ const createUseAppStore = () =>
               if (!inst.position)
                 inst.position = {
                   x: isMobile ? 0 : 16,
-                  y: (isMobile ? 28 : 40) + measureMenubarSafeTop(),
+                  y: (isMobile ? 28 : 40) + readLiveWindowSafeTop(),
                 };
               if (!inst.size)
                 inst.size = isMobile

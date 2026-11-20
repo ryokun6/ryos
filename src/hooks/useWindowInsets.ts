@@ -3,7 +3,7 @@ import { useDockStore } from "@/stores/useDockStore";
 import type { ThemeMetadata } from "@/themes";
 import { useThemeFlags } from "./useThemeFlags";
 import { hasDesktopWindowChrome } from "@/utils/platform";
-import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
+import { measureWindowSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import { getDockLayout } from "@/components/layout/dock/dockPlacement";
 import {
   computeWindowChromeInsets,
@@ -54,7 +54,7 @@ export function useWindowInsets() {
       dockPlacement: getDockLayout().placement,
       isAquaGlass,
       safeAreaBottom: getSafeAreaBottomInset(),
-      safeTop: measureMenubarSafeTop(),
+      safeTop: measureWindowSafeTop(menuBarHeight),
     });
   }, [
     themeMetaTyped,

@@ -1,5 +1,5 @@
 import { getDockLayout, type DockPlacement } from "@/components/layout/dock/dockPlacement";
-import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
+import { measureWindowSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import { useDockStore } from "@/stores/useDockStore";
 import { useThemeStore } from "@/stores/useThemeStore";
 import { getThemeMetadata } from "@/themes";
@@ -88,7 +88,7 @@ export function readLiveWindowInsets(): WindowInsets {
   const menuBarHeight = needsDesktopMenubar ? 32 : metadata.menuBarHeight;
   const dock = useDockStore.getState();
   const safeTop =
-    typeof document === "undefined" ? 0 : measureMenubarSafeTop();
+    typeof document === "undefined" ? 0 : measureWindowSafeTop(menuBarHeight);
 
   return computeWindowChromeInsets({
     menuBarHeight,
@@ -102,4 +102,14 @@ export function readLiveWindowInsets(): WindowInsets {
     safeAreaBottom: readSafeAreaBottom(),
     safeTop,
   });
+}
+
+/**
+ * Safe top that window placement starts from: the window top limit minus the
+ * menubar height. Equals the system top inset except on the Duo inner display
+ * held upright, where the menubar sits beside the status pill.
+ */
+export function readLiveWindowSafeTop(): number {
+  const insets = readLiveWindowInsets();
+  return Math.max(0, insets.topInset - insets.menuBarHeight);
 }
