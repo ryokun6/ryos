@@ -262,3 +262,96 @@ export function menubarInnerPadding(options: {
   }
   return MENUBAR_HORIZONTAL_RHYTHM;
 }
+
+/**
+ * Inner display held upright (669×951pt, iOS 27.1 simulator), inside the iOS
+ * shell only. The system draws the clock and wi-fi as a pill in the top-right
+ * corner, about x 542–653pt and y 19–75pt, and reports only an 82pt top inset
+ * with no side inset. iOS exposes no frame for that pill, so its place is
+ * measured, the same way the 84pt cover strip is.
+ *
+ * In this pose the menubar row moves up beside the pill instead of below the
+ * 82pt inset: the row is centred on the pill's centre line and its right end
+ * stops 12px short of the pill's left edge. Windows, icons, the dock and the
+ * wallpaper keep the system inset. Every other display, orientation and the
+ * browser keep the layout above.
+ */
+export const INNER_STATUS_PILL_CENTER_Y_PX = 47;
+export const INNER_STATUS_PILL_LEFT_PX = 542;
+export const STATUS_PILL_CLEARANCE_PX = 12;
+
+/**
+ * The inner display upright is 669 wide and 951 tall. A regular iPhone is at
+ * most ~440 wide; any full-screen iPad is at least 744 wide. An iPad window of
+ * a similar size gets a top inset of ~24–32px, never the 82px this pose has.
+ */
+export const INNER_UPRIGHT_MIN_WIDTH_PX = 600;
+export const INNER_UPRIGHT_MAX_WIDTH_PX = 720;
+export const INNER_UPRIGHT_MIN_HEIGHT_PX = 880;
+export const INNER_UPRIGHT_MAX_HEIGHT_PX = 1000;
+export const INNER_UPRIGHT_MIN_TOP_INSET_PX = 60;
+
+export function shouldRaiseMenubarBesideStatusPill(input: {
+  iosShell: boolean;
+  coarseTouch: boolean;
+  viewportWidth: number;
+  viewportHeight: number;
+  /** Used height of `--menubar-safe-top`, from {@link measureMenubarSafeTop}. */
+  safeTop: number;
+}): boolean {
+  return (
+    input.iosShell &&
+    input.coarseTouch &&
+    input.viewportWidth >= INNER_UPRIGHT_MIN_WIDTH_PX &&
+    input.viewportWidth <= INNER_UPRIGHT_MAX_WIDTH_PX &&
+    input.viewportHeight >= INNER_UPRIGHT_MIN_HEIGHT_PX &&
+    input.viewportHeight <= INNER_UPRIGHT_MAX_HEIGHT_PX &&
+    input.safeTop >= INNER_UPRIGHT_MIN_TOP_INSET_PX
+  );
+}
+
+/** Distance from the viewport's right edge to where the row must stop. */
+export function statusPillRightClearance(viewportWidth: number): number {
+  return Math.max(
+    0,
+    viewportWidth - INNER_STATUS_PILL_LEFT_PX + STATUS_PILL_CLEARANCE_PX,
+  );
+}
+
+/**
+ * Box for the raised row. Same row height. An inset (Aqua Glass) box sits on
+ * the pill's centre line and ends at the clearance. A filling (opaque) box
+ * still paints from the top edge across the full width; the row moves with
+ * its top padding and the clearance becomes right padding.
+ */
+export function raisedMenubarBox(input: {
+  fillsSafeArea: boolean;
+  contentHeight: string;
+  viewportWidth: number;
+}): {
+  top: string;
+  right: string;
+  height: string;
+  paddingTop: string;
+  paddingRight: string;
+} {
+  const center = `${INNER_STATUS_PILL_CENTER_Y_PX}px`;
+  const rowTop = `calc(${center} - (${input.contentHeight}) / 2)`;
+  const clearance = `${statusPillRightClearance(input.viewportWidth)}px`;
+  if (input.fillsSafeArea) {
+    return {
+      top: "0px",
+      right: "0px",
+      height: `calc(${center} + (${input.contentHeight}) / 2)`,
+      paddingTop: rowTop,
+      paddingRight: `calc(${clearance} + ${MENUBAR_HORIZONTAL_RHYTHM})`,
+    };
+  }
+  return {
+    top: rowTop,
+    right: clearance,
+    height: input.contentHeight,
+    paddingTop: "0px",
+    paddingRight: MENUBAR_HORIZONTAL_RHYTHM,
+  };
+}
