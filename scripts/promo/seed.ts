@@ -76,6 +76,16 @@ export async function seedDesktopShortcuts(page: Page, apps: [appId: string, nam
          (i) => i.status === "active" && i.path.startsWith("/Desktop/") && i.aliasType === "app" && i.aliasTarget === appId);
        if (!existing) fs.createAlias("", name, "app", appId);
        else if (existing.hiddenOnThemes?.length) fs.updateItemMetadata(existing.path, { hiddenOnThemes: [] });
+     }
+     const keep = new Set(arg.map(([id]) => id));
+     if (keep.size === 1 && keep.has("ipod")) {
+       for (const item of Object.values(useFilesStore.getState().items)) {
+         if (item.status !== "active" || !item.path.startsWith("/Desktop/") || item.aliasType !== "app") continue;
+         if (keep.has(item.aliasTarget)) continue;
+         const hidden = new Set(item.hiddenOnThemes || []);
+         hidden.add("macosx");
+         useFilesStore.getState().updateItemMetadata(item.path, { hiddenOnThemes: [...hidden] });
+       }
      }`,
     apps
   );
@@ -85,6 +95,42 @@ export async function seedDesktopShortcuts(page: Page, apps: [appId: string, nam
 export async function setLanguage(page: Page, lang: string) {
   await store(page, `const m = await import("/src/stores/useLanguageStore.ts"); await m.useLanguageStore.getState().setLanguage(arg);`, lang);
   await page.waitForTimeout(800);
+}
+
+/**
+ * Make sure these YouTube tracks are in the library (real metadata + lyrics via addTrackFromVideoId)
+ * and leave the hero paused on the root-menu path: modern skin, backlight held on, lyrics hidden.
+ */
+export async function seedIpod(page: Page, ids: string[], hero: string) {
+  return store(
+    page,
+    `const { useIpodStore } = await import("/src/stores/useIpodStore.ts");
+     const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+     for (let i = 0; i < 40 && useIpodStore.getState().libraryState === "uninitialized"; i++) await wait(250);
+     const s = useIpodStore.getState();
+     s.setUiVariant("modern");
+     s.setTheme("classic");
+     s.setLibrarySource("youtube");
+     s.setBacklightTimeout("always-on");
+     if (!s.backlightOn) s.toggleBacklight();
+     if (s.showLyrics) s.toggleLyrics();
+     s.setShowVideo(false);
+     if (s.isShuffled) s.toggleShuffle();
+     for (const id of arg.ids) {
+       if (!useIpodStore.getState().tracks.some((t) => t.id === id)) {
+         await useIpodStore.getState().addTrackFromVideoId(id, false, { keepPlayback: true });
+       }
+     }
+     const st = useIpodStore.getState();
+     if (st.tracks.some((t) => t.id === arg.hero)) st.setCurrentSongId(arg.hero);
+     st.setIsPlaying(false);
+     st.setShowVideo(false);
+     return {
+       state: st.libraryState,
+       tracks: st.tracks.map((t) => ({ id: t.id, title: t.title, artist: t.artist || "", album: t.album || "", cover: Boolean(t.cover), lyrics: Boolean(t.lyricsSource) })),
+     };`,
+    { ids, hero }
+  );
 }
 
 export async function fitnessView(page: Page, view: string) {
