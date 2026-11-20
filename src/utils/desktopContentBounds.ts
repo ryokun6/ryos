@@ -16,6 +16,8 @@
  * full viewport. Zero insets reproduce today's viewport math exactly.
  */
 
+import { readMenubarBesideStatusPill } from "@/components/layout/menu-bar/menubarEdgePadding";
+
 export type DesktopContentInsets = {
   left: number;
   right: number;
@@ -289,10 +291,26 @@ function measureContentInsets(): { left: number; right: number } {
   return { left, right };
 }
 
+/**
+ * Inner display held upright, menubar beside the status pill: the system
+ * reports no side inset, so the wide-touch 12px left floor is the only thing
+ * left of the windows. Windows keep the right edge, and the left matches it.
+ */
+export function balanceSideInsetsBesideStatusPill(
+  insets: { left: number; right: number },
+  besideStatusPill: boolean,
+): { left: number; right: number } {
+  if (!besideStatusPill) return insets;
+  return { left: insets.right, right: insets.right };
+}
+
 /** Used CSS pixel rect. Cached by viewport + inset so snapshots stay stable. */
 export function getDesktopContentBounds(): DesktopContentBounds {
   if (typeof window === "undefined") return SERVER_BOUNDS;
-  const insets = measureContentInsets();
+  const insets = balanceSideInsetsBesideStatusPill(
+    measureContentInsets(),
+    readMenubarBesideStatusPill(),
+  );
   const key = `${window.innerWidth}|${window.innerHeight}|${insets.left}|${insets.right}`;
   if (key === cachedKey) return cachedBounds;
   cachedKey = key;

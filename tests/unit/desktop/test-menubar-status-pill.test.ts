@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { computeWindowChromeInsets } from "../../../src/utils/windowInsets";
+import { balanceSideInsetsBesideStatusPill } from "../../../src/utils/desktopContentBounds";
 import {
   INNER_STATUS_PILL_CENTER_Y_PX,
   INNER_STATUS_PILL_LEFT_PX,
@@ -6,6 +8,7 @@ import {
   raisedMenubarBox,
   shouldRaiseMenubarBesideStatusPill,
   statusPillRightClearance,
+  windowSafeTopBesideStatusPill,
 } from "../../../src/components/layout/menu-bar/menubarEdgePadding";
 
 const innerUpright = {
@@ -107,5 +110,52 @@ describe("menubar beside the status pill (inner display upright)", () => {
       "calc(47px - (var(--os-metrics-menubar-height)) / 2)",
     );
     expect(box.paddingRight).toBe("calc(139px + 0.5rem)");
+  });
+});
+
+describe("windows beside the status pill (inner display upright)", () => {
+  const chrome = (safeTop: number, menuBarHeight: number) =>
+    computeWindowChromeInsets({
+      menuBarHeight,
+      taskbarHeight: 0,
+      hasDock: false,
+      baseDockHeight: 0,
+      dockScale: 1,
+      dockHiding: false,
+      dockPlacement: "bottom",
+      isAquaGlass: true,
+      safeAreaBottom: 34,
+      safeTop,
+    });
+
+  test("the window top limit is the raised menubar's bottom", () => {
+    // Aqua: 25px row centred on 47 ends at 59.5.
+    expect(windowSafeTopBesideStatusPill(25)).toBe(34.5);
+    expect(chrome(windowSafeTopBesideStatusPill(25), 25).topInset).toBe(59.5);
+    // System 7: 30px row ends at 62.
+    expect(chrome(windowSafeTopBesideStatusPill(30), 30).topInset).toBe(62);
+  });
+
+  test("the limit moves up by exactly what the menubar moved", () => {
+    const before = chrome(82, 25).topInset; // row bottom under the 82px inset
+    const after = chrome(windowSafeTopBesideStatusPill(25), 25).topInset;
+    const rowTopBefore = 82;
+    const rowTopAfter = 47 - 25 / 2;
+    expect(before - after).toBe(rowTopBefore - rowTopAfter);
+  });
+
+  test("bottom limit does not change", () => {
+    expect(chrome(windowSafeTopBesideStatusPill(25), 25).bottomInset).toBe(
+      chrome(82, 25).bottomInset,
+    );
+  });
+
+  test("left inset matches the right inset only in the pose", () => {
+    expect(
+      balanceSideInsetsBesideStatusPill({ left: 12, right: 0 }, true),
+    ).toEqual({ left: 0, right: 0 });
+    expect(
+      balanceSideInsetsBesideStatusPill({ left: 12, right: 0 }, false),
+    ).toEqual({ left: 12, right: 0 });
   });
 });

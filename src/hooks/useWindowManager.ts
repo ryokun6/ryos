@@ -11,7 +11,6 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useSound, Sounds } from "./useSound";
 import { getWindowConfig, getMobileWindowSize } from "@/config/appRegistry";
 import { useWindowInsets } from "./useWindowInsets";
-import { measureMenubarSafeTop } from "@/components/layout/menu-bar/menubarEdgePadding";
 import { useEventListener } from "@/hooks/useEventListener";
 import {
   clampWindowToContentBounds,
@@ -59,7 +58,8 @@ export const useWindowManager = ({
     size: WindowSize;
   } => {
     const isMobile = window.innerWidth < 768;
-    const safeTop = measureMenubarSafeTop();
+    const chromeInsets = computeInsets();
+    const safeTop = Math.max(0, chromeInsets.topInset - chromeInsets.menuBarHeight);
     const mobileY = 28 + safeTop;
 
     const appIndex = appIds.indexOf(appId);

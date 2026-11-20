@@ -355,3 +355,43 @@ export function raisedMenubarBox(input: {
     paddingRight: MENUBAR_HORIZONTAL_RHYTHM,
   };
 }
+
+/**
+ * Live check for the pose above: the native iOS shell, a coarse pointer, and
+ * the inner display's upright size and top inset. False in the browser and
+ * on the server.
+ */
+export function readMenubarBesideStatusPill(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return false;
+  }
+  const iosShell = window.ryosDesktop?.platform === "ios";
+  if (!iosShell) return false;
+  const coarseTouch =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  return shouldRaiseMenubarBesideStatusPill({
+    iosShell,
+    coarseTouch,
+    viewportWidth: window.innerWidth,
+    viewportHeight: window.innerHeight,
+    safeTop: measureMenubarSafeTop(),
+  });
+}
+
+/**
+ * Safe top for windows: the menubar's bottom minus the menubar height. Window
+ * limits add the menubar height to it, so in the pill pose the top limit
+ * moves up by exactly what the row moved, and the gap under the bar stays the
+ * same. Everywhere else this is {@link measureMenubarSafeTop}.
+ */
+export function windowSafeTopBesideStatusPill(menuBarHeight: number): number {
+  return Math.max(0, INNER_STATUS_PILL_CENTER_Y_PX - menuBarHeight / 2);
+}
+
+export function measureWindowSafeTop(menuBarHeight: number): number {
+  // No Mac menubar (Windows themes): nothing moved, keep the system inset.
+  return menuBarHeight > 0 && readMenubarBesideStatusPill()
+    ? windowSafeTopBesideStatusPill(menuBarHeight)
+    : measureMenubarSafeTop();
+}

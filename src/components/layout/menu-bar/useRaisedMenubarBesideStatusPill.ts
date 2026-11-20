@@ -1,8 +1,5 @@
 import { useCallback, useSyncExternalStore } from "react";
-import {
-  measureMenubarSafeTop,
-  shouldRaiseMenubarBesideStatusPill,
-} from "./menubarEdgePadding";
+import { readMenubarBesideStatusPill } from "./menubarEdgePadding";
 
 /**
  * Viewport width while the menubar row sits beside the system status pill
@@ -12,18 +9,7 @@ import {
 export function useRaisedMenubarBesideStatusPill(iosShell: boolean): number {
   const getSnapshot = useCallback(() => {
     if (!iosShell || typeof window === "undefined") return 0;
-    const coarseTouch =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    const viewportWidth = window.innerWidth;
-    const raised = shouldRaiseMenubarBesideStatusPill({
-      iosShell,
-      coarseTouch,
-      viewportWidth,
-      viewportHeight: window.innerHeight,
-      safeTop: measureMenubarSafeTop(),
-    });
-    return raised ? viewportWidth : 0;
+    return readMenubarBesideStatusPill() ? window.innerWidth : 0;
   }, [iosShell]);
 
   const subscribe = useCallback((callback: () => void) => {
