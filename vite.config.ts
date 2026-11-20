@@ -6,9 +6,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy";
-import { optimizePhosphorImports } from "./vite/optimizePhosphorImports";
-import { vendorCodeSplittingGroups } from "./vite/vendorChunks";
+import { collectOfflinePrecacheChunkClosure } from "./vite/precachePolicy.ts";
+import { optimizePhosphorImports } from "./vite/optimizePhosphorImports.ts";
+import { vendorCodeSplittingGroups } from "./vite/vendorChunks.ts";
 
 // Polyfill __dirname in ESM context (Node >=16)
 const __filename = fileURLToPath(import.meta.url);
@@ -346,7 +346,6 @@ export default defineConfig({
         });
       },
     },
-    // Serve static docs HTML files (before SPA fallback kicks in)
     {
       name: 'block-removed-legacy-routes',
       configureServer(server) {
@@ -362,6 +361,7 @@ export default defineConfig({
         });
       },
     },
+    // Serve static docs HTML files (before SPA fallback kicks in)
     {
       name: 'serve-static-docs',
       configureServer(server) {
