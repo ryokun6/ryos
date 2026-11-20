@@ -854,6 +854,15 @@
       "Dopo aver allontanato le barre il più possibile, torna alla posizione di partenza riavvicinandole. Espira durante l'esecuzione del movimento."
     ]
   },
+  "Bodyweight_Glute_Bridge": {
+    "name": "Ponte glutei a corpo libero",
+    "instructions": [
+      "Sdraiati sulla schiena, ginocchia piegate e piedi appoggiati alla larghezza del bacino.",
+      "Stabilizza il busto e spingi sui talloni per sollevare il bacino.",
+      "Fermati quando il corpo forma una linea retta dalle spalle alle ginocchia. Non inarcare troppo la zona lombare.",
+      "Fai una pausa stringendo i glutei, poi abbassa il bacino con controllo."
+    ]
+  },
   "Bodyweight_Mid_Row": {
     "name": "Rematore medio a corpo libero",
     "instructions": [
@@ -2250,6 +2259,15 @@
       "Fai un passo indietro con la gamba destra di circa due piedi (circa 60 cm) dal piede sinistro e abbassa la parte superiore del corpo, mantenendo il busto eretto e l'equilibrio. Inspira mentre scendi. Suggerimento: Come negli altri esercizi, non permettere al ginocchio di andare oltre le dita dei piedi mentre scendi, poiché ciò metterebbe uno stress eccessivo sull'articolazione del ginocchio. Assicurati di mantenere la tibia anteriore perpendicolare al terreno. Mantieni il busto eretto durante l'affondo; i flessori dell'anca flessibili sono importanti. Un affondo lungo enfatizza il Grande Gluteo; un affondo corto enfatizza i Quadricipiti.",
       "Spingi verso l'alto e torna alla posizione di partenza mentre espiri. Suggerimento: Usa la parte anteriore del piede per spingere e accentuare i quadricipiti. Per concentrarti sui glutei, spingi con i talloni.",
       "Ora ripeti con l'altra gamba."
+    ]
+  },
+  "Dumbbell_Romanian_Deadlift": {
+    "name": "Stacco rumeno con manubri",
+    "instructions": [
+      "In piedi, tieni un manubrio per mano davanti alle cosce, con i palmi verso di te.",
+      "Piega leggermente le ginocchia e non farle avanzare.",
+      "Fai il hinge d’anca portandola indietro e abbassa i manubri vicini alle gambe finché senti l’allungamento dei femorali. Tieni la colonna neutra.",
+      "Spingi le anche in avanti per rialzarti e stringi i glutei."
     ]
   },
   "Dumbbell_Scaption": {
@@ -4248,6 +4266,15 @@
       "Evita di riportare il peso completamente ai fermi fino al completamento della serie per mantenere la tensione sui muscoli coinvolti."
     ]
   },
+  "Machine_Hip_Thrust": {
+    "name": "Hip thrust alla macchina",
+    "instructions": [
+      "Siediti nella macchina con la parte alta della schiena sul cuscinetto e i piedi appoggiati alla larghezza del bacino.",
+      "Sistema la cintura o il cuscinetto sui fianchi.",
+      "Spingi sui talloni ed estendi le anche finché busto e cosce sono allineati, senza inarcare troppo la zona lombare.",
+      "Fai una pausa stringendo i glutei, poi scendi con controllo."
+    ]
+  },
   "Machine_Preacher_Curls": {
     "name": "Curl alla panca Scott con macchina",
     "instructions": [
@@ -5324,6 +5351,15 @@
     "instructions": [
       "Sdraiati a pancia in giù sul pavimento con il peso sostenuto dalle mani o dagli avambracci. Posiziona un rullo di schiuma sotto una gamba, sul quadricipite, e tieni il piede sollevato da terra. Rilassa la gamba il più possibile. Questa sarà la tua posizione di partenza.",
       "Spostando quanto più peso tollerabile sulla gamba da allungare, rotola sul rullo di schiuma da sopra il ginocchio a sotto l'anca, mantenendo i punti di tensione per 10-30 secondi. Cambia lato."
+    ]
+  },
+  "Quadruped_Thoracic_Rotation": {
+    "name": "Rotazione toracica in quadrupedia",
+    "instructions": [
+      "Mettiti a quattro zampe, con i polsi sotto le spalle e le ginocchia sotto il bacino.",
+      "Porta una mano dietro la testa.",
+      "Ruota quel gomito verso il braccio opposto, poi apri il petto ruotando il gomito verso il soffitto.",
+      "Il movimento parte dalla parte alta della schiena e il bacino resta fermo. Cambia lato."
     ]
   },
   "Quick_Leap": {
@@ -7466,6 +7502,15 @@
       "Ripeti per il numero di ripetizioni consigliato nel tuo programma."
     ]
   },
+  "Supine_Adductor_Ball_Squeeze": {
+    "name": "Squeeze degli adduttori supino con palla",
+    "instructions": [
+      "Sdraiati sulla schiena con le ginocchia piegate e i piedi appoggiati a terra.",
+      "Metti una palla o un cuscino tra le ginocchia.",
+      "Stringi le ginocchia sulla palla per attivare gli adduttori, senza sollevare il bacino.",
+      "Mantieni la stretta, allenta leggermente e ripeti. Tieni stabile la zona lombare."
+    ]
+  },
   "Supine_Chest_Throw": {
     "name": "Lancio al petto supino",
     "instructions": [
@@ -7834,6 +7879,15 @@
     "instructions": [
       "Per iniziare, sali sul tapis roulant e seleziona l'opzione desiderata dal menu. La maggior parte dei tapis roulant ha un'impostazione manuale, oppure puoi selezionare un programma da eseguire. Tipicamente, puoi inserire la tua età e il tuo peso per stimare la quantità di calorie bruciate durante l'esercizio. L'elevazione può essere regolata per modificare l'intensità dell'allenamento.",
       "I tapis roulant offrono comodità, benefici cardiovascolari e di solito hanno un impatto minore rispetto alla camminata all'aperto. Quando cammini, dovresti muoverti a un ritmo moderato o veloce, non a un ritmo tranquillo. Essendo un'attività a bassa intensità, la camminata non brucia tante calorie quanto altre attività, ma offre comunque grandi benefici. Una persona di 150 libbre brucerà circa 175 calorie camminando 4 miglia all'ora per 30 minuti, rispetto a 450 calorie correndo il doppio della velocità. Mantieni una postura corretta mentre cammini e tieni i manici solo quando necessario, come quando scendi o controlli la frequenza cardiaca."
+    ]
+  },
+  "Wall_Slide": {
+    "name": "Scorrimento al muro",
+    "instructions": [
+      "Stai con schiena, bacino e nuca al muro, i piedi leggermente avanti.",
+      "Appoggia il dorso delle mani e i gomiti al muro, con i gomiti piegati a circa 90 gradi.",
+      "Fai scorrere le braccia verso l’alto senza staccare dal muro la zona lombare, le costole o i gomiti.",
+      "Torna all’inizio e ripeti."
     ]
   },
   "Weighted_Ball_Hyperextension": {

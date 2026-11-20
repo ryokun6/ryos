@@ -7,6 +7,7 @@ import {
   type Workout,
 } from "../types";
 import { addDays, startOfWeek, weekDates, weekdayOf } from "./dates";
+import { isLoggedSet } from "./progression";
 
 export interface ExerciseRef {
   id: string;
@@ -220,7 +221,7 @@ export function workoutDatesInWeek(workouts: readonly Workout[], dateKey: string
   const dates = new Set(weekDates(dateKey));
   const done = new Set<string>();
   for (const workout of workouts) {
-    if (dates.has(workout.date) && workout.entries.some((e) => e.sets.length > 0)) {
+    if (dates.has(workout.date) && workout.entries.some((e) => e.sets.some(isLoggedSet))) {
       done.add(workout.date);
     }
   }

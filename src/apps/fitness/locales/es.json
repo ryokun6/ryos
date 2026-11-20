@@ -854,6 +854,15 @@
       "Después de separar las barras lo más posible, regresa a la posición inicial juntándolas de nuevo. Exhala mientras realizas este movimiento."
     ]
   },
+  "Bodyweight_Glute_Bridge": {
+    "name": "Puente de glúteos con el peso corporal",
+    "instructions": [
+      "Túmbate boca arriba, rodillas flexionadas y pies apoyados a la anchura de la cadera.",
+      "Activa el torso y empuja con los talones para elevar la cadera.",
+      "Para cuando el cuerpo forme una línea recta de los hombros a las rodillas. No arquees de más la zona lumbar.",
+      "Haz una pausa apretando los glúteos y baja la cadera con control."
+    ]
+  },
   "Bodyweight_Mid_Row": {
     "name": "Remo medio con peso corporal",
     "instructions": [
@@ -2250,6 +2259,15 @@
       "Dé un paso hacia atrás con la pierna derecha, a unos dos pies (unos 60 cm) del pie izquierdo, y baje la parte superior del cuerpo, manteniendo el torso erguido y el equilibrio. Inhale al bajar. Consejo: Al igual que en otros ejercicios, no permita que su rodilla se adelante más allá de los dedos de los pies al bajar, ya que esto ejercerá una tensión indebida en la articulación de la rodilla. Asegúrese de mantener la espinilla delantera perpendicular al suelo. Mantenga el torso erguido durante la zancada; unos flexores de cadera flexibles son importantes. Una zancada larga enfatiza el glúteo mayor; una zancada corta enfatiza los cuádriceps.",
       "Impúlsese hacia arriba y regrese a la posición inicial mientras exhala. Consejo: Use la parte delantera de los pies para impulsarse y acentuar los cuádriceps. Para concentrarse en los glúteos, presione con los talones.",
       "Ahora repita con la pierna opuesta."
+    ]
+  },
+  "Dumbbell_Romanian_Deadlift": {
+    "name": "Peso muerto rumano con mancuernas",
+    "instructions": [
+      "De pie, sujeta una mancuerna en cada mano delante de los muslos, con las palmas hacia ti.",
+      "Flexiona un poco las rodillas y no dejes que avancen.",
+      "Haz la bisagra de cadera llevándola atrás y baja las mancuernas pegadas a las piernas hasta notar el estiramiento de los isquiotibiales. Mantén la columna neutra.",
+      "Empuja la cadera hacia delante para ponerte de pie y aprieta los glúteos."
     ]
   },
   "Dumbbell_Scaption": {
@@ -4248,6 +4266,15 @@
       "Evite devolver el peso completamente a los topes hasta que la serie esté completa para mantener la tensión en los músculos trabajados."
     ]
   },
+  "Machine_Hip_Thrust": {
+    "name": "Hip thrust en máquina",
+    "instructions": [
+      "Siéntate en la máquina con la parte alta de la espalda en el respaldo y los pies apoyados a la anchura de la cadera.",
+      "Coloca el cinturón o la almohadilla sobre la cadera.",
+      "Empuja con los talones y extiende la cadera hasta alinear el torso y los muslos, sin arquear de más la zona lumbar.",
+      "Haz una pausa apretando los glúteos y baja con control."
+    ]
+  },
   "Machine_Preacher_Curls": {
     "name": "Curl de bíceps predicador en máquina",
     "instructions": [
@@ -5324,6 +5351,15 @@
     "instructions": [
       "Túmbese boca abajo en el suelo con el peso apoyado en las manos o antebrazos. Coloque un rodillo de espuma debajo de una pierna, sobre el cuádriceps, y mantenga el pie levantado del suelo. Relaje la pierna lo máximo posible. Esta será su posición inicial.",
       "Transfiriendo tanto peso como sea tolerable a la pierna a estirar, ruede sobre el rodillo de espuma desde encima de la rodilla hasta debajo de la cadera, manteniendo los puntos de tensión durante 10-30 segundos. Cambie de lado."
+    ]
+  },
+  "Quadruped_Thoracic_Rotation": {
+    "name": "Rotación torácica en cuadrupedia",
+    "instructions": [
+      "Apoya manos y rodillas, las muñecas bajo los hombros y las rodillas bajo la cadera.",
+      "Lleva una mano detrás de la cabeza.",
+      "Gira ese codo hacia el brazo contrario y luego abre el pecho girando el codo hacia el techo.",
+      "El movimiento sale de la parte alta de la espalda y la cadera se queda quieta. Cambia de lado."
     ]
   },
   "Quick_Leap": {
@@ -7466,6 +7502,15 @@
       "Repita el número de repeticiones recomendado en su programa."
     ]
   },
+  "Supine_Adductor_Ball_Squeeze": {
+    "name": "Apretón de aductores tumbado con pelota",
+    "instructions": [
+      "Túmbate boca arriba con las rodillas flexionadas y los pies apoyados en el suelo.",
+      "Coloca una pelota o una almohada entre las rodillas.",
+      "Aprieta las rodillas contra la pelota para activar los aductores, sin levantar la cadera.",
+      "Mantén el apretón, afloja un poco y repite. Deja la zona lumbar quieta."
+    ]
+  },
   "Supine_Chest_Throw": {
     "name": "Lanzamiento de pecho supino",
     "instructions": [
@@ -7834,6 +7879,15 @@
     "instructions": [
       "Para empezar, sube a la cinta de correr y selecciona la opción deseada del menú. La mayoría de las cintas de correr tienen un ajuste manual, o puedes seleccionar un programa para ejecutar. Normalmente, puedes introducir tu edad y peso para estimar la cantidad de calorías quemadas durante el ejercicio. La elevación se puede ajustar para cambiar la intensidad del entrenamiento.",
       "Las cintas de correr ofrecen comodidad, beneficios cardiovasculares y suelen tener menos impacto que caminar al aire libre. Al caminar, debes moverte a un ritmo moderado a rápido, no a uno pausado. Al ser una actividad de menor intensidad, caminar no quema tantas calorías como otras actividades, pero aun así proporciona grandes beneficios. Una persona de 150 lb quemará unas 175 calorías caminando 4 millas por hora durante 30 minutos, en comparación con 450 calorías corriendo el doble de rápido. Mantén una postura correcta al caminar y solo agárrate a los pasamanos cuando sea necesario, como al bajarte o al comprobar tu frecuencia cardíaca."
+    ]
+  },
+  "Wall_Slide": {
+    "name": "Deslizamiento en la pared",
+    "instructions": [
+      "Apoya la espalda, la cadera y la nuca en la pared, con los pies un poco adelantados.",
+      "Pon el dorso de las manos y los codos en la pared, con los codos flexionados unos 90 grados.",
+      "Desliza los brazos hacia arriba sin separar de la pared la zona lumbar, las costillas ni los codos.",
+      "Vuelve al inicio y repite."
     ]
   },
   "Weighted_Ball_Hyperextension": {

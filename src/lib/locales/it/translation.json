@@ -2960,7 +2960,7 @@
           "title": "Registra allenamenti"
         },
         "schedule": {
-          "description": "Pianifica il focus di ogni giorno della settimana (parte superiore, parte inferiore, spinta, trazione, gambe, core, cardio, total body o riposo) e ricevi consigli sugli esercizi. Inizia da un modello.",
+          "description": "Pianifica il focus di ogni giorno della settimana (parte superiore, parte inferiore, spinta, trazione, gambe, core, cardio, total body o riposo) e ricevi consigli sugli esercizi. Inizia da un modello. Aggiungi un modello di seduta al giorno scelto senza sostituire gli esercizi già presenti.",
           "title": "Programma settimanale"
         },
         "sync": {
@@ -3079,13 +3079,30 @@
         "ppl": "Push / Pull / Legs",
         "upperLower": "Upper / Lower"
       },
+      "workoutTemplates": {
+        "add": "Aggiungi modello",
+        "lowerControl": "Corpo intero + controllo degli arti inferiori",
+        "scapularControl": "Corpo intero + controllo scapolare",
+        "guidance": "Scegli un carico che lasci 3–4 ripetizioni di riserva. Recupera 60–90 secondi tra le serie. Stabilizza il movimento, poi aumenta il carico lentamente.",
+        "phase": {
+          "warmup": "Riscaldamento",
+          "main": "Principale"
+        },
+        "cues": {
+          "holdEachRep3s": "Tieni ogni ripetizione per 3 secondi",
+          "hold2s": "Tieni per 2 secondi",
+          "eachSide": "Per lato"
+        }
+      },
       "title": "Fitness",
       "toasts": {
         "addedToDay": "Aggiunto {{name}} al {{date}}",
         "addedToWorkout": "Aggiunto {{name}} all'allenamento di oggi",
         "foodSaved": "{{name}} salvato nel registro alimentare",
         "statsSaved": "Statistiche corporee salvate",
-        "templateApplied": "Piano {{name}} applicato"
+        "templateApplied": "Piano {{name}} applicato",
+        "workoutTemplateAdded": "{{name}} aggiunto al {{date}}",
+        "workoutTemplatePresent": "{{name}} è già presente il {{date}}"
       },
       "units": {
         "imperial": "Imperiale (lb, in)",
@@ -3118,7 +3135,9 @@
         "reps": "Ripetizioni",
         "set": "Serie",
         "suggested": "Suggerito per {{focus}}",
-        "weight": "Peso ({{unit}})"
+        "weight": "Peso ({{unit}})",
+        "done": "Fatto",
+        "markSetDone": "Segna la serie come completata"
       }
     },
     "infinite-mac": {

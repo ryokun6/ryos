@@ -854,6 +854,15 @@
       "Après avoir écarté les barres au maximum, revenez à la position de départ en les rapprochant. Expirez en effectuant ce mouvement."
     ]
   },
+  "Bodyweight_Glute_Bridge": {
+    "name": "Pont fessier au poids du corps",
+    "instructions": [
+      "Allongez-vous sur le dos, genoux fléchis, pieds à plat et écartés de la largeur du bassin.",
+      "Gainez le torse et poussez dans les talons pour soulever le bassin.",
+      "Arrêtez quand le corps forme une ligne droite des épaules aux genoux. Ne cambrez pas trop le bas du dos.",
+      "Marquez une pause en serrant les fessiers, puis redescendez en contrôle."
+    ]
+  },
   "Bodyweight_Mid_Row": {
     "name": "Tirage milieu du dos au poids du corps",
     "instructions": [
@@ -2250,6 +2259,15 @@
       "Reculez votre jambe droite d'environ deux pieds (environ 60 cm) par rapport au pied gauche et abaissez le haut de votre corps, tout en gardant le torse droit et en maintenant l'équilibre. Inspirez en descendant. Conseil : Comme pour les autres exercices, ne laissez pas votre genou dépasser vos orteils en descendant, car cela exercerait une tension excessive sur l'articulation du genou. Assurez-vous de garder votre tibia avant perpendiculaire au sol. Gardez le torse droit pendant la fente ; des fléchisseurs de la hanche souples sont importants. Une fente longue met l'accent sur le grand fessier ; une fente courte met l'accent sur les quadriceps.",
       "Poussez vers le haut et revenez à la position de départ en expirant. Conseil : Utilisez la plante de vos pieds pour pousser afin d'accentuer les quadriceps. Pour cibler les fessiers, poussez avec vos talons.",
       "Répétez maintenant avec l'autre jambe."
+    ]
+  },
+  "Dumbbell_Romanian_Deadlift": {
+    "name": "Soulevé de terre roumain avec haltères",
+    "instructions": [
+      "Tenez-vous debout avec un haltère dans chaque main devant les cuisses, paumes vers vous.",
+      "Fléchissez légèrement les genoux et ne les laissez pas avancer.",
+      "Charnière aux hanches en les envoyant en arrière et descendez les haltères près des jambes jusqu’à sentir les ischio-jambiers. Gardez la colonne neutre.",
+      "Poussez les hanches vers l’avant pour vous redresser et serrez les fessiers."
     ]
   },
   "Dumbbell_Scaption": {
@@ -4248,6 +4266,15 @@
       "Évitez de ramener le poids complètement jusqu'aux butées avant que la série ne soit terminée afin de maintenir la tension sur les muscles travaillés."
     ]
   },
+  "Machine_Hip_Thrust": {
+    "name": "Hip thrust à la machine",
+    "instructions": [
+      "Asseyez-vous dans la machine, le haut du dos contre le coussin, pieds à plat et écartés de la largeur du bassin.",
+      "Placez la ceinture ou le coussin sur les hanches.",
+      "Poussez dans les talons et étendez les hanches jusqu’à aligner le torse et les cuisses, sans trop cambrer le bas du dos.",
+      "Marquez une pause en serrant les fessiers, puis redescendez en contrôle."
+    ]
+  },
   "Machine_Preacher_Curls": {
     "name": "Curl pupitre à la machine",
     "instructions": [
@@ -5324,6 +5351,15 @@
     "instructions": [
       "Allongez-vous face contre terre, le poids soutenu par vos mains ou avant-bras. Placez un rouleau en mousse sous une jambe, sur le quadriceps, et gardez le pied décollé du sol. Détendez la jambe autant que possible. Ce sera votre position de départ.",
       "En déplaçant autant de poids que tolérable sur la jambe à étirer, roulez sur le rouleau en mousse du dessus du genou jusqu'en dessous de la hanche, en maintenant les points de tension pendant 10-30 secondes. Changez de côté."
+    ]
+  },
+  "Quadruped_Thoracic_Rotation": {
+    "name": "Rotation thoracique à quatre pattes",
+    "instructions": [
+      "Mettez-vous à quatre pattes, poignets sous les épaules et genoux sous les hanches.",
+      "Placez une main derrière la tête.",
+      "Tournez ce coude vers le bras opposé, puis ouvrez la poitrine et tournez le coude vers le plafond.",
+      "Le mouvement part du haut du dos et le bassin reste stable. Changez de côté."
     ]
   },
   "Quick_Leap": {
@@ -7466,6 +7502,15 @@
       "Répétez le nombre de répétitions recommandé dans votre programme."
     ]
   },
+  "Supine_Adductor_Ball_Squeeze": {
+    "name": "Compression des adducteurs allongé avec balle",
+    "instructions": [
+      "Allongez-vous sur le dos, genoux fléchis et pieds à plat au sol.",
+      "Placez une balle ou un coussin entre les genoux.",
+      "Serrez les genoux sur la balle pour activer les adducteurs, sans soulever le bassin.",
+      "Maintenez la pression, relâchez légèrement, puis recommencez. Gardez le bas du dos stable."
+    ]
+  },
   "Supine_Chest_Throw": {
     "name": "Lancer de poitrine en supination",
     "instructions": [
@@ -7834,6 +7879,15 @@
     "instructions": [
       "Pour commencer, montez sur le tapis de course et sélectionnez l'option désirée dans le menu. La plupart des tapis de course ont un réglage manuel, ou vous pouvez sélectionner un programme à exécuter. Généralement, vous pouvez entrer votre âge et votre poids pour estimer la quantité de calories brûlées pendant l'exercice. L'inclinaison peut être ajustée pour modifier l'intensité de l'entraînement.",
       "Les tapis de course offrent commodité, bienfaits cardiovasculaires, et ont généralement moins d'impact que la marche en extérieur. En marchant, vous devriez vous déplacer à un rythme modéré à rapide, pas à un rythme tranquille. Étant une activité de faible intensité, la marche ne brûle pas autant de calories que d'autres activités, mais procure tout de même de grands avantages. Une personne de 150 lb brûlera environ 175 calories en marchant 4 miles par heure pendant 30 minutes, comparé à 450 calories en courant deux fois plus vite. Maintenez une posture correcte pendant que vous marchez, et ne tenez les poignées que lorsque c'est nécessaire, comme lors de la descente ou de la vérification de votre fréquence cardiaque."
+    ]
+  },
+  "Wall_Slide": {
+    "name": "Glissade au mur",
+    "instructions": [
+      "Tenez-vous dos, bassin et arrière de la tête contre un mur, les pieds légèrement avancés.",
+      "Posez le dos des mains et les coudes au mur, coudes fléchis à environ 90 degrés.",
+      "Glissez les bras vers le haut sans décoller le bas du dos, les côtes ou les coudes du mur.",
+      "Redescendez jusqu’au départ et recommencez."
     ]
   },
   "Weighted_Ball_Hyperextension": {

@@ -71,13 +71,15 @@ describe("exercise library", () => {
     expect(a).toBe(b);
     expect(calls).toEqual(EXERCISE_SOURCE_URLS);
     expect(a.byId.get("Barbell_Squat")?.name).toBe("Barbell Squat");
+    expect(a.byId.get("Machine_Hip_Thrust")?.name).toBe("Machine Hip Thrust");
 
     await getExerciseLibrary({ fetchImpl, now: 1000 });
     expect(calls).toHaveLength(2);
 
     fail = true;
     const stale = await getExerciseLibrary({ fetchImpl, now: 2 * 24 * 60 * 60 * 1000 });
-    expect(stale.exercises).toHaveLength(1);
+    expect(stale.byId.get("Barbell_Squat")?.name).toBe("Barbell Squat");
+    expect(stale.byId.has("Wall_Slide")).toBe(true);
   });
 });
 

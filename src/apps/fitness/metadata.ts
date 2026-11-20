@@ -28,7 +28,7 @@ export const helpItems = [
     icon: "📅",
     title: "Weekly Schedule",
     description:
-      "Plan each weekday's focus (upper, lower, push, pull, legs, core, cardio, full body, or rest) and get exercise recommendations for it. Start from a template.",
+      "Plan each weekday's focus (upper, lower, push, pull, legs, core, cardio, full body, or rest) and get exercise recommendations for it. Weekly plans start from a template. Add a workout template to the selected day without replacing exercises already there.",
   },
   {
     icon: "📏",
