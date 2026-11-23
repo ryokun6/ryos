@@ -446,7 +446,9 @@ export async function suggestAvailableGoogleUsername(
     }
   }
 
-  const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+  const randBuf = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(randBuf);
+  const randomSuffix = 1000 + (randBuf[0]! % 9000);
   const prefix = base.slice(0, MAX_USERNAME_LENGTH - 5).replace(/[-_]+$/g, "") || "user";
   return `${prefix}_${randomSuffix}`;
 }

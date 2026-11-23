@@ -21,7 +21,7 @@ import {
 
 const GOOGLE_MOCK_PORT = Number(process.env.GOOGLE_TEST_API_PORT || 3898);
 const TEST_BASE_URL = process.env.API_URL || BASE_URL;
-const RUN_ID = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+const RUN_ID = `${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, "").slice(0, 6)}`;
 
 interface MockOAuthCodeGrant {
   sub: string;
