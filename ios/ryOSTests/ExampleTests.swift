@@ -118,3 +118,39 @@ private func pixelSize(of url: URL) -> (Int, Int)? {
 private enum ImageFixtureError: Error {
     case context, image, destination, finalize
 }
+
+/// The side dock follows the live bottom of the Duo status column.
+@MainActor
+struct StatusColumnTests {
+    private let cover = CGSize(width: 466, height: 678)
+
+    @Test func restingColumnRegionGivesItsBottom() {
+        let region = CGRect(x: 382, y: 0, width: 84, height: 174)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [region], screen: cover, stripWidth: 84) == 174)
+    }
+
+    @Test func grownIslandMovesTheBottomDown() {
+        // A Live Activity grows the island; clock and 5G end near 203pt.
+        let grown = CGRect(x: 382, y: 0, width: 84, height: 215.4)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [grown], screen: cover, stripWidth: 84) == 216)
+    }
+
+    @Test func leftStripCountsToo() {
+        let region = CGRect(x: 0, y: 0, width: 84, height: 180)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [region], screen: cover, stripWidth: 84) == 180)
+    }
+
+    @Test func regionsOutsideTheColumnAreIgnored() {
+        let topCentre = CGRect(x: 150, y: 10, width: 120, height: 37)
+        let fullHeight = CGRect(x: 382, y: 0, width: 84, height: 678)
+        let low = CGRect(x: 382, y: 500, width: 84, height: 40)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [topCentre, fullHeight, low], screen: cover, stripWidth: 84) == nil)
+    }
+
+    @Test func noVerticalBarMeansNoLiveValue() {
+        // Regular iPhone portrait: no side strip, the island never counts.
+        let island = CGRect(x: 140, y: 11, width: 122, height: 37)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [island], screen: CGSize(width: 402, height: 874), stripWidth: 0) == nil)
+        #expect(ShellView.liveSideStatusBottom(occlusions: [], screen: cover, stripWidth: 84) == nil)
+    }
+}

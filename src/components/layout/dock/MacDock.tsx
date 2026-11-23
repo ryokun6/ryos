@@ -4,6 +4,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useLayoutEffect,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
@@ -33,6 +34,7 @@ import { useDockLayout } from "@/hooks/useDockLayout";
 import { cn } from "@/lib/utils";
 import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
 import {
+  fitSideDockButtonLength,
   fitSideDockButtonSize,
   sideDockEndPadding,
   sideDockHiddenOffset,
@@ -195,11 +197,23 @@ export function MacDock() {
   // them on a side dock. Aqua glass gets extra breathing room.
   const scaledCrossPadding = Math.round((isAquaGlass ? 8 : 4) * dockScale);
   const userButtonSize = Math.round(DOCK_BASE_BUTTON_SIZE * dockScale);
+  // A side dock's length: the strip's content height between the padding
+  // under the status cluster and the bottom margin (measured below), and the
+  // icon / divider counts (set once the items are known, before paint).
+  const sideStripRef = useRef<HTMLDivElement | null>(null);
+  const [sideStripLength, setSideStripLength] = useState<number | null>(null);
+  const [sideDockCounts, setSideDockCounts] = useState({ items: 0, dividers: 0 });
   const scaledButtonSize = sidePlacement
-    ? fitSideDockButtonSize({
-        stripWidth: dockLayout.stripWidth,
-        buttonSize: userButtonSize,
-        crossPadding: scaledCrossPadding,
+    ? fitSideDockButtonLength({
+        stripLength: sideStripLength,
+        buttonSize: fitSideDockButtonSize({
+          stripWidth: dockLayout.stripWidth,
+          buttonSize: userButtonSize,
+          crossPadding: scaledCrossPadding,
+        }),
+        itemCount: sideDockCounts.items,
+        dividerCount: sideDockCounts.dividers,
+        padding: scaledPadding,
       })
     : userButtonSize;
   // Dock thickness tracks the icon size plus the cross padding on both sides:
@@ -561,6 +575,40 @@ export function MacDock() {
     [instances, pinnedLeft]
   );
 
+  // Side dock: icons + Applications + Trash, and the dividers between them.
+  useLayoutEffect(() => {
+    const items = sanitizedPinnedItems.length + openItems.length + 2;
+    const dividers = (openItems.length > 0 ? 1 : 0) + 1;
+    setSideDockCounts((prev) =>
+      prev.items === items && prev.dividers === dividers
+        ? prev
+        : { items, dividers },
+    );
+  }, [sanitizedPinnedItems.length, openItems.length]);
+
+  // The strip's content height follows its top padding, which moves with the
+  // live status cluster (Dynamic Island) the iOS shell reports.
+  useLayoutEffect(() => {
+    const el = sideStripRef.current;
+    if (!sidePlacement || !el) {
+      setSideStripLength(null);
+      return;
+    }
+    const measure = () => {
+      const style = window.getComputedStyle(el);
+      const length =
+        el.clientHeight -
+        (parseFloat(style.paddingTop) || 0) -
+        (parseFloat(style.paddingBottom) || 0);
+      setSideStripLength(Math.max(0, Math.floor(length)));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [sidePlacement]);
+
   const openAppsAllSet = useMemo(() => {
     const set = new Set<AppId>();
     Object.values(instances).forEach((inst) => {
@@ -850,6 +898,7 @@ export function MacDock() {
       }}
     >
       <div
+        ref={sideStripRef}
         className={
           sidePlacement
             ? "flex h-full w-full flex-col items-center justify-start"

@@ -63,12 +63,45 @@ struct ShellView: View {
     /// One contract everywhere (always reported, 0 where meaningless): a
     /// nonzero extent only where the Duo side bar exists (side inset ≥ 70,
     /// checked by the caller). The extent is the cluster's depth in that
-    /// strip: 150 on the cover (camera), 104 on the inner display.
+    /// strip: 150 on the cover (camera), 104 on the inner display. These are
+    /// the fallback; the holder replaces the extent with the live status
+    /// column bottom (`liveSideStatusBottom`) whenever the system reports it.
     static func sideStatusBarTruth(isVerticalBar: Bool, viewSize: CGSize) -> (extent: CGFloat, hasCamera: Bool) {
         guard isVerticalBar else { return (0, false) }
         let cover = min(viewSize.width, viewSize.height) < coverShortSideMaximum
         if cover { return (sideStatusBarExtentMeasured, true) }
         return (sideStatusBarExtentOpenMeasured, false)
+    }
+
+    /// Live bottom of the status column, from the system's occlusion regions
+    /// (iOS 27.1 `reservedRegions(kind: .occlusion)`), in screen points.
+    /// On the folded Duo the region covers the strip from the top through
+    /// the camera and the status items, and it grows with the Dynamic Island
+    /// (a Live Activity pushes the clock and 5G down), so its bottom is where
+    /// the status items end right now. Only regions inside a side strip of
+    /// `stripWidth` that start near the top and end in the top 60% of the
+    /// screen count. nil means nothing usable: keep the fixed extent.
+    /// Rounded up to whole points so sub-point jitter is never pushed.
+    static func liveSideStatusBottom(occlusions: [CGRect], screen: CGSize, stripWidth: CGFloat) -> CGFloat? {
+        guard stripWidth >= sideBarMinimumInset, screen.width > 0, screen.height > 0 else { return nil }
+        let strips = [
+            CGRect(x: 0, y: 0, width: stripWidth, height: screen.height),
+            CGRect(x: screen.width - stripWidth, y: 0, width: stripWidth, height: screen.height),
+        ]
+        var best: CGFloat?
+        for region in occlusions where !region.isNull && !region.isEmpty {
+            // Mostly inside one strip: the column, not a camera elsewhere.
+            let inColumn = strips.contains { strip in
+                let overlap = region.intersection(strip)
+                return !overlap.isNull && overlap.width >= region.width * 0.5
+            }
+            guard inColumn,
+                  region.minY < screen.height * 0.25,
+                  region.maxY > 0,
+                  region.maxY < screen.height * 0.6 else { continue }
+            best = max(best ?? 0, region.maxY)
+        }
+        return best.map { $0.rounded(.up) }
     }
 
     /// Top inset the page would otherwise miss. Geometry only, no device names.
