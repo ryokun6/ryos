@@ -31,7 +31,17 @@ struct ShellNotificationOptions {
 
 @MainActor
 final class ShellViewModel: ObservableObject {
-    static let origin = URL(string: "https://os.ryo.lu")!
+    static let origin: URL = {
+        #if targetEnvironment(simulator)
+        // Simulator-only: load a locally served build of the web client to
+        // check layout changes before they ship to os.ryo.lu.
+        if let raw = ProcessInfo.processInfo.environment["RYOS_DEV_ORIGIN"],
+           let url = URL(string: raw), url.scheme?.hasPrefix("http") == true {
+            return url
+        }
+        #endif
+        return URL(string: "https://os.ryo.lu")!
+    }()
 
     enum BootPhase: Equatable {
         case downloading   // first-ever launch: fetching the web client

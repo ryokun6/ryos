@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore, useAppStoreShallow } from "@/stores/useAppStore";
@@ -36,9 +37,15 @@ import { DOCK_BASE_BUTTON_SIZE } from "./dockConstants";
 import {
   fitSideDockButtonLength,
   fitSideDockButtonSize,
+  sideDockCenterFromEdge,
+  sideDockCrossPadding,
   sideDockEndPadding,
   sideDockHiddenOffset,
 } from "./dockPlacement";
+import {
+  getSideStatusBarCenter,
+  subscribeSideStatusBar,
+} from "@/utils/platform";
 import { DockPlacementContext } from "./DockPlacementContext";
 import { renderDockPinnedItems } from "./DockPinnedItems";
 import { renderDockOpenItems } from "./DockOpenItems";
@@ -61,6 +68,8 @@ import {
   getFinderInstancesSignature,
   getFinderInstancesSnapshot,
 } from "./finderInstancesSnapshot";
+
+const getNoSideStatusBarCenter = () => null;
 
 export function MacDock() {
   const { t } = useTranslation();
@@ -219,6 +228,21 @@ export function MacDock() {
   // Dock thickness tracks the icon size plus the cross padding on both sides:
   // the bar height on the bottom dock, the bar width on a side dock.
   const scaledDockThickness = scaledButtonSize + scaledCrossPadding * 2;
+  // A side dock's centre line follows the status column the iOS shell
+  // measures, a few px inward of the strip's centre on the Duo.
+  const sideStatusBarCenter = useSyncExternalStore(
+    subscribeSideStatusBar,
+    getSideStatusBarCenter,
+    getNoSideStatusBarCenter,
+  );
+  const sideDockCenter = {
+    stripWidth: dockLayout.stripWidth,
+    thickness: scaledDockThickness,
+    center: sideStatusBarCenter,
+  };
+  const sideDockPadding = sidePlacement
+    ? sideDockCrossPadding(sideDockCenter)
+    : null;
 
 
   const {
@@ -854,6 +878,7 @@ export function MacDock() {
           placement: sidePlacement,
           stripWidth: dockLayout.stripWidth,
           thickness: scaledDockThickness,
+          centerFromEdge: sideDockCenterFromEdge(sideDockCenter),
         }),
         y: 0,
       }
@@ -909,6 +934,15 @@ export function MacDock() {
             ? {
                 paddingTop: sideDockEndPadding("top"),
                 paddingBottom: sideDockEndPadding("bottom"),
+                // Outer on the screen-edge side, inner on the content side.
+                paddingRight:
+                  sidePlacement === "right"
+                    ? sideDockPadding?.outer
+                    : sideDockPadding?.inner,
+                paddingLeft:
+                  sidePlacement === "left"
+                    ? sideDockPadding?.outer
+                    : sideDockPadding?.inner,
               }
             : {
                 // Content-rect insets only. The dock is centered and capped at

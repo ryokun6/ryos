@@ -141,7 +141,8 @@ enum DesktopBridge {
         // depth in it — 150 with camera (closed), 88 without (open). The iOS
         // shell keeps these current on pose changes via
         // __ryosSetSideStatusBarExtent below, which also fires a
-        // `ryos-status-bar-extent` CustomEvent (detail = {extent, hasCamera})
+        // `ryos-status-bar-extent` CustomEvent (detail = {extent, hasCamera,
+        // center})
         // so listeners can react without polling.
         sideStatusBarExtent:
           (window.__ryosInitialSideStatusBar &&
@@ -149,17 +150,26 @@ enum DesktopBridge {
         sideStatusBarHasCamera:
           !!(window.__ryosInitialSideStatusBar &&
             window.__ryosInitialSideStatusBar.hasCamera),
+        // Centre of the status column in CSS px from the strip's screen
+        // edge (~48 in the 84pt Duo strip); 0 where unknown. The side dock
+        // lines up with it.
+        sideStatusBarCenter:
+          (window.__ryosInitialSideStatusBar &&
+            window.__ryosInitialSideStatusBar.center) || 0,
       };
-      window.__ryosSetSideStatusBarExtent = function (v, cam) {
+      window.__ryosSetSideStatusBarExtent = function (v, cam, center) {
         v = Number(v) || 0;
         cam = !!cam;
+        center = Number(center) || 0;
         if (window.ryosDesktop.sideStatusBarExtent === v &&
-            window.ryosDesktop.sideStatusBarHasCamera === cam) return;
+            window.ryosDesktop.sideStatusBarHasCamera === cam &&
+            window.ryosDesktop.sideStatusBarCenter === center) return;
         window.ryosDesktop.sideStatusBarExtent = v;
         window.ryosDesktop.sideStatusBarHasCamera = cam;
+        window.ryosDesktop.sideStatusBarCenter = center;
         try {
           window.dispatchEvent(new CustomEvent('ryos-status-bar-extent', {
-            detail: { extent: v, hasCamera: cam }
+            detail: { extent: v, hasCamera: cam, center: center }
           }));
         } catch (e) {}
       };

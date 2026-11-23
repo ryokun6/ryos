@@ -104,6 +104,56 @@ struct ShellView: View {
         return best.map { $0.rounded(.up) }
     }
 
+    /// Centre of the status column, in points from the screen edge that
+    /// holds the side strip. The system draws the column (camera, clock,
+    /// Wi-Fi) a little inward of the strip's centre: in the 84pt Duo strip
+    /// the camera region's centre and the clock and Wi-Fi glyphs all sit
+    /// 47.8pt from the edge, folded and open (iOS 27.1 simulator, 2026-11-23),
+    /// not at 42. On the cover the camera occlusion region (37pt wide, inside
+    /// the strip) gives the centre directly; it stays put when a Live Activity
+    /// grows the island. A region narrower than the strip, mostly inside it
+    /// and starting near the top, counts; the full-strip column region says
+    /// nothing about the centre. nil means no such region (the inner display
+    /// held sideways has none): use `sideStatusColumnCenterFallback`.
+    /// Rounded to half points so sub-point jitter is never pushed.
+    static func liveSideStatusCenter(occlusions: [CGRect], screen: CGSize, stripWidth: CGFloat) -> CGFloat? {
+        guard stripWidth >= sideBarMinimumInset, screen.width > 0, screen.height > 0 else { return nil }
+        var best: (top: CGFloat, center: CGFloat)?
+        for region in occlusions where !region.isNull && !region.isEmpty {
+            guard region.width < stripWidth - 1,
+                  region.minY < screen.height * 0.25 else { continue }
+            let right = CGRect(x: screen.width - stripWidth, y: 0, width: stripWidth, height: screen.height)
+            let left = CGRect(x: 0, y: 0, width: stripWidth, height: screen.height)
+            let center: CGFloat
+            if region.intersection(right).width >= region.width * 0.9 {
+                center = screen.width - region.midX
+            } else if region.intersection(left).width >= region.width * 0.9 {
+                center = region.midX
+            } else {
+                continue
+            }
+            if best == nil || region.minY < best!.top { best = (region.minY, center) }
+        }
+        return best.map { ($0.center * 2).rounded() / 2 }
+    }
+
+    /// Where the column centre is when no region gives it (the inner display
+    /// held sideways): the same 6pt inward of the strip's centre measured on
+    /// both poses. Only for a side strip; 0 otherwise.
+    static func sideStatusColumnCenterFallback(stripWidth: CGFloat) -> CGFloat {
+        guard stripWidth >= sideBarMinimumInset else { return 0 }
+        return stripWidth / 2 + sideStatusColumnInwardShift
+    }
+
+    static let sideStatusColumnInwardShift: CGFloat = 6
+
+    /// On the folded cover the live column region runs ~17pt below the drawn
+    /// status pill (region bottom 174, pill bottom 157.3), so the page's 12pt
+    /// clearance left a 28.7pt visible gap above the dock. Ryo asked for half
+    /// that: the reported extent is pulled up by this much on the cover only,
+    /// for a ~14.7pt gap and a longer dock. The inner display keeps its gap.
+    static let coverDockGapReduction: CGFloat = 14
+
     /// Top inset the page would otherwise miss. Geometry only, no device names.
     /// Duo (side inset at least 70): the real top inset is 0, but the top
     /// ~20pt is system-reserved. A reported top inset (regular iPhone

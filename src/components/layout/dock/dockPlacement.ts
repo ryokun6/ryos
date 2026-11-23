@@ -131,13 +131,54 @@ export function phoneWindowFlushEdge(
   return layout.placement;
 }
 
+/**
+ * Distance from the screen edge to the side dock's centre line. The system
+ * draws the status column (camera, clock, Wi-Fi) a little inward of the
+ * strip's centre — about 48pt from the edge in the 84pt Duo strip — and the
+ * iOS shell reports that centre (`sideStatusBarCenter`, from the edge that
+ * holds the strip). The dock lines up with it. Without a report (other
+ * shells, older app builds) the dock stays centred in the strip. The dock
+ * never crosses either edge of the strip, and a dock wider than the strip
+ * stays centred.
+ */
+export function sideDockCenterFromEdge(input: {
+  stripWidth: number;
+  thickness: number;
+  center: number | null;
+}): number {
+  const { stripWidth, thickness, center } = input;
+  const middle = stripWidth / 2;
+  if (center === null || !Number.isFinite(center) || !(center > 0)) return middle;
+  if (thickness >= stripWidth) return middle;
+  const half = thickness / 2;
+  return Math.min(stripWidth - half, Math.max(half, center));
+}
+
+/**
+ * Strip padding across a side dock that puts its centre line
+ * `sideDockCenterFromEdge` from the screen edge: `outer` on the screen-edge
+ * side, `inner` on the content side. Both are 0 when the dock is centred in
+ * the strip, so the dock keeps its size and only moves.
+ */
+export function sideDockCrossPadding(input: {
+  stripWidth: number;
+  thickness: number;
+  center: number | null;
+}): { outer: number; inner: number } {
+  const offset = 2 * sideDockCenterFromEdge(input) - input.stripWidth;
+  return { outer: Math.max(0, offset), inner: Math.max(0, -offset) };
+}
+
 /** Horizontal shift that slides a hidden side dock fully past the screen edge. */
 export function sideDockHiddenOffset(input: {
   placement: SideDockPlacement;
   stripWidth: number;
   thickness: number;
+  /** Centre line's distance from the screen edge; the strip's centre if omitted. */
+  centerFromEdge?: number;
 }): number {
-  const distance = Math.ceil((input.stripWidth + input.thickness) / 2) + 10;
+  const center = input.centerFromEdge ?? input.stripWidth / 2;
+  const distance = Math.ceil(center + input.thickness / 2) + 10;
   return input.placement === "right" ? distance : -distance;
 }
 

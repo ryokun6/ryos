@@ -147,6 +147,34 @@ struct StatusColumnTests {
         #expect(ShellView.liveSideStatusBottom(occlusions: [topCentre, fullHeight, low], screen: cover, stripWidth: 84) == nil)
     }
 
+    @Test func cameraRegionGivesTheColumnCentre() {
+        // Cover, iOS 27.1 simulator: camera region and full-strip column.
+        let camera = CGRect(x: 399.6666666666667, y: 29.333333333333332, width: 37, height: 37)
+        let column = CGRect(x: 382, y: 0, width: 84, height: 174)
+        #expect(ShellView.liveSideStatusCenter(occlusions: [column, camera], screen: cover, stripWidth: 84) == 48)
+        // A grown island keeps its centre.
+        let grown = CGRect(x: camera.minX, y: camera.minY, width: 37, height: 120)
+        #expect(ShellView.liveSideStatusCenter(occlusions: [column, grown], screen: cover, stripWidth: 84) == 48)
+    }
+
+    @Test func leftStripCentreIsMirrored() {
+        let camera = CGRect(x: 29.333333333333332, y: 29.333333333333332, width: 37, height: 37)
+        #expect(ShellView.liveSideStatusCenter(occlusions: [camera], screen: cover, stripWidth: 84) == 48)
+    }
+
+    @Test func fullStripRegionAloneGivesNoCentre() {
+        // Inner display held sideways: only the full-strip region, so the
+        // shell falls back to the measured 6pt inward shift.
+        let open = CGSize(width: 951, height: 669)
+        let column = CGRect(x: 867, y: 0, width: 84, height: 124)
+        #expect(ShellView.liveSideStatusCenter(occlusions: [column], screen: open, stripWidth: 84) == nil)
+        #expect(ShellView.sideStatusColumnCenterFallback(stripWidth: 84) == 48)
+        // Regular iPhone: no strip, no centre.
+        let island = CGRect(x: 140, y: 11, width: 122, height: 37)
+        #expect(ShellView.liveSideStatusCenter(occlusions: [island], screen: CGSize(width: 402, height: 874), stripWidth: 0) == nil)
+        #expect(ShellView.sideStatusColumnCenterFallback(stripWidth: 0) == 0)
+    }
+
     @Test func noVerticalBarMeansNoLiveValue() {
         // Regular iPhone portrait: no side strip, the island never counts.
         let island = CGRect(x: 140, y: 11, width: 122, height: 37)

@@ -79,7 +79,7 @@ interface ShellPage {
     __ryosReply: (payload: unknown) => void;
     __ryosEmitOpenRoom: (roomId: string | null) => void;
     __ryosEmitAuthPopupStatus: (status: unknown) => void;
-    __ryosSetSideStatusBarExtent: (extent: unknown, hasCamera?: unknown) => void;
+    __ryosSetSideStatusBarExtent: (extent: unknown, hasCamera?: unknown, center?: unknown) => void;
     __ryosSetBattery: (level: unknown, charging?: unknown, lowPowerMode?: unknown) => void;
     navigator: Record<string, unknown>;
   };
@@ -565,22 +565,27 @@ describe("side status-bar extent", () => {
   test("starts at 0 without a camera until the shell reports a side bar", () => {
     expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(0);
     expect(page.window.ryosDesktop.sideStatusBarHasCamera as unknown).toBe(false);
+    expect(page.window.ryosDesktop.sideStatusBarCenter as unknown).toBe(0);
     expect(page.dispatched).toEqual([]);
   });
 
-  test("each fold change updates both fields and fires one event the web listens for", () => {
+  test("each fold change updates the fields and fires one event the web listens for", () => {
     const set = page.window.__ryosSetSideStatusBarExtent;
-    set(150, true);
-    set(150, true);
-    set(88, false);
-    set(88, false);
-    set(150, true);
-    expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(150);
+    set(160, true, 48);
+    set(160, true, 48);
+    set(124, false, 48);
+    set(124, false, 48);
+    set(160, true, 48);
+    // An older shell passes no centre.
+    set(160, true);
+    expect(page.window.ryosDesktop.sideStatusBarExtent as unknown).toBe(160);
     expect(page.window.ryosDesktop.sideStatusBarHasCamera as unknown).toBe(true);
+    expect(page.window.ryosDesktop.sideStatusBarCenter as unknown).toBe(0);
     expect(page.dispatched).toEqual([
-      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 150, hasCamera: true } },
-      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 88, hasCamera: false } },
-      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 150, hasCamera: true } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 160, hasCamera: true, center: 48 } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 124, hasCamera: false, center: 48 } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 160, hasCamera: true, center: 48 } },
+      { type: SIDE_STATUS_BAR_EXTENT_EVENT, detail: { extent: 160, hasCamera: true, center: 0 } },
     ]);
   });
 
@@ -588,6 +593,7 @@ describe("side status-bar extent", () => {
     expect(shellWebViewSwift).toContain(
       "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent("
     );
+    expect(shellWebViewSwift).toContain("center:\\(Double(sideStatusBarCenter))");
     const bootCase = shellWebViewSwift.slice(
       shellWebViewSwift.indexOf('case "boot-finished":'),
       shellWebViewSwift.indexOf('case "app-active":')
