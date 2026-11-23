@@ -17,13 +17,14 @@
 import { apiHandler } from "../../_utils/api-handler.js";
 import { purgeUserAccount } from "../../_utils/auth/index.js";
 import { verifyPassword, getUserPasswordHash } from "../../_utils/auth/_password.js";
+import { getLinkedGoogleAccountByUsername } from "../../_utils/google-oauth.js";
 import { buildClearAuthCookie } from "../../_utils/_cookie.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 
 interface DeleteAccountRequest {
   confirm: boolean;
   confirmUsername: string;
-  currentPassword: string;
+  currentPassword?: string;
 }
 
 const DELETE_RL_LIMIT = 5;
@@ -91,24 +92,34 @@ export default apiHandler<DeleteAccountRequest>(
       logger.warn("Account delete rate limit check failed", rateLimitError);
     }
 
-    // Verify the current password before destructive deletion.
+    // Verify the current password before destructive deletion (or linked Google
+    // identity for passwordless Google-created accounts).
+    const existingHash = await getUserPasswordHash(redis, username);
     const currentPassword =
       typeof body?.currentPassword === "string" ? body.currentPassword : "";
-    if (!currentPassword) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Current password is required" });
-      return;
-    }
-
-    const existingHash = await getUserPasswordHash(redis, username);
-    const valid = existingHash
-      ? await verifyPassword(currentPassword, existingHash)
-      : false;
-    if (!valid) {
-      logger.warn("Invalid password during account deletion", { username });
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Current password is incorrect" });
-      return;
+    if (existingHash) {
+      if (!currentPassword) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Current password is required" });
+        return;
+      }
+      const valid = await verifyPassword(currentPassword, existingHash);
+      if (!valid) {
+        logger.warn("Invalid password during account deletion", { username });
+        logger.response(401, Date.now() - startTime);
+        res.status(401).json({ error: "Current password is incorrect" });
+        return;
+      }
+    } else {
+      const linkedGoogle = await getLinkedGoogleAccountByUsername(
+        redis,
+        username
+      );
+      if (!linkedGoogle) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Current password is required" });
+        return;
+      }
     }
 
     try {

@@ -367,6 +367,18 @@ export const CONTROL_PANEL_SEARCH_ENTRIES: ControlPanelSearchEntry[] = [
   },
   {
     paneId: "accounts",
+    labelKey: `${CP}.google.title`,
+    keywords: [
+      "google",
+      "gmail",
+      "google calendar",
+      "google contacts",
+      "oauth",
+      "sign in with google",
+    ],
+  },
+  {
+    paneId: "accounts",
     labelKey: `${CP}.telegram.title`,
     keywords: ["telegram", "link", "bot"],
   },

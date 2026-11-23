@@ -1,4 +1,4 @@
-export type ContactSource = "manual" | "vcard" | "telegram" | "ai";
+export type ContactSource = "manual" | "vcard" | "telegram" | "ai" | "google";
 
 export interface ContactValue {
   id: string;
@@ -35,6 +35,9 @@ export interface Contact {
   telegramUserId: string;
   picture: string | null;
   source: ContactSource;
+  googleResourceName?: string;
+  googleEtag?: string;
+  googleSyncedUpdatedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -56,6 +59,9 @@ export interface ContactDraft {
   telegramUserId?: string | null;
   picture?: string | null;
   source?: ContactSource;
+  googleResourceName?: string;
+  googleEtag?: string;
+  googleSyncedUpdatedAt?: number;
 }
 
 export interface ContactImportResult {
@@ -78,6 +84,7 @@ const CONTACT_SOURCES: readonly ContactSource[] = [
   "vcard",
   "telegram",
   "ai",
+  "google",
 ];
 
 function normalizedWhitespace(value: string): string {
@@ -407,6 +414,15 @@ export function createContactFromDraft(
     telegramUserId: normalizedWhitespace(draft.telegramUserId || ""),
     picture: draft.picture ?? null,
     source: draft.source || "manual",
+    ...(draft.googleResourceName
+      ? { googleResourceName: normalizedWhitespace(draft.googleResourceName) }
+      : {}),
+    ...(draft.googleEtag
+      ? { googleEtag: normalizedWhitespace(draft.googleEtag) }
+      : {}),
+    ...(isFiniteNumber(draft.googleSyncedUpdatedAt)
+      ? { googleSyncedUpdatedAt: draft.googleSyncedUpdatedAt }
+      : {}),
     createdAt: now,
     updatedAt: now,
   };
@@ -466,6 +482,9 @@ export function isSerializedContact(value: unknown): value is Contact {
     typeof value.telegramUserId === "string" &&
     (value.picture == null || typeof value.picture === "string") &&
     isContactSource(value.source) &&
+    (value.googleResourceName === undefined || typeof value.googleResourceName === "string") &&
+    (value.googleEtag === undefined || typeof value.googleEtag === "string") &&
+    (value.googleSyncedUpdatedAt === undefined || isFiniteNumber(value.googleSyncedUpdatedAt)) &&
     isFiniteNumber(value.createdAt) &&
     isFiniteNumber(value.updatedAt)
   );
@@ -501,6 +520,11 @@ export function normalizeContact(value: unknown, fallbackNow: number = Date.now(
       telegramUserId: optionalNullableString(value.telegramUserId),
       picture: optionalNullableString(value.picture),
       source: isContactSource(value.source) ? value.source : "manual",
+      googleResourceName: optionalString(value.googleResourceName) || undefined,
+      googleEtag: optionalString(value.googleEtag) || undefined,
+      googleSyncedUpdatedAt: isFiniteNumber(value.googleSyncedUpdatedAt)
+        ? value.googleSyncedUpdatedAt
+        : undefined,
     },
     createdAt
   );
@@ -684,6 +708,17 @@ export function mergeContacts(existing: Contact, incoming: Contact): Contact {
     telegramUserId: incoming.telegramUserId || existing.telegramUserId,
     picture: incoming.picture || existing.picture,
     source: existing.source === "manual" ? existing.source : incoming.source,
+    ...(incoming.googleResourceName || existing.googleResourceName
+      ? { googleResourceName: incoming.googleResourceName || existing.googleResourceName }
+      : {}),
+    ...(incoming.googleEtag || existing.googleEtag
+      ? { googleEtag: incoming.googleEtag || existing.googleEtag }
+      : {}),
+    ...(isFiniteNumber(incoming.googleSyncedUpdatedAt)
+      ? { googleSyncedUpdatedAt: incoming.googleSyncedUpdatedAt }
+      : isFiniteNumber(existing.googleSyncedUpdatedAt)
+        ? { googleSyncedUpdatedAt: existing.googleSyncedUpdatedAt }
+        : {}),
     updatedAt: Date.now(),
   };
 }

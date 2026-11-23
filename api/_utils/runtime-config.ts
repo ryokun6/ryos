@@ -34,6 +34,11 @@ export interface ClientRuntimeConfig {
    * site.
    */
   ieProxyOrigin: string | null;
+  /**
+   * Whether Google OAuth 2.0 (`GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`) is
+   * configured on this server.
+   */
+  googleAuthAvailable: boolean;
 }
 
 function trimTrailingSlash(value: string): string {
@@ -155,6 +160,10 @@ export function buildClientRuntimeConfig(
     pusher: realtimeProvider === "pusher" ? getPusherClientConfig() : null,
     ieLiveBrowserAvailable: isIeLiveBrowserConfigured(),
     ieProxyOrigin: getIeProxyIsolatedOrigin(),
+    googleAuthAvailable: Boolean(
+      process.env.GOOGLE_CLIENT_ID?.trim() &&
+        process.env.GOOGLE_CLIENT_SECRET?.trim()
+    ),
   };
 }
 

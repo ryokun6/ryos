@@ -14,7 +14,13 @@ import { CONTACTS_ANALYTICS, track } from "@/utils/analytics";
 import { helpItems } from "..";
 import { usePersistHydrated } from "@/hooks/usePersistHydrated";
 
-type ContactGroupId = "all" | "imported" | "telegram" | "work" | "birthdays";
+type ContactGroupId =
+  | "all"
+  | "google"
+  | "imported"
+  | "telegram"
+  | "work"
+  | "birthdays";
 
 interface ContactGroup {
   id: ContactGroupId;
@@ -66,6 +72,9 @@ export function useContactsLogic() {
 
   const sortedContacts = useMemo(() => sortContacts(contacts, myContactId), [contacts, myContactId]);
   const contactGroups = useMemo<ContactGroup[]>(() => {
+    const google = sortedContacts.filter((contact) =>
+      Boolean(contact.googleResourceName || contact.source === "google")
+    );
     const imported = sortedContacts.filter((contact) => contact.source === "vcard");
     const telegram = sortedContacts.filter(
       (contact) => Boolean(contact.telegramUsername || contact.telegramUserId)
@@ -81,6 +90,15 @@ export function useContactsLogic() {
         label: t("apps.contacts.groups.all", { defaultValue: "All" }),
         contacts: sortedContacts,
       },
+      ...(google.length > 0
+        ? [
+            {
+              id: "google" as const,
+              label: t("apps.contacts.groups.google", { defaultValue: "Google" }),
+              contacts: google,
+            },
+          ]
+        : []),
       {
         id: "imported",
         label: t("apps.contacts.groups.imported", { defaultValue: "Imported" }),

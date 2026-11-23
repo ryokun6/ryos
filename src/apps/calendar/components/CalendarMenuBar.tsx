@@ -6,8 +6,15 @@ import {
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import type { CalendarView } from "@/stores/useCalendarStore";
 import { useInstanceUndoRedo } from "@/hooks/useUndoRedo";
+import { useGoogleSyncStoreShallow } from "@/stores/useGoogleSyncStore";
+import {
+  disableGoogleFeatureSync,
+  enableGoogleFeatureSync,
+  runGoogleCalendarSync,
+} from "@/sync/googleSyncEngine";
 
 interface CalendarMenuBarProps {
   onClose: () => void;
@@ -54,6 +61,44 @@ export function CalendarMenuBar({
     appName,
   } = useAppMenuBarChrome("calendar");
   const { canUndo, canRedo, undo, redo } = useInstanceUndoRedo(instanceId || "");
+  const { googleConfigured, googleCalendarSyncEnabled, isSyncingGoogleCalendar } =
+    useGoogleSyncStoreShallow((s) => ({
+      googleConfigured: s.configured,
+      googleCalendarSyncEnabled: s.calendarSyncEnabled,
+      isSyncingGoogleCalendar: s.isSyncingCalendar,
+    }));
+
+  const handleToggleGoogleCalendarSync = async () => {
+    if (googleCalendarSyncEnabled) {
+      disableGoogleFeatureSync("calendar");
+      return;
+    }
+    try {
+      const enabled = await enableGoogleFeatureSync("calendar");
+      if (enabled) {
+        toast.success(t("apps.control-panels.google.calendarSyncSyncedToast"));
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("apps.control-panels.google.genericError")
+      );
+    }
+  };
+
+  const handleSyncGoogleCalendarNow = async () => {
+    try {
+      await runGoogleCalendarSync({ mode: "incremental" });
+      toast.success(t("apps.control-panels.google.calendarSyncSyncedToast"));
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("apps.control-panels.google.genericError")
+      );
+    }
+  };
 
   const viewCheckbox = (viewValue: CalendarView, label: string) =>
     ({
@@ -91,6 +136,28 @@ export function CalendarMenuBar({
           }),
           onClick: () => requestCloudSyncDomainCheck("calendar"),
         },
+        ...(googleConfigured
+          ? ([
+              {
+                type: "checkbox",
+                label: t("apps.calendar.menu.googleCalendarSync"),
+                checked: googleCalendarSyncEnabled,
+                onChange: () => void handleToggleGoogleCalendarSync(),
+              },
+              ...(googleCalendarSyncEnabled
+                ? ([
+                    {
+                      type: "action",
+                      label: isSyncingGoogleCalendar
+                        ? t("apps.control-panels.google.syncing")
+                        : t("apps.calendar.menu.syncGoogleCalendarNow"),
+                      disabled: isSyncingGoogleCalendar,
+                      onClick: () => void handleSyncGoogleCalendarNow(),
+                    },
+                  ] as const)
+                : []),
+            ] as const)
+          : []),
         { type: "separator" },
         {
           type: "action",

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { ThemedIcon } from "@/components/shared/ThemedIcon";
+import { GoogleLogoIcon } from "@/components/shared/GoogleLogoIcon";
 import type { AIModel } from "@/types/aiModels";
 import type { AIModelInfo } from "@/types/aiModels";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,10 @@ import {
   OPENAI_TTS_VOICES,
 } from "./ttsVoiceOptions";
 import { RecoveryEmailDialog } from "@/components/dialogs/RecoveryEmailDialog";
+import { GoogleAccountDialog } from "@/components/dialogs/GoogleAccountDialog";
 import type { EmailStatusResponse } from "@/shared/contracts/auth";
+import { useGoogleSyncStoreShallow } from "@/stores/useGoogleSyncStore";
+import { refreshGoogleStatus } from "@/sync/googleSyncEngine";
 import { SecurityPaneContent } from "./SecurityPaneContent";
 import { useControlPanelsTabClasses } from "./useControlPanelsTabClasses";
 import type { ControlPanelPaneId } from "./controlPanelsCategories";
@@ -132,6 +136,29 @@ export function AccountsPaneContent({
 }: AccountsPaneContentProps) {
   const [accountsTab, setAccountsTab] = useState<AccountsPaneTab>("accounts");
   const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
+  const [isGoogleDialogOpen, setIsGoogleDialogOpen] = useState(false);
+  const {
+    configured: googleConfigured,
+    linked: googleLinked,
+    account: googleAccount,
+    isStatusLoading: isGoogleStatusLoading,
+    calendarSyncEnabled: googleCalendarSyncEnabled,
+    contactsSyncEnabled: googleContactsSyncEnabled,
+  } = useGoogleSyncStoreShallow((s) => ({
+    configured: s.configured,
+    linked: s.linked,
+    account: s.account,
+    isStatusLoading: s.isStatusLoading,
+    calendarSyncEnabled: s.calendarSyncEnabled,
+    contactsSyncEnabled: s.contactsSyncEnabled,
+  }));
+
+  useEffect(() => {
+    if (username) {
+      void refreshGoogleStatus();
+    }
+  }, [username]);
+
   const { barClassName, triggerClassName, triggerStyle } =
     useControlPanelsTabClasses();
   const selectedSystemFont =
@@ -185,6 +212,42 @@ export function AccountsPaneContent({
     !username ||
     isEmailStatusLoading ||
     (recoveryEmailStatus !== null && !recoveryEmailStatus.emailConfigured);
+
+  const googleSubtitle = (() => {
+    if (!username) {
+      return t("apps.control-panels.google.description");
+    }
+    if (isGoogleStatusLoading && !googleAccount && !googleLinked) {
+      return t("apps.control-panels.google.checking");
+    }
+    if (!googleConfigured) {
+      return t("apps.control-panels.google.notAvailable");
+    }
+    if (googleLinked && googleAccount) {
+      if (googleCalendarSyncEnabled && googleContactsSyncEnabled) {
+        return t("apps.control-panels.google.linkedSyncingBoth", {
+          email: googleAccount.email,
+        });
+      }
+      if (googleCalendarSyncEnabled) {
+        return t("apps.control-panels.google.linkedSyncingCalendar", {
+          email: googleAccount.email,
+        });
+      }
+      if (googleContactsSyncEnabled) {
+        return t("apps.control-panels.google.linkedSyncingContacts", {
+          email: googleAccount.email,
+        });
+      }
+      return t("apps.control-panels.google.linkedAs", {
+        email: googleAccount.email,
+      });
+    }
+    return t("apps.control-panels.google.description");
+  })();
+
+  const isGoogleActionDisabled =
+    !username || !googleConfigured || isGoogleStatusLoading;
 
   return (
     <div className="control-panels-pref-form control-panels-pref-form-tabbed h-full overflow-y-auto">
@@ -278,6 +341,43 @@ export function AccountsPaneContent({
                   className="h-7"
                 >
                   {emailActionLabel}
+                </Button>
+              </div>
+
+              <div
+                className={cn(
+                  "flex items-center justify-between gap-3",
+                  !username && "opacity-50"
+                )}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div
+                    className={cn(
+                      controlPanelItemIconShell,
+                      "rounded-full bg-white border border-black/15 flex items-center justify-center scale-90 shadow-xs"
+                    )}
+                    aria-hidden="true"
+                  >
+                    <GoogleLogoIcon className="size-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] font-geneva-12 font-medium">
+                      {t("apps.control-panels.google.title")}
+                    </span>
+                    <span className="text-[11px] text-neutral-600 font-geneva-12 truncate">
+                      {googleSubtitle}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  variant="retro"
+                  onClick={() => setIsGoogleDialogOpen(true)}
+                  disabled={isGoogleActionDisabled}
+                  className="h-7"
+                >
+                  {googleLinked
+                    ? t("apps.control-panels.google.manage")
+                    : t("apps.control-panels.google.connect")}
                 </Button>
               </div>
 
@@ -625,6 +725,10 @@ export function AccountsPaneContent({
       <RecoveryEmailDialog
         isOpen={isRecoveryEmailOpen}
         onOpenChange={handleRecoveryEmailOpenChange}
+      />
+      <GoogleAccountDialog
+        isOpen={isGoogleDialogOpen}
+        onClose={() => setIsGoogleDialogOpen(false)}
       />
     </div>
   );

@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
+import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
 
 export interface ChangePasswordSubmitInput {
   currentPassword: string;
@@ -41,6 +42,7 @@ export function ChangePasswordDialog({
   onAnyInputChange,
 }: ChangePasswordDialogProps) {
   const { t } = useTranslation();
+  const hasPassword = useGoogleSyncStore((s) => s.hasPassword);
   const {
     isWindowsTheme,
     isMacOSTheme: isMacTheme,
@@ -104,8 +106,12 @@ export function ChangePasswordDialog({
       }
     : undefined;
 
-  const dialogTitle = t("common.auth.changePassword.title");
-  const dialogDescription = t("common.auth.changePassword.description");
+  const dialogTitle = hasPassword
+    ? t("common.auth.changePassword.title")
+    : t("common.auth.changePassword.setTitle");
+  const dialogDescription = hasPassword
+    ? t("common.auth.changePassword.description")
+    : t("common.auth.changePassword.setDescription");
 
   const handleInputChange = (
     field: "currentPassword" | "newPassword" | "confirmPassword",
@@ -119,7 +125,7 @@ export function ChangePasswordDialog({
     e?.preventDefault();
     if (isLoading) return;
 
-    if (currentPassword.length === 0) {
+    if (hasPassword && currentPassword.length === 0) {
       dispatch({
         type: "setLocalError",
         value: t("common.auth.changePassword.currentPasswordRequired"),
@@ -143,7 +149,7 @@ export function ChangePasswordDialog({
       return;
     }
 
-    if (currentPassword === newPassword) {
+    if (hasPassword && currentPassword === newPassword) {
       dispatch({
         type: "setLocalError",
         value: t("common.auth.changePassword.sameAsCurrent"),
@@ -152,7 +158,7 @@ export function ChangePasswordDialog({
     }
 
     await onSubmit({
-      currentPassword,
+      currentPassword: hasPassword ? currentPassword : "",
       newPassword,
     });
   };
@@ -161,34 +167,36 @@ export function ChangePasswordDialog({
     isLoading ||
     !newPassword.trim() ||
     !confirmPassword.trim() ||
-    !currentPassword.trim();
+    (hasPassword && !currentPassword.trim());
 
   const visibleError = localError || errorMessage;
 
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <div className="space-y-2">
-        <Label
-          className={cn("text-neutral-700", themeFont)}
-          style={themeFontStyle}
-          htmlFor="change-password-current"
-        >
-          {t("common.auth.changePassword.currentPassword")}
-        </Label>
-        <Input
-          id="change-password-current"
-          type="password"
-          autoComplete="current-password"
-          autoFocus
-          value={currentPassword}
-          onChange={(e) =>
-            handleInputChange("currentPassword", e.target.value)
-          }
-          className={cn("shadow-none h-8", themeFont)}
-          style={themeFontStyle}
-          disabled={isLoading}
-        />
-      </div>
+      {hasPassword && (
+        <div className="space-y-2">
+          <Label
+            className={cn("text-neutral-700", themeFont)}
+            style={themeFontStyle}
+            htmlFor="change-password-current"
+          >
+            {t("common.auth.changePassword.currentPassword")}
+          </Label>
+          <Input
+            id="change-password-current"
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+            value={currentPassword}
+            onChange={(e) =>
+              handleInputChange("currentPassword", e.target.value)
+            }
+            className={cn("shadow-none h-8", themeFont)}
+            style={themeFontStyle}
+            disabled={isLoading}
+          />
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label
@@ -202,6 +210,7 @@ export function ChangePasswordDialog({
           id="change-password-new"
           type="password"
           autoComplete="new-password"
+          autoFocus={!hasPassword}
           value={newPassword}
           onChange={(e) => handleInputChange("newPassword", e.target.value)}
           className={cn("shadow-none h-8", themeFont)}
@@ -262,7 +271,9 @@ export function ChangePasswordDialog({
         >
           {isLoading
             ? t("common.auth.changePassword.saving")
-            : t("common.auth.changePassword.submit")}
+            : hasPassword
+              ? t("common.auth.changePassword.submit")
+              : t("common.auth.changePassword.setSubmit")}
         </Button>
       </DialogFooter>
     </form>

@@ -24,10 +24,11 @@ import { issueRecoveryCode } from "../../_utils/auth/_recovery.js";
 import { isEmailConfigured, sendEmail } from "../../_utils/email.js";
 import * as RateLimit from "../../_utils/_rate-limit.js";
 import { verifyPassword, getUserPasswordHash } from "../../_utils/auth/_password.js";
+import { getLinkedGoogleAccountByUsername } from "../../_utils/google-oauth.js";
 
 interface SetEmailRequest {
   email: string;
-  currentPassword: string;
+  currentPassword?: string;
 }
 
 const SET_EMAIL_RL_LIMIT = 5;
@@ -90,24 +91,34 @@ export default apiHandler<SetEmailRequest>(
       logger.warn("Email set rate limit check failed", rateLimitError);
     }
 
+    const existingHash = await getUserPasswordHash(redis, username);
     const currentPassword =
       typeof body?.currentPassword === "string" ? body.currentPassword : "";
-    if (!currentPassword) {
-      logger.response(400, Date.now() - startTime);
-      res.status(400).json({ error: "Current password is required" });
-      return;
-    }
-    const existingHash = await getUserPasswordHash(redis, username);
-    const passwordValid = existingHash
-      ? await verifyPassword(currentPassword, existingHash)
-      : false;
-    if (!passwordValid) {
-      logger.warn("Invalid current password during recovery email change", {
-        username,
-      });
-      logger.response(401, Date.now() - startTime);
-      res.status(401).json({ error: "Current password is incorrect" });
-      return;
+    if (existingHash) {
+      if (!currentPassword) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Current password is required" });
+        return;
+      }
+      const passwordValid = await verifyPassword(currentPassword, existingHash);
+      if (!passwordValid) {
+        logger.warn("Invalid current password during recovery email change", {
+          username,
+        });
+        logger.response(401, Date.now() - startTime);
+        res.status(401).json({ error: "Current password is incorrect" });
+        return;
+      }
+    } else {
+      const linkedGoogle = await getLinkedGoogleAccountByUsername(
+        redis,
+        username
+      );
+      if (!linkedGoogle) {
+        logger.response(400, Date.now() - startTime);
+        res.status(400).json({ error: "Current password is required" });
+        return;
+      }
     }
 
     // Prevent claiming an email already verified by a different account.

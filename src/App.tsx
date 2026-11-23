@@ -29,6 +29,7 @@ import { ScreenSaverOverlay } from "./components/screensavers/ScreenSaverOverlay
 import { DeferredBackgroundChatNotifications } from "./hooks/DeferredBackgroundChatNotifications";
 import { DesktopErrorBoundary } from "@/components/errors/ErrorBoundaries";
 import { DeferredAutoCloudSync } from "@/hooks/useDeferredAutoCloudSync";
+import { DeferredGoogleSync } from "@/hooks/useDeferredGoogleSync";
 import { DeferredAirDropListener } from "@/components/DeferredAirDropListener";
 import { WallpaperAccentRunner } from "@/hooks/WallpaperAccentRunner";
 import { MediaCoreRunner } from "@/hooks/MediaCoreRunner";
@@ -311,6 +312,7 @@ export function App() {
       <SignInRequestHost />
       <DeferredAirDropListener />
       <DeferredAutoCloudSync />
+      <DeferredGoogleSync />
       <DeferredBackgroundChatNotifications />
       <WallpaperAccentRunner />
       <MediaCoreRunner />

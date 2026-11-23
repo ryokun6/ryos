@@ -22,6 +22,7 @@ import {
 } from "@/api/auth";
 import type { EmailStatusResponse } from "@/shared/contracts/auth";
 import { ApiRequestError } from "@/api/core";
+import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
 
 interface RecoveryEmailDialogProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export function RecoveryEmailDialog({
 }: RecoveryEmailDialogProps) {
   const { t } = useTranslation();
   const { isWindowsTheme, isMacOSTheme } = useThemeFlags();
+  const hasPassword = useGoogleSyncStore((s) => s.hasPassword);
 
   const [status, setStatus] = useState<EmailStatusResponse | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
@@ -110,14 +112,17 @@ export function RecoveryEmailDialog({
       setError(t("apps.control-panels.recoveryEmail.invalidEmail"));
       return;
     }
-    if (!currentPassword) {
+    if (hasPassword && !currentPassword) {
       setError(t("apps.control-panels.recoveryEmail.passwordRequired"));
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await setRecoveryEmail({ email, currentPassword });
+      await setRecoveryEmail({
+        email,
+        ...(hasPassword ? { currentPassword } : {}),
+      });
       toast.success(t("apps.control-panels.recoveryEmail.codeSentTitle"), {
         description: t("apps.control-panels.recoveryEmail.codeSentDescription"),
       });
@@ -297,24 +302,28 @@ export function RecoveryEmailDialog({
             style={themeFontStyle}
             disabled={busy || !!notConfigured || loadingStatus}
           />
-          <Label
-            className={cn("text-neutral-700", themeFont)}
-            style={themeFontStyle}
-          >
-            {t("apps.control-panels.recoveryEmail.passwordLabel")}
-          </Label>
-          <Input
-            type="password"
-            autoComplete="current-password"
-            value={passwordInput}
-            onChange={(e) => {
-              setPasswordInput(e.target.value);
-              setError(null);
-            }}
-            className={cn("shadow-none h-8", themeFont)}
-            style={themeFontStyle}
-            disabled={busy || !!notConfigured || loadingStatus}
-          />
+          {hasPassword && (
+            <>
+              <Label
+                className={cn("text-neutral-700", themeFont)}
+                style={themeFontStyle}
+              >
+                {t("apps.control-panels.recoveryEmail.passwordLabel")}
+              </Label>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setError(null);
+                }}
+                className={cn("shadow-none h-8", themeFont)}
+                style={themeFontStyle}
+                disabled={busy || !!notConfigured || loadingStatus}
+              />
+            </>
+          )}
         </form>
       )}
 
@@ -374,7 +383,7 @@ export function RecoveryEmailDialog({
                   !!notConfigured ||
                   loadingStatus ||
                   !emailInput.trim() ||
-                  !passwordInput
+                  (hasPassword && !passwordInput)
             }
             className={cn("h-7 w-full sm:w-auto", themeFont)}
             style={themeFontStyle}

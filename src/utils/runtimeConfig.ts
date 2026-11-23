@@ -14,6 +14,8 @@ export interface ClientRuntimeConfig {
   ieLiveBrowserAvailable?: boolean;
   /** Isolated Internet Explorer proxy origin (`IE_PROXY_ORIGIN`), if any. */
   ieProxyOrigin?: string | null;
+  /** Whether Google OAuth 2.0 is configured on the server. */
+  googleAuthAvailable?: boolean;
 }
 
 declare global {
@@ -122,6 +124,14 @@ export function getRealtimeProvider(): RealtimeProvider {
  */
 export function isIeLiveBrowserAvailable(): boolean {
   return getClientRuntimeConfig().ieLiveBrowserAvailable === true;
+}
+
+export function isGoogleAuthAvailable(): boolean {
+  const runtimeFlag = getClientRuntimeConfig().googleAuthAvailable;
+  if (typeof runtimeFlag === "boolean") {
+    return runtimeFlag;
+  }
+  return import.meta.env.VITE_GOOGLE_AUTH_AVAILABLE === "true";
 }
 
 export function getIeProxyOrigin(): string | null {

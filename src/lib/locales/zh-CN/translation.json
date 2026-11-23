@@ -597,12 +597,6 @@
         "remove": "移除书签",
         "title": "书签"
       },
-      "highlights": {
-        "emptyHint": "阅读时选择一段文字，它将显示在这里。",
-        "emptyTitle": "无高亮",
-        "title": "高亮",
-        "untitled": "高亮"
-      },
       "chineseScript": {
         "original": "原文",
         "simplified": "简体",
@@ -669,6 +663,12 @@
           "description": "系统会自动保存阅读进度，并在下次打开书籍时恢复。",
           "title": "阅读进度"
         }
+      },
+      "highlights": {
+        "emptyHint": "阅读时选择一段文字，它将显示在这里。",
+        "emptyTitle": "无高亮",
+        "title": "高亮",
+        "untitled": "高亮"
       },
       "import": {
         "title": "导入 EPUB"
@@ -993,12 +993,14 @@
         "editEvent": "编辑日程",
         "exportToIcs": "导出日程…",
         "goToToday": "前往今天",
+        "googleCalendarSync": "Google 日历同步",
         "help": "日历帮助",
         "importFromDevice": "从设备导入…",
         "monthView": "月视图",
         "newEvent": "新建日程",
         "showToDoItems": "显示待办事项",
         "syncCalendar": "同步日历",
+        "syncGoogleCalendarNow": "立即同步 Google 日历",
         "weekView": "周视图"
       },
       "name": "日历",
@@ -1637,6 +1639,7 @@
       "groups": {
         "all": "全部",
         "birthdays": "生日",
+        "google": "Google",
         "imported": "已导入",
         "telegram": "Telegram",
         "work": "工作"
@@ -1670,11 +1673,13 @@
       "menu": {
         "about": "关于通讯录",
         "deleteContact": "删除联系人",
+        "googleContactsSync": "Google 通讯录同步",
         "help": "通讯录帮助",
         "importVCard": "导入 vCard…",
         "markAsMine": "标记为我的名片",
         "newContact": "新建联系人",
-        "syncContacts": "同步通讯录"
+        "syncContacts": "同步通讯录",
+        "syncGoogleContactsNow": "立即同步 Google 通讯录"
       },
       "messages": {
         "deleted": "已删除 {{name}}",
@@ -1912,6 +1917,52 @@
         "numbers": "数字：",
         "times": "时间："
       },
+      "google": {
+        "calendarSyncDescription": "与你的主要 Google 日历双向同步",
+        "calendarSyncSyncedToast": "已同步 Google 日历",
+        "calendarSyncTitle": "Google 日历",
+        "checking": "正在检查 Google 账户…",
+        "connect": "连接",
+        "connectedToast": "已连接 Google 账户",
+        "connecting": "正在连接…",
+        "contactsSyncDescription": "与你的 Google 通讯录双向同步",
+        "contactsSyncSyncedToast": "已同步 Google 通讯录",
+        "contactsSyncTitle": "Google 通讯录",
+        "description": "通过 Google 登录并同步日历与通讯录",
+        "disconnect": "断开连接",
+        "disconnectedToast": "已断开 Google 账户连接",
+        "disconnecting": "正在断开连接…",
+        "genericError": "无法完成 Google 请求，请重试。",
+        "lastSyncedAt": "上次同步于 {{time}}",
+        "linkedAs": "已关联为 {{email}}",
+        "linkedSyncingBoth": "{{email}} · 日历与通讯录",
+        "linkedSyncingCalendar": "{{email}} · 日历",
+        "linkedSyncingContacts": "{{email}} · 通讯录",
+        "manage": "管理",
+        "notAvailable": "此服务器无法使用 Google 集成",
+        "notConfigured": "此服务器未配置 Google 集成。",
+        "passwordRequiredToDisconnect": "断开 Google 连接前，请先在“安全性”标签页设置密码，以免无法访问账户。",
+        "prompt": {
+          "calendarDescriptionEmpty": "选择如何开始同步 ryOS 日历与 Google 日历。",
+          "calendarDescriptionWithCount": "你在 ryOS 中有 {{count}} 个本地日程。请选择在与 Google 日历同步前如何处理现有的本地日程。",
+          "calendarDescriptionWithCount_one": "你在 ryOS 中有 {{count}} 个本地日程。请选择在与 Google 日历同步前如何处理现有的本地日程。",
+          "calendarTitle": "同步 Google 日历",
+          "contactsDescriptionEmpty": "选择如何开始同步 ryOS 通讯录与 Google 通讯录。",
+          "contactsDescriptionWithCount": "你在 ryOS 中有 {{count}} 位本地联系人。请选择在与 Google 通讯录同步前如何处理现有的本地联系人。",
+          "contactsDescriptionWithCount_one": "你在 ryOS 中有 {{count}} 位本地联系人。请选择在与 Google 通讯录同步前如何处理现有的本地联系人。",
+          "contactsTitle": "同步 Google 通讯录",
+          "discardButton": "丢弃本地内容",
+          "discardOptionDesc": "移除 ryOS 中的现有本地项目，并用你的 Google 项目替换。",
+          "discardOptionTitle": "丢弃本地内容",
+          "mergeButton": "合并",
+          "mergeOptionDesc": "保留现有本地项目，上传到 Google 并下载你的 Google 项目。",
+          "mergeOptionTitle": "合并本地内容"
+        },
+        "syncNow": "立即同步",
+        "syncedNowToast": "已与 Google 同步",
+        "syncing": "正在同步…",
+        "title": "Google"
+      },
       "help": {
         "aiModel": {
           "description": "选择为“聊天”和“终端 Ryo 助手”提供支持的 AI 模型",
@@ -2037,6 +2088,8 @@
       "recoveryEmailDescription": "添加用于恢复密码的电子邮件地址",
       "recoveryEmailMenu": "恢复邮箱…",
       "recoveryEmailTitle": "恢复邮箱",
+      "replaceAppleLogos": "替换 Apple 标志",
+      "replaceAppleLogosDescription": "菜单栏使用主题光球；关于本机使用 ryOS 图标。在 iOS 外壳中默认开启。",
       "resetAllSettings": "重置所有设置",
       "resetAllSettingsDescription": "这将清除所有已保存的设置并恢复默认值",
       "restore": "恢复",
@@ -2083,6 +2136,7 @@
       "selectScreenSaver": "选择屏幕保护程序",
       "sepia": "深褐色",
       "setPassword": "设定密码…",
+      "setPasswordButton": "设定密码",
       "setPasswordDialog": {
         "description": "设置密码以启用账户恢复。如果您无法再访问账户，可使用此密码获取新令牌。",
         "submitLabel": "设定密码",
@@ -2096,8 +2150,6 @@
       "showBootScreen": "显示启动画面",
       "showResizers": "显示窗口大小调整手柄",
       "showResizersDescription": "突出显示窗口大小调整手柄",
-      "replaceAppleLogos": "替换 Apple 标志",
-      "replaceAppleLogosDescription": "菜单栏使用主题光球；关于本机使用 ryOS 图标。在 iOS 外壳中默认开启。",
       "signUp": "注册",
       "softwareUpdateDescription": "检查是否有较新版本的 ryOS 可供使用",
       "sound": "音效",
@@ -3617,8 +3669,8 @@
         "appleMusicSignOut": "Apple Music",
         "artists": "艺人",
         "backlight": "背光灯",
-        "clicker": "点击声",
         "brickGame": "砖块",
+        "clicker": "点击声",
         "extras": "附加功能",
         "favoriteSongs": "收藏的歌曲",
         "genius": "智选推荐",
@@ -3741,6 +3793,131 @@
         "spanish": "西班牙语"
       }
     },
+    "journal": {
+      "description": "用两种形状留下同一段生活",
+      "drawer": {
+        "features": "功能",
+        "open": "设置",
+        "presets": "预设",
+        "title": "设置"
+      },
+      "features": {
+        "date": "日期",
+        "dateHint": "每一则都有日期。",
+        "mood": "心情指数",
+        "moodHint": "给一天打分数，才看得到趋势。",
+        "off": "关",
+        "on": "开",
+        "reminder": "每日提醒",
+        "reminderHint": "每天提醒你写。",
+        "streak": "连续记录天数",
+        "streakHint": "连续记录了几天。",
+        "weeklyReport": "每周报告",
+        "weeklyReportHint": "每周一份报告，用来帮助反思。"
+      },
+      "generated": {
+        "question": "如果是你，有哪一样最想拿掉？",
+        "ryoPick": "我会拿掉这个"
+      },
+      "help": {
+        "completeAnswer": {
+          "description": "先看到一个工具会交出来的日记：日期、心情指数、连续记录天数、每日提醒。正文用 TextEdit 的编辑器。",
+          "title": "完整答案"
+        },
+        "drawer": {
+          "description": "功能开关、两种结构的预设，和还原演示都在窗口旁边的抽屉里。",
+          "title": "设置"
+        },
+        "featureToggles": {
+          "description": "每一项都在演示抽屉里单独开关。如果没写的那一天不该像欠了什么，就先拿掉连续记录天数。",
+          "title": "逐项拿掉"
+        },
+        "photos": {
+          "description": "演示照片已经在内容里。它们会出现在当天那一页，也出现在散放的片段里。",
+          "title": "照片"
+        },
+        "resetDemo": {
+          "description": "还原演示数据会把样本、开关，和改过的内容回到一开始。",
+          "title": "还原演示"
+        },
+        "twoStructures": {
+          "description": "在演示抽屉选两种结构，同一份日子会并排成每天一页，和散放在同一张纸上的片段。",
+          "title": "两种结构"
+        }
+      },
+      "menu": {
+        "about": "关于日记",
+        "help": "日记帮助",
+        "reset": "还原演示数据"
+      },
+      "mood": {
+        "label": "心情指数",
+        "outOf": "{{score}} / 5",
+        "set": "心情指数 {{score}}"
+      },
+      "name": "日记",
+      "notice": {
+        "restored": "已还原演示数据"
+      },
+      "pageNumber": "第 {{count}} 天",
+      "photo": {
+        "alt": "演示照片"
+      },
+      "presets": {
+        "compare": "两种结构",
+        "freeform": "自由",
+        "journal": "日记"
+      },
+      "reminder": {
+        "label": "每日提醒",
+        "timeLabel": "时间"
+      },
+      "report": {
+        "average": "平均心情 {{score}}",
+        "blurb": "这些理由听起来都很完整。日子本身没有被打分数。",
+        "days": "写了 {{count}} 天",
+        "title": "每周报告"
+      },
+      "sidebar": {
+        "days": "日子",
+        "newJournal": "新日记",
+        "newPage": "新的一天"
+      },
+      "status": {
+        "complete": "完整版本",
+        "kept": "留下的修改："
+      },
+      "streak": {
+        "label": "连续记录天数",
+        "value": "{{count}} 天"
+      },
+      "title": "日记",
+      "toolbar": {
+        "addImage": "添加图片",
+        "addNote": "添加文字",
+        "addSong": "添加歌曲",
+        "delete": "删除",
+        "emptyNote": "笔记",
+        "move": "移到其他日期",
+        "newPage": "新页面",
+        "next": "下一页",
+        "noSongs": "曲库里没有歌曲",
+        "page": "第 {{count}} 页",
+        "pause": "暂停",
+        "photoAlt": "照片",
+        "play": "播放",
+        "previous": "上一页",
+        "reset": "还原演示",
+        "tools": "页面工具",
+        "write": "写点什么…"
+      },
+      "views": {
+        "compare": "合并",
+        "daily": "日子",
+        "freeform": "自由",
+        "generated": "完整答案"
+      }
+    },
     "karaoke": {
       "description": "带同步歌词的卡拉 OK 播放器",
       "emptyLibrary": {
@@ -3817,27 +3994,6 @@
         "shareLinkInvite": "分享此链接，邀请朋友一起加入包房。",
         "start": "开包房"
       },
-      "queue": {
-        "title": "待唱",
-        "empty": "没有排队的歌",
-        "add": "加入队列",
-        "playNext": "下一首播放",
-        "remove": "移除",
-        "open": "队列",
-        "from": "{{name}}",
-        "queued": "已加入队列",
-        "playingNext": "排到下一首",
-        "removed": "已移除",
-        "full": "队列已满",
-        "updateFailed": "无法更新队列",
-        "signIn": "登录才能点歌",
-        "rateLimited": "队列操作太频繁 – 请稍后再试",
-        "notInRoom": "你不在这个房间",
-        "invalidTrack": "这首歌不能加入队列",
-        "openAria": "点歌队列，{{count}} 首待唱",
-        "addSongs": "添加歌曲",
-        "addSongsHint": "搜索后加入队列"
-      },
       "lyrics": {
         "noLyricsFound": "未找到歌词",
         "search": "搜索",
@@ -3859,7 +4015,28 @@
         "view": "显示"
       },
       "name": "卡拉 OK",
-      "noTrack": "尚未加载曲目。请打开 iPod 选择歌曲。"
+      "noTrack": "尚未加载曲目。请打开 iPod 选择歌曲。",
+      "queue": {
+        "add": "加入队列",
+        "addSongs": "添加歌曲",
+        "addSongsHint": "搜索后加入队列",
+        "empty": "没有排队的歌",
+        "from": "{{name}}",
+        "full": "队列已满",
+        "invalidTrack": "这首歌不能加入队列",
+        "notInRoom": "你不在这个房间",
+        "open": "队列",
+        "openAria": "点歌队列，{{count}} 首待唱",
+        "playNext": "下一首播放",
+        "playingNext": "排到下一首",
+        "queued": "已加入队列",
+        "rateLimited": "队列操作太频繁 – 请稍后再试",
+        "remove": "移除",
+        "removed": "已移除",
+        "signIn": "登录才能点歌",
+        "title": "待唱",
+        "updateFailed": "无法更新队列"
+      }
     },
     "maps": {
       "description": "使用 Apple 地图寻找地点",
@@ -5475,131 +5652,6 @@
         "unknownArtist": "未知艺人"
       },
       "title": "Winamp"
-    },
-    "journal": {
-      "description": "用两种形状留下同一段生活",
-      "features": {
-        "date": "日期",
-        "dateHint": "每一则都有日期。",
-        "mood": "心情指数",
-        "moodHint": "给一天打分数，才看得到趋势。",
-        "off": "关",
-        "on": "开",
-        "reminder": "每日提醒",
-        "reminderHint": "每天提醒你写。",
-        "streak": "连续记录天数",
-        "streakHint": "连续记录了几天。",
-        "weeklyReport": "每周报告",
-        "weeklyReportHint": "每周一份报告，用来帮助反思。"
-      },
-      "generated": {
-        "question": "如果是你，有哪一样最想拿掉？",
-        "ryoPick": "我会拿掉这个"
-      },
-      "help": {
-        "completeAnswer": {
-          "description": "先看到一个工具会交出来的日记：日期、心情指数、连续记录天数、每日提醒。正文用 TextEdit 的编辑器。",
-          "title": "完整答案"
-        },
-        "featureToggles": {
-          "description": "每一项都在演示抽屉里单独开关。如果没写的那一天不该像欠了什么，就先拿掉连续记录天数。",
-          "title": "逐项拿掉"
-        },
-        "photos": {
-          "description": "演示照片已经在内容里。它们会出现在当天那一页，也出现在散放的片段里。",
-          "title": "照片"
-        },
-        "resetDemo": {
-          "description": "还原演示数据会把样本、开关，和改过的内容回到一开始。",
-          "title": "还原演示"
-        },
-        "twoStructures": {
-          "description": "在演示抽屉选两种结构，同一份日子会并排成每天一页，和散放在同一张纸上的片段。",
-          "title": "两种结构"
-        },
-        "drawer": {
-          "title": "设置",
-          "description": "功能开关、两种结构的预设，和还原演示都在窗口旁边的抽屉里。"
-        }
-      },
-      "menu": {
-        "about": "关于日记",
-        "help": "日记帮助",
-        "reset": "还原演示数据"
-      },
-      "mood": {
-        "label": "心情指数",
-        "outOf": "{{score}} / 5",
-        "set": "心情指数 {{score}}"
-      },
-      "name": "日记",
-      "notice": {
-        "restored": "已还原演示数据"
-      },
-      "pageNumber": "第 {{count}} 天",
-      "photo": {
-        "alt": "演示照片"
-      },
-      "reminder": {
-        "label": "每日提醒",
-        "timeLabel": "时间"
-      },
-      "report": {
-        "average": "平均心情 {{score}}",
-        "blurb": "这些理由听起来都很完整。日子本身没有被打分数。",
-        "days": "写了 {{count}} 天",
-        "title": "每周报告"
-      },
-      "status": {
-        "complete": "完整版本",
-        "kept": "留下的修改："
-      },
-      "streak": {
-        "label": "连续记录天数",
-        "value": "{{count}} 天"
-      },
-      "title": "日记",
-      "toolbar": {
-        "reset": "还原演示",
-        "tools": "页面工具",
-        "previous": "上一页",
-        "next": "下一页",
-        "page": "第 {{count}} 页",
-        "newPage": "新页面",
-        "addNote": "添加文字",
-        "addImage": "添加图片",
-        "addSong": "添加歌曲",
-        "play": "播放",
-        "pause": "暂停",
-        "noSongs": "曲库里没有歌曲",
-        "emptyNote": "笔记",
-        "write": "写点什么…",
-        "photoAlt": "照片",
-        "delete": "删除",
-        "move": "移到其他日期"
-      },
-      "views": {
-        "compare": "合并",
-        "generated": "完整答案",
-        "daily": "日子",
-        "freeform": "自由"
-      },
-      "drawer": {
-        "title": "设置",
-        "open": "设置",
-        "presets": "预设",
-        "features": "功能"
-      },
-      "sidebar": {
-        "days": "日子",
-        "newJournal": "新日记",
-        "newPage": "新的一天"
-      },
-      "presets": {
-        "journal": "日记",
-        "freeform": "自由",
-        "compare": "两种结构"
-      }
     }
   },
   "common": {
@@ -5696,6 +5748,9 @@
         "newPassword": "新密码",
         "sameAsCurrent": "新密码不能与当前密码相同",
         "saving": "正在保存…",
+        "setDescription": "设置密码以便在不使用 Google 时也能登录。",
+        "setSubmit": "设定密码",
+        "setTitle": "设定密码",
         "submit": "更改密码",
         "title": "更改密码",
         "toastChangedDescription": "您的密码已更新",
@@ -5704,15 +5759,26 @@
         "toastSetTitle": "密码已设置",
         "tooShort": "密码至少需要 8 个字符"
       },
+      "connectingGoogle": "正在连接 Google…",
+      "continueWithGoogle": "通过 Google 继续",
       "createAccount": "创建账户",
       "creatingAccount": "正在创建…",
       "dialogTitle": "登录 ryOS",
       "forgotPassword": "忘记密码？",
+      "googleAutoLinkedDescription": "已通过已验证的恢复邮箱关联到现有 ryOS 账户。",
+      "googleCompleteSignUp": "创建账户",
+      "googleConfirmDescription": "选择一个 ryOS 用户名以完成通过 Google 创建账户。",
+      "googleConfirmTitle": "选择你的用户名",
+      "googleFailed": "无法通过 Google 登录，请重试。",
+      "googleInvalidUsername": "用户名须为 3–20 个字符（字母、数字、下划线或连字符）。",
+      "googleUsernameHint": "3–20 个字符：字母、数字、下划线或连字符。",
+      "googleWelcome": "已作为 {{username}} 登录",
       "logIn": "登录",
       "logOut": "退出登录",
       "logOutDescription": "确定要退出登录吗？",
       "loggingIn": "正在登录…",
       "loginDescription": "登录您的账户",
+      "orDivider": "或",
       "password": "密码",
       "recovery": {
         "back": "返回",
@@ -5760,6 +5826,7 @@
       "about": "关于",
       "aboutApp": "关于{{appName}}",
       "adding": "正在添加…",
+      "back": "返回",
       "cancel": "取消",
       "close": "关闭",
       "confirm": "确认",

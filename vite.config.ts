@@ -132,6 +132,11 @@ export default defineConfig({
     'import.meta.env.VITE_PUSHER_KEY': JSON.stringify(process.env.PUSHER_KEY || ''),
     'import.meta.env.VITE_PUSHER_CLUSTER': JSON.stringify(process.env.PUSHER_CLUSTER || ''),
     'import.meta.env.VITE_REALTIME_PROVIDER': JSON.stringify(process.env.REALTIME_PROVIDER || ''),
+    'import.meta.env.VITE_GOOGLE_AUTH_AVAILABLE': JSON.stringify(
+      Boolean(process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim())
+        ? 'true'
+        : 'false'
+    ),
   },
   // Optimize JSON imports for better performance
   json: {

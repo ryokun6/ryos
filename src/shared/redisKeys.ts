@@ -114,6 +114,12 @@ export const redisKeys = {
     /** Pending password-reset code (hashed) + meta for a user. */
     passwordReset: (username: string) =>
       redisKey("auth", "user", username, "password-reset"),
+    /** Short-lived OAuth 2.0 + PKCE state record (keyed by SHA-256 of state). */
+    googleOAuthState: (stateHash: string) =>
+      redisKey("auth", "google", "oauth-state", stateHash),
+    /** Short-lived verified Google signup session awaiting username confirmation. */
+    googlePendingSignup: (pendingHash: string) =>
+      redisKey("auth", "google", "pending-signup", pendingHash),
   },
   chat: {
     roomIds: () => redisKey("chat", "rooms", "ids"),
@@ -289,6 +295,12 @@ export const redisKeys = {
     /** Set of device tokens that opted into pushes for a (public/IRC) room. */
     pushRoomDevices: (roomId: string) =>
       redisKeyCaseSensitive("integration", "push", "room", roomId, "devices"),
+    /** Google OAuth + sync account record (JSON) keyed by ryOS username. */
+    googleAccountByUsername: (username: string) =>
+      redisKey("integration", "google", "account", "user", username),
+    /** Reverse index: Google OIDC `sub` -> lowercase ryOS username. */
+    googleUsernameBySub: (sub: string) =>
+      redisKeyCaseSensitive("integration", "google", "account", "sub", sub),
   },
   realtime: {
     ticket: (ticketHash: string) => redisKey("realtime", "ticket", ticketHash),
