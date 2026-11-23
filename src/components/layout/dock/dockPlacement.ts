@@ -79,6 +79,44 @@ export function fitSideDockButtonSize(input: {
   return Math.max(0, Math.min(input.buttonSize, room));
 }
 
+/** Margin on each end of a dock icon along the dock (`DockIconButton`). */
+export const SIDE_DOCK_ITEM_MARGIN_PX = 4;
+
+/** Length of a divider along a side dock: 10px padding each end + 1px line. */
+export const SIDE_DOCK_DIVIDER_LENGTH_PX = 21;
+
+/**
+ * Smallest icon the length fit shrinks to. Below it the dock keeps this size
+ * and scrolls inside the strip instead.
+ */
+export const SIDE_DOCK_MIN_BUTTON_PX = 28;
+
+/**
+ * Icon size that lets the whole side dock fit the strip's length: the space
+ * between the top padding (under the live status cluster, which grows with
+ * the Dynamic Island) and the bottom margin. Bar length is
+ * `2 * padding + items * (icon + 2 * margin) + dividers * divider`. Only ever
+ * shrinks the given size, never below `SIDE_DOCK_MIN_BUTTON_PX`. An unknown
+ * or empty length keeps the size.
+ */
+export function fitSideDockButtonLength(input: {
+  stripLength: number | null;
+  buttonSize: number;
+  itemCount: number;
+  dividerCount: number;
+  padding: number;
+}): number {
+  const { stripLength, buttonSize, itemCount, dividerCount, padding } = input;
+  if (stripLength === null || !(stripLength > 0) || itemCount <= 0) {
+    return buttonSize;
+  }
+  const room =
+    stripLength - 2 * padding - dividerCount * SIDE_DOCK_DIVIDER_LENGTH_PX;
+  const fit = Math.floor(room / itemCount - 2 * SIDE_DOCK_ITEM_MARGIN_PX);
+  const floor = Math.min(buttonSize, SIDE_DOCK_MIN_BUTTON_PX);
+  return Math.max(floor, Math.min(buttonSize, fit));
+}
+
 /**
  * Edge where a phone-width window frame drops its 8px padding. A side dock is
  * centered in its strip, so the window runs to the strip edge and the gap to
@@ -105,13 +143,14 @@ export function sideDockHiddenOffset(input: {
 
 /**
  * Strip padding at one end. The dock's top sits `SIDE_DOCK_CLEARANCE_PX`
- * below the status cluster the iOS shell reports in `--side-bar-extent`
- * (150px folded, 88px open). The bottom keeps at least the same margin,
+ * below the status cluster the iOS shell reports in `--side-bar-extent`:
+ * the live bottom of the status column (it follows the Dynamic Island), or
+ * the fixed 150px folded / 104px open before the first reading. The bottom keeps at least the same margin,
  * never less than the home-indicator zone (env safe-area bottom, 34px on
  * both Duo poses), so an overfull dock stays clear of the rounded corner.
- * The dock is
- * capped to the height between them and scrolls past it, so it never grows
- * up into the cluster. The menubar's top safe-area inset is separate and
+ * The icons shrink to fit the height between them
+ * (`fitSideDockButtonLength`); past the minimum icon the dock is capped there
+ * and scrolls, so it never grows up into the cluster. The menubar's top safe-area inset is separate and
  * does not feed this.
  */
 export function sideDockEndPadding(end: "top" | "bottom"): string {

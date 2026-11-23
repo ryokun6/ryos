@@ -118,6 +118,18 @@ final class ShellWebHolderController: UIViewController {
     private var latchedStrip: CGFloat = 0
     private var latchedShortSide: CGFloat = 0
 
+    /// The root view reads the occlusion regions in `updateConstraints()`,
+    /// where UIKit tracks them and calls again when they change (Dynamic
+    /// Island growing or shrinking with a Live Activity).
+    override func loadView() {
+        let tracking = StatusColumnTrackingView()
+        tracking.onOcclusionsChange = { [weak self] in
+            guard let self, !self.applying else { return }
+            self.publishSideStatus(side: self.resolvedSideInset())
+        }
+        view = tracking
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         applyTopInset()
@@ -267,7 +279,91 @@ final class ShellWebHolderController: UIViewController {
             isVerticalBar: strip >= ShellView.sideBarMinimumInset,
             viewSize: display
         )
-        onMeasuredGeometry?(truth.extent, truth.hasCamera)
+        var extent = truth.extent
+        // Live status column bottom wins over the fixed extent; the page puts
+        // the dock 12pt under it and keeps the bottom margin, so the dock
+        // moves down and gets shorter as the island grows. Regular iPhones
+        // (no vertical bar) never get here with a nonzero extent.
+        if extent > 0,
+           let tracking = view as? StatusColumnTrackingView,
+           let live = ShellView.liveSideStatusBottom(
+               occlusions: tracking.currentOcclusionsInWindow(),
+               screen: view.window?.bounds.size ?? display,
+               stripWidth: strip
+           ) {
+            extent = live
+        }
+        onMeasuredGeometry?(extent, truth.hasCamera)
+    }
+}
+
+/// Holder root view that reads the system's occlusion regions (camera,
+/// Dynamic Island, the Duo status column) in window coordinates. Reading
+/// them in `updateConstraints()` makes UIKit run it again when they change;
+/// layout and a slow timer are backstops. Reports only real changes.
+final class StatusColumnTrackingView: UIView {
+    var onOcclusionsChange: (() -> Void)?
+    private var last: [CGRect] = []
+    private var timer: Timer?
+
+    override class var requiresConstraintBasedLayout: Bool { true }
+
+    override func updateConstraints() {
+        read()
+        super.updateConstraints()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        read()
+    }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        timer?.invalidate()
+        timer = nil
+        guard window != nil else { return }
+        setNeedsUpdateConstraints()
+        let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.read() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    /// Active occlusion regions in window (screen) points; [] before iOS
+    /// 27.1 or off-window.
+    func currentOcclusionsInWindow() -> [CGRect] {
+        guard window != nil else { return [] }
+        var frames: [CGRect] = []
+        if #available(iOS 27.1, *) {
+            frames = reservedRegions(kind: .occlusion).map { convert($0.frame, to: nil) }
+        }
+        // Test hook: a launch environment value grows the regions as a Live
+        // Activity grows the island (the Simulator has none to show).
+        // "POINTS" from launch, or "POINTS@SECONDS" after that many seconds.
+        if let growth = Self.testGrowth(), Date() >= growth.after {
+            frames = frames.map { CGRect(x: $0.minX, y: $0.minY, width: $0.width, height: $0.height + growth.points) }
+        }
+        return frames
+    }
+
+    private static let launch = Date()
+
+    private static func testGrowth() -> (points: CGFloat, after: Date)? {
+        guard let raw = ProcessInfo.processInfo.environment["RYOS_TEST_STATUS_COLUMN_GROWTH"] else { return nil }
+        let parts = raw.split(separator: "@")
+        guard let points = Double(parts.first ?? ""), points > 0 else { return nil }
+        let delay = parts.count > 1 ? Double(parts[1]) ?? 0 : 0
+        return (CGFloat(points), launch.addingTimeInterval(delay))
+    }
+
+    private func read() {
+        let frames = currentOcclusionsInWindow()
+        guard frames != last else { return }
+        last = frames
+        let onChange = onOcclusionsChange
+        DispatchQueue.main.async { onChange?() }
     }
 }
 

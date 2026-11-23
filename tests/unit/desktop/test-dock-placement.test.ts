@@ -6,6 +6,10 @@ import {
   SIDE_DOCK_GUTTER_PX,
   SIDE_DOCK_CLEARANCE_PX,
   SIDE_DOCK_MIN_INSET_PX,
+  SIDE_DOCK_DIVIDER_LENGTH_PX,
+  SIDE_DOCK_ITEM_MARGIN_PX,
+  SIDE_DOCK_MIN_BUTTON_PX,
+  fitSideDockButtonLength,
   fitSideDockButtonSize,
   getDockLayout,
   phoneWindowFlushEdge,
@@ -115,6 +119,50 @@ describe("fitSideDockButtonSize", () => {
     expect(
       fitSideDockButtonSize({ stripWidth: 20, buttonSize: 48, crossPadding: 8 }),
     ).toBe(0);
+  });
+});
+
+describe("fitSideDockButtonLength", () => {
+  // Folded Duo: 678pt tall, 34pt bottom margin; 7 icons, 1 divider, 4px padding.
+  const barLength = (size: number, items: number, dividers: number, padding: number) =>
+    2 * padding +
+    items * (size + 2 * SIDE_DOCK_ITEM_MARGIN_PX) +
+    dividers * SIDE_DOCK_DIVIDER_LENGTH_PX;
+
+  test("keeps the icon size while the dock fits under the resting cluster", () => {
+    // Status column bottom 174 → top padding 186.
+    const stripLength = 678 - 186 - 34;
+    expect(
+      fitSideDockButtonLength({ stripLength, buttonSize: 48, itemCount: 7, dividerCount: 1, padding: 4 }),
+    ).toBe(48);
+  });
+
+  test("shrinks the icons when a grown Dynamic Island pushes the top down", () => {
+    // Live Activity: status column bottom 254 → top padding 266.
+    const stripLength = 678 - 266 - 34;
+    const size = fitSideDockButtonLength({ stripLength, buttonSize: 48, itemCount: 7, dividerCount: 1, padding: 4 });
+    expect(size).toBeLessThan(48);
+    expect(barLength(size, 7, 1, 4)).toBeLessThanOrEqual(stripLength);
+    expect(barLength(size + 1, 7, 1, 4)).toBeGreaterThan(stripLength);
+  });
+
+  test("stops at the minimum icon and lets the dock scroll", () => {
+    expect(
+      fitSideDockButtonLength({ stripLength: 120, buttonSize: 48, itemCount: 12, dividerCount: 2, padding: 4 }),
+    ).toBe(SIDE_DOCK_MIN_BUTTON_PX);
+    // Never grows a smaller user size up to the minimum.
+    expect(
+      fitSideDockButtonLength({ stripLength: 120, buttonSize: 20, itemCount: 12, dividerCount: 2, padding: 4 }),
+    ).toBe(20);
+  });
+
+  test("an unmeasured strip keeps the size", () => {
+    expect(
+      fitSideDockButtonLength({ stripLength: null, buttonSize: 48, itemCount: 7, dividerCount: 1, padding: 4 }),
+    ).toBe(48);
+    expect(
+      fitSideDockButtonLength({ stripLength: 0, buttonSize: 48, itemCount: 7, dividerCount: 1, padding: 4 }),
+    ).toBe(48);
   });
 });
 
