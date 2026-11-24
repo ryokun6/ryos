@@ -218,6 +218,12 @@ export interface RyosDesktopApi {
   /** iOS shell: whether the camera is part of that cluster (folded iPhone Duo only). */
   sideStatusBarHasCamera?: boolean;
   /**
+   * iOS shell: centre of the side status column, in CSS px from the screen
+   * edge that holds the strip (about 48 in the 84px Duo strip). 0 or absent
+   * when unknown; the side dock then centres in the strip.
+   */
+  sideStatusBarCenter?: number;
+  /**
    * iOS shell: paint status-bar glyphs dark or light to match the wallpaper
    * behind them. "dark" means dark glyphs.
    */
@@ -258,6 +264,8 @@ export interface RyosBatteryStatus {
 export interface RyosSideStatusBarExtentDetail {
   extent: number;
   hasCamera: boolean;
+  /** Column centre from the strip's screen edge; 0 or absent when unknown. */
+  center?: number;
 }
 
 declare global {

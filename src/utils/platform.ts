@@ -146,6 +146,24 @@ export const SIDE_BAR_EXTENT_VAR = "--side-bar-extent";
 export const SIDE_STATUS_BAR_ATTRIBUTE = "data-side-status-bar";
 
 
+/**
+ * Centre of the side status column, in CSS px from the screen edge that holds
+ * the strip, as the iOS shell measured it. null when the shell reports none
+ * (other shells, older app builds, no side bar).
+ */
+export function getSideStatusBarCenter(): number | null {
+  if (typeof window === "undefined") return null;
+  const px = Number(window.ryosDesktop?.sideStatusBarCenter);
+  return Number.isFinite(px) && px > 0 ? px : null;
+}
+
+/** Calls `onChange` whenever the shell reports new side status-bar geometry. */
+export function subscribeSideStatusBar(onChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(SIDE_STATUS_BAR_EXTENT_EVENT, onChange);
+  return () => window.removeEventListener(SIDE_STATUS_BAR_EXTENT_EVENT, onChange);
+}
+
 function applySideBarExtent(value: unknown): void {
   const px = Number(value);
   const resolved = Number.isFinite(px) && px > 0 ? px : 0;

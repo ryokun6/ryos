@@ -13,6 +13,8 @@ import {
   fitSideDockButtonSize,
   getDockLayout,
   phoneWindowFlushEdge,
+  sideDockCenterFromEdge,
+  sideDockCrossPadding,
   resolveDockLayout,
   sideDockEndPadding,
   sideDockHiddenOffset,
@@ -21,6 +23,7 @@ import { desktopContentBounds } from "../../../src/utils/desktopContentBounds";
 import {
   SIDE_BAR_EXTENT_VAR,
   SIDE_STATUS_BAR_EXTENT_EVENT,
+  getSideStatusBarCenter,
   markIosShellDocument,
 } from "../../../src/utils/platform";
 
@@ -187,6 +190,57 @@ describe("sideDockHiddenOffset", () => {
   });
 });
 
+describe("side dock centre line", () => {
+  // Folded Duo cover: 84pt strip, Aqua dock 48 + 2 * 8 = 64 wide. The shell
+  // measures the status column 48pt from the edge (camera region centre).
+  const stripWidth = 84;
+  const thickness = 64;
+
+  test("lines up with the measured status column, 6px inward of the strip centre", () => {
+    expect(sideDockCenterFromEdge({ stripWidth, thickness, center: 48 })).toBe(48);
+    // Outer padding 12: the content box is 72 wide and the dock centres in
+    // it, 12 + 36 = 48 from the edge; the dock keeps its width.
+    expect(sideDockCrossPadding({ stripWidth, thickness, center: 48 })).toEqual({
+      outer: 12,
+      inner: 0,
+    });
+    // It now keeps 48 - 32 = 16px from the screen edge (10 before).
+    expect(48 - thickness / 2).toBe(16);
+  });
+
+  test("without a measured centre it stays centred in the strip", () => {
+    for (const center of [null, 0, -3, Number.NaN]) {
+      expect(sideDockCenterFromEdge({ stripWidth, thickness, center })).toBe(42);
+      expect(sideDockCrossPadding({ stripWidth, thickness, center })).toEqual({
+        outer: 0,
+        inner: 0,
+      });
+    }
+  });
+
+  test("never pushes the dock past either edge of its strip", () => {
+    expect(sideDockCenterFromEdge({ stripWidth, thickness, center: 80 })).toBe(52);
+    expect(sideDockCenterFromEdge({ stripWidth, thickness, center: 10 })).toBe(32);
+    expect(sideDockCrossPadding({ stripWidth, thickness, center: 10 })).toEqual({
+      outer: 0,
+      inner: 20,
+    });
+    // A dock as wide as the strip stays centred.
+    expect(sideDockCenterFromEdge({ stripWidth, thickness: 90, center: 48 })).toBe(42);
+  });
+
+  test("the hidden dock still clears the screen edge from the moved centre", () => {
+    const centerFromEdge = sideDockCenterFromEdge({ stripWidth, thickness, center: 48 });
+    const right = sideDockHiddenOffset({ placement: "right", stripWidth, thickness, centerFromEdge });
+    expect(right).toBeGreaterThanOrEqual(centerFromEdge + thickness / 2);
+    expect(sideDockHiddenOffset({ placement: "left", stripWidth, thickness, centerFromEdge })).toBe(-right);
+    // Without a centre the distance is what it always was.
+    expect(sideDockHiddenOffset({ placement: "right", stripWidth, thickness })).toBe(
+      Math.ceil((stripWidth + thickness) / 2) + 10,
+    );
+  });
+});
+
 describe("phoneWindowFlushEdge", () => {
   test("phone-width windows drop their padding on the side-dock edge only", () => {
     expect(phoneWindowFlushEdge(466, layoutFor(466, { left: 0, right: 84 }))).toBe(
@@ -290,6 +344,18 @@ describe("iOS shell side status-bar extent", () => {
 
     emit({ extent: "bogus" });
     expect(cssVars.get(SIDE_BAR_EXTENT_VAR)).toBe("0px");
+  });
+
+  test("reads the shell's status column centre, null when unknown", () => {
+    const bridge = (g.window as { ryosDesktop: { sideStatusBarCenter?: unknown } })
+      .ryosDesktop;
+    expect(getSideStatusBarCenter()).toBeNull();
+    bridge.sideStatusBarCenter = 48;
+    expect(getSideStatusBarCenter()).toBe(48);
+    bridge.sideStatusBarCenter = 0;
+    expect(getSideStatusBarCenter()).toBeNull();
+    bridge.sideStatusBarCenter = "bogus";
+    expect(getSideStatusBarCenter()).toBeNull();
   });
 
   test("a shell without the property reads 0", () => {

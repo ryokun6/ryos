@@ -73,8 +73,8 @@ struct ShellWebView: UIViewControllerRepresentable {
         context.coordinator.attach(webView)
         ShellRouter.shared.attach(webView)
         BatteryBridgeController.shared.attach(webView)
-        holder.onMeasuredGeometry = { [weak coordinator = context.coordinator] extent, camera in
-            coordinator?.applyMeasuredSideStatus(extent, hasCamera: camera)
+        holder.onMeasuredGeometry = { [weak coordinator = context.coordinator] extent, camera, center in
+            coordinator?.applyMeasuredSideStatus(extent, hasCamera: camera, center: center)
         }
         return holder
     }
@@ -97,8 +97,9 @@ struct ShellWebView: UIViewControllerRepresentable {
 /// the representable can see.
 final class ShellWebHolderController: UIViewController {
     var onLayout: (() -> Void)?
-    /// Side-dock extent and camera flag, from this view's own safe area.
-    var onMeasuredGeometry: ((CGFloat, Bool) -> Void)?
+    /// Side-dock extent, camera flag and status column centre (points from
+    /// the strip's screen edge), from this view's own safe area.
+    var onMeasuredGeometry: ((CGFloat, Bool, CGFloat) -> Void)?
     /// Geometry inset (the Duo band, or an iPad status bar the system did not
     /// report). The window controls can only raise it.
     var minimumTopInset: CGFloat = 0 {
@@ -280,20 +281,24 @@ final class ShellWebHolderController: UIViewController {
             viewSize: display
         )
         var extent = truth.extent
+        var center: CGFloat = 0
         // Live status column bottom wins over the fixed extent; the page puts
         // the dock 12pt under it and keeps the bottom margin, so the dock
         // moves down and gets shorter as the island grows. Regular iPhones
         // (no vertical bar) never get here with a nonzero extent.
-        if extent > 0,
-           let tracking = view as? StatusColumnTrackingView,
-           let live = ShellView.liveSideStatusBottom(
-               occlusions: tracking.currentOcclusionsInWindow(),
-               screen: view.window?.bounds.size ?? display,
-               stripWidth: strip
-           ) {
-            extent = live
+        if extent > 0 {
+            let occlusions = (view as? StatusColumnTrackingView)?.currentOcclusionsInWindow() ?? []
+            let screen = view.window?.bounds.size ?? display
+            if let live = ShellView.liveSideStatusBottom(occlusions: occlusions, screen: screen, stripWidth: strip) {
+                // The cover's region reaches well below the drawn pill; halve
+                // the visible gap there (see `coverDockGapReduction`).
+                extent = truth.hasCamera ? live - ShellView.coverDockGapReduction : live
+            }
+            // The dock's centre line follows the status column.
+            center = ShellView.liveSideStatusCenter(occlusions: occlusions, screen: screen, stripWidth: strip)
+                ?? ShellView.sideStatusColumnCenterFallback(stripWidth: strip)
         }
-        onMeasuredGeometry?(extent, truth.hasCamera)
+        onMeasuredGeometry?(extent, truth.hasCamera, center)
     }
 }
 
@@ -377,6 +382,7 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
     /// evaluations land before the page's bridge exists.
     private var sideStatusBarExtent: CGFloat = 0
     private var sideStatusBarHasCamera = false
+    private var sideStatusBarCenter: CGFloat = 0
     /// Held until the page's file picker finishes. WebKit waits on the
     /// completion handler, so dropping this early cancels the pick.
     private var fileOpenPanel: FileOpenPanel?
@@ -400,10 +406,12 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
 
     /// First measurement installs the document-start seed and loads. Later
     /// ones (a fold, a rotation) push the same contract to the live page.
-    func applyMeasuredSideStatus(_ extent: CGFloat, hasCamera: Bool) {
+    func applyMeasuredSideStatus(_ extent: CGFloat, hasCamera: Bool, center: CGFloat) {
         let changed = extent != sideStatusBarExtent || hasCamera != sideStatusBarHasCamera
+            || center != sideStatusBarCenter
         sideStatusBarExtent = extent
         sideStatusBarHasCamera = hasCamera
+        sideStatusBarCenter = center
         if !didStartLoad {
             didStartLoad = true
             installPreludeAndLoad()
@@ -418,7 +426,8 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         let content = webView.configuration.userContentController
         content.removeAllUserScripts()
         let prelude = "window.__ryosInitialSideStatusBar="
-            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera)};"
+            + "{extent:\(Double(sideStatusBarExtent)),hasCamera:\(sideStatusBarHasCamera),"
+            + "center:\(Double(sideStatusBarCenter))};"
             + BatteryBridgeController.shared.preludeScript
         content.addUserScript(
             WKUserScript(source: prelude, injectionTime: .atDocumentStart, forMainFrameOnly: true)
@@ -437,8 +446,9 @@ final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptM
         guard let webView else { return }
         let value = Double(sideStatusBarExtent)
         let camera = sideStatusBarHasCamera
+        let center = Double(sideStatusBarCenter)
         webView.evaluateJavaScript(
-            "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent(\(value),\(camera))",
+            "window.__ryosSetSideStatusBarExtent && window.__ryosSetSideStatusBarExtent(\(value),\(camera),\(center))",
             completionHandler: nil
         )
     }
