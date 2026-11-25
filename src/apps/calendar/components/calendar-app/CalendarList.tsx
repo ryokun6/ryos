@@ -2,18 +2,20 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
 import type { CalendarGroup } from "@/stores/useCalendarStore";
-import { EVENT_COLOR_MAP } from "./calendarAppConstants";
+import { getCalendarColorVisuals } from "./calendarAppConstants";
 
 export function CalendarList({
   calendars,
   onToggle,
   isMacOSTheme,
   isSystem7Theme,
+  isDarkMode = false,
 }: {
   calendars: CalendarGroup[];
   onToggle: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  isDarkMode?: boolean;
 }) {
   const { t } = useTranslation();
   const useGeneva = isMacOSTheme || isSystem7Theme;
@@ -39,17 +41,21 @@ export function CalendarList({
           {t("apps.calendar.sidebar.calendars")}
         </div>
       )}
-      {calendars.map((cal) => (
-        <button
-          key={cal.id}
-          type="button"
-          onClick={() => onToggle(cal.id)}
-          className="flex items-center gap-1.5 w-full px-2 py-1 rounded hover:bg-black/5 transition-colors"
-        >
-          <AquaCheckbox checked={cal.visible} color={EVENT_COLOR_MAP[cal.color] || EVENT_COLOR_MAP.blue} />
-          <span className={cn("text-[11px] truncate", useGeneva && "font-geneva-12")}>{cal.name}</span>
-        </button>
-      ))}
+      {calendars.map((cal) => {
+        const swatch = getCalendarColorVisuals(cal.color, isDarkMode).swatch;
+        return (
+          <button
+            key={cal.id}
+            type="button"
+            onClick={() => onToggle(cal.id)}
+            className="flex items-center gap-1.5 w-full px-2 py-1 rounded hover:bg-black/5 transition-colors"
+            title={cal.name}
+          >
+            <AquaCheckbox checked={cal.visible} color={swatch} />
+            <span className={cn("text-[11px] truncate", useGeneva && "font-geneva-12")}>{cal.name}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }

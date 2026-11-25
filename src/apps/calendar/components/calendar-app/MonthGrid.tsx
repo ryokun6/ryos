@@ -7,8 +7,7 @@ import {
 import type { CalendarDayCell } from "../../hooks/useCalendarLogic";
 import { osSeparatorBorderClassName } from "@/components/shared/osThemePrimitives";
 import {
-  EVENT_COLOR_LIGHT,
-  EVENT_COLOR_MAP,
+  getCalendarColorVisuals,
   getEventOpacity,
   TODAY_RED,
   TODAY_RED_XP,
@@ -16,10 +15,27 @@ import {
 } from "./calendarAppConstants";
 
 export function MonthGrid({
-  calendarGrid, selectedEventId, onDateClick, onDateDoubleClick, onEventClick, onEventDoubleClick, isWindowsTheme, searchQuery, narrowDayNames,
+  calendarGrid,
+  selectedEventId,
+  onDateClick,
+  onDateDoubleClick,
+  onEventClick,
+  onEventDoubleClick,
+  isWindowsTheme,
+  isDarkMode = false,
+  searchQuery,
+  narrowDayNames,
 }: {
-  calendarGrid: CalendarDayCell[][]; selectedEventId: string | null; onDateClick: (date: string) => void; onDateDoubleClick: (date: string) => void;
-  onEventClick: (event: CalendarEvent) => void; onEventDoubleClick: (event: CalendarEvent) => void; isWindowsTheme: boolean; searchQuery: string; narrowDayNames: string[];
+  calendarGrid: CalendarDayCell[][];
+  selectedEventId: string | null;
+  onDateClick: (date: string) => void;
+  onDateDoubleClick: (date: string) => void;
+  onEventClick: (event: CalendarEvent) => void;
+  onEventDoubleClick: (event: CalendarEvent) => void;
+  isWindowsTheme: boolean;
+  isDarkMode?: boolean;
+  searchQuery: string;
+  narrowDayNames: string[];
 }) {
   const lastEventTapRef = useRef<{ id: string; time: number } | null>(null);
   const lastDateTapRef = useRef<{ id: string; time: number } | null>(null);
@@ -49,6 +65,13 @@ export function MonthGrid({
     }
   }, [onDateClick, onDateDoubleClick]);
 
+  const rowBorderColor = isDarkMode ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
+  const selectedCellBg = isDarkMode
+    ? "rgba(255,255,255,0.08)"
+    : isWindowsTheme
+      ? "rgba(0,0,0,0.08)"
+      : "rgba(0,0,0,0.06)";
+
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className={`grid grid-cols-7 border-b ${osSeparatorBorderClassName()}`}>
@@ -67,11 +90,11 @@ export function MonthGrid({
       </div>
       <div className="flex-1 grid grid-rows-6">
         {calendarGrid.map((week, wi) => (
-          <div key={wi} className="grid grid-cols-7 border-b" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
+          <div key={wi} className="grid grid-cols-7 border-b" style={{ borderColor: rowBorderColor }}>
             {week.map((cell) => (
               <button key={cell.date} type="button" onClick={() => handleDateTap(cell.date)}
                 className="flex flex-col items-start p-0.5 min-h-[40px] relative transition-colors select-none overflow-hidden"
-                style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? (isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)") : "transparent" }}
+                style={{ opacity: cell.isCurrentMonth ? 1 : 0.3, backgroundColor: cell.isSelected ? selectedCellBg : "transparent" }}
               >
                 <span className="text-[10px] font-medium self-end mr-0.5"
                   style={{ width: 18, height: 18, lineHeight: "18px", textAlign: "center", borderRadius: "50%", display: "inline-block",
@@ -79,6 +102,7 @@ export function MonthGrid({
                 >{cell.day}</span>
                 <div className="flex flex-col gap-px mt-px w-full">
                   {cell.events.slice(0, 2).map((ev) => {
+                    const visuals = getCalendarColorVisuals(ev.color, isDarkMode);
                     const isAllDayRange = !ev.startTime;
                     const rangeEndDate = getCalendarEventEndDate(ev);
                     const continuesFromPreviousDay = isAllDayRange && ev.date < cell.date;
@@ -90,8 +114,8 @@ export function MonthGrid({
                     return (
                       <button key={ev.id} type="button" onClick={(e) => handleEventTap(ev, e)}
                         className="text-[8px] truncate rounded px-0.5 leading-snug w-full text-left"
-                        style={{ backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue, color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                          border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
+                        style={{ backgroundColor: visuals.wash, color: visuals.text,
+                          border: selectedEventId === ev.id ? `1px solid ${visuals.accent}` : "1px solid transparent",
                           borderRadius: `${continuesFromPreviousDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesToNextDay ? 0 : 3}px ${continuesFromPreviousDay ? 0 : 3}px`,
                           marginLeft: continuesFromPreviousDay ? "-2px" : undefined,
                           marginRight: continuesToNextDay ? "-2px" : undefined,

@@ -23,6 +23,8 @@ export interface TimedEventBlockProps {
   /** rgba / hex background wash */
   washColor: string;
   accentColor: string;
+  /** Optional contrast-adjusted foreground color for time labels (defaults to accentColor). */
+  textColor?: string;
   blockOpacity: number;
   minHeightPx: number;
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
@@ -46,6 +48,7 @@ export function TimedEventBlock({
   useGeneva,
   washColor,
   accentColor,
+  textColor,
   blockOpacity,
   minHeightPx,
   onUpdateEvent,
@@ -326,7 +329,7 @@ export function TimedEventBlock({
                   "text-[10px] font-semibold shrink-0 whitespace-nowrap",
                   useGeneva && "font-geneva-12"
                 )}
-                style={{ color: accentColor }}
+                style={{ color: textColor || accentColor }}
               >
                 {display.startTime}
               </span>
@@ -339,7 +342,7 @@ export function TimedEventBlock({
                   "text-[11px] font-semibold shrink-0 whitespace-nowrap",
                   useGeneva && "font-geneva-12"
                 )}
-                style={{ color: accentColor }}
+                style={{ color: textColor || accentColor }}
               >
                 {display.startTime}
                 {display.endTime ? ` – ${display.endTime}` : ""}

@@ -1,11 +1,16 @@
-import type { CalendarEvent } from "@/stores/useCalendarStore";
+import type { CalendarEvent, EventColor } from "@/stores/useCalendarStore";
+import {
+  PRESET_EVENT_COLOR_HEX,
+  resolveCalendarColorVisuals,
+  type CalendarColorVisuals,
+} from "@/shared/calendarColors";
 
 export const EVENT_COLOR_MAP: Record<string, string> = {
-  blue: "#4A90D9",
-  red: "#D94A4A",
-  green: "#5AB55A",
-  orange: "#E89B3E",
-  purple: "#9B59B6",
+  blue: PRESET_EVENT_COLOR_HEX.blue,
+  red: PRESET_EVENT_COLOR_HEX.red,
+  green: PRESET_EVENT_COLOR_HEX.green,
+  orange: PRESET_EVENT_COLOR_HEX.orange,
+  purple: PRESET_EVENT_COLOR_HEX.purple,
 };
 
 export const EVENT_COLOR_LIGHT: Record<string, string> = {
@@ -15,6 +20,13 @@ export const EVENT_COLOR_LIGHT: Record<string, string> = {
   orange: "rgba(232, 155, 62, 0.15)",
   purple: "rgba(155, 89, 182, 0.15)",
 };
+
+export function getCalendarColorVisuals(
+  color: EventColor | string | null | undefined,
+  isDarkMode: boolean = false
+): CalendarColorVisuals {
+  return resolveCalendarColorVisuals(color, { isDarkMode });
+}
 
 export const HOUR_START = 0;
 export const HOUR_END = 24;

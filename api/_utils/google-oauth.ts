@@ -83,6 +83,8 @@ export interface StoredGoogleAccountRecord {
   linkedAt: number;
   updatedAt: number;
   calendarSyncToken?: string | null;
+  calendarSyncTokens?: Record<string, string> | null;
+  calendarSyncSchemaVersion?: number;
   calendarLastSyncedAt?: number | null;
   contactsSyncToken?: string | null;
   contactsLastSyncedAt?: number | null;

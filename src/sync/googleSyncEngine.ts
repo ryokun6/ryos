@@ -15,7 +15,11 @@ import type {
   GoogleSyncFeature,
   GoogleSyncedCalendarEvent,
 } from "@/shared/contracts/google";
-import { useCalendarStore, type CalendarEvent } from "@/stores/useCalendarStore";
+import {
+  useCalendarStore,
+  type CalendarEvent,
+  type CalendarGroup,
+} from "@/stores/useCalendarStore";
 import { useChatsStore } from "@/stores/useChatsStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
@@ -30,7 +34,14 @@ const MAX_UPDATES_PER_BATCH = 200;
 let inFlightCalendarSync: Promise<GoogleCalendarSyncResponse | null> | null = null;
 let inFlightContactsSync: Promise<GoogleContactsSyncResponse | null> | null = null;
 
-export function calendarEventNeedsGooglePush(event: CalendarEvent): boolean {
+export function calendarEventNeedsGooglePush(
+  event: CalendarEvent,
+  calendars?: readonly CalendarGroup[]
+): boolean {
+  if (calendars && event.calendarId) {
+    const cal = calendars.find((c) => c.id === event.calendarId);
+    if (cal?.readOnly) return false;
+  }
   if (!event.googleEventId) return true;
   if (event.googleSyncedUpdatedAt === undefined) return true;
   return event.updatedAt > event.googleSyncedUpdatedAt;
@@ -58,6 +69,9 @@ function toSyncedCalendarEvent(event: CalendarEvent): GoogleSyncedCalendarEvent 
     updatedAt: event.updatedAt,
     googleEventId: event.googleEventId,
     googleCalendarId: event.googleCalendarId,
+    ...(event.googleColorId !== undefined
+      ? { googleColorId: event.googleColorId }
+      : {}),
     googleEtag: event.googleEtag,
     googleRecurringEventId: event.googleRecurringEventId,
     googleSyncedUpdatedAt: event.googleSyncedUpdatedAt,
@@ -171,7 +185,7 @@ export async function runGoogleCalendarSync(options?: {
     try {
       const calState = useCalendarStore.getState();
       const dirtyEvents = calState.events
-        .filter(calendarEventNeedsGooglePush)
+        .filter((ev) => calendarEventNeedsGooglePush(ev, calState.calendars))
         .slice(0, MAX_UPDATES_PER_BATCH)
         .map(toSyncedCalendarEvent);
       const deletions = calState.pendingGoogleDeletions.slice(
@@ -288,7 +302,14 @@ export async function applyInitialGoogleSyncChoice(
       useCalendarStore.getState().discardAllLocalEventsForGoogleSync();
     }
     useGoogleSyncStore.getState().setCalendarSyncEnabled(true, true);
-    await runGoogleCalendarSync({ mode: "reset_pull" });
+    try {
+      await runGoogleCalendarSync({ mode: "reset_pull" });
+    } catch (err) {
+      if (useCalendarStore.getState().calendars.length === 0) {
+        useCalendarStore.getState().detachGoogleCalendarMetadata();
+      }
+      throw err;
+    }
     return;
   }
 

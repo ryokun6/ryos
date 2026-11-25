@@ -8,8 +8,7 @@ import {
 } from "../../hooks/useTimeScaleGestures";
 import { TimedEventBlock } from "../TimedEventBlock";
 import {
-  EVENT_COLOR_LIGHT,
-  EVENT_COLOR_MAP,
+  getCalendarColorVisuals,
   getEventOpacity,
   HOUR_END,
   HOUR_START,
@@ -32,6 +31,7 @@ export function DayTimeGrid({
   isWindowsTheme,
   isMacOSTheme,
   isSystem7Theme,
+  isDarkMode = false,
   searchQuery,
   hourLabels,
   hourHeight,
@@ -47,6 +47,7 @@ export function DayTimeGrid({
   isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  isDarkMode?: boolean;
   searchQuery: string;
   hourLabels: string[];
   hourHeight: number;
@@ -114,26 +115,34 @@ export function DayTimeGrid({
   }, []);
 
   const totalHours = HOUR_END - HOUR_START;
+  const hourRowBorderColor = isDarkMode
+    ? "rgba(255,255,255,0.07)"
+    : isWindowsTheme
+      ? "rgba(0,0,0,0.08)"
+      : "rgba(0,0,0,0.06)";
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-w-0">
       {allDayEvents.length > 0 && (
         <div className={cn("px-2 py-1 border-b flex flex-col gap-0.5", osSeparatorBorderClassName())}>
-          {allDayEvents.map((ev) => (
-            <button
-              key={ev.id} type="button"
-              onClick={() => handleEventTap(ev)}
-              className="text-xs truncate rounded px-2 py-0.5 text-left"
-              style={{
-                backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
-                border: selectedEventId === ev.id ? `1px solid ${EVENT_COLOR_MAP[ev.color]}` : "1px solid transparent",
-                opacity: getEventOpacity(ev, searchQuery),
-              }}
-            >
-              {ev.title}
-            </button>
-          ))}
+          {allDayEvents.map((ev) => {
+            const visuals = getCalendarColorVisuals(ev.color, isDarkMode);
+            return (
+              <button
+                key={ev.id} type="button"
+                onClick={() => handleEventTap(ev)}
+                className="text-xs truncate rounded px-2 py-0.5 text-left"
+                style={{
+                  backgroundColor: visuals.wash,
+                  color: visuals.text,
+                  border: selectedEventId === ev.id ? `1px solid ${visuals.accent}` : "1px solid transparent",
+                  opacity: getEventOpacity(ev, searchQuery),
+                }}
+              >
+                {ev.title}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -156,34 +165,41 @@ export function DayTimeGrid({
                 key={hour}
                 type="button"
                 onClick={() => onTimeSlotClick(date, hour)}
-                className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
+                className={cn(
+                  "absolute left-0 right-0 border-t transition-colors",
+                  isDarkMode ? "hover:bg-white/[0.03]" : "hover:bg-black/[0.02]"
+                )}
                 style={{
                   top: (hour - HOUR_START) * hourHeight,
                   height: hourHeight,
-                  borderColor: isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                  borderColor: hourRowBorderColor,
                 }}
               />
             ))}
 
-            {timedEvents.map((ev) => (
-              <TimedEventBlock
-                key={ev.id}
-                event={ev}
-                hourHeight={hourHeight}
-                hourStart={HOUR_START}
-                hourEnd={HOUR_END}
-                selectedEventId={selectedEventId}
-                isMacOSTheme={isMacOSTheme}
-                useGeneva={useGeneva}
-                washColor={EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue}
-                accentColor={EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}
-                blockOpacity={getEventOpacity(ev, searchQuery)}
-                minHeightPx={22}
-                onUpdateEvent={onUpdateEvent}
-                onEventClick={handleEventTap}
-                timeLabelMode="day"
-              />
-            ))}
+            {timedEvents.map((ev) => {
+              const visuals = getCalendarColorVisuals(ev.color, isDarkMode);
+              return (
+                <TimedEventBlock
+                  key={ev.id}
+                  event={ev}
+                  hourHeight={hourHeight}
+                  hourStart={HOUR_START}
+                  hourEnd={HOUR_END}
+                  selectedEventId={selectedEventId}
+                  isMacOSTheme={isMacOSTheme}
+                  useGeneva={useGeneva}
+                  washColor={visuals.wash}
+                  accentColor={visuals.accent}
+                  textColor={visuals.text}
+                  blockOpacity={getEventOpacity(ev, searchQuery)}
+                  minHeightPx={22}
+                  onUpdateEvent={onUpdateEvent}
+                  onEventClick={handleEventTap}
+                  timeLabelMode="day"
+                />
+              );
+            })}
 
             {isToday && (() => {
               const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;

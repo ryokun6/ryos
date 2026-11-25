@@ -11,6 +11,7 @@ export function TrayDetails({
   isMacOSTheme,
   isSystem7Theme,
   isWindowsTheme,
+  isDarkMode = false,
   onUpdateEvent,
   onDeleteEvent,
   onUpdateTodo,
@@ -31,6 +32,7 @@ export function TrayDetails({
           isMacOSTheme={isMacOSTheme}
           isSystem7Theme={isSystem7Theme}
           isWindowsTheme={isWindowsTheme}
+          isDarkMode={isDarkMode}
           locale={i18n.language}
           t={t}
           onUpdate={onUpdateEvent}
@@ -50,6 +52,7 @@ export function TrayDetails({
           isMacOSTheme={isMacOSTheme}
           isSystem7Theme={isSystem7Theme}
           isWindowsTheme={isWindowsTheme}
+          isDarkMode={isDarkMode}
           locale={i18n.language}
           t={t}
           onToggle={onToggleTodo}

@@ -14,8 +14,7 @@ import {
 } from "../../hooks/useTimeScaleGestures";
 import { TimedEventBlock } from "../TimedEventBlock";
 import {
-  EVENT_COLOR_LIGHT,
-  EVENT_COLOR_MAP,
+  getCalendarColorVisuals,
   getEventOpacity,
   HOUR_END,
   HOUR_START,
@@ -35,6 +34,7 @@ export function WeekTimeGrid({
   isWindowsTheme,
   isMacOSTheme,
   isSystem7Theme,
+  isDarkMode = false,
   searchQuery,
   hourLabels,
   hourHeight,
@@ -50,6 +50,7 @@ export function WeekTimeGrid({
   isWindowsTheme: boolean;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  isDarkMode?: boolean;
   searchQuery: string;
   hourLabels: string[];
   hourHeight: number;
@@ -113,6 +114,16 @@ export function WeekTimeGrid({
 
   const MIN_DAY_COL = 52;
   const MIN_WEEK_WIDTH = 48 + 7 * MIN_DAY_COL;
+  const colBorder = isDarkMode
+    ? "1px solid rgba(255,255,255,0.06)"
+    : isWindowsTheme
+      ? "1px solid rgba(0,0,0,0.06)"
+      : "1px solid rgba(0,0,0,0.04)";
+  const hourRowBorderColor = isDarkMode
+    ? "rgba(255,255,255,0.07)"
+    : isWindowsTheme
+      ? "rgba(0,0,0,0.08)"
+      : "rgba(0,0,0,0.06)";
 
   return (
     <div ref={horizontalScrollRef} className="flex-1 overflow-x-auto overflow-y-hidden">
@@ -160,6 +171,7 @@ export function WeekTimeGrid({
             {weekDates.map((day) => (
               <div key={day.date} className="flex-1 flex flex-col gap-px py-px px-px min-w-0">
                 {day.allDayEvents.map((ev) => {
+                  const visuals = getCalendarColorVisuals(ev.color, isDarkMode);
                   const rangeEndDate = getCalendarEventEndDate(ev);
                   const continuesFromPreviousDay = ev.date < day.date;
                   const continuesToNextDay = rangeEndDate > day.date;
@@ -176,10 +188,10 @@ export function WeekTimeGrid({
                       onClick={() => handleEventTap(ev)}
                       className="text-[9px] truncate rounded px-1 leading-snug text-left"
                       style={{
-                        backgroundColor: EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue,
-                        color: EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue,
+                        backgroundColor: visuals.wash,
+                        color: visuals.text,
                         border: selectedEventId === ev.id
-                          ? `1px solid ${EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}`
+                          ? `1px solid ${visuals.accent}`
                           : "1px solid transparent",
                         borderRadius: `${continuesFromPreviousDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesToNextDay ? 0 : 4}px ${continuesFromPreviousDay ? 0 : 4}px`,
                         marginLeft: continuesFromPreviousDay ? "-1px" : undefined,
@@ -220,42 +232,49 @@ export function WeekTimeGrid({
                   dayColRefs.current[di] = el;
                 }}
                 className="flex-1 relative min-w-0"
-                style={{ borderLeft: isWindowsTheme ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(0,0,0,0.04)" }}
+                style={{ borderLeft: colBorder }}
               >
                 {Array.from({ length: totalHours }, (_, hourOffset) => HOUR_START + hourOffset).map((hour) => (
                   <button
                     key={hour}
                     type="button"
                     onClick={() => onTimeSlotClick(day.date, hour)}
-                    className="absolute left-0 right-0 border-t hover:bg-black/[0.02] transition-colors"
+                    className={cn(
+                      "absolute left-0 right-0 border-t transition-colors",
+                      isDarkMode ? "hover:bg-white/[0.03]" : "hover:bg-black/[0.02]"
+                    )}
                     style={{
                       top: (hour - HOUR_START) * hourHeight,
                       height: hourHeight,
-                      borderColor: isWindowsTheme ? "rgba(0,0,0,0.08)" : "rgba(0,0,0,0.06)",
+                      borderColor: hourRowBorderColor,
                     }}
                   />
                 ))}
 
-                {day.timedEvents.map((ev) => (
-                  <TimedEventBlock
-                    key={ev.id}
-                    event={ev}
-                    hourHeight={hourHeight}
-                    hourStart={HOUR_START}
-                    hourEnd={HOUR_END}
-                    selectedEventId={selectedEventId}
-                    isMacOSTheme={isMacOSTheme}
-                    useGeneva={useGeneva}
-                    washColor={EVENT_COLOR_LIGHT[ev.color] || EVENT_COLOR_LIGHT.blue}
-                    accentColor={EVENT_COLOR_MAP[ev.color] || EVENT_COLOR_MAP.blue}
-                    blockOpacity={getEventOpacity(ev, searchQuery)}
-                    minHeightPx={18}
-                    onUpdateEvent={onUpdateEvent}
-                    onEventClick={handleEventTap}
-                    resolveDateAtClientX={resolveDateAtClientX}
-                    timeLabelMode="week"
-                  />
-                ))}
+                {day.timedEvents.map((ev) => {
+                  const visuals = getCalendarColorVisuals(ev.color, isDarkMode);
+                  return (
+                    <TimedEventBlock
+                      key={ev.id}
+                      event={ev}
+                      hourHeight={hourHeight}
+                      hourStart={HOUR_START}
+                      hourEnd={HOUR_END}
+                      selectedEventId={selectedEventId}
+                      isMacOSTheme={isMacOSTheme}
+                      useGeneva={useGeneva}
+                      washColor={visuals.wash}
+                      accentColor={visuals.accent}
+                      textColor={visuals.text}
+                      blockOpacity={getEventOpacity(ev, searchQuery)}
+                      minHeightPx={18}
+                      onUpdateEvent={onUpdateEvent}
+                      onEventClick={handleEventTap}
+                      resolveDateAtClientX={resolveDateAtClientX}
+                      timeLabelMode="week"
+                    />
+                  );
+                })}
 
                 {day.isToday && (() => {
                   const topPos = ((currentMinute - HOUR_START * 60) / 60) * hourHeight;

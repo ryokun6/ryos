@@ -11,6 +11,7 @@ export interface TrayDetailsProps {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   isWindowsTheme: boolean;
+  isDarkMode?: boolean;
   onUpdateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   onDeleteEvent: (id: string) => void;
   onUpdateTodo: (
@@ -26,4 +27,5 @@ export interface TrayThemeProps {
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
   isWindowsTheme: boolean;
+  isDarkMode?: boolean;
 }

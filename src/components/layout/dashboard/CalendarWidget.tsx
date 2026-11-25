@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from "react";
 import { useCalendarStore, type CalendarEvent, type EventColor } from "@/stores/useCalendarStore";
+import { resolveEventColorToHex } from "@/shared/calendarColors";
 import { requestAppLaunch } from "@/utils/appEventBus";
 import { useTranslation } from "react-i18next";
 import { useDashboardStore, type CalendarWidgetConfig } from "@/stores/useDashboardStore";
@@ -60,11 +61,28 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
   const hiddenColors = useMemo(() => calConfig?.hiddenColors ?? [], [calConfig?.hiddenColors]);
 
   const allEvents = useCalendarStore((state) => state.events);
+  const calendars = useCalendarStore((state) => state.calendars);
 
   const events = useMemo(() => {
-    if (hiddenColors.length === 0) return allEvents;
-    return allEvents.filter((ev) => !hiddenColors.includes(ev.color));
-  }, [allEvents, hiddenColors]);
+    const allCalIds = new Set(calendars.map((c) => c.id));
+    const visibleCalIds = new Set(
+      calendars.filter((c) => c.visible).map((c) => c.id)
+    );
+    const fallbackCalId = calendars[0]?.id || "home";
+    return allEvents.filter((ev) => {
+      const calId =
+        ev.calendarId && allCalIds.has(ev.calendarId)
+          ? ev.calendarId
+          : fallbackCalId;
+      if (calendars.length > 0 && !visibleCalIds.has(calId)) {
+        return false;
+      }
+      if (hiddenColors.length > 0 && hiddenColors.includes(ev.color)) {
+        return false;
+      }
+      return true;
+    });
+  }, [allEvents, calendars, hiddenColors]);
 
   const now = useMemo(() => new Date(), []);
   const todayStr = useMemo(
@@ -275,7 +293,11 @@ export function CalendarWidget({ widgetId }: CalendarWidgetProps) {
                       <span
                         key={ev.id}
                         className="size-1 rounded-full"
-                        style={{ backgroundColor: EVENT_COLOR_MAP[ev.color] || "#F0A060" }}
+                        style={{
+                          backgroundColor:
+                            EVENT_COLOR_MAP[ev.color] ||
+                            resolveEventColorToHex(ev.color, "#f0a060"),
+                        }}
                       />
                     ))}
                   </div>

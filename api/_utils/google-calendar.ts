@@ -8,16 +8,26 @@ import {
 import { normalizeUserTimeZone } from "./auth/_user-record.js";
 import {
   GOOGLE_CALENDAR_SCOPE,
+  type GoogleCalendarAccessRole,
+  type GoogleCalendarDeletedRemoteEvent,
   type GoogleCalendarDeletionInput,
   type GoogleCalendarPushedItem,
   type GoogleCalendarSyncResponse,
   type GoogleEventColor,
   type GoogleSyncedCalendarEvent,
+  type GoogleSyncedCalendarGroup,
 } from "../../src/shared/contracts/google.js";
+import {
+  mapGoogleCalendarListColor,
+  mapGoogleEventColorIdToColor,
+} from "../../src/shared/calendarColors.js";
 
-const DEFAULT_GOOGLE_CALENDAR_ID = "primary";
+export const DEFAULT_GOOGLE_CALENDAR_ID = "primary";
+export const CALENDAR_SYNC_SCHEMA_VERSION = 2;
+
 const MAX_CALENDAR_PAGES = 20;
 const PAGE_SIZE = 250;
+const MAX_SYNCED_CALENDARS = 12;
 const MAX_MUTATIONS_PER_SYNC = 200;
 const FULL_SYNC_PAST_DAYS = 365;
 const FULL_SYNC_FUTURE_DAYS = 730;
@@ -47,33 +57,30 @@ export interface GoogleRawCalendarEvent {
   };
 }
 
+export interface GoogleRawCalendarListEntry {
+  id?: string;
+  summary?: string;
+  summaryOverride?: string;
+  colorId?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
+  selected?: boolean;
+  primary?: boolean;
+  deleted?: boolean;
+  hidden?: boolean;
+  accessRole?: string;
+}
+
+interface GoogleCalendarListResponse {
+  items?: GoogleRawCalendarListEntry[];
+  nextPageToken?: string;
+}
+
 interface GoogleEventsListResponse {
   items?: GoogleRawCalendarEvent[];
   nextPageToken?: string;
   nextSyncToken?: string;
 }
-
-const RYOS_TO_GOOGLE_COLOR: Record<GoogleEventColor, string> = {
-  blue: "9",
-  red: "11",
-  green: "10",
-  orange: "6",
-  purple: "3",
-};
-
-const GOOGLE_TO_RYOS_COLOR: Record<string, GoogleEventColor> = {
-  "1": "purple", // Lavender
-  "2": "green", // Sage
-  "3": "purple", // Grape
-  "4": "red", // Flamingo
-  "5": "orange", // Banana
-  "6": "orange", // Tangerine
-  "7": "blue", // Peacock
-  "8": "blue", // Graphite
-  "9": "blue", // Blueberry
-  "10": "green", // Basil
-  "11": "red", // Tomato
-};
 
 export function addDaysYmd(ymd: string, deltaDays: number): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
@@ -124,6 +131,29 @@ export function formatIsoInTimeZone(
   };
 }
 
+function encodeSafeSlug(raw: string, maxLen: number): string {
+  const trimmed = raw.trim();
+  if (/^[a-zA-Z0-9_-]+$/.test(trimmed) && trimmed.length <= maxLen) {
+    return trimmed;
+  }
+  return Buffer.from(trimmed, "utf8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "")
+    .slice(0, maxLen);
+}
+
+export function buildDeterministicGoogleCalendarGroupId(
+  googleCalendarId: string = DEFAULT_GOOGLE_CALENDAR_ID
+): string {
+  const trimmed = googleCalendarId.trim() || DEFAULT_GOOGLE_CALENDAR_ID;
+  if (trimmed === DEFAULT_GOOGLE_CALENDAR_ID) {
+    return "gcal_cal_primary";
+  }
+  return `gcal_cal_${encodeSafeSlug(trimmed, 96)}`;
+}
+
 export function buildDeterministicGoogleCalendarEventId(
   googleEventId: string,
   calendarId: string = DEFAULT_GOOGLE_CALENDAR_ID
@@ -131,18 +161,12 @@ export function buildDeterministicGoogleCalendarEventId(
   const prefix =
     calendarId === DEFAULT_GOOGLE_CALENDAR_ID
       ? "gcal"
-      : `gcal_${calendarId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 32)}`;
+      : `gcal_${encodeSafeSlug(calendarId, 32)}`;
   const safeId = googleEventId.trim();
   if (/^[a-zA-Z0-9_-]{1,160}$/.test(safeId)) {
     return `${prefix}_${safeId}`;
   }
-  const encoded = Buffer.from(safeId, "utf8")
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/g, "")
-    .slice(0, 120);
-  return `${prefix}_${encoded}`;
+  return `${prefix}_${encodeSafeSlug(safeId, 120)}`;
 }
 
 function parseTimestampOrFallback(
@@ -154,6 +178,53 @@ function parseTimestampOrFallback(
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function mapGoogleCalendarListEntryToRyos(
+  entry: GoogleRawCalendarListEntry,
+  fallbackName?: string | null
+): GoogleSyncedCalendarGroup | null {
+  const rawId = entry.id?.trim();
+  if (!rawId || entry.deleted || entry.hidden) {
+    return null;
+  }
+  const role = entry.accessRole?.trim();
+  if (role === "freeBusyReader") {
+    return null;
+  }
+
+  const isPrimary = Boolean(entry.primary) || rawId === DEFAULT_GOOGLE_CALENDAR_ID;
+  const googleCalendarId = isPrimary ? DEFAULT_GOOGLE_CALENDAR_ID : rawId;
+  const accessRole: GoogleCalendarAccessRole =
+    role === "owner" || role === "writer"
+      ? role
+      : isPrimary
+        ? "owner"
+        : "reader";
+  const readOnly = accessRole === "reader";
+
+  const name =
+    entry.summaryOverride?.trim() ||
+    entry.summary?.trim() ||
+    (isPrimary ? fallbackName?.trim() || "Google Calendar" : rawId);
+
+  const color = mapGoogleCalendarListColor({
+    backgroundColor: entry.backgroundColor,
+    colorId: entry.colorId,
+  });
+
+  return {
+    id: buildDeterministicGoogleCalendarGroupId(googleCalendarId),
+    name,
+    color,
+    googleCalendarId,
+    ...(rawId !== googleCalendarId ? { googleAccountCalendarId: rawId } : {}),
+    ...(entry.colorId?.trim() ? { googleColorId: entry.colorId.trim() } : {}),
+    ...(isPrimary ? { googlePrimary: true } : {}),
+    googleAccessRole: accessRole,
+    readOnly,
+    selected: entry.selected !== false,
+  };
+}
+
 export function mapGoogleEventToRyos(
   raw: GoogleRawCalendarEvent,
   options: {
@@ -161,6 +232,7 @@ export function mapGoogleEventToRyos(
     preferredLocalId?: string;
     preferredCalendarId?: string;
     googleCalendarId?: string;
+    calendarColor?: GoogleEventColor;
   }
 ): GoogleSyncedCalendarEvent | null {
   const googleEventId = raw.id?.trim();
@@ -176,8 +248,13 @@ export function mapGoogleEventToRyos(
     privateRyosId ||
     buildDeterministicGoogleCalendarEventId(googleEventId, googleCalendarId);
 
-  const color: GoogleEventColor =
-    (raw.colorId && GOOGLE_TO_RYOS_COLOR[raw.colorId]) || "blue";
+  const explicitColorId = raw.colorId?.trim() || undefined;
+  const explicitEventHex = explicitColorId
+    ? mapGoogleEventColorIdToColor(explicitColorId)
+    : null;
+  const inheritedCalendarColor: GoogleEventColor =
+    options.calendarColor || "#039be5";
+  const color: GoogleEventColor = explicitEventHex || inheritedCalendarColor;
 
   const updatedAt = parseTimestampOrFallback(raw.updated, 0);
   const createdAt = parseTimestampOrFallback(raw.created, updatedAt);
@@ -222,6 +299,8 @@ export function mapGoogleEventToRyos(
   const title = (raw.summary || "").trim() || "Untitled Event";
   const location = (raw.location || "").trim() || undefined;
   const notes = (raw.description || "").trim() || undefined;
+  const defaultCalendarGroupId =
+    buildDeterministicGoogleCalendarGroupId(googleCalendarId);
 
   return {
     id,
@@ -231,11 +310,14 @@ export function mapGoogleEventToRyos(
     ...(startTime ? { startTime } : {}),
     ...(endTime ? { endTime } : {}),
     color,
-    calendarId: options.preferredCalendarId || "home",
+    calendarId: options.preferredCalendarId || defaultCalendarGroupId,
     ...(location ? { location } : {}),
     ...(notes ? { notes } : {}),
     googleEventId,
     googleCalendarId,
+    ...(explicitColorId && explicitEventHex
+      ? { googleColorId: explicitColorId }
+      : {}),
     ...(raw.etag ? { googleEtag: raw.etag } : {}),
     ...(raw.recurringEventId
       ? { googleRecurringEventId: raw.recurringEventId }
@@ -321,11 +403,24 @@ export function buildGoogleEventPayload(
             };
       })();
 
+  // Only include `colorId` when an explicit per-event override exists (or `null`
+  // on PATCH to clear an existing override back to calendar inheritance).
+  // Never stamp a default `colorId` onto events that inherit their calendar color.
+  const colorPatch: Record<string, unknown> =
+    event.googleColorId === null
+      ? isPatch
+        ? { colorId: null }
+        : {}
+      : typeof event.googleColorId === "string" &&
+          event.googleColorId.trim().length > 0
+        ? { colorId: event.googleColorId.trim() }
+        : {};
+
   return {
     summary: event.title || "Untitled Event",
     location: event.location || "",
     description: event.notes || "",
-    colorId: RYOS_TO_GOOGLE_COLOR[event.color] || "9",
+    ...colorPatch,
     start,
     end,
     extendedProperties: {
@@ -360,11 +455,109 @@ async function googleCalendarFetch(
   }
 }
 
+function buildFallbackPrimaryCalendar(
+  fallbackName?: string | null
+): GoogleSyncedCalendarGroup {
+  return {
+    id: buildDeterministicGoogleCalendarGroupId(DEFAULT_GOOGLE_CALENDAR_ID),
+    name: fallbackName?.trim() || "Google Calendar",
+    color: "#039be5",
+    googleCalendarId: DEFAULT_GOOGLE_CALENDAR_ID,
+    googlePrimary: true,
+    googleAccessRole: "owner",
+    readOnly: false,
+    selected: true,
+  };
+}
+
+async function listGoogleCalendars(params: {
+  accessToken: string;
+  fallbackName?: string | null;
+}): Promise<GoogleSyncedCalendarGroup[]> {
+  const rawEntries: GoogleRawCalendarListEntry[] = [];
+  let pageToken: string | undefined;
+
+  for (let page = 0; page < 5; page += 1) {
+    const qs = new URLSearchParams();
+    qs.set("maxResults", String(PAGE_SIZE));
+    if (pageToken) {
+      qs.set("pageToken", pageToken);
+    }
+
+    const res = await googleCalendarFetch(
+      `/users/me/calendarList?${qs.toString()}`,
+      params.accessToken
+    );
+
+    if (res.status === 404 && page === 0) {
+      return [buildFallbackPrimaryCalendar(params.fallbackName)];
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new GoogleApiError(
+        res.status,
+        res.status === 401 ? "reauth_required" : "missing_scope",
+        "Google Calendar authorization failed."
+      );
+    }
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      throw new GoogleApiError(
+        502,
+        "calendar_list_failed",
+        `Google Calendar list failed (${res.status}): ${errText.slice(0, 160)}`
+      );
+    }
+
+    const data = (await res.json()) as GoogleCalendarListResponse;
+    if (Array.isArray(data.items)) {
+      rawEntries.push(...data.items);
+    }
+    if (!data.nextPageToken) {
+      break;
+    }
+    pageToken = data.nextPageToken;
+  }
+
+  const mapped: GoogleSyncedCalendarGroup[] = [];
+  const seenCalIds = new Set<string>();
+  for (const entry of rawEntries) {
+    const group = mapGoogleCalendarListEntryToRyos(entry, params.fallbackName);
+    if (!group) continue;
+    // Keep primary + writable calendars + selected reader calendars
+    if (!group.googlePrimary && group.readOnly && group.selected === false) {
+      continue;
+    }
+    if (seenCalIds.has(group.googleCalendarId)) continue;
+    seenCalIds.add(group.googleCalendarId);
+    mapped.push(group);
+  }
+
+  if (mapped.length === 0) {
+    return [buildFallbackPrimaryCalendar(params.fallbackName)];
+  }
+
+  if (!mapped.some((c) => c.googlePrimary)) {
+    mapped.unshift(buildFallbackPrimaryCalendar(params.fallbackName));
+  } else {
+    mapped.sort((a, b) => {
+      if (a.googlePrimary && !b.googlePrimary) return -1;
+      if (!a.googlePrimary && b.googlePrimary) return 1;
+      if (!a.readOnly && b.readOnly) return -1;
+      if (a.readOnly && !b.readOnly) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  return mapped.slice(0, MAX_SYNCED_CALENDARS);
+}
+
 async function listGoogleCalendarChanges(params: {
   accessToken: string;
+  googleCalendarId: string;
   syncToken: string | null;
 }): Promise<{
   fullSync: boolean;
+  notFound?: boolean;
   upserts: GoogleRawCalendarEvent[];
   deletedIds: string[];
   nextSyncToken: string | null;
@@ -374,6 +567,7 @@ async function listGoogleCalendarChanges(params: {
   ): Promise<
     | { ok: true; items: GoogleRawCalendarEvent[]; nextSyncToken: string | null }
     | { ok: false; gone: true }
+    | { ok: false; notFound: true }
   > => {
     const allItems: GoogleRawCalendarEvent[] = [];
     let pageToken: string | undefined;
@@ -402,12 +596,18 @@ async function listGoogleCalendarChanges(params: {
       }
 
       const res = await googleCalendarFetch(
-        `/calendars/${encodeURIComponent(DEFAULT_GOOGLE_CALENDAR_ID)}/events?${qs.toString()}`,
+        `/calendars/${encodeURIComponent(params.googleCalendarId)}/events?${qs.toString()}`,
         params.accessToken
       );
 
       if (res.status === 410 && tokenToUse) {
         return { ok: false, gone: true };
+      }
+      if (
+        res.status === 404 &&
+        params.googleCalendarId !== DEFAULT_GOOGLE_CALENDAR_ID
+      ) {
+        return { ok: false, notFound: true };
       }
       if (res.status === 401 || res.status === 403) {
         throw new GoogleApiError(
@@ -443,11 +643,20 @@ async function listGoogleCalendarChanges(params: {
 
   let fullSync = !params.syncToken;
   let result = await runList(params.syncToken);
-  if (!result.ok && result.gone) {
+  if (!result.ok && "gone" in result && result.gone) {
     fullSync = true;
     result = await runList(null);
   }
   if (!result.ok) {
+    if ("notFound" in result && result.notFound) {
+      return {
+        fullSync: true,
+        notFound: true,
+        upserts: [],
+        deletedIds: [],
+        nextSyncToken: null,
+      };
+    }
     throw new GoogleApiError(
       502,
       "calendar_pull_failed",
@@ -491,12 +700,35 @@ export async function syncGoogleCalendarForUser(
   );
   const timeZone = normalizeUserTimeZone(input.timeZone) || "UTC";
 
+  const discoveredCalendars = await listGoogleCalendars({
+    accessToken,
+    fallbackName: account.name || account.email,
+  });
+
+  const byGoogleCalId = new Map<string, GoogleSyncedCalendarGroup>();
+  const byLocalGroupId = new Map<string, GoogleSyncedCalendarGroup>();
+  for (const cal of discoveredCalendars) {
+    byGoogleCalId.set(cal.googleCalendarId, cal);
+    if (cal.googleAccountCalendarId) {
+      byGoogleCalId.set(cal.googleAccountCalendarId, cal);
+    }
+    byLocalGroupId.set(cal.id, cal);
+  }
+  const primaryCalendar =
+    discoveredCalendars.find((c) => c.googlePrimary) ?? discoveredCalendars[0]!;
+
   const deletedLocalIds: string[] = [];
   const deletions = (input.deletions || []).slice(0, MAX_MUTATIONS_PER_SYNC);
   for (const deletion of deletions) {
-    const calId = deletion.googleCalendarId || DEFAULT_GOOGLE_CALENDAR_ID;
+    const resolvedCal = deletion.googleCalendarId
+      ? byGoogleCalId.get(deletion.googleCalendarId)
+      : undefined;
+    const apiCalId =
+      resolvedCal?.googleCalendarId ||
+      deletion.googleCalendarId ||
+      DEFAULT_GOOGLE_CALENDAR_ID;
     const res = await googleCalendarFetch(
-      `/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(deletion.googleEventId)}`,
+      `/calendars/${encodeURIComponent(apiCalId)}/events/${encodeURIComponent(deletion.googleEventId)}`,
       accessToken,
       { method: "DELETE" }
     );
@@ -513,12 +745,26 @@ export async function syncGoogleCalendarForUser(
   const pushed: GoogleCalendarPushedItem[] = [];
   const upserts = (input.upserts || []).slice(0, MAX_MUTATIONS_PER_SYNC);
   for (const event of upserts) {
-    const calId = event.googleCalendarId || DEFAULT_GOOGLE_CALENDAR_ID;
+    const targetCal =
+      (event.googleCalendarId
+        ? byGoogleCalId.get(event.googleCalendarId)
+        : undefined) ||
+      (event.calendarId ? byLocalGroupId.get(event.calendarId) : undefined) ||
+      primaryCalendar;
+
+    if (targetCal?.readOnly) {
+      continue;
+    }
+
+    const canonicalGoogleCalId =
+      targetCal?.googleCalendarId ||
+      event.googleCalendarId ||
+      DEFAULT_GOOGLE_CALENDAR_ID;
     let rawSaved: GoogleRawCalendarEvent | null = null;
 
     if (event.googleEventId) {
       const patchRes = await googleCalendarFetch(
-        `/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(event.googleEventId)}`,
+        `/calendars/${encodeURIComponent(canonicalGoogleCalId)}/events/${encodeURIComponent(event.googleEventId)}`,
         accessToken,
         {
           method: "PATCH",
@@ -534,7 +780,7 @@ export async function syncGoogleCalendarForUser(
 
     if (!rawSaved) {
       const createRes = await googleCalendarFetch(
-        `/calendars/${encodeURIComponent(DEFAULT_GOOGLE_CALENDAR_ID)}/events`,
+        `/calendars/${encodeURIComponent(canonicalGoogleCalId)}/events`,
         accessToken,
         {
           method: "POST",
@@ -550,8 +796,11 @@ export async function syncGoogleCalendarForUser(
       const mapped = mapGoogleEventToRyos(rawSaved, {
         timeZone,
         preferredLocalId: event.id,
-        preferredCalendarId: event.calendarId,
-        googleCalendarId: calId,
+        preferredCalendarId:
+          targetCal?.id ||
+          buildDeterministicGoogleCalendarGroupId(canonicalGoogleCalId),
+        googleCalendarId: canonicalGoogleCalId,
+        calendarColor: targetCal?.color,
       });
       if (mapped) {
         const effectiveUpdatedAt = Math.max(event.updatedAt, mapped.updatedAt);
@@ -568,48 +817,116 @@ export async function syncGoogleCalendarForUser(
     }
   }
 
-  const storedSyncToken =
-    input.mode === "reset_pull" ? null : account.calendarSyncToken ?? null;
-  const pulled = await listGoogleCalendarChanges({
-    accessToken,
-    syncToken: storedSyncToken,
-  });
+  const needsSchemaMigrationReset =
+    (account.calendarSyncSchemaVersion ?? 1) < CALENDAR_SYNC_SCHEMA_VERSION;
+  const forceResetPull =
+    input.mode === "reset_pull" || needsSchemaMigrationReset;
 
-  const pushedByGoogleId = new Map(
-    pushed
-      .filter((p) => p.event.googleEventId)
-      .map((p) => [p.event.googleEventId!, p.event])
+  const previousSyncTokens: Record<string, string> = {
+    ...(account.calendarSyncTokens || {}),
+  };
+  if (
+    !previousSyncTokens[DEFAULT_GOOGLE_CALENDAR_ID] &&
+    account.calendarSyncToken
+  ) {
+    previousSyncTokens[DEFAULT_GOOGLE_CALENDAR_ID] = account.calendarSyncToken;
+  }
+
+  const pulledPerCalendar = await Promise.all(
+    discoveredCalendars.map(async (cal) => {
+      const tokenForCal = forceResetPull
+        ? null
+        : previousSyncTokens[cal.googleCalendarId] ?? null;
+      const pulled = await listGoogleCalendarChanges({
+        accessToken,
+        googleCalendarId: cal.googleCalendarId,
+        syncToken: tokenForCal,
+      });
+      return { cal, pulled };
+    })
   );
 
+  const pushedByCompositeKey = new Map(
+    pushed
+      .filter((p) => p.event.googleEventId)
+      .map((p) => [
+        `${p.event.googleCalendarId || DEFAULT_GOOGLE_CALENDAR_ID}::${p.event.googleEventId!}`,
+        p.event,
+      ])
+  );
+
+  const activeCalendars: GoogleSyncedCalendarGroup[] = [];
+  const nextSyncTokens: Record<string, string> = {};
+  const fullSyncGoogleCalendarIds: string[] = [];
   const remoteUpserts: GoogleSyncedCalendarEvent[] = [];
-  for (const raw of pulled.upserts) {
-    if (raw.id && pushedByGoogleId.has(raw.id)) {
-      remoteUpserts.push(pushedByGoogleId.get(raw.id)!);
+  const remoteDeletedGoogleIds: string[] = [];
+  const remoteDeletedEvents: GoogleCalendarDeletedRemoteEvent[] = [];
+
+  for (const { cal, pulled } of pulledPerCalendar) {
+    if (pulled.notFound) {
       continue;
     }
-    const mapped = mapGoogleEventToRyos(raw, {
-      timeZone,
-      googleCalendarId: DEFAULT_GOOGLE_CALENDAR_ID,
-    });
-    if (mapped) {
-      remoteUpserts.push(mapped);
+    activeCalendars.push(cal);
+    const tokenToPersist =
+      pulled.nextSyncToken ?? previousSyncTokens[cal.googleCalendarId] ?? null;
+    if (tokenToPersist) {
+      nextSyncTokens[cal.googleCalendarId] = tokenToPersist;
+    }
+    if (pulled.fullSync) {
+      fullSyncGoogleCalendarIds.push(cal.googleCalendarId);
+    }
+
+    for (const deletedId of pulled.deletedIds) {
+      remoteDeletedGoogleIds.push(deletedId);
+      remoteDeletedEvents.push({
+        googleEventId: deletedId,
+        googleCalendarId: cal.googleCalendarId,
+      });
+    }
+
+    for (const raw of pulled.upserts) {
+      const compositeKey = raw.id
+        ? `${cal.googleCalendarId}::${raw.id}`
+        : null;
+      if (compositeKey && pushedByCompositeKey.has(compositeKey)) {
+        remoteUpserts.push(pushedByCompositeKey.get(compositeKey)!);
+        continue;
+      }
+      const mapped = mapGoogleEventToRyos(raw, {
+        timeZone,
+        preferredCalendarId: cal.id,
+        googleCalendarId: cal.googleCalendarId,
+        calendarColor: cal.color,
+      });
+      if (mapped) {
+        remoteUpserts.push(mapped);
+      }
     }
   }
 
   const syncedAt = Date.now();
   await saveLinkedGoogleAccount(redis, {
     ...account,
-    calendarSyncToken: pulled.nextSyncToken ?? account.calendarSyncToken ?? null,
+    calendarSyncToken: nextSyncTokens[DEFAULT_GOOGLE_CALENDAR_ID] ?? null,
+    calendarSyncTokens: nextSyncTokens,
+    calendarSyncSchemaVersion: CALENDAR_SYNC_SCHEMA_VERSION,
     calendarLastSyncedAt: syncedAt,
     updatedAt: syncedAt,
   });
 
+  const fullSync =
+    activeCalendars.length > 0 &&
+    fullSyncGoogleCalendarIds.length === activeCalendars.length;
+
   return {
-    fullSync: pulled.fullSync,
+    fullSync,
+    fullSyncGoogleCalendarIds,
+    remoteCalendars: activeCalendars,
     pushed,
     deletedLocalIds,
     remoteUpserts,
-    remoteDeletedGoogleIds: pulled.deletedIds,
+    remoteDeletedGoogleIds,
+    remoteDeletedEvents,
     syncedAt,
   };
 }

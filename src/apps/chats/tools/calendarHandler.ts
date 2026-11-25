@@ -168,10 +168,7 @@ export const handleCalendarControl: ToolHandler<CalendarControlInput> = (
     }
 
     case "delete": {
-      useCalendarStore.setState({ events: result.state.events });
-      useCloudSyncStore
-        .getState()
-        .markDeletedKeys("calendarEventIds", [result.event.id]);
+      store.deleteEvent(result.event.id);
       emitOutput({
         success: true,
         message: tc("deletedEventMsg", { title: result.event.title }),
