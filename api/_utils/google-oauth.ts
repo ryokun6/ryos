@@ -1,4 +1,5 @@
 import type { Redis, RedisLike } from "./redis.js";
+import { isAllowedOrigin } from "./_cors.js";
 import { getAppPublicOrigin } from "./runtime-config.js";
 import { isProfaneUsername } from "./_validation.js";
 import { getStoredUserRecord } from "./auth/_user-record.js";
@@ -126,6 +127,10 @@ export function getGoogleRedirectUri(fallbackOrigin?: string | null): string {
   const explicit = process.env.GOOGLE_REDIRECT_URI?.trim();
   if (explicit) {
     return explicit;
+  }
+  const trimmedFallback = fallbackOrigin?.trim().replace(/\/+$/, "") || null;
+  if (trimmedFallback && isAllowedOrigin(trimmedFallback)) {
+    return `${trimmedFallback}/api/auth/google/callback`;
   }
   return `${getAppPublicOrigin(fallbackOrigin)}/api/auth/google/callback`;
 }

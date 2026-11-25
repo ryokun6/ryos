@@ -125,11 +125,13 @@ describe("Google OAuth + PKCE + username helpers", () => {
     const prevSecret = process.env.GOOGLE_CLIENT_SECRET;
     const prevOrigin = process.env.APP_PUBLIC_ORIGIN;
     const prevRedirect = process.env.GOOGLE_REDIRECT_URI;
+    const prevAllowedOrigins = process.env.API_ALLOWED_ORIGINS;
     try {
       delete process.env.GOOGLE_CLIENT_ID;
       delete process.env.GOOGLE_CLIENT_SECRET;
       delete process.env.APP_PUBLIC_ORIGIN;
       delete process.env.GOOGLE_REDIRECT_URI;
+      delete process.env.API_ALLOWED_ORIGINS;
       expect(isGoogleOAuthConfigured()).toBe(false);
       expect(getGoogleOAuthConfig("http://localhost:3000")).toBeNull();
 
@@ -140,6 +142,16 @@ describe("Google OAuth + PKCE + username helpers", () => {
       expect(cfg?.redirectUri).toBe(
         "http://localhost:3000/api/auth/google/callback"
       );
+
+      // On Coolify PR previews, APP_PUBLIC_ORIGIN may point to the base dev host
+      // while API_ALLOWED_ORIGINS allows *.os.ryo.lu; redirectUri must stay on the
+      // preview origin so the host-only HttpOnly auth cookie lands on the preview host.
+      process.env.APP_PUBLIC_ORIGIN = "https://dev.os.ryo.lu";
+      process.env.API_ALLOWED_ORIGINS = "*.os.ryo.lu";
+      const previewCfg = getGoogleOAuthConfig("https://2113-preview.os.ryo.lu");
+      expect(previewCfg?.redirectUri).toBe(
+        "https://2113-preview.os.ryo.lu/api/auth/google/callback"
+      );
     } finally {
       if (prevId === undefined) delete process.env.GOOGLE_CLIENT_ID;
       else process.env.GOOGLE_CLIENT_ID = prevId;
@@ -149,6 +161,8 @@ describe("Google OAuth + PKCE + username helpers", () => {
       else process.env.APP_PUBLIC_ORIGIN = prevOrigin;
       if (prevRedirect === undefined) delete process.env.GOOGLE_REDIRECT_URI;
       else process.env.GOOGLE_REDIRECT_URI = prevRedirect;
+      if (prevAllowedOrigins === undefined) delete process.env.API_ALLOWED_ORIGINS;
+      else process.env.API_ALLOWED_ORIGINS = prevAllowedOrigins;
     }
   });
 
