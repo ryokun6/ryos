@@ -50,7 +50,7 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.bun/install/cache
@@ -93,7 +93,7 @@ jobs:
           bun-version: ${{ matrix.bun-version }}
 
       - name: Cache Bun install
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.bun/install/cache
