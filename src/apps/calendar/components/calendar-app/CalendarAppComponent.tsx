@@ -48,7 +48,7 @@ export function CalendarAppComponent({
   const {
     t, translatedHelpItems, hasHydrated,
     isHelpDialogOpen, setIsHelpDialogOpen, isAboutDialogOpen, setIsAboutDialogOpen,
-    isWindowsTheme, isMacOSTheme, isSystem7Theme,
+    isWindowsTheme, isMacOSTheme, isSystem7Theme, isDarkMode,
     searchQuery, setSearchQuery,
     selectedDate, view, monthYearLabel, selectedDateLabel, calendarGrid, selectedDateEvents,
     narrowDayNames, hourLabels, weekDates, weekLabel,
@@ -269,6 +269,7 @@ export function CalendarAppComponent({
               isMacOSTheme={isMacOSTheme}
               isSystem7Theme={isSystem7Theme}
               isWindowsTheme={isWindowsTheme}
+              isDarkMode={isDarkMode}
               onUpdateEvent={handleUpdateEvent}
               onDeleteEvent={handleDeleteEventFromTray}
               onUpdateTodo={updateTodo}
@@ -325,6 +326,7 @@ export function CalendarAppComponent({
                       onToggle={toggleCalendarVisibility}
                       isMacOSTheme={isMacOSTheme}
                       isSystem7Theme={isSystem7Theme}
+                      isDarkMode={isDarkMode}
                     />
                   </div>
                   {showMiniCalendar && (
@@ -361,6 +363,7 @@ export function CalendarAppComponent({
                     onToggle={toggleCalendarVisibility}
                     isMacOSTheme={isMacOSTheme}
                     isSystem7Theme={isSystem7Theme}
+                    isDarkMode={isDarkMode}
                   />
                   <div className="flex-1" />
                   {showMiniCalendar && (
@@ -396,7 +399,7 @@ export function CalendarAppComponent({
                     onDateClick={handleDateClick} onTimeSlotClick={onNewEventAtTime}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} isDarkMode={isDarkMode} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={weekTimeGridHourHeight} setHourHeight={setWeekTimeGridHourHeight}
                     onUpdateEvent={handleUpdateEvent} />
                 )}
@@ -405,7 +408,7 @@ export function CalendarAppComponent({
                     onTimeSlotClick={onNewEventAtTime}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
+                    isWindowsTheme={isWindowsTheme} isMacOSTheme={isMacOSTheme} isSystem7Theme={isSystem7Theme} isDarkMode={isDarkMode} searchQuery={normalizedSearchQuery} hourLabels={hourLabels}
                     hourHeight={dayTimeGridHourHeight} setHourHeight={setDayTimeGridHourHeight}
                     onUpdateEvent={handleUpdateEvent} />
                 )}
@@ -414,7 +417,7 @@ export function CalendarAppComponent({
                     onDateClick={handleDateClick} onDateDoubleClick={onDateDoubleClick}
                     onEventClick={(ev) => handleSelectEvent(ev.id)}
                     onEventDoubleClick={(ev) => handleSelectEvent(ev.id, { toggle: false })}
-                    isWindowsTheme={isWindowsTheme} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
+                    isWindowsTheme={isWindowsTheme} isDarkMode={isDarkMode} searchQuery={normalizedSearchQuery} narrowDayNames={narrowDayNames} />
                 )}
               </div>
             )}
@@ -437,6 +440,7 @@ export function CalendarAppComponent({
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
+                  isDarkMode={isDarkMode}
                   fullWidth
                   selectedTodoId={selectedTodoId}
                   onSelectTodo={handleSelectTodo}
@@ -460,6 +464,7 @@ export function CalendarAppComponent({
                   onDelete={deleteTodo}
                   isMacOSTheme={isMacOSTheme}
                   isSystem7Theme={isSystem7Theme}
+                  isDarkMode={isDarkMode}
                   selectedTodoId={selectedTodoId}
                   onSelectTodo={handleSelectTodo}
                 />

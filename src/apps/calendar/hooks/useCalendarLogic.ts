@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useTranslatedHelpItems } from "@/hooks/useTranslatedHelpItems";
 import { useThemeFlags } from "@/hooks/useThemeFlags";
 import {
+  getDefaultWritableCalendar,
   useCalendarStore,
   type CalendarEvent,
 } from "@/stores/useCalendarStore";
@@ -63,6 +64,7 @@ export function useCalendarLogic() {
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,
+    isDarkMode,
   } = useThemeFlags();
 
   // Dialog states
@@ -197,6 +199,10 @@ export function useCalendarLogic() {
   }, [redoStack, applyRedo]);
 
   // Visible calendar IDs for filtering
+  const allCalendarIds = useMemo(
+    () => new Set(calendars.map((calendar) => calendar.id)),
+    [calendars]
+  );
   const visibleCalendarIds = useMemo(() => {
     return new Set(
       calendars.reduce<string[]>((acc, calendar) => {
@@ -210,8 +216,15 @@ export function useCalendarLogic() {
 
   // Filtered events (only from visible calendars)
   const visibleEvents = useMemo(() => {
-    return events.filter((ev) => visibleCalendarIds.has(ev.calendarId || "home"));
-  }, [events, visibleCalendarIds]);
+    const fallbackId = calendars[0]?.id || "home";
+    return events.filter((ev) => {
+      const calId =
+        ev.calendarId && allCalendarIds.has(ev.calendarId)
+          ? ev.calendarId
+          : fallbackId;
+      return visibleCalendarIds.has(calId);
+    });
+  }, [events, calendars, allCalendarIds, visibleCalendarIds]);
 
   // Today string (calendar day in the user's effective timezone preference)
   const todayStr = useMemo(
@@ -416,11 +429,10 @@ export function useCalendarLogic() {
     (date: string) => {
       setSelectedDate(date);
       const title = t("apps.calendar.tray.newEventTitle");
-      const cal = calendars[0];
+      const cal = getDefaultWritableCalendar(calendars);
       const id = addEvent({
         title,
         date,
-        color: cal?.color || "blue",
         calendarId: cal?.id || "home",
       });
       const created = useCalendarStore
@@ -437,7 +449,7 @@ export function useCalendarLogic() {
     (date: string, hour: number) => {
       setSelectedDate(date);
       const title = t("apps.calendar.tray.newEventTitle");
-      const cal = calendars[0];
+      const cal = getDefaultWritableCalendar(calendars);
       const startTime = `${String(hour).padStart(2, "0")}:00`;
       const endH = hour >= 23 ? 23 : hour + 1;
       const endTime = `${String(endH).padStart(2, "0")}:00`;
@@ -446,7 +458,6 @@ export function useCalendarLogic() {
         date,
         startTime,
         endTime,
-        color: cal?.color || "blue",
         calendarId: cal?.id || "home",
       });
       const created = useCalendarStore
@@ -461,11 +472,10 @@ export function useCalendarLogic() {
 
   const handleNewEvent = useCallback(() => {
     const title = t("apps.calendar.tray.newEventTitle");
-    const cal = calendars[0];
+    const cal = getDefaultWritableCalendar(calendars);
     const id = addEvent({
       title,
       date: selectedDate,
-      color: cal?.color || "blue",
       calendarId: cal?.id || "home",
     });
     const created = useCalendarStore
@@ -517,8 +527,14 @@ export function useCalendarLogic() {
       const parsed = parseIcalString(text);
       const importedEvents: CalendarEvent[] = [];
       for (const ev of parsed) {
-        const id = addEvent(ev);
-        importedEvents.push({ ...ev, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent);
+        const { color: _defaultIcalColor, ...evRest } = ev;
+        const id = addEvent(evRest);
+        const created = useCalendarStore
+          .getState()
+          .events.find((e) => e.id === id);
+        importedEvents.push(
+          created ?? ({ ...ev, id, createdAt: Date.now(), updatedAt: Date.now() } as CalendarEvent)
+        );
       }
       if (importedEvents.length > 0) {
         pushUndo({ type: "importEvents", events: importedEvents });
@@ -597,6 +613,7 @@ export function useCalendarLogic() {
     isMacOSTheme,
     isSystem7Theme,
     isClassicTheme,
+    isDarkMode,
 
     // Dialogs
     isHelpDialogOpen,

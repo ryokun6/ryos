@@ -1,4 +1,5 @@
 import type { Contact } from "../../utils/contacts";
+import type { EventColor } from "../calendarColors";
 
 export const GOOGLE_SIGNIN_SCOPES = ["openid", "email", "profile"] as const;
 export const GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
@@ -8,7 +9,21 @@ export type GoogleOAuthMode = "signin" | "link" | "scopes";
 export type GoogleSyncFeature = "calendar" | "contacts";
 export type GoogleOAuthReturnMode = "popup" | "redirect";
 export type GoogleInitialSyncChoice = "merge" | "discard";
-export type GoogleEventColor = "blue" | "red" | "green" | "orange" | "purple";
+export type GoogleEventColor = EventColor;
+export type GoogleCalendarAccessRole = "owner" | "writer" | "reader";
+
+export interface GoogleSyncedCalendarGroup {
+  id: string;
+  name: string;
+  color: GoogleEventColor;
+  googleCalendarId: string;
+  googleAccountCalendarId?: string;
+  googleColorId?: string;
+  googlePrimary?: boolean;
+  googleAccessRole?: GoogleCalendarAccessRole;
+  readOnly?: boolean;
+  selected?: boolean;
+}
 
 export interface GoogleSyncedCalendarEvent {
   id: string;
@@ -23,6 +38,12 @@ export interface GoogleSyncedCalendarEvent {
   notes?: string;
   googleEventId?: string;
   googleCalendarId?: string;
+  /**
+   * Explicit Google per-event `colorId` ("1"–"11") when overridden on the event;
+   * `null` when clearing a previously synced override back to calendar default;
+   * `undefined` when inheriting the calendar's color.
+   */
+  googleColorId?: string | null;
   googleEtag?: string;
   googleRecurringEventId?: string;
   googleSyncedUpdatedAt?: number;
@@ -111,6 +132,11 @@ export interface GoogleCalendarDeletionInput {
   googleCalendarId?: string;
 }
 
+export interface GoogleCalendarDeletedRemoteEvent {
+  googleEventId: string;
+  googleCalendarId: string;
+}
+
 export interface GoogleCalendarSyncRequest {
   mode?: "incremental" | "reset_pull";
   timeZone?: string;
@@ -125,10 +151,13 @@ export interface GoogleCalendarPushedItem {
 
 export interface GoogleCalendarSyncResponse {
   fullSync: boolean;
+  fullSyncGoogleCalendarIds?: string[];
+  remoteCalendars?: GoogleSyncedCalendarGroup[];
   pushed: GoogleCalendarPushedItem[];
   deletedLocalIds: string[];
   remoteUpserts: GoogleSyncedCalendarEvent[];
   remoteDeletedGoogleIds: string[];
+  remoteDeletedEvents?: GoogleCalendarDeletedRemoteEvent[];
   syncedAt: number;
 }
 

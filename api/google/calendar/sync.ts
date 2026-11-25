@@ -5,8 +5,19 @@ import { getHeader } from "../../_utils/request-helpers.js";
 import { getStoredUserTimeZone } from "../../_utils/auth/_user-record.js";
 import { GoogleApiError } from "../../_utils/google-oauth.js";
 import { syncGoogleCalendarForUser } from "../../_utils/google-calendar.js";
+import {
+  isValidEventColor,
+  normalizeEventColor,
+  type EventColor,
+} from "../../../src/shared/calendarColors.js";
 
-const eventColorSchema = z.enum(["blue", "red", "green", "orange", "purple"]);
+const eventColorSchema = z
+  .string()
+  .max(32)
+  .refine((val) => isValidEventColor(val), {
+    message: "Invalid calendar event color",
+  })
+  .transform((val): EventColor => normalizeEventColor(val));
 
 const calendarEventSchema = z.object({
   id: z.string().min(1).max(256),
@@ -30,6 +41,7 @@ const calendarEventSchema = z.object({
   notes: z.string().max(10000).optional(),
   googleEventId: z.string().max(256).optional(),
   googleCalendarId: z.string().max(256).optional(),
+  googleColorId: z.string().max(32).nullable().optional(),
   googleEtag: z.string().max(256).optional(),
   googleRecurringEventId: z.string().max(256).optional(),
   googleSyncedUpdatedAt: z.number().optional(),

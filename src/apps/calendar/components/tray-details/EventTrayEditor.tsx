@@ -3,7 +3,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
 import type { CalendarEvent, CalendarGroup } from "@/stores/useCalendarStore";
-import { EVENT_COLOR_MAP } from "./constants";
+import {
+  areEventColorsEquivalent,
+  GOOGLE_EVENT_COLOR_PALETTE,
+  PRESET_CALENDAR_COLORS,
+  PRESET_EVENT_COLOR_HEX,
+} from "@/shared/calendarColors";
+import { getCalendarColorVisuals } from "./constants";
 import {
   eventEditorReducer,
   getEventEditorState,
@@ -19,6 +25,7 @@ export function EventTrayEditor({
   isMacOSTheme,
   isSystem7Theme,
   isWindowsTheme,
+  isDarkMode = false,
   t,
   onUpdate,
   onDelete,
@@ -38,6 +45,30 @@ export function EventTrayEditor({
   const setDate = (value: string) => dispatch({ type: "setDate", value });
   const setEndDate = (value: string) => dispatch({ type: "setEndDate", value });
   const allDay = !event.startTime;
+
+  const currentCalendarId = event.calendarId || calendars[0]?.id || "home";
+  const selectedCalendar =
+    calendars.find((c) => c.id === currentCalendarId) || calendars[0];
+  const isReadOnly = Boolean(selectedCalendar?.readOnly);
+  const isGoogleSynced = Boolean(
+    selectedCalendar?.googleCalendarId || event.googleEventId
+  );
+  const selectedCalendarSwatch = getCalendarColorVisuals(
+    selectedCalendar?.color || "blue",
+    isDarkMode
+  ).swatch;
+  const eventColorSwatch = getCalendarColorVisuals(
+    event.color,
+    isDarkMode
+  ).swatch;
+  const isInheritingCalendarColor =
+    !event.googleColorId &&
+    areEventColorsEquivalent(event.color, selectedCalendar?.color || "blue");
+
+  const selectableCalendars = calendars.filter(
+    (c) => !c.readOnly || c.id === currentCalendarId
+  );
+
   useEffect(() => {
     dispatch({ type: "resetFromEvent", event });
   }, [
@@ -53,6 +84,7 @@ export function EventTrayEditor({
   ]);
 
   const commitTitle = () => {
+    if (isReadOnly) return;
     const next = title.trim();
     if (!next) {
       setTitle(event.title);
@@ -62,6 +94,7 @@ export function EventTrayEditor({
   };
 
   const commitLocation = () => {
+    if (isReadOnly) return;
     const next = location.trim() || undefined;
     if (next !== (event.location || undefined)) {
       onUpdate(event.id, { location: next });
@@ -69,6 +102,7 @@ export function EventTrayEditor({
   };
 
   const commitNotes = () => {
+    if (isReadOnly) return;
     const next = notes.trim() || undefined;
     if (next !== (event.notes || undefined)) {
       onUpdate(event.id, { notes: next });
@@ -76,7 +110,7 @@ export function EventTrayEditor({
   };
 
   const commitDate = (nextDate: string) => {
-    if (!nextDate) return;
+    if (isReadOnly || !nextDate) return;
     setDate(nextDate);
     if (!allDay) {
       if (nextDate !== event.date) onUpdate(event.id, { date: nextDate });
@@ -92,7 +126,7 @@ export function EventTrayEditor({
   };
 
   const commitEndDate = (nextEndDate: string) => {
-    if (!nextEndDate) return;
+    if (isReadOnly || !nextEndDate) return;
     const clampedEndDate = nextEndDate < date ? date : nextEndDate;
     setEndDate(clampedEndDate);
     const nextStoredEndDate = normalizeAllDayEndDate(date, clampedEndDate);
@@ -102,6 +136,7 @@ export function EventTrayEditor({
   };
 
   const setAllDay = (next: boolean) => {
+    if (isReadOnly) return;
     if (next) {
       onUpdate(event.id, {
         startTime: undefined,
@@ -118,6 +153,7 @@ export function EventTrayEditor({
   };
 
   const commitTimes = (st: string, et: string) => {
+    if (isReadOnly) return;
     dispatch({ type: "setTimes", startTime: st, endTime: et });
     if (!allDay && (st !== event.startTime || et !== (event.endTime || ""))) {
       onUpdate(event.id, { startTime: st, endTime: et, endDate: undefined });
@@ -125,9 +161,19 @@ export function EventTrayEditor({
   };
 
   const onCalendarChange = (calendarId: string) => {
+    if (isReadOnly) return;
     const cal = calendars.find((c) => c.id === calendarId);
-    if (!cal) return;
-    onUpdate(event.id, { calendarId: cal.id, color: cal.color });
+    if (!cal || cal.readOnly) return;
+    onUpdate(event.id, { calendarId: cal.id });
+  };
+
+  const onResetToCalendarColor = () => {
+    if (isReadOnly) return;
+    const calColor = selectedCalendar?.color || "blue";
+    onUpdate(event.id, {
+      color: calColor,
+      googleColorId: event.googleEventId && event.googleColorId ? null : undefined,
+    });
   };
 
   const titleInputClass = cn(
@@ -174,6 +220,9 @@ export function EventTrayEditor({
     useGeneva && "font-geneva-12"
   );
 
+  const ringOffsetBg = isDarkMode ? "#2b2b2e" : "#ffffff";
+  const ringBorder = isDarkMode ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.65)";
+
   return (
     <div className={panelShell}>
       {/* Title + location (iCal header block) */}
@@ -186,6 +235,7 @@ export function EventTrayEditor({
         <input
           type="text"
           value={title}
+          readOnly={isReadOnly}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={commitTitle}
           onKeyDown={(e) => {
@@ -203,6 +253,7 @@ export function EventTrayEditor({
         <input
           type="text"
           value={location}
+          readOnly={isReadOnly}
           onChange={(e) => setLocation(e.target.value)}
           onBlur={commitLocation}
           onKeyDown={(e) => e.stopPropagation()}
@@ -219,10 +270,11 @@ export function EventTrayEditor({
         >
           <button
             type="button"
+            disabled={isReadOnly}
             onClick={() => setAllDay(!allDay)}
-            className="flex shrink-0"
+            className={cn("flex shrink-0", isReadOnly && "opacity-50")}
           >
-            <AquaCheckbox checked={allDay} color="#4A90D9" />
+            <AquaCheckbox checked={allDay} color={eventColorSwatch} />
           </button>
         </TrayFieldRow>
 
@@ -233,6 +285,7 @@ export function EventTrayEditor({
                 <input
                   type="date"
                   value={date}
+                  disabled={isReadOnly}
                   onChange={(e) => commitDate(e.target.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={cn(fieldInputClass, "min-w-0 flex-1")}
@@ -240,6 +293,7 @@ export function EventTrayEditor({
                 <input
                   type="time"
                   value={startTime}
+                  disabled={isReadOnly}
                   onChange={(e) => commitTimes(e.target.value, endTime)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={smallTimeClass}
@@ -251,6 +305,7 @@ export function EventTrayEditor({
                 <input
                   type="date"
                   value={date}
+                  disabled={isReadOnly}
                   onChange={(e) => commitDate(e.target.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={cn(fieldInputClass, "min-w-0 flex-1")}
@@ -258,6 +313,7 @@ export function EventTrayEditor({
                 <input
                   type="time"
                   value={endTime}
+                  disabled={isReadOnly}
                   onChange={(e) => commitTimes(startTime, e.target.value)}
                   onKeyDown={(e) => e.stopPropagation()}
                   className={smallTimeClass}
@@ -271,6 +327,7 @@ export function EventTrayEditor({
               <input
                 type="date"
                 value={date}
+                disabled={isReadOnly}
                 onChange={(e) => commitDate(e.target.value)}
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
@@ -281,6 +338,7 @@ export function EventTrayEditor({
                 type="date"
                 value={endDate}
                 min={date}
+                disabled={isReadOnly}
                 onChange={(e) => commitEndDate(e.target.value)}
                 onKeyDown={(e) => e.stopPropagation()}
                 className={fieldInputClass}
@@ -293,26 +351,117 @@ export function EventTrayEditor({
           <div className="flex items-center gap-1.5 min-w-0">
             <span
               className="inline-block size-2.5 shrink-0 rounded-sm border border-black/20"
-              style={{
-                backgroundColor:
-                  EVENT_COLOR_MAP[
-                    calendars.find((c) => c.id === (event.calendarId || calendars[0]?.id))
-                      ?.color || "blue"
-                  ],
-              }}
+              style={{ backgroundColor: selectedCalendarSwatch }}
             />
             <select
-              value={event.calendarId || calendars[0]?.id || "home"}
+              value={currentCalendarId}
+              disabled={isReadOnly}
               onChange={(e) => onCalendarChange(e.target.value)}
               onKeyDown={(e) => e.stopPropagation()}
               className={cn(fieldInputClass, "calendar-tray-compact-select flex-1 min-w-0")}
             >
-              {calendars.map((c) => (
+              {selectableCalendars.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
             </select>
+          </div>
+        </TrayFieldRow>
+
+        <TrayFieldRow label={t("apps.calendar.event.color")} useGeneva={useGeneva}>
+          <div className="flex flex-wrap items-center gap-1 py-0.5 os-native-chrome-skip">
+            {/* Inherit calendar default color */}
+            <button
+              type="button"
+              disabled={isReadOnly}
+              onClick={onResetToCalendarColor}
+              title={selectedCalendar?.name || t("apps.calendar.event.calendar")}
+              aria-label={selectedCalendar?.name || t("apps.calendar.event.calendar")}
+              className={cn(
+                "relative size-3.5 rounded-full shrink-0 flex items-center justify-center transition-transform",
+                !isReadOnly && "hover:scale-110",
+                isReadOnly && "opacity-50 cursor-default"
+              )}
+              style={{
+                backgroundColor: selectedCalendarSwatch,
+                border: "1px solid rgba(0,0,0,0.22)",
+                boxShadow: isInheritingCalendarColor
+                  ? `0 0 0 1.5px ${ringOffsetBg}, 0 0 0 2.5px ${ringBorder}`
+                  : undefined,
+              }}
+            >
+              <span
+                className="size-1 rounded-full"
+                style={{ backgroundColor: "rgba(255,255,255,0.85)" }}
+              />
+            </button>
+
+            {isGoogleSynced
+              ? GOOGLE_EVENT_COLOR_PALETTE.map((entry) => {
+                  const isSelected = event.googleColorId === entry.id;
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() =>
+                        onUpdate(event.id, {
+                          color: entry.hex,
+                          googleColorId: entry.id,
+                        })
+                      }
+                      title={entry.name}
+                      aria-label={entry.name}
+                      className={cn(
+                        "size-3.5 rounded-full shrink-0 transition-transform",
+                        !isReadOnly && "hover:scale-110",
+                        isReadOnly && "opacity-50 cursor-default"
+                      )}
+                      style={{
+                        backgroundColor: entry.hex,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        boxShadow: isSelected
+                          ? `0 0 0 1.5px ${ringOffsetBg}, 0 0 0 2.5px ${ringBorder}`
+                          : undefined,
+                      }}
+                    />
+                  );
+                })
+              : PRESET_CALENDAR_COLORS.filter(
+                  (preset) =>
+                    !areEventColorsEquivalent(
+                      preset,
+                      selectedCalendar?.color || "blue"
+                    )
+                ).map((preset) => {
+                  const hex = PRESET_EVENT_COLOR_HEX[preset];
+                  const isSelected =
+                    !isInheritingCalendarColor &&
+                    areEventColorsEquivalent(event.color, preset);
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      disabled={isReadOnly}
+                      onClick={() => onUpdate(event.id, { color: preset })}
+                      title={preset}
+                      aria-label={preset}
+                      className={cn(
+                        "size-3.5 rounded-full shrink-0 transition-transform",
+                        !isReadOnly && "hover:scale-110",
+                        isReadOnly && "opacity-50 cursor-default"
+                      )}
+                      style={{
+                        backgroundColor: hex,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        boxShadow: isSelected
+                          ? `0 0 0 1.5px ${ringOffsetBg}, 0 0 0 2.5px ${ringBorder}`
+                          : undefined,
+                      }}
+                    />
+                  );
+                })}
           </div>
         </TrayFieldRow>
 
@@ -333,6 +482,7 @@ export function EventTrayEditor({
           </span>
           <textarea
             value={notes}
+            readOnly={isReadOnly}
             onChange={(e) => setNotes(e.target.value)}
             onBlur={commitNotes}
             onKeyDown={(e) => e.stopPropagation()}
@@ -344,24 +494,26 @@ export function EventTrayEditor({
           />
         </div>
 
-        <div
-          className={cn(
-            "shrink-0 w-full min-w-0 mt-1 pt-2 border-t border-black/15",
-            isMacOSTheme && "border-black/12"
-          )}
-        >
-          <Button
-            type="button"
-            variant={isMacOSTheme ? "aqua" : "retro"}
-            size="sm"
-            onClick={() => onDelete(event.id)}
-            className={deleteButtonClass}
-            title={t("apps.calendar.event.delete")}
-            aria-label={t("apps.calendar.event.delete")}
+        {!isReadOnly && (
+          <div
+            className={cn(
+              "shrink-0 w-full min-w-0 mt-1 pt-2 border-t border-black/15",
+              isMacOSTheme && "border-black/12"
+            )}
           >
-            {t("apps.calendar.event.delete")}
-          </Button>
-        </div>
+            <Button
+              type="button"
+              variant={isMacOSTheme ? "aqua" : "retro"}
+              size="sm"
+              onClick={() => onDelete(event.id)}
+              className={deleteButtonClass}
+              title={t("apps.calendar.event.delete")}
+              aria-label={t("apps.calendar.event.delete")}
+            >
+              {t("apps.calendar.event.delete")}
+            </Button>
+          </div>
+        )}
 
         {/* Trailing spacer: ensures the delete button keeps breathing room
             above the scroller's bottom edge in browsers (Mobile Safari)

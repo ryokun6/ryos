@@ -7,7 +7,10 @@ import {
   purgeUserAccount,
 } from "../../../api/_utils/auth/index";
 import { redisKeys } from "../../../src/shared/redisKeys";
-import { getLinkedGoogleAccountByUsername } from "../../../api/_utils/google-oauth";
+import {
+  getLinkedGoogleAccountByUsername,
+  saveLinkedGoogleAccount,
+} from "../../../api/_utils/google-oauth";
 import type { GoogleOAuthPostMessage } from "../../../src/shared/contracts/google";
 import { createContactFromDraft } from "../../../src/utils/contacts";
 import {
@@ -59,6 +62,12 @@ const refreshTokens = new Map<
 >();
 
 const calendarEventsById = new Map<string, Record<string, unknown>>();
+const secondaryCalendarEventsById = new Map<string, Record<string, unknown>>();
+const recordedCalendarWritePayloads: Array<{
+  method: "POST" | "PATCH";
+  calendarId: string;
+  body: Record<string, unknown>;
+}> = [];
 let calendarExpireSyncTokens = new Set<string>();
 
 const peopleByResource = new Map<string, Record<string, unknown>>();
@@ -184,12 +193,57 @@ beforeAll(() => {
         return Response.json({ ok: true });
       }
 
-      // Google Calendar v3 list & create
-      if (pathname === "/calendar/v3/calendars/primary/events") {
+      // Google Calendar v3 calendarList
+      if (pathname === "/calendar/v3/users/me/calendarList" && request.method === "GET") {
+        const authHeader = request.headers.get("authorization") || "";
+        const token = authHeader.replace(/^Bearer\s+/i, "");
+        const profile = accessTokens.get(token);
+        if (!profile) {
+          return Response.json({ error: "unauthorized" }, { status: 401 });
+        }
+        return Response.json({
+          items: [
+            {
+              id: profile.email,
+              summary: profile.email,
+              summaryOverride: "Ryo Personal",
+              backgroundColor: "#33b679",
+              colorId: "2",
+              primary: true,
+              selected: true,
+              accessRole: "owner",
+            },
+            {
+              id: "work@group.calendar.google.com",
+              summary: "ryOS Team",
+              backgroundColor: "#f4511e",
+              colorId: "6",
+              selected: true,
+              accessRole: "writer",
+            },
+          ],
+        });
+      }
+
+      // Google Calendar v3 list & create (supports primary + secondary calendars)
+      const calEventsMatch = /^\/calendar\/v3\/calendars\/([^/]+)\/events$/.exec(
+        pathname
+      );
+      if (calEventsMatch) {
+        const calId = decodeURIComponent(calEventsMatch[1]!);
         const authHeader = request.headers.get("authorization") || "";
         const token = authHeader.replace(/^Bearer\s+/i, "");
         if (!accessTokens.has(token)) {
           return Response.json({ error: "unauthorized" }, { status: 401 });
+        }
+        const store =
+          calId === "primary"
+            ? calendarEventsById
+            : calId === "work@group.calendar.google.com"
+              ? secondaryCalendarEventsById
+              : null;
+        if (!store) {
+          return Response.json({ error: "not_found" }, { status: 404 });
         }
 
         if (request.method === "GET") {
@@ -198,17 +252,22 @@ beforeAll(() => {
             calendarExpireSyncTokens.delete(syncToken);
             return Response.json({ error: { code: 410, message: "Sync token expired" } }, { status: 410 });
           }
-          const items = [...calendarEventsById.values()];
+          const items = [...store.values()];
           return Response.json({
             items: syncToken
               ? items.filter((item) => Boolean(item._changedSinceLastSync))
               : items.filter((item) => item.status !== "cancelled"),
-            nextSyncToken: `cal_sync_${Date.now()}`,
+            nextSyncToken: `cal_sync_${calId}_${Date.now()}`,
           });
         }
 
         if (request.method === "POST") {
           const body = (await request.json()) as Record<string, unknown>;
+          recordedCalendarWritePayloads.push({
+            method: "POST",
+            calendarId: calId,
+            body,
+          });
           const id = `gevt_${crypto.randomUUID().slice(0, 8)}`;
           const nowIso = new Date().toISOString();
           const saved: Record<string, unknown> = {
@@ -219,22 +278,32 @@ beforeAll(() => {
             created: nowIso,
             updated: nowIso,
           };
-          calendarEventsById.set(id, saved);
+          store.set(id, saved);
           return Response.json(saved);
         }
       }
 
       // Google Calendar v3 PATCH & DELETE single event
-      if (pathname.startsWith("/calendar/v3/calendars/primary/events/")) {
-        const eventId = decodeURIComponent(
-          pathname.slice("/calendar/v3/calendars/primary/events/".length)
-        );
+      const singleEventMatch =
+        /^\/calendar\/v3\/calendars\/([^/]+)\/events\/([^/]+)$/.exec(pathname);
+      if (singleEventMatch) {
+        const calId = decodeURIComponent(singleEventMatch[1]!);
+        const eventId = decodeURIComponent(singleEventMatch[2]!);
+        const store =
+          calId === "primary"
+            ? calendarEventsById
+            : secondaryCalendarEventsById;
         if (request.method === "PATCH") {
-          const existing = calendarEventsById.get(eventId);
+          const existing = store.get(eventId);
           if (!existing) {
             return Response.json({ error: "not_found" }, { status: 404 });
           }
           const patch = (await request.json()) as Record<string, unknown>;
+          recordedCalendarWritePayloads.push({
+            method: "PATCH",
+            calendarId: calId,
+            body: patch,
+          });
           const updated: Record<string, unknown> = {
             ...existing,
             ...patch,
@@ -242,11 +311,14 @@ beforeAll(() => {
             etag: `"etag_${eventId}_2"`,
             updated: new Date().toISOString(),
           };
-          calendarEventsById.set(eventId, updated);
+          if (patch.colorId === null) {
+            delete updated.colorId;
+          }
+          store.set(eventId, updated);
           return Response.json(updated);
         }
         if (request.method === "DELETE") {
-          calendarEventsById.delete(eventId);
+          store.delete(eventId);
           return new Response(null, { status: 204 });
         }
       }
@@ -779,8 +851,11 @@ describe("Google Sign-In, Account Linking & Two-Way Sync API", () => {
     const scopesPayload = extractCallbackPayload(await scopesCb.text());
     expect(scopesPayload.status).toBe("scopes_granted");
 
-    // 3. Seed one remote Google Calendar event & run initial two-way Calendar sync (push + pull + refresh_token)
+    // 3. Seed remote Google Calendar events (inherited + explicit colorId + secondary calendar) & run initial two-way Calendar sync
     calendarEventsById.clear();
+    secondaryCalendarEventsById.clear();
+    recordedCalendarWritePayloads.length = 0;
+
     calendarEventsById.set("remote_evt_1", {
       id: "remote_evt_1",
       summary: "Remote Standup",
@@ -788,6 +863,23 @@ describe("Google Sign-In, Account Linking & Two-Way Sync API", () => {
       end: { date: "2026-11-25" },
       status: "confirmed",
       updated: "2026-11-23T12:00:00.000Z",
+    });
+    calendarEventsById.set("remote_evt_colored", {
+      id: "remote_evt_colored",
+      summary: "Grape Review",
+      colorId: "3",
+      start: { date: "2026-11-25" },
+      end: { date: "2026-11-26" },
+      status: "confirmed",
+      updated: "2026-11-23T12:00:00.000Z",
+    });
+    secondaryCalendarEventsById.set("team_evt_1", {
+      id: "team_evt_1",
+      summary: "Team All-Hands",
+      start: { date: "2026-11-27" },
+      end: { date: "2026-11-28" },
+      status: "confirmed",
+      updated: "2026-11-23T13:00:00.000Z",
     });
 
     const calSync1 = await fetchWithAuth(
@@ -818,21 +910,65 @@ describe("Google Sign-In, Account Linking & Two-Way Sync API", () => {
     expect(calSync1.status).toBe(200);
     const calData1 = await calSync1.json();
     expect(calData1.fullSync).toBe(true);
+    expect(calData1.remoteCalendars).toHaveLength(2);
+    expect(calData1.remoteCalendars[0]).toMatchObject({
+      id: "gcal_cal_primary",
+      name: "Ryo Personal",
+      color: "#33b679",
+      googleCalendarId: "primary",
+      googlePrimary: true,
+    });
+    expect(calData1.remoteCalendars[1]).toMatchObject({
+      name: "ryOS Team",
+      color: "#f4511e",
+      googleCalendarId: "work@group.calendar.google.com",
+    });
+
+    // Pushed event MUST NOT stamp a blue `colorId` onto Google Calendar!
+    expect(recordedCalendarWritePayloads).toHaveLength(1);
+    expect(recordedCalendarWritePayloads[0]?.method).toBe("POST");
+    expect("colorId" in (recordedCalendarWritePayloads[0]?.body || {})).toBe(false);
+
     expect(calData1.pushed).toHaveLength(1);
     expect(calData1.pushed[0].event.googleEventId).toBeTruthy();
-    expect(
-      calData1.remoteUpserts.some(
-        (e: { googleEventId?: string }) => e.googleEventId === "remote_evt_1"
-      )
-    ).toBe(true);
+    expect(calData1.pushed[0].event.calendarId).toBe("gcal_cal_primary");
+    expect(calData1.pushed[0].event.color).toBe("#33b679");
+    expect(calData1.pushed[0].event.googleColorId).toBeUndefined();
 
-    // 4. Expire Calendar syncToken -> 410 Gone triggers automatic full-resync + PATCH + DELETE
+    // Pulled events use Google calendar color when colorId is absent, and Google palette hex when colorId is present:
+    const pulledInherited = calData1.remoteUpserts.find(
+      (e: { googleEventId?: string }) => e.googleEventId === "remote_evt_1"
+    );
+    expect(pulledInherited?.calendarId).toBe("gcal_cal_primary");
+    expect(pulledInherited?.color).toBe("#33b679");
+    expect(pulledInherited?.googleColorId).toBeUndefined();
+
+    const pulledGrape = calData1.remoteUpserts.find(
+      (e: { googleEventId?: string }) => e.googleEventId === "remote_evt_colored"
+    );
+    expect(pulledGrape?.calendarId).toBe("gcal_cal_primary");
+    expect(pulledGrape?.color).toBe("#8e24aa");
+    expect(pulledGrape?.googleColorId).toBe("3");
+
+    const pulledTeam = calData1.remoteUpserts.find(
+      (e: { googleEventId?: string }) => e.googleEventId === "team_evt_1"
+    );
+    expect(pulledTeam?.calendarId).toBe(calData1.remoteCalendars[1].id);
+    expect(pulledTeam?.color).toBe("#f4511e");
+
+    // 4. Expire Calendar syncToken + simulate v1 account migration + PATCH (preserving override vs inherited) + DELETE
     const redis = createRedis();
     const storedAfterCal1 = (await getLinkedGoogleAccountByUsername(
       redis,
       syncUser
     ))!;
     calendarExpireSyncTokens.add(storedAfterCal1.calendarSyncToken!);
+    // Also verify v1 schema migration forces full pull even if secondary calendar had a valid syncToken:
+    await saveLinkedGoogleAccount(redis, {
+      ...storedAfterCal1,
+      calendarSyncSchemaVersion: 1,
+    });
+    recordedCalendarWritePayloads.length = 0;
 
     const createdGoogleEvent = calData1.pushed[0].event;
     const calSync2 = await fetchWithAuth(
@@ -848,6 +984,11 @@ describe("Google Sign-In, Account Linking & Two-Way Sync API", () => {
             {
               ...createdGoogleEvent,
               title: "Updated in ryOS",
+              updatedAt: Date.now() + 5000,
+            },
+            {
+              ...pulledGrape,
+              title: "Grape Review (Edited)",
               updatedAt: Date.now() + 5000,
             },
           ],
@@ -866,6 +1007,14 @@ describe("Google Sign-In, Account Linking & Two-Way Sync API", () => {
     expect(calData2.fullSync).toBe(true);
     expect(calData2.deletedLocalIds).toEqual(["gcal_remote_evt_1"]);
     expect(calData2.pushed[0].event.title).toBe("Updated in ryOS");
+    expect(calData2.pushed[0].event.color).toBe("#33b679");
+    expect(calData2.pushed[1].event.color).toBe("#8e24aa");
+    expect(calData2.pushed[1].event.googleColorId).toBe("3");
+
+    // Inherited PATCH must NOT send `colorId`, while overridden PATCH preserves `colorId: "3"`:
+    expect(recordedCalendarWritePayloads).toHaveLength(2);
+    expect("colorId" in (recordedCalendarWritePayloads[0]?.body || {})).toBe(false);
+    expect(recordedCalendarWritePayloads[1]?.body.colorId).toBe("3");
 
     // 5. Contacts two-way sync: createContact + pull remote + stale-etag retry + expired syncToken fallback + deleteContact
     peopleByResource.clear();

@@ -25,9 +25,15 @@ import {
 import {
   addDaysYmd,
   buildDeterministicGoogleCalendarEventId,
+  buildDeterministicGoogleCalendarGroupId,
   buildGoogleEventPayload,
+  mapGoogleCalendarListEntryToRyos,
   mapGoogleEventToRyos,
 } from "../../../api/_utils/google-calendar";
+import {
+  GOOGLE_EVENT_COLOR_PALETTE,
+  resolveCalendarColorVisuals,
+} from "../../../src/shared/calendarColors";
 import {
   buildDeterministicGoogleContactId,
   buildGooglePersonPayload,
@@ -58,9 +64,12 @@ const initialCloudSyncState = useCloudSyncStore.getState();
 
 function resetAllStores() {
   useCalendarStore.setState({
-    events: initialCalendarState.events,
-    calendars: initialCalendarState.calendars,
-    todos: initialCalendarState.todos,
+    events: [],
+    calendars: [
+      { id: "home", name: "Home", color: "blue", visible: true },
+      { id: "work", name: "Work", color: "green", visible: true },
+    ],
+    todos: [],
     pendingGoogleDeletions: [],
   });
   useContactsStore.setState({
@@ -347,9 +356,11 @@ describe("Google Calendar mapper", () => {
     );
     expect(multiDay?.date).toBe("2026-11-25");
     expect(multiDay?.endDate).toBe("2026-11-27");
-    expect(multiDay?.color).toBe("red");
+    expect(multiDay?.color).toBe("#d50000");
+    expect(multiDay?.googleColorId).toBe("11");
 
     const patchBody = buildGoogleEventPayload(multiDay!, "America/Los_Angeles", true);
+    expect(patchBody.colorId).toBe("11");
     expect(patchBody.start).toEqual({
       date: "2026-11-25",
       dateTime: null,
@@ -360,6 +371,135 @@ describe("Google Calendar mapper", () => {
       dateTime: null,
       timeZone: null,
     });
+  });
+
+  test("maps calendarList colors, inherits calendar color when event.colorId is absent, and never stamps blue colorId on push", () => {
+    const primaryCal = mapGoogleCalendarListEntryToRyos(
+      {
+        id: "ryo@lu.dev",
+        summary: "ryo@lu.dev",
+        summaryOverride: "Ryo Personal",
+        backgroundColor: "#33B679",
+        colorId: "2",
+        primary: true,
+        selected: true,
+        accessRole: "owner",
+      },
+      "ryo@lu.dev"
+    );
+    expect(primaryCal).toEqual({
+      id: "gcal_cal_primary",
+      name: "Ryo Personal",
+      color: "#33b679",
+      googleCalendarId: "primary",
+      googleAccountCalendarId: "ryo@lu.dev",
+      googleColorId: "2",
+      googlePrimary: true,
+      googleAccessRole: "owner",
+      readOnly: false,
+      selected: true,
+    });
+
+    const holidaysCal = mapGoogleCalendarListEntryToRyos({
+      id: "en.usa#holiday@group.v.calendar.google.com",
+      summary: "Holidays in United States",
+      colorId: "8",
+      selected: true,
+      accessRole: "reader",
+    });
+    expect(holidaysCal?.readOnly).toBe(true);
+    expect(holidaysCal?.color).toBe("#16a765");
+    expect(
+      mapGoogleCalendarListEntryToRyos({
+        id: "hidden@group.calendar.google.com",
+        hidden: true,
+        accessRole: "owner",
+      })
+    ).toBeNull();
+    expect(
+      mapGoogleCalendarListEntryToRyos({
+        id: "freebusy@group.calendar.google.com",
+        accessRole: "freeBusyReader",
+      })
+    ).toBeNull();
+
+    // Event WITHOUT raw.colorId must inherit its Google calendar's color (not forced blue!)
+    const inherited = mapGoogleEventToRyos(
+      {
+        id: "evt_inherited",
+        summary: "Morning Walk",
+        start: { date: "2026-11-26" },
+        end: { date: "2026-11-27" },
+        updated: "2026-11-25T10:00:00.000Z",
+      },
+      {
+        timeZone: "Asia/Taipei",
+        preferredCalendarId: primaryCal!.id,
+        googleCalendarId: "primary",
+        calendarColor: primaryCal!.color,
+      }
+    )!;
+    expect(inherited.calendarId).toBe("gcal_cal_primary");
+    expect(inherited.color).toBe("#33b679");
+    expect(inherited.googleColorId).toBeUndefined();
+
+    // CRITICAL: Pushing an inherited event (POST or PATCH) must NOT include `colorId`!
+    const inheritedPost = buildGoogleEventPayload(inherited, "Asia/Taipei", false);
+    const inheritedPatch = buildGoogleEventPayload(inherited, "Asia/Taipei", true);
+    expect("colorId" in inheritedPost).toBe(false);
+    expect("colorId" in inheritedPatch).toBe(false);
+
+    // Even a local `Home` ("blue") event being merged for the first time must NOT send `colorId: "9"`!
+    const localHomeMergePayload = buildGoogleEventPayload(
+      {
+        id: "local-home-1",
+        title: "Local Event",
+        date: "2026-11-26",
+        color: "blue",
+        calendarId: "home",
+        createdAt: 1000,
+        updatedAt: 1000,
+      },
+      "Asia/Taipei",
+      false
+    );
+    expect("colorId" in localHomeMergePayload).toBe(false);
+
+    // All 11 official Google per-event `colorId`s map to their exact palette hexes and round-trip:
+    for (const entry of GOOGLE_EVENT_COLOR_PALETTE) {
+      const overridden = mapGoogleEventToRyos(
+        {
+          id: `evt_color_${entry.id}`,
+          summary: entry.name,
+          colorId: entry.id,
+          start: { date: "2026-11-26" },
+          end: { date: "2026-11-27" },
+        },
+        {
+          timeZone: "Asia/Taipei",
+          preferredCalendarId: primaryCal!.id,
+          googleCalendarId: "primary",
+          calendarColor: primaryCal!.color,
+        }
+      )!;
+      expect(overridden.color).toBe(entry.hex);
+      expect(overridden.googleColorId).toBe(entry.id);
+      const overridePatch = buildGoogleEventPayload(overridden, "Asia/Taipei", true);
+      expect(overridePatch.colorId).toBe(entry.id);
+    }
+
+    // Resetting an override (`googleColorId: null`) sends `colorId: null` on PATCH and omits on POST:
+    const clearedOverride = { ...inherited, googleColorId: null };
+    expect(buildGoogleEventPayload(clearedOverride, "Asia/Taipei", true).colorId).toBeNull();
+    expect("colorId" in buildGoogleEventPayload(clearedOverride, "Asia/Taipei", false)).toBe(false);
+
+    // Visual resolver produces valid 6-digit hex swatches + readable light/dark contrast:
+    const bananaLight = resolveCalendarColorVisuals("#f6bf26", { isDarkMode: false });
+    const blueberryDark = resolveCalendarColorVisuals("#3f51b5", { isDarkMode: true });
+    expect(bananaLight.swatch).toBe("#f6bf26");
+    expect(bananaLight.text).not.toBe("#f6bf26"); // darkened for light surface readability
+    expect(blueberryDark.swatch).toBe("#3f51b5");
+    expect(blueberryDark.text).not.toBe("#3f51b5"); // lightened for dark surface readability
   });
 
   test("maps timed events in target IANA timezone and preserves ryosEventId across devices", () => {
@@ -494,11 +634,16 @@ describe("Discard vs. Merge + Cloud Sync v2 compatibility", () => {
       .discardAllLocalEventsForGoogleSync();
     expect(discardedIds).toHaveLength(15);
     expect(useCalendarStore.getState().events).toHaveLength(0);
+    // Discard also removes local blue Home / green Work calendars so Google calendars take over cleanly:
+    expect(useCalendarStore.getState().calendars).toHaveLength(0);
 
     const markers = useCloudSyncStore.getState().deletionMarkers.calendarEventIds;
     for (const id of discardedIds) {
       expect(markers[id]).toBeTruthy();
     }
+    const calMarkers = useCloudSyncStore.getState().deletionMarkers.calendarIds;
+    expect(calMarkers.home).toBeTruthy();
+    expect(calMarkers.work).toBeTruthy();
 
     const pushedOps: Array<{ k: string; del?: boolean; v?: unknown }> = [];
     const originalFetch = globalThis.fetch;
@@ -788,5 +933,208 @@ describe("Discard vs. Merge + Cloud Sync v2 compatibility", () => {
       syncedAt: 8000,
     });
     expect(useContactsStore.getState().contacts).toBe(contactsRefBefore);
+  });
+
+  test("Migrates already-synced v1 events out of blue Home into real Google calendars, preserves overrides on edit, and supports cross-calendar moves", () => {
+    const workCalGroupId = buildDeterministicGoogleCalendarGroupId(
+      "work@group.calendar.google.com"
+    );
+
+    // Simulate a pre-existing v1 account where Google events were dumped into blue `Home`:
+    useCalendarStore.setState({
+      calendars: [
+        { id: "home", name: "Home", color: "blue", visible: true },
+        { id: "work", name: "Work", color: "green", visible: true },
+      ],
+      events: [
+        {
+          id: "gcal_v1_evt_1",
+          title: "Synced Standup",
+          date: "2026-11-26",
+          startTime: "10:00",
+          endTime: "10:30",
+          color: "blue",
+          calendarId: "home",
+          createdAt: 1000,
+          updatedAt: 2000,
+          googleEventId: "v1_evt_1",
+          googleCalendarId: "primary",
+          googleSyncedUpdatedAt: 2000,
+        },
+        {
+          id: "gcal_v1_evt_2",
+          title: "Explicit Flamingo Dinner",
+          date: "2026-11-26",
+          startTime: "19:00",
+          endTime: "20:30",
+          color: "red",
+          calendarId: "home",
+          createdAt: 1000,
+          updatedAt: 2000,
+          googleEventId: "v1_evt_2",
+          googleCalendarId: "primary",
+          googleSyncedUpdatedAt: 2000,
+        },
+      ],
+      todos: [
+        {
+          id: "todo-on-home",
+          title: "Review PR",
+          completed: false,
+          dueDate: null,
+          calendarId: "home",
+          createdAt: 1000,
+        },
+      ],
+      pendingGoogleDeletions: [],
+    });
+
+    // Next sync delivers remoteCalendars + fullSyncGoogleCalendarIds from schema v2 migration:
+    useCalendarStore.getState().applyGoogleCalendarSyncResult({
+      fullSync: true,
+      fullSyncGoogleCalendarIds: ["primary", "work@group.calendar.google.com"],
+      remoteCalendars: [
+        {
+          id: "gcal_cal_primary",
+          name: "Ryo",
+          color: "#33b679",
+          googleCalendarId: "primary",
+          googlePrimary: true,
+          googleAccessRole: "owner",
+          readOnly: false,
+          selected: true,
+        },
+        {
+          id: workCalGroupId,
+          name: "ryOS Team",
+          color: "#f4511e",
+          googleCalendarId: "work@group.calendar.google.com",
+          googleAccessRole: "writer",
+          readOnly: false,
+          selected: true,
+        },
+      ],
+      pushed: [],
+      deletedLocalIds: [],
+      remoteUpserts: [
+        {
+          id: "gcal_v1_evt_1",
+          title: "Synced Standup",
+          date: "2026-11-26",
+          startTime: "10:00",
+          endTime: "10:30",
+          color: "#33b679",
+          calendarId: "gcal_cal_primary",
+          createdAt: 1000,
+          updatedAt: 2000,
+          googleEventId: "v1_evt_1",
+          googleCalendarId: "primary",
+          googleSyncedUpdatedAt: 2000,
+        },
+        {
+          id: "gcal_v1_evt_2",
+          title: "Explicit Flamingo Dinner",
+          date: "2026-11-26",
+          startTime: "19:00",
+          endTime: "20:30",
+          color: "#e67c73",
+          calendarId: "gcal_cal_primary",
+          createdAt: 1000,
+          updatedAt: 2000,
+          googleEventId: "v1_evt_2",
+          googleCalendarId: "primary",
+          googleColorId: "4",
+          googleSyncedUpdatedAt: 2000,
+        },
+        {
+          id: "gcal_work_1",
+          title: "Sprint Demo",
+          date: "2026-11-27",
+          color: "#f4511e",
+          calendarId: workCalGroupId,
+          createdAt: 1500,
+          updatedAt: 2500,
+          googleEventId: "work_evt_1",
+          googleCalendarId: "work@group.calendar.google.com",
+          googleSyncedUpdatedAt: 2500,
+        },
+      ],
+      remoteDeletedGoogleIds: [],
+      remoteDeletedEvents: [],
+      syncedAt: 3000,
+    });
+
+    const migratedState = useCalendarStore.getState();
+    // Unused local `Home` and `Work` were pruned & tombstoned; real Google calendars remain:
+    expect(migratedState.calendars.map((c) => c.id)).toEqual([
+      "gcal_cal_primary",
+      workCalGroupId,
+    ]);
+    expect(
+      useCloudSyncStore.getState().deletionMarkers.calendarIds.home
+    ).toBeTruthy();
+    // Todo previously pointing to `home` was cleanly re-homed to Google primary:
+    expect(migratedState.todos[0]?.calendarId).toBe("gcal_cal_primary");
+
+    // Zero duplicate events, colors migrated accurately, and zero dirty push loop:
+    expect(migratedState.events).toHaveLength(3);
+    const evt1 = migratedState.events.find((e) => e.id === "gcal_v1_evt_1")!;
+    const evt2 = migratedState.events.find((e) => e.id === "gcal_v1_evt_2")!;
+    expect(evt1.calendarId).toBe("gcal_cal_primary");
+    expect(evt1.color).toBe("#33b679");
+    expect(evt1.googleColorId).toBeUndefined();
+    expect(calendarEventNeedsGooglePush(evt1, migratedState.calendars)).toBe(false);
+
+    expect(evt2.calendarId).toBe("gcal_cal_primary");
+    expect(evt2.color).toBe("#e67c73");
+    expect(evt2.googleColorId).toBe("4");
+    expect(calendarEventNeedsGooglePush(evt2, migratedState.calendars)).toBe(false);
+
+    // Creating a new event defaults to Google primary with its color and NO googleColorId override:
+    const newId = useCalendarStore.getState().addEvent({
+      title: "NewSyncedEvent",
+      date: "2026-11-28",
+    });
+    const created = useCalendarStore
+      .getState()
+      .events.find((e) => e.id === newId)!;
+    expect(created.calendarId).toBe("gcal_cal_primary");
+    expect(created.googleCalendarId).toBe("primary");
+    expect(created.color).toBe("#33b679");
+    expect(created.googleColorId).toBeUndefined();
+
+    // Editing unrelated fields on evt1 keeps googleColorId undefined; on evt2 keeps googleColorId "4":
+    useCalendarStore
+      .getState()
+      .updateEvent("gcal_v1_evt_1", { title: "Synced Standup (Edited)" });
+    useCalendarStore
+      .getState()
+      .updateEvent("gcal_v1_evt_2", { location: "Taipei 101" });
+    const edited1 = useCalendarStore
+      .getState()
+      .events.find((e) => e.id === "gcal_v1_evt_1")!;
+    const edited2 = useCalendarStore
+      .getState()
+      .events.find((e) => e.id === "gcal_v1_evt_2")!;
+    expect(edited1.googleColorId).toBeUndefined();
+    expect(edited2.googleColorId).toBe("4");
+
+    // Moving evt1 from primary to secondary Google calendar queues deletion on primary & adopts secondary color:
+    useCalendarStore
+      .getState()
+      .updateEvent("gcal_v1_evt_1", { calendarId: workCalGroupId });
+    const afterMove = useCalendarStore.getState();
+    const movedEvt1 = afterMove.events.find((e) => e.id === "gcal_v1_evt_1")!;
+    expect(movedEvt1.calendarId).toBe(workCalGroupId);
+    expect(movedEvt1.color).toBe("#f4511e");
+    expect(movedEvt1.googleEventId).toBeUndefined();
+    expect(movedEvt1.googleCalendarId).toBe("work@group.calendar.google.com");
+    expect(afterMove.pendingGoogleDeletions).toEqual([
+      {
+        localId: "gcal_v1_evt_1",
+        googleEventId: "v1_evt_1",
+        googleCalendarId: "primary",
+      },
+    ]);
   });
 });

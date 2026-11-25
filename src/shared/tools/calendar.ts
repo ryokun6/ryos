@@ -5,6 +5,12 @@ import type {
   TodoItemDto,
 } from "../domains/calendar";
 import {
+  areEventColorsEquivalent,
+  mapColorToClosestGoogleEventColorId,
+  PRESET_CALENDAR_COLORS,
+  type EventColor,
+} from "../calendarColors";
+import {
   calendarEventOccursOnDate,
   normalizeAllDayEndDate,
 } from "../calendarEventDates";
@@ -21,7 +27,7 @@ export const CALENDAR_ACTIONS = [
 ] as const;
 export type CalendarAction = (typeof CALENDAR_ACTIONS)[number];
 
-export const CALENDAR_COLORS = ["blue", "red", "green", "orange", "purple"] as const;
+export const CALENDAR_COLORS = PRESET_CALENDAR_COLORS;
 export type CalendarColor = (typeof CALENDAR_COLORS)[number];
 
 export interface CalendarControlInput {
@@ -145,13 +151,44 @@ export function serializeCalendarTodo(
   };
 }
 
-function resolveCalendarColor(
-  input: CalendarControlInput,
+export function pickDefaultWritableCalendar<
+  T extends Pick<CalendarGroupDto, "id" | "visible" | "googlePrimary" | "readOnly">
+>(calendars: readonly T[]): T | undefined {
+  return (
+    calendars.find((c) => c.googlePrimary && !c.readOnly && c.visible) ??
+    calendars.find((c) => c.googlePrimary && !c.readOnly) ??
+    calendars.find((c) => !c.readOnly && c.visible) ??
+    calendars.find((c) => !c.readOnly) ??
+    calendars[0]
+  );
+}
+
+function resolveTargetCalendar(
+  requestedCalendarId: string | undefined,
   calendars: CalendarGroupDto[]
-): CalendarColor {
-  if (input.color) return input.color;
-  const calendar = calendars.find((item) => item.id === input.calendarId);
-  return calendar?.color || "blue";
+): CalendarGroupDto | undefined {
+  if (requestedCalendarId) {
+    const found = calendars.find((item) => item.id === requestedCalendarId);
+    if (found) return found;
+  }
+  return pickDefaultWritableCalendar(calendars);
+}
+
+function resolveCalendarColorForCreate(
+  inputColor: CalendarColor | undefined,
+  calendar: CalendarGroupDto | undefined
+): { color: EventColor; googleColorId?: string } {
+  const calendarColor: EventColor = calendar?.color || "blue";
+  if (!inputColor) {
+    return { color: calendarColor };
+  }
+  if (areEventColorsEquivalent(inputColor, calendarColor)) {
+    return { color: calendarColor };
+  }
+  return {
+    color: inputColor,
+    googleColorId: mapColorToClosestGoogleEventColorId(inputColor),
+  };
 }
 
 export function applyCalendarToolAction(
@@ -183,6 +220,16 @@ export function applyCalendarToolAction(
         return { ok: false, error: "missing_fields" };
       }
       const now = deps.now();
+      const requestedCalendarId = input.calendarId?.trim() || undefined;
+      const targetCalendar = resolveTargetCalendar(
+        requestedCalendarId,
+        state.calendars
+      );
+      const resolvedColor = resolveCalendarColorForCreate(
+        input.color,
+        targetCalendar
+      );
+      const effectiveCalendarId = requestedCalendarId ?? targetCalendar?.id;
       const newEvent: CalendarEventDto = {
         id: deps.generateId(),
         title: input.title,
@@ -192,8 +239,14 @@ export function applyCalendarToolAction(
           : normalizeAllDayEndDate(input.date, input.endDate),
         startTime: input.startTime,
         endTime: input.endTime,
-        color: resolveCalendarColor(input, state.calendars),
-        calendarId: input.calendarId,
+        color: resolvedColor.color,
+        ...(resolvedColor.googleColorId
+          ? { googleColorId: resolvedColor.googleColorId }
+          : {}),
+        ...(effectiveCalendarId ? { calendarId: effectiveCalendarId } : {}),
+        ...(targetCalendar?.googleCalendarId && !targetCalendar.readOnly
+          ? { googleCalendarId: targetCalendar.googleCalendarId }
+          : {}),
         notes: input.notes,
         location: input.location,
         createdAt: now,
@@ -217,7 +270,31 @@ export function applyCalendarToolAction(
         input.startTime !== undefined ? input.startTime : existing.startTime;
       const nextEndDate =
         input.endDate !== undefined ? input.endDate : existing.endDate;
-      const event = {
+      const eventCalendar = state.calendars.find(
+        (c) => c.id === existing.calendarId
+      );
+
+      let colorPatch: Partial<Pick<CalendarEventDto, "color" | "googleColorId">> =
+        {};
+      if (input.color !== undefined) {
+        if (
+          eventCalendar &&
+          areEventColorsEquivalent(input.color, eventCalendar.color)
+        ) {
+          colorPatch = {
+            color: eventCalendar.color,
+            googleColorId:
+              existing.googleEventId && existing.googleColorId ? null : undefined,
+          };
+        } else {
+          colorPatch = {
+            color: input.color,
+            googleColorId: mapColorToClosestGoogleEventColorId(input.color),
+          };
+        }
+      }
+
+      const event: CalendarEventDto = {
         ...existing,
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.date !== undefined ? { date: nextDate } : {}),
@@ -226,7 +303,7 @@ export function applyCalendarToolAction(
           : normalizeAllDayEndDate(nextDate, nextEndDate),
         ...(input.startTime !== undefined ? { startTime: input.startTime } : {}),
         ...(input.endTime !== undefined ? { endTime: input.endTime } : {}),
-        ...(input.color !== undefined ? { color: input.color } : {}),
+        ...colorPatch,
         ...(input.notes !== undefined ? { notes: input.notes } : {}),
         ...(input.location !== undefined ? { location: input.location } : {}),
         updatedAt: deps.now(),
@@ -270,7 +347,9 @@ export function applyCalendarToolAction(
 
     case "createTodo": {
       if (!input.title) return { ok: false, error: "missing_fields" };
-      const calendarId = input.calendarId || state.calendars[0]?.id || "home";
+      const requestedCalId = input.calendarId?.trim() || undefined;
+      const defaultCal = pickDefaultWritableCalendar(state.calendars);
+      const calendarId = requestedCalId || defaultCal?.id || "home";
       const todo: TodoItemDto = {
         id: deps.generateId(),
         title: input.title,

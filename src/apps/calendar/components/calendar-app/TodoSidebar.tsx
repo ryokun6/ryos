@@ -3,8 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Trash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
-import type { CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
-import { EVENT_COLOR_MAP } from "./calendarAppConstants";
+import {
+  getDefaultWritableCalendar,
+  type CalendarGroup,
+  type TodoItem,
+} from "@/stores/useCalendarStore";
+import { getCalendarColorVisuals } from "./calendarAppConstants";
 
 export function TodoSidebar({
   todos,
@@ -15,6 +19,7 @@ export function TodoSidebar({
   onDelete,
   isMacOSTheme,
   isSystem7Theme,
+  isDarkMode = false,
   fullWidth,
   noHeader,
   selectedTodoId,
@@ -31,6 +36,7 @@ export function TodoSidebar({
   onDelete: (id: string) => void;
   isMacOSTheme: boolean;
   isSystem7Theme: boolean;
+  isDarkMode?: boolean;
   fullWidth?: boolean;
   noHeader?: boolean;
   selectedTodoId?: string | null;
@@ -41,7 +47,8 @@ export function TodoSidebar({
   const [newTitle, setNewTitle] = useState("");
   const [editingTodoId, setEditingTodoId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
-  const defaultCalId = calendars[0]?.id || "home";
+  const defaultCalId =
+    getDefaultWritableCalendar(calendars)?.id || calendars[0]?.id || "home";
   const calendarById = useMemo(
     () => new Map(calendars.map((calendar) => [calendar.id, calendar])),
     [calendars]
@@ -107,6 +114,7 @@ export function TodoSidebar({
         )}
         {todos.map((todo) => {
           const cal = calendarById.get(todo.calendarId);
+          const swatch = getCalendarColorVisuals(cal?.color || "blue", isDarkMode).swatch;
           const isEditing = editingTodoId === todo.id;
           const isSelected = selectedTodoId === todo.id;
           return (
@@ -118,7 +126,7 @@ export function TodoSidebar({
               )}
             >
               <button type="button" onClick={() => onToggle(todo.id)} className="shrink-0 mt-[3px]">
-                <AquaCheckbox checked={todo.completed} color={EVENT_COLOR_MAP[cal?.color || "blue"]} />
+                <AquaCheckbox checked={todo.completed} color={swatch} />
               </button>
               {isEditing ? (
                 <input

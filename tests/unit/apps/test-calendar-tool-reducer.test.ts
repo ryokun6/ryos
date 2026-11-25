@@ -148,6 +148,59 @@ describe("calendar tool shared reducer", () => {
       "todo-1": "2026-06-07T22:00:00.000Z",
     });
   });
+
+  test("inherits Google calendar hex color without forcing blue and only sets googleColorId on explicit overrides", () => {
+    const googleState: CalendarSnapshotData = {
+      events: [],
+      calendars: [
+        {
+          id: "gcal_cal_primary",
+          name: "Ryo",
+          color: "#33b679",
+          visible: true,
+          googleCalendarId: "primary",
+          googlePrimary: true,
+        },
+      ],
+      todos: [],
+    };
+
+    const createdDefault = applyCalendarToolAction(
+      googleState,
+      { action: "create", title: "Focus Block", date: "2026-11-26" },
+      deps
+    );
+    expect(createdDefault.ok).toBe(true);
+    if (!createdDefault.ok || createdDefault.kind !== "create") return;
+    expect(createdDefault.event.calendarId).toBe("gcal_cal_primary");
+    expect(createdDefault.event.googleCalendarId).toBe("primary");
+    expect(createdDefault.event.color).toBe("#33b679");
+    expect(createdDefault.event.googleColorId).toBeUndefined();
+
+    const createdOverride = applyCalendarToolAction(
+      createdDefault.state,
+      {
+        action: "create",
+        title: "Urgent Deadline",
+        date: "2026-11-27",
+        color: "red",
+      },
+      { ...deps, generateId: () => "override-id" }
+    );
+    expect(createdOverride.ok).toBe(true);
+    if (!createdOverride.ok || createdOverride.kind !== "create") return;
+    expect(createdOverride.event.color).toBe("red");
+    expect(createdOverride.event.googleColorId).toBe("11");
+
+    const renamed = applyCalendarToolAction(
+      createdOverride.state,
+      { action: "update", id: "override-id", title: "Urgent Deadline (v2)" },
+      deps
+    );
+    expect(renamed.ok).toBe(true);
+    if (!renamed.ok || renamed.kind !== "update") return;
+    expect(renamed.event.googleColorId).toBe("11");
+  });
 });
 
 describe("calendarControlSchema accepts over-filled tool-model input", () => {

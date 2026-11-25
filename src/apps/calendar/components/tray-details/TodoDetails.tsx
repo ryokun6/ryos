@@ -8,7 +8,7 @@ import { Check, X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { AquaCheckbox } from "@/components/ui/aqua-checkbox";
 import type { CalendarGroup, TodoItem } from "@/stores/useCalendarStore";
-import { EVENT_COLOR_MAP } from "./constants";
+import { getCalendarColorVisuals } from "./constants";
 import { TrayFieldRow } from "./TrayFieldRow";
 import type { TrayThemeProps } from "./types";
 import { formatDateLabel } from "./utils";
@@ -20,6 +20,7 @@ export function TodoDetails({
   isMacOSTheme,
   isSystem7Theme,
   isWindowsTheme,
+  isDarkMode = false,
   locale,
   t,
   onToggle,
@@ -48,7 +49,7 @@ export function TodoDetails({
   }, [todo.id, todo.title]);
 
   const calendar = calendars.find((c) => c.id === todo.calendarId) || calendars[0];
-  const color = EVENT_COLOR_MAP[calendar?.color || "blue"];
+  const color = getCalendarColorVisuals(calendar?.color || "blue", isDarkMode).swatch;
 
   const commitTitle = () => {
     const next = title.trim();

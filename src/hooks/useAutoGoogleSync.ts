@@ -39,7 +39,9 @@ export function useAutoGoogleSync() {
       const state = useCalendarStore.getState();
       const hasDirty =
         state.pendingGoogleDeletions.length > 0 ||
-        state.events.some(calendarEventNeedsGooglePush);
+        state.events.some((ev) =>
+          calendarEventNeedsGooglePush(ev, state.calendars)
+        );
       if (!hasDirty) return;
 
       if (pushTimer) clearTimeout(pushTimer);
