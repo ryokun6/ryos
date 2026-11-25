@@ -43,6 +43,7 @@ import {
 import type { CreateRoomIrcOptions } from "@/shared/contracts/chat";
 import { useAssistantStore } from "@/stores/useAssistantStore";
 import { useAudioSettingsStore } from "@/stores/useAudioSettingsStore";
+import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
 import { clearAIConversationSessionCache } from "@/api/aiConversations";
 
 const chatsStoreLog = createClientLogger("ChatsStore");
@@ -279,7 +280,7 @@ export interface ChatsStoreState {
   setAuthenticated: (authenticated: boolean) => void;
   setPassword: (
     password: string,
-    currentPassword: string
+    currentPassword?: string
   ) => Promise<{ ok: boolean; error?: string }>; // Set or change password for user
   setRooms: (rooms: ChatRoom[]) => void;
   setCurrentRoomId: (roomId: string | null) => void;
@@ -329,7 +330,7 @@ export interface ChatsStoreState {
   logout: () => Promise<void>; // Logout and clear all user data
   deleteAccount: (params: {
     confirmUsername: string;
-    currentPassword: string;
+    currentPassword?: string;
   }) => Promise<{ ok: boolean; error?: string }>; // Permanently delete account
 }
 
@@ -557,6 +558,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             useAssistantStore.getState().clearMessages();
             clearAIConversationSessionCache();
             disableChatSpeechOnAuthLoss();
+            useGoogleSyncStore.getState().resetOnLogout();
             set({
               isAuthenticated: false,
               aiMessages: [getInitialAiMessage()],
@@ -575,10 +577,11 @@ export const useChatsStore = create<ChatsStoreState>()(
           try {
             const payload = {
               password,
-              currentPassword,
+              ...(currentPassword ? { currentPassword } : {}),
             };
 
             await setUserPassword(payload);
+            useGoogleSyncStore.getState().setHasPassword(true);
             return { ok: true };
           } catch (error) {
             chatsStoreLog.error("Error setting password:", error);
@@ -854,6 +857,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           useAssistantStore.getState().clearMessages();
           clearAIConversationSessionCache();
           disableChatSpeechOnAuthLoss();
+          useGoogleSyncStore.getState().resetOnLogout();
 
           set((state) => ({
             ...state,
@@ -887,7 +891,7 @@ export const useChatsStore = create<ChatsStoreState>()(
             await deleteAccountApi({
               confirm: true,
               confirmUsername,
-              currentPassword,
+              ...(currentPassword ? { currentPassword } : {}),
             });
           } catch (error) {
             chatsStoreLog.error("Error deleting account:", error);
@@ -908,6 +912,7 @@ export const useChatsStore = create<ChatsStoreState>()(
           useAssistantStore.getState().clearMessages();
           clearAIConversationSessionCache();
           disableChatSpeechOnAuthLoss();
+          useGoogleSyncStore.getState().resetOnLogout();
 
           set((state) => ({
             ...state,
@@ -1435,6 +1440,10 @@ async function reconcileSessionFromCookie(expectedUsername: string | null) {
           store.setUsername(data.username);
         }
         store.setAuthenticated(true);
+        useGoogleSyncStore.getState().ensureOwner(data.username);
+        if (typeof data.hasPassword === "boolean") {
+          useGoogleSyncStore.getState().setHasPassword(data.hasPassword);
+        }
       }
     } else if (expectedUsername) {
       debug("No valid session — logging out.");

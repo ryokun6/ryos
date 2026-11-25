@@ -36,7 +36,10 @@ import { useDashboardStore } from "@/stores/useDashboardStore";
 import { reconcileMobileOrder } from "@/stores/dashboardLayout";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
-import { useCalendarStore } from "@/stores/useCalendarStore";
+import {
+  dedupeCalendarEventsByGoogleId,
+  useCalendarStore,
+} from "@/stores/useCalendarStore";
 import { useContactsStore } from "@/stores/useContactsStore";
 import { useMapsStore } from "@/stores/useMapsStore";
 import { useStuffStore } from "@/stores/useStuffStore";
@@ -1437,6 +1440,7 @@ const calendarCodec: SyncCodec = {
       }
     }
 
+    let removedDuplicateEventIds: string[] = [];
     useCalendarStore.setState((state) => {
       const mergeCollection = <T extends Item>(
         items: T[],
@@ -1450,12 +1454,25 @@ const calendarCodec: SyncCodec = {
         return Array.from(byId.values());
       };
 
+      const mergedEvents = mergeCollection(state.events, "calendar/event:");
+      const deduped =
+        mergedEvents === state.events
+          ? { events: mergedEvents, removedDuplicateIds: [] }
+          : dedupeCalendarEventsByGoogleId(mergedEvents);
+      removedDuplicateEventIds = deduped.removedDuplicateIds;
+
       return {
-        events: mergeCollection(state.events, "calendar/event:"),
+        events: deduped.events,
         calendars: mergeCollection(state.calendars, "calendar/cal:"),
         todos: mergeCollection(state.todos, "calendar/todo:"),
       };
     });
+
+    if (removedDuplicateEventIds.length > 0) {
+      useCloudSyncStore
+        .getState()
+        .markDeletedKeys("calendarEventIds", removedDuplicateEventIds);
+    }
   },
   subscribe(onChange) {
     return useCalendarStore.subscribe((state, prev) => {
@@ -1486,7 +1503,10 @@ const contactsCodec: SyncCodec = {
     for (const contact of state.contacts) {
       if (contact?.id) docs.set(`contacts/contact:${contact.id}`, contact);
     }
-    docs.set("contacts/me", { myContactId: state.myContactId ?? null });
+    docs.set("contacts/me", {
+      myContactId: state.myContactId ?? null,
+      suppressDefaultSeed: state.suppressDefaultSeed === true,
+    });
     return docs;
   },
   apply(ops) {
@@ -1494,6 +1514,7 @@ const contactsCodec: SyncCodec = {
     const upserts = new Map<string, Contact>();
     const deletes = new Set<string>();
     let myContactId: string | null | undefined;
+    let suppressDefaultSeed: boolean | undefined;
 
     for (const op of ops) {
       if (op.k.startsWith("contacts/contact:")) {
@@ -1509,6 +1530,9 @@ const contactsCodec: SyncCodec = {
           myContactId =
             typeof doc.myContactId === "string" ? doc.myContactId : null;
         }
+        if (doc && "suppressDefaultSeed" in doc && typeof doc.suppressDefaultSeed === "boolean") {
+          suppressDefaultSeed = doc.suppressDefaultSeed;
+        }
       }
     }
 
@@ -1518,12 +1542,17 @@ const contactsCodec: SyncCodec = {
     for (const [id, contact] of upserts) byId.set(id, contact as never);
     state.replaceContactsFromSync(
       Array.from(byId.values()),
-      myContactId !== undefined ? myContactId : state.myContactId
+      myContactId !== undefined ? myContactId : state.myContactId,
+      suppressDefaultSeed
     );
   },
   subscribe(onChange) {
     return useContactsStore.subscribe((state, prev) => {
-      if (state.contacts !== prev.contacts || state.myContactId !== prev.myContactId) {
+      if (
+        state.contacts !== prev.contacts ||
+        state.myContactId !== prev.myContactId ||
+        state.suppressDefaultSeed !== prev.suppressDefaultSeed
+      ) {
         if (!useContactsStore.persist.hasHydrated()) return;
         onChange();
       }

@@ -14,6 +14,7 @@ import {
   getStoredUserRecord,
   getStoredUserTimeZone,
 } from "../_utils/auth/_user-record.js";
+import { getUserPasswordHash } from "../_utils/auth/_password.js";
 
 export default apiHandler(
   {
@@ -36,9 +37,10 @@ export default apiHandler(
     res.setHeader("Set-Cookie", buildSetAuthCookie(user.username, user.token));
 
     logger.info("Session restored", { username: user.username });
-    const [timeZone, userRecord] = await Promise.all([
+    const [timeZone, userRecord, passwordHash] = await Promise.all([
       getStoredUserTimeZone(redis, user.username),
       getStoredUserRecord(redis, user.username),
+      getUserPasswordHash(redis, user.username),
     ]);
     const createdAt =
       typeof userRecord?.createdAt === "number" ? userRecord.createdAt : undefined;
@@ -47,6 +49,7 @@ export default apiHandler(
       authenticated: true,
       username: user.username,
       expired: user.expired,
+      hasPassword: Boolean(passwordHash),
       ...(timeZone ? { timeZone } : {}),
       ...(createdAt !== undefined ? { createdAt } : {}),
     });

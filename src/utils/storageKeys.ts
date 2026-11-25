@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
   assistant: "ryos:assistant",
   staleReload: "ryos:stale-reload",
   theme: "ryos:theme",
+  googleSync: "ryos:google-sync",
 } as const;
 
 export const LEGACY_STORAGE_KEYS = {

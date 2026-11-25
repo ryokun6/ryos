@@ -14,6 +14,7 @@ import {
   deleteUserEmailIndex,
 } from "./_user-record.js";
 import { unlinkTelegramAccountByUsername } from "../telegram-link.js";
+import { unlinkGoogleAccountByUsername } from "../google-oauth.js";
 import { redisKeys } from "../../../src/shared/redisKeys.js";
 import { deleteAIConversationKeys } from "../../ai/conversations/_helpers/store.js";
 import { deleteAllAIAttachments } from "../../ai/attachments/_helpers/store.js";
@@ -67,6 +68,14 @@ export async function purgeUserAccount(
 
   // Telegram link (both directions).
   await unlinkTelegramAccountByUsername(redis, normalized).catch(() => {});
+
+  // Google OAuth link + tokens + reverse sub index.
+  const unlinkedGoogle = await unlinkGoogleAccountByUsername(redis, normalized, {
+    revokeRemoteToken: true,
+  }).catch(() => null);
+  if (unlinkedGoogle) {
+    deletedCount += 2;
+  }
 
   // APNs device rows.
   deletedCount += await removeAllUserPushDevices(redis, normalized).catch(() => 0);

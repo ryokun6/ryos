@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "bun run scripts/generate-build-version.ts && bun run scripts/dev-with-api.ts",
     "dev:vite": "bun run scripts/generate-build-version.ts && NODE_OPTIONS='--max-old-space-size=4096' vite --port ${PORT:-5173}",
-    "dev:api": "TRUSTED_PROXY_COUNT=1 TELEGRAM_BOT_API_BASE_URL=${TELEGRAM_BOT_API_BASE_URL:-http://localhost:${TELEGRAM_TEST_API_PORT:-3899}} bun --watch scripts/api-standalone-server.ts",
+    "dev:api": "TRUSTED_PROXY_COUNT=1 TELEGRAM_BOT_API_BASE_URL=${TELEGRAM_BOT_API_BASE_URL:-http://localhost:${TELEGRAM_TEST_API_PORT:-3899}} GOOGLE_TEST_API_BASE_URL=${GOOGLE_TEST_API_BASE_URL:-http://localhost:${GOOGLE_TEST_API_PORT:-3898}} GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-test-google-client-id} GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-test-google-client-secret} bun --watch scripts/api-standalone-server.ts",
     "api:start": "NODE_ENV=production bun run scripts/api-standalone-server.ts",
     "start": "NODE_ENV=production bun run scripts/api-standalone-server.ts",
     "version:bump": "bun run scripts/generate-build-version.ts --bump",

@@ -36,6 +36,8 @@ export interface SessionResponse {
   timeZone?: string;
   /** Account creation timestamp (ms since epoch) from the stored user profile. */
   createdAt?: number;
+  /** Whether the user has a password set (false for passwordless Google accounts). */
+  hasPassword?: boolean;
 }
 
 export interface RecoveryRequestResponse {

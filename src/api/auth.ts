@@ -101,8 +101,8 @@ export async function getAuthSession(): Promise<
 export interface SetPasswordRequest {
   /** New password to store. */
   password: string;
-  /** Existing password. */
-  currentPassword: string;
+  /** Existing password (optional when setting an initial password on a Google-created account). */
+  currentPassword?: string;
 }
 
 export async function setUserPassword(
@@ -154,7 +154,7 @@ export async function getEmailStatus(): Promise<EmailStatusResponse> {
 
 export async function setRecoveryEmail(params: {
   email: string;
-  currentPassword: string;
+  currentPassword?: string;
 }): Promise<EmailMutationResponse> {
   return apiRequest<EmailMutationResponse, typeof params>({
     path: "/api/auth/email/set",
@@ -187,7 +187,7 @@ export async function removeRecoveryEmail(): Promise<{ success: boolean }> {
 export async function deleteAccount(params: {
   confirm: boolean;
   confirmUsername: string;
-  currentPassword: string;
+  currentPassword?: string;
 }): Promise<DeleteAccountResponse> {
   return apiRequest<DeleteAccountResponse, typeof params>({
     path: "/api/auth/account/delete",

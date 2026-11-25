@@ -3,6 +3,13 @@ import { AppMenuBarMenus } from "@/components/shared/menubar/AppMenuBarMenus";
 import { useAppMenuBarChrome } from "@/hooks/useAppMenuBarChrome";
 import { requestCloudSyncDomainCheck } from "@/utils/cloudSyncEvents";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { useGoogleSyncStoreShallow } from "@/stores/useGoogleSyncStore";
+import {
+  disableGoogleFeatureSync,
+  enableGoogleFeatureSync,
+  runGoogleContactsSync,
+} from "@/sync/googleSyncEngine";
 
 interface ContactsMenuBarProps {
   onClose: () => void;
@@ -36,6 +43,44 @@ export function ContactsMenuBar({
     appId,
     appName,
   } = useAppMenuBarChrome("contacts");
+  const { googleConfigured, googleContactsSyncEnabled, isSyncingGoogleContacts } =
+    useGoogleSyncStoreShallow((s) => ({
+      googleConfigured: s.configured,
+      googleContactsSyncEnabled: s.contactsSyncEnabled,
+      isSyncingGoogleContacts: s.isSyncingContacts,
+    }));
+
+  const handleToggleGoogleContactsSync = async () => {
+    if (googleContactsSyncEnabled) {
+      disableGoogleFeatureSync("contacts");
+      return;
+    }
+    try {
+      const enabled = await enableGoogleFeatureSync("contacts");
+      if (enabled) {
+        toast.success(t("apps.control-panels.google.contactsSyncSyncedToast"));
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("apps.control-panels.google.genericError")
+      );
+    }
+  };
+
+  const handleSyncGoogleContactsNow = async () => {
+    try {
+      await runGoogleContactsSync({ mode: "incremental" });
+      toast.success(t("apps.control-panels.google.contactsSyncSyncedToast"));
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t("apps.control-panels.google.genericError")
+      );
+    }
+  };
 
   return (
     <AppMenuBarShell
@@ -73,6 +118,28 @@ export function ContactsMenuBar({
                 }),
                 onClick: () => requestCloudSyncDomainCheck("contacts"),
               },
+              ...(googleConfigured
+                ? ([
+                    {
+                      type: "checkbox",
+                      label: t("apps.contacts.menu.googleContactsSync"),
+                      checked: googleContactsSyncEnabled,
+                      onChange: () => void handleToggleGoogleContactsSync(),
+                    },
+                    ...(googleContactsSyncEnabled
+                      ? ([
+                          {
+                            type: "action",
+                            label: isSyncingGoogleContacts
+                              ? t("apps.control-panels.google.syncing")
+                              : t("apps.contacts.menu.syncGoogleContactsNow"),
+                            disabled: isSyncingGoogleContacts,
+                            onClick: () => void handleSyncGoogleContactsNow(),
+                          },
+                        ] as const)
+                      : []),
+                  ] as const)
+                : []),
               { type: "separator" },
               {
                 type: "action",

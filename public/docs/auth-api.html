@@ -379,6 +379,7 @@
     <a href="/docs/stuff" class="nav-child ">2.29 Stuff</a>
     <a href="/docs/dictionary" class="nav-child ">2.30 Dictionary</a>
     <a href="/docs/fitness" class="nav-child ">2.31 Fitness</a>
+    <a href="/docs/journal" class="nav-child ">2.32 Journal</a>
   </div>
 </div>
 <div class="nav-group ">
@@ -494,7 +495,7 @@ X-Username: {username}</code></pre>
 <p>Optional request header for timezone persistence: <code>X-User-Timezone: America/Los_Angeles</code></p>
 <p>Most auth-protected endpoints resolve credentials through the shared <code>request-auth</code> utility (both headers required together for programmatic access). <code>register</code>, <code>login</code>, and <code>token/refresh</code> remain explicit handlers.</p>
 <h2>Endpoint Summary</h2>
-<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue session cookie</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>GET</td><td><code>/api/auth/session</code></td><td>Restore session from cookie; refresh cookie Max-Age</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh session cookie</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set or update password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr><tr><td>POST</td><td><code>/api/auth/recovery/request</code></td><td>Send a password-reset code to all available Telegram/email channels</td></tr><tr><td>POST</td><td><code>/api/auth/recovery/reset</code></td><td>Reset password with a code; invalidates sessions</td></tr><tr><td>GET</td><td><code>/api/auth/email/status</code></td><td>Recovery-email status (masked)</td></tr><tr><td>POST</td><td><code>/api/auth/email/set</code></td><td>Set/replace recovery email + send verify code</td></tr><tr><td>POST</td><td><code>/api/auth/email/verify</code></td><td>Verify recovery email with a code</td></tr><tr><td>POST</td><td><code>/api/auth/email/remove</code></td><td>Remove recovery email</td></tr><tr><td>POST</td><td><code>/api/auth/account/delete</code></td><td>Permanently delete own account</td></tr></tbody></table>
+<table><thead><tr><th>Method</th><th>Endpoint</th><th>Description</th></tr></thead><tbody><tr><td>POST</td><td><code>/api/auth/register</code></td><td>Create user + issue session cookie</td></tr><tr><td>POST</td><td><code>/api/auth/login</code></td><td>Login with password</td></tr><tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Logout current session</td></tr><tr><td>POST</td><td><code>/api/auth/logout-all</code></td><td>Logout all sessions</td></tr><tr><td>GET</td><td><code>/api/auth/session</code></td><td>Restore session from cookie; refresh cookie Max-Age</td></tr><tr><td>POST</td><td><code>/api/auth/token/verify</code></td><td>Verify token</td></tr><tr><td>POST</td><td><code>/api/auth/token/refresh</code></td><td>Refresh session cookie</td></tr><tr><td>POST</td><td><code>/api/auth/password/set</code></td><td>Set or update password</td></tr><tr><td>GET</td><td><code>/api/auth/tokens</code></td><td>List active tokens</td></tr><tr><td>POST</td><td><code>/api/auth/recovery/request</code></td><td>Send a password-reset code to all available Telegram/email channels</td></tr><tr><td>POST</td><td><code>/api/auth/recovery/reset</code></td><td>Reset password with a code; invalidates sessions</td></tr><tr><td>GET</td><td><code>/api/auth/email/status</code></td><td>Recovery-email status (masked)</td></tr><tr><td>POST</td><td><code>/api/auth/email/set</code></td><td>Set/replace recovery email + send verify code</td></tr><tr><td>POST</td><td><code>/api/auth/email/verify</code></td><td>Verify recovery email with a code</td></tr><tr><td>POST</td><td><code>/api/auth/email/remove</code></td><td>Remove recovery email</td></tr><tr><td>POST</td><td><code>/api/auth/account/delete</code></td><td>Permanently delete own account</td></tr><tr><td>POST</td><td><code>/api/auth/google/start</code></td><td>Generate Google OAuth 2.0 + PKCE authorization URL (<code>signin</code>, <code>link</code>, <code>scopes</code>)</td></tr><tr><td>GET</td><td><code>/api/auth/google/callback</code></td><td>Handle Google OAuth callback, auto-link verified email or stage username confirmation</td></tr><tr><td>POST</td><td><code>/api/auth/google/complete-signup</code></td><td>Finalize brand-new Google sign-up with user-chosen ryOS username</td></tr><tr><td>GET</td><td><code>/api/google/status</code></td><td>Linked Google account + granted sync scopes (<code>calendar</code>, <code>contacts</code>)</td></tr><tr><td>POST</td><td><code>/api/google/disconnect</code></td><td>Unlink Google account and revoke stored OAuth tokens</td></tr><tr><td>POST</td><td><code>/api/google/calendar/sync</code></td><td>Two-way incremental/full sync with primary Google Calendar</td></tr><tr><td>POST</td><td><code>/api/google/contacts/sync</code></td><td>Two-way incremental/full sync with Google People API (Contacts)</td></tr></tbody></table>
 <h2>Endpoints</h2>
 <h3>Register User</h3>
 <p>Create a new user account and receive a session cookie.</p>
@@ -509,7 +510,10 @@ Content-Type: application/json
 <pre><code>{
   "user": { "username": "alice" }
 }</code></pre>
-<p>An httpOnly session cookie is set via <code>Set-Cookie</code>.</p>
+<p>An httpOnly session cookie is set via <code>Set-Cookie</code>. The response also sets <code>ryos_device</code> (<code>Path=/api</code>, 1 year), an httpOnly device id used to block repeat signups from the same browser.</p>
+<p>Registration limits:</p>
+<table><thead><tr><th>Scope</th><th>Limit</th><th>What happens when exceeded</th></tr></thead><tbody><tr><td>Attempts per IP</td><td>20 per 6 hours</td><td>24-hour block. Covers invalid bodies and the existing-user login path</td></tr><tr><td>New accounts per IP</td><td>2 per 7 days</td><td>14-day block</td></tr><tr><td>New accounts per device</td><td>1 per 30 days</td><td>30-day block on that <code>ryos_device</code> cookie</td></tr></tbody></table>
+<p>Logging into an existing username does not consume a new-account slot. Discarding the device cookie does not reset the IP cap.</p>
 <strong>Response (200, existing account, password matches):</strong>
 <pre><code>{
   "user": { "username": "alice" }
@@ -542,6 +546,7 @@ Content-Type: application/json
   "authenticated": true,
   "username": "alice",
   "expired": false,
+  "hasPassword": true,
   "timeZone": "America/Los_Angeles"
 }</code></pre>
 <h3>Logout</h3>
@@ -684,7 +689,7 @@ POST /api/auth/email/remove                                      # clears email<
 <code>set</code> and <code>remove</code> require a fresh (non-grace) token. <code>verify</code> writes a reverse
 index so the email can be used as a recovery identifier.
 <h2>Delete Account</h2>
-<p>Permanently delete the authenticated user's own account and all associated data (profile, password, sessions, recovery-email index, Telegram link, and Sync v2 data). Requires a fresh (non-grace) token.</p>
+<p>Permanently delete the authenticated user's own account and all associated data (profile, password, sessions, recovery-email index, Telegram link, Google link, and Sync v2 data). Requires a fresh (non-grace) token.</p>
 <pre><code>POST /api/auth/account/delete
 Authorization: Bearer {token}
 X-Username: alice
@@ -693,15 +698,17 @@ Content-Type: application/json
 {
   "confirm": true,
   "confirmUsername": "alice",
-  "currentPassword": "currentPassword123"   // required when a password is set
+  "currentPassword": "currentPassword123"   // required when hasPassword is true; omitted for passwordless Google accounts
 }</code></pre>
 <p>The admin account (<code>ryo</code>) cannot self-delete. The clearing <code>Set-Cookie</code> header is returned on success.</p>
 <strong>Response (200):</strong>
 <pre><code>{
   "success": true
 }</code></pre>
+<h2>Google OAuth Sign-In, Linking & Sync</h2>
+<p>Google OAuth uses <strong>Authorization Code + PKCE (<code>S256</code>)</strong> with a single-use hashed <code>state</code> record in Redis (<code>10m</code> TTL) and incremental scope consent: <ol><li><strong>Basic Sign-In / Link (<code>mode: "signin"</code> or <code>"link"</code>)</strong> requests <code>openid email profile</code>.<ul><li>Returning linked <code>sub</code> signs directly into the linked ryOS account.</li><li>Unlinked <code>sub</code> whose <code>email_verified: true</code> address matches an existing user's verified recovery email (<code>auth:email:{hash}</code>) automatically links and signs into that account.</li><li>Brand-new Google users receive a short-lived <code>pendingToken</code> (<code>15m</code> TTL) + sanitized <code>suggestedUsername</code> and finalize account creation via <code>POST /api/auth/google/complete-signup</code>. Passwordless Google-created accounts report <code>hasPassword: false</code> on <code>GET /api/auth/session</code> and <code>GET /api/google/status</code>, and can set an initial password via <code>POST /api/auth/password/set</code> without <code>currentPassword</code>.</li></ul></li></ol><ol><li><strong>Incremental Scope Upgrade (<code>mode: "scopes"</code>, <code>features: ["calendar" | "contacts"]</code>)</strong> requests <code>https://www.googleapis.com/auth/calendar</code> and/or <code>https://www.googleapis.com/auth/contacts</code> with <code>access_type=offline</code> and <code>include_granted_scopes=true</code>.</li><li><strong>Two-Way Sync (<code>POST /api/google/calendar/sync</code>, <code>POST /api/google/contacts/sync</code>)</strong> pushes dirty local upserts/deletions and pulls incremental remote deltas using stored <code>syncToken</code> cursors (automatically falling back to a full reconciliation on <code>410 Gone</code> / expired sync tokens).</li></ol></p>
 <h2>Environment</h2>
-<table><thead><tr><th>Variable</th><th>Purpose</th></tr></thead><tbody><tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Required to deliver reset codes over Telegram</td></tr><tr><td><code>RESEND_API_KEY</code></td><td>Required for the recovery-email channel (Resend); must be set together with <code>RECOVERY_EMAIL_FROM</code></td></tr><tr><td><code>RECOVERY_EMAIL_FROM</code></td><td>Required for the recovery-email channel — <code>From</code> address for recovery email (e.g. <code>ryOS &lt;noreply@os.ryo.lu&gt;</code>); must be set together with <code>RESEND_API_KEY</code></td></tr></tbody></table>
+<table><thead><tr><th>Variable</th><th>Purpose</th></tr></thead><tbody><tr><td><code>TELEGRAM_BOT_TOKEN</code></td><td>Required to deliver reset codes over Telegram</td></tr><tr><td><code>RESEND_API_KEY</code></td><td>Required for the recovery-email channel (Resend); must be set together with <code>RECOVERY_EMAIL_FROM</code></td></tr><tr><td><code>RECOVERY_EMAIL_FROM</code></td><td>Required for the recovery-email channel — <code>From</code> address for recovery email (e.g. <code>ryOS &lt;noreply@os.ryo.lu&gt;</code>); must be set together with <code>RESEND_API_KEY</code></td></tr><tr><td><code>GOOGLE_CLIENT_ID</code></td><td>Google OAuth 2.0 Web client ID (enables Sign-In, account linking, and Calendar/Contacts sync when set with <code>GOOGLE_CLIENT_SECRET</code>)</td></tr><tr><td><code>GOOGLE_CLIENT_SECRET</code></td><td>Google OAuth 2.0 Web client secret</td></tr><tr><td><code>GOOGLE_REDIRECT_URI</code></td><td>Optional explicit callback URL override (defaults to <code>&lt;APP_PUBLIC_ORIGIN&gt;/api/auth/google/callback</code>)</td></tr></tbody></table>
 <h2>Error Responses</h2>
 <table><thead><tr><th>Status</th><th>Error</th><th>Description</th></tr></thead><tbody><tr><td>400</td><td><code>Invalid request</code></td><td>Missing/invalid parameters (or partial auth headers)</td></tr><tr><td>401</td><td><code>Invalid credentials</code></td><td>Wrong username or password</td></tr><tr><td>401</td><td><code>Unauthorized - invalid token</code></td><td>Token is invalid for username</td></tr><tr><td>403</td><td><code>Unauthorized</code> / <code>Forbidden - Admin access required</code></td><td>Origin or permissions blocked</td></tr><tr><td>404</td><td><code>User not found</code></td><td>Username doesn't exist</td></tr><tr><td>409</td><td><code>Username already taken</code></td><td>Register collision with different password</td></tr><tr><td>429</td><td><code>Rate limit exceeded</code></td><td>Too many requests</td></tr></tbody></table>
 <h2>Related</h2>

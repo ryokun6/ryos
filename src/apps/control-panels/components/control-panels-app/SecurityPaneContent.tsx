@@ -9,6 +9,7 @@ import type { Contact } from "@/utils/contacts";
 import { AccountProfileHeader } from "./AccountProfileHeader";
 import { ControlPanelsPrefFormRow } from "./ControlPanelsPrefFormRow";
 import { cn } from "@/lib/utils";
+import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
 
 export type SecurityPaneContentProps = {
   t: (key: string, opts?: Record<string, unknown>) => string;
@@ -53,6 +54,7 @@ export function SecurityPaneContent({
   const [isRecoveryEmailOpen, setIsRecoveryEmailOpen] = useState(false);
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [isLogoutAllConfirmOpen, setIsLogoutAllConfirmOpen] = useState(false);
+  const hasPassword = useGoogleSyncStore((s) => s.hasPassword);
 
   const openPasswordDialog = () => {
     setPasswordInput("");
@@ -89,7 +91,9 @@ export function SecurityPaneContent({
             disabled={!username}
             className="h-7"
           >
-            {t("apps.control-panels.changePasswordButton")}
+            {hasPassword
+              ? t("apps.control-panels.changePasswordButton")
+              : t("apps.control-panels.setPasswordButton")}
           </Button>
         </ControlPanelsPrefFormRow>
 

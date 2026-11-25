@@ -182,7 +182,7 @@ export function useAuth() {
   );
 
   const setPassword = useCallback(
-    async (password: string, currentPassword: string) => {
+    async (password: string, currentPassword?: string) => {
       return storeSetPassword(password, currentPassword);
     },
     [storeSetPassword]

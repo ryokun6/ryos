@@ -7,6 +7,10 @@ import {
   calendarEventOverlapsDateRange,
   normalizeAllDayEndDate,
 } from "@/shared/calendarEventDates";
+import type {
+  GoogleCalendarDeletionInput,
+  GoogleCalendarSyncResponse,
+} from "@/shared/contracts/google";
 import {
   formatZonedDateString,
   getEffectiveTimezone,
@@ -37,6 +41,12 @@ export interface CalendarEvent {
   notes?: string;
   createdAt: number;
   updatedAt: number;
+  /** Google Calendar two-way sync metadata */
+  googleEventId?: string;
+  googleCalendarId?: string;
+  googleEtag?: string;
+  googleRecurringEventId?: string;
+  googleSyncedUpdatedAt?: number;
 }
 
 export interface TodoItem {
@@ -59,6 +69,7 @@ interface CalendarStoreState {
   events: CalendarEvent[];
   calendars: CalendarGroup[];
   todos: TodoItem[];
+  pendingGoogleDeletions: GoogleCalendarDeletionInput[];
   showTodoSidebar: boolean;
   selectedDate: string; // YYYY-MM-DD
   currentMonth: number; // 0-11
@@ -76,6 +87,11 @@ interface CalendarStoreState {
   ) => string;
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
+
+  // Google Calendar sync actions
+  discardAllLocalEventsForGoogleSync: () => string[];
+  applyGoogleCalendarSyncResult: (response: GoogleCalendarSyncResponse) => void;
+  detachGoogleCalendarMetadata: () => void;
 
   // Todo actions
   addTodo: (title: string, calendarId: string, dueDate?: string) => string;
@@ -105,6 +121,69 @@ const getTodayStr = (): string =>
 const formatDate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+function areEventListsEqual(a: CalendarEvent[], b: CalendarEvent[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (
+      x.id !== y.id ||
+      x.title !== y.title ||
+      x.date !== y.date ||
+      x.endDate !== y.endDate ||
+      x.startTime !== y.startTime ||
+      x.endTime !== y.endTime ||
+      x.color !== y.color ||
+      x.calendarId !== y.calendarId ||
+      x.location !== y.location ||
+      x.notes !== y.notes ||
+      x.createdAt !== y.createdAt ||
+      x.updatedAt !== y.updatedAt ||
+      x.googleEventId !== y.googleEventId ||
+      x.googleCalendarId !== y.googleCalendarId ||
+      x.googleEtag !== y.googleEtag ||
+      x.googleRecurringEventId !== y.googleRecurringEventId ||
+      x.googleSyncedUpdatedAt !== y.googleSyncedUpdatedAt
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function dedupeCalendarEventsByGoogleId(events: CalendarEvent[]): {
+  events: CalendarEvent[];
+  removedDuplicateIds: string[];
+} {
+  const byGoogleId = new Map<string, CalendarEvent>();
+  const removedDuplicateIds: string[] = [];
+  const passthrough: CalendarEvent[] = [];
+
+  for (const ev of events) {
+    if (!ev.googleEventId) {
+      passthrough.push(ev);
+      continue;
+    }
+    const existing = byGoogleId.get(ev.googleEventId);
+    if (!existing) {
+      byGoogleId.set(ev.googleEventId, ev);
+      continue;
+    }
+    const keepIncoming = ev.updatedAt > existing.updatedAt;
+    if (keepIncoming) {
+      removedDuplicateIds.push(existing.id);
+      byGoogleId.set(ev.googleEventId, ev);
+    } else {
+      removedDuplicateIds.push(ev.id);
+    }
+  }
+
+  return {
+    events: [...passthrough, ...byGoogleId.values()],
+    removedDuplicateIds,
+  };
+}
+
 export const useCalendarStore = create<CalendarStoreState>()(
   persist(
     (set, get) => {
@@ -114,6 +193,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
         events: [],
         calendars: DEFAULT_CALENDARS,
         todos: [],
+        pendingGoogleDeletions: [],
         showTodoSidebar: false,
         selectedDate: getTodayStr(),
         currentMonth: zoned.month - 1,
@@ -138,12 +218,22 @@ export const useCalendarStore = create<CalendarStoreState>()(
 
         removeCalendar: (id) => {
           const state = get();
-          const deletedEventIds = state.events.reduce<string[]>((acc, event) => {
+          const deletedEventIds: string[] = [];
+          const googleDeletionsToAdd: GoogleCalendarDeletionInput[] = [];
+
+          for (const event of state.events) {
             if (event.calendarId === id) {
-              acc.push(event.id);
+              deletedEventIds.push(event.id);
+              if (event.googleEventId) {
+                googleDeletionsToAdd.push({
+                  localId: event.id,
+                  googleEventId: event.googleEventId,
+                  googleCalendarId: event.googleCalendarId,
+                });
+              }
             }
-            return acc;
-          }, []);
+          }
+
           const deletedTodoIds = state.todos.reduce<string[]>((acc, todo) => {
             if (todo.calendarId === id) {
               acc.push(todo.id);
@@ -151,11 +241,24 @@ export const useCalendarStore = create<CalendarStoreState>()(
             return acc;
           }, []);
 
-          set((state) => ({
-            calendars: state.calendars.filter((c) => c.id !== id),
-            events: state.events.filter((e) => e.calendarId !== id),
-            todos: state.todos.filter((t) => t.calendarId !== id),
-          }));
+          set((prev) => {
+            const seenGoogleIds = new Set(
+              prev.pendingGoogleDeletions.map((d) => d.googleEventId)
+            );
+            const mergedPending = [...prev.pendingGoogleDeletions];
+            for (const item of googleDeletionsToAdd) {
+              if (!seenGoogleIds.has(item.googleEventId)) {
+                seenGoogleIds.add(item.googleEventId);
+                mergedPending.push(item);
+              }
+            }
+            return {
+              calendars: prev.calendars.filter((c) => c.id !== id),
+              events: prev.events.filter((e) => e.calendarId !== id),
+              todos: prev.todos.filter((t) => t.calendarId !== id),
+              pendingGoogleDeletions: mergedPending,
+            };
+          });
 
           useCloudSyncStore.getState().markDeletedKeys("calendarIds", [id]);
           useCloudSyncStore
@@ -203,10 +306,244 @@ export const useCalendarStore = create<CalendarStoreState>()(
         },
 
         deleteEvent: (id) => {
-          set((state) => ({
-            events: state.events.filter((ev) => ev.id !== id),
-          }));
+          const existing = get().events.find((ev) => ev.id === id);
+          set((state) => {
+            const nextPending =
+              existing?.googleEventId &&
+              !state.pendingGoogleDeletions.some(
+                (d) => d.googleEventId === existing.googleEventId
+              )
+                ? [
+                    ...state.pendingGoogleDeletions,
+                    {
+                      localId: existing.id,
+                      googleEventId: existing.googleEventId,
+                      googleCalendarId: existing.googleCalendarId,
+                    },
+                  ]
+                : state.pendingGoogleDeletions;
+            return {
+              events: state.events.filter((ev) => ev.id !== id),
+              pendingGoogleDeletions: nextPending,
+            };
+          });
           useCloudSyncStore.getState().markDeletedKeys("calendarEventIds", [id]);
+        },
+
+        discardAllLocalEventsForGoogleSync: () => {
+          const deletedIds = get().events.map((ev) => ev.id);
+          set({
+            events: [],
+            pendingGoogleDeletions: [],
+          });
+          if (deletedIds.length > 0) {
+            useCloudSyncStore
+              .getState()
+              .markDeletedKeys("calendarEventIds", deletedIds);
+          }
+          return deletedIds;
+        },
+
+        applyGoogleCalendarSyncResult: (response) => {
+          const removedLocalIds: string[] = [];
+          const upsertedLocalIds: string[] = [];
+
+          set((state) => {
+            const ackedDeleteLocalIds = new Set(response.deletedLocalIds);
+            const remoteDeletedSet = new Set(response.remoteDeletedGoogleIds);
+            const nextPendingDeletions = state.pendingGoogleDeletions.filter(
+              (d) =>
+                !ackedDeleteLocalIds.has(d.localId) &&
+                !remoteDeletedSet.has(d.googleEventId)
+            );
+            const pendingGoogleIds = new Set(
+              nextPendingDeletions.map((d) => d.googleEventId)
+            );
+
+            const pushedById = new Map(
+              response.pushed.map((item) => [item.localId, item.event])
+            );
+            const remoteUpsertsFiltered = response.remoteUpserts.filter(
+              (ev) => !ev.googleEventId || !pendingGoogleIds.has(ev.googleEventId)
+            );
+            const remoteGoogleIds = new Set(
+              remoteUpsertsFiltered
+                .map((ev) => ev.googleEventId)
+                .filter((id): id is string => Boolean(id))
+            );
+
+            const defaultCalendarId = state.calendars[0]?.id || "home";
+            const validCalendarIds = new Set(state.calendars.map((c) => c.id));
+
+            const surviving: CalendarEvent[] = [];
+            for (const ev of state.events) {
+              if (ev.googleEventId && remoteDeletedSet.has(ev.googleEventId)) {
+                removedLocalIds.push(ev.id);
+                continue;
+              }
+              if (
+                response.fullSync &&
+                ev.googleEventId &&
+                !remoteGoogleIds.has(ev.googleEventId) &&
+                !pushedById.has(ev.id)
+              ) {
+                const hasUnsyncedLocalEdit =
+                  ev.googleSyncedUpdatedAt !== undefined
+                    ? ev.updatedAt > ev.googleSyncedUpdatedAt
+                    : false;
+                if (!hasUnsyncedLocalEdit) {
+                  removedLocalIds.push(ev.id);
+                  continue;
+                }
+              }
+
+              const pushed = pushedById.get(ev.id);
+              if (pushed) {
+                if (ev.updatedAt > pushed.updatedAt) {
+                  // Edited locally while sync request was in flight; preserve local edits + adopt Google IDs.
+                  surviving.push({
+                    ...ev,
+                    googleEventId: pushed.googleEventId,
+                    googleCalendarId: pushed.googleCalendarId,
+                    googleEtag: pushed.googleEtag,
+                    googleSyncedUpdatedAt: pushed.googleSyncedUpdatedAt,
+                  });
+                } else {
+                  surviving.push({
+                    ...pushed,
+                    calendarId: ev.calendarId || pushed.calendarId || defaultCalendarId,
+                    color: ev.color || pushed.color,
+                  });
+                }
+              } else {
+                surviving.push(ev);
+              }
+            }
+
+            const byId = new Map<string, CalendarEvent>();
+            const idByGoogleId = new Map<string, string>();
+            for (const ev of surviving) {
+              byId.set(ev.id, ev);
+              if (ev.googleEventId) {
+                idByGoogleId.set(ev.googleEventId, ev.id);
+              }
+            }
+
+            for (const remote of remoteUpsertsFiltered) {
+              const existingId =
+                (byId.has(remote.id) ? remote.id : undefined) ??
+                (remote.googleEventId
+                  ? idByGoogleId.get(remote.googleEventId)
+                  : undefined);
+              const existing = existingId ? byId.get(existingId) : undefined;
+
+              if (existing) {
+                const hasUnsyncedLocalEdit =
+                  existing.googleSyncedUpdatedAt !== undefined
+                    ? existing.updatedAt > existing.googleSyncedUpdatedAt
+                    : false;
+                if (hasUnsyncedLocalEdit && existing.updatedAt > remote.updatedAt) {
+                  byId.set(existing.id, {
+                    ...existing,
+                    googleEventId: remote.googleEventId ?? existing.googleEventId,
+                    googleCalendarId:
+                      remote.googleCalendarId ?? existing.googleCalendarId,
+                    googleEtag: remote.googleEtag ?? existing.googleEtag,
+                  });
+                } else {
+                  const calendarId =
+                    existing.calendarId && validCalendarIds.has(existing.calendarId)
+                      ? existing.calendarId
+                      : validCalendarIds.has(remote.calendarId || "")
+                        ? remote.calendarId
+                        : defaultCalendarId;
+                  byId.set(existing.id, {
+                    ...remote,
+                    id: existing.id,
+                    calendarId,
+                    color: existing.color || remote.color,
+                    googleSyncedUpdatedAt: remote.updatedAt,
+                  });
+                }
+              } else {
+                const calendarId = validCalendarIds.has(remote.calendarId || "")
+                  ? remote.calendarId!
+                  : defaultCalendarId;
+                const calendarColor =
+                  state.calendars.find((c) => c.id === calendarId)?.color ||
+                  remote.color;
+                const inserted: CalendarEvent = {
+                  ...remote,
+                  calendarId,
+                  color: remote.color || calendarColor,
+                  googleSyncedUpdatedAt: remote.updatedAt,
+                };
+                byId.set(inserted.id, inserted);
+                if (inserted.googleEventId) {
+                  idByGoogleId.set(inserted.googleEventId, inserted.id);
+                }
+                upsertedLocalIds.push(inserted.id);
+              }
+            }
+
+            const nextEvents = Array.from(byId.values());
+            const eventsChanged = !areEventListsEqual(state.events, nextEvents);
+            const deletionsChanged =
+              state.pendingGoogleDeletions.length !== nextPendingDeletions.length ||
+              state.pendingGoogleDeletions.some(
+                (d, idx) =>
+                  d.localId !== nextPendingDeletions[idx]?.localId ||
+                  d.googleEventId !== nextPendingDeletions[idx]?.googleEventId
+              );
+
+            if (!eventsChanged && !deletionsChanged) {
+              return state;
+            }
+
+            return {
+              ...(eventsChanged ? { events: nextEvents } : {}),
+              ...(deletionsChanged
+                ? { pendingGoogleDeletions: nextPendingDeletions }
+                : {}),
+            };
+          });
+
+          if (removedLocalIds.length > 0) {
+            useCloudSyncStore
+              .getState()
+              .markDeletedKeys("calendarEventIds", removedLocalIds);
+          }
+          if (upsertedLocalIds.length > 0) {
+            useCloudSyncStore
+              .getState()
+              .clearDeletedKeys("calendarEventIds", upsertedLocalIds);
+          }
+        },
+
+        detachGoogleCalendarMetadata: () => {
+          set((state) => ({
+            pendingGoogleDeletions: [],
+            events: state.events.map((ev) => {
+              if (
+                !ev.googleEventId &&
+                !ev.googleCalendarId &&
+                !ev.googleEtag &&
+                !ev.googleRecurringEventId &&
+                ev.googleSyncedUpdatedAt === undefined
+              ) {
+                return ev;
+              }
+              const {
+                googleEventId: _gid,
+                googleCalendarId: _gcid,
+                googleEtag: _getag,
+                googleRecurringEventId: _grid,
+                googleSyncedUpdatedAt: _gsync,
+                ...rest
+              } = ev;
+              return rest;
+            }),
+          }));
         },
 
         addTodo: (title, calendarId, dueDate) => {
@@ -346,6 +683,7 @@ export const useCalendarStore = create<CalendarStoreState>()(
         events: state.events,
         calendars: state.calendars,
         todos: state.todos,
+        pendingGoogleDeletions: state.pendingGoogleDeletions,
         showTodoSidebar: state.showTodoSidebar,
         view: state.view,
       }),
@@ -357,6 +695,9 @@ export const useCalendarStore = create<CalendarStoreState>()(
         return {
           ...currentState,
           ...p,
+          pendingGoogleDeletions: Array.isArray(p?.pendingGoogleDeletions)
+            ? p.pendingGoogleDeletions
+            : [],
           // Always land on "today" in the user's effective timezone on rehydrate.
           selectedDate: formatZonedDateString(now, tz),
           currentMonth: zoned.month - 1,

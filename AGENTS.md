@@ -70,6 +70,7 @@ The following environment variables are required for full functionality:
 - Local WebSocket mode (`REALTIME_PROVIDER=local`): requires `REDIS_URL`; optional `REALTIME_WS_PATH` defaults to `/ws`.
 
 ### Optional Features
+- `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` - Google OAuth 2.0 Web Application credentials enabling **Continue with Google** Sign-In, account linking in Control Panels → Accounts, and incremental two-way sync for **Google Calendar** (Google Calendar API v3) and **Google Contacts** (Google People API v1). Register `<APP_PUBLIC_ORIGIN>/api/auth/google/callback` (and `http://localhost:5173/api/auth/google/callback` / `http://localhost:3000/api/auth/google/callback` for local dev) as Authorized redirect URIs in Google Cloud Console, or override via optional `GOOGLE_REDIRECT_URI`. When unset, Google Sign-In and sync UI hide/disable gracefully.
 - `RESEND_API_KEY` - Resend API key enabling the account-recovery **email** channel (verify recovery email + email-delivered password-reset codes). **Required together with `RECOVERY_EMAIL_FROM`** — both must be set for the email channel to work. When either is unset, email recovery is unavailable and account recovery falls back to a linked Telegram account.
 - `RECOVERY_EMAIL_FROM` - `From` address for recovery emails (e.g. `ryOS <noreply@os.ryo.lu>`). **Required together with `RESEND_API_KEY`** for the email channel to activate.
 - `ELEVENLABS_API_KEY` - ElevenLabs API (for text-to-speech)
