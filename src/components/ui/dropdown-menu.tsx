@@ -459,7 +459,7 @@ const DropdownMenuSeparator = (
         className,
         "-mx-1 my-1 h-[1px] border-b-0",
         !isMacOSTheme && "border-t border-muted",
-        isSystem7Theme && "border-dotted",
+        isSystem7Theme && "border-solid border-t-[#888]",
         !isSystem7Theme && !isMacOSTheme && "border-solid"
       )}
       style={{
