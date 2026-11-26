@@ -200,6 +200,7 @@ export async function createPkceChallenge(verifier: string): Promise<string> {
 export function normalizeScopeList(scopes: Iterable<string>): string[] {
   const seen = new Set<string>();
   for (const raw of scopes) {
+    if (typeof raw !== "string") continue;
     for (const token of raw.split(/\s+/)) {
       const trimmed = token.trim();
       if (trimmed) {
@@ -208,6 +209,13 @@ export function normalizeScopeList(scopes: Iterable<string>): string[] {
     }
   }
   return Array.from(seen);
+}
+
+/** Accept a scope array or a single space-delimited scope string. */
+export function coerceScopeList(scopes: unknown): string[] {
+  if (typeof scopes === "string") return normalizeScopeList([scopes]);
+  if (!Array.isArray(scopes)) return [];
+  return normalizeScopeList(scopes.filter((entry): entry is string => typeof entry === "string"));
 }
 
 export function scopesForFeatures(
@@ -478,9 +486,7 @@ export async function getLinkedGoogleAccountByUsername(
   return {
     ...parsed,
     username: parsed.username.toLowerCase(),
-    scopes: Array.isArray(parsed.scopes)
-      ? normalizeScopeList(parsed.scopes)
-      : [],
+    scopes: coerceScopeList(parsed.scopes),
   };
 }
 
@@ -511,7 +517,7 @@ export async function saveLinkedGoogleAccount(
   const normalizedRecord: StoredGoogleAccountRecord = {
     ...record,
     username: normalizedUsername,
-    scopes: normalizeScopeList(record.scopes),
+    scopes: coerceScopeList(record.scopes),
   };
 
   await redis.set(
@@ -524,6 +530,39 @@ export async function saveLinkedGoogleAccount(
   );
 
   return normalizedRecord;
+}
+
+/**
+ * Merge a partial update onto the latest stored account.
+ * Calendar and Contacts sync both read-modify-write the same record; saving a
+ * snapshot taken at the start of one sync would drop the other feature's
+ * scopes and sync token.
+ */
+export async function patchLinkedGoogleAccount(
+  redis: RedisLike,
+  username: string,
+  patch: Partial<Omit<StoredGoogleAccountRecord, "username" | "sub" | "linkedAt">>
+): Promise<StoredGoogleAccountRecord> {
+  const latest = await getLinkedGoogleAccountByUsername(redis, username);
+  if (!latest) {
+    throw new GoogleApiError(
+      400,
+      "not_linked",
+      "No Google account is linked to your ryOS account."
+    );
+  }
+  const scopes = patch.scopes
+    ? normalizeScopeList([...latest.scopes, ...patch.scopes])
+    : latest.scopes;
+  return saveLinkedGoogleAccount(redis, {
+    ...latest,
+    ...patch,
+    username: latest.username,
+    sub: latest.sub,
+    linkedAt: latest.linkedAt,
+    scopes,
+    updatedAt: Date.now(),
+  });
 }
 
 export async function unlinkGoogleAccountByUsername(
@@ -770,13 +809,11 @@ export async function getValidGoogleAccessToken(
       ? Date.now() + payload.expires_in * 1000
       : null;
 
-  const updatedAccount = await saveLinkedGoogleAccount(redis, {
-    ...account,
+  const updatedAccount = await patchLinkedGoogleAccount(redis, username, {
     accessToken: payload.access_token,
     refreshToken: payload.refresh_token || account.refreshToken,
     expiresAt,
     scopes: updatedScopes,
-    updatedAt: Date.now(),
   });
 
   return {

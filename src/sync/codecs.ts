@@ -36,6 +36,7 @@ import { useDashboardStore } from "@/stores/useDashboardStore";
 import { reconcileMobileOrder } from "@/stores/dashboardLayout";
 import { useStickiesStore, type StickyNote } from "@/stores/useStickiesStore";
 import { useAssistantStore } from "@/stores/useAssistantStore";
+import { useGoogleSyncStore } from "@/stores/useGoogleSyncStore";
 import {
   dedupeCalendarEventsByGoogleId,
   useCalendarStore,
@@ -738,6 +739,50 @@ const SETTINGS_SCHEMA: SettingsSection[] = [
       },
     ],
   },
+  {
+    // Google Calendar / Contacts sync toggles. Device-local link tokens and
+    // last-error text stay out of this section; only the user's preference
+    // and whether the initial merge prompt has already been answered sync.
+    section: "google",
+    fields: [
+      {
+        field: "calendarSyncEnabled",
+        read: () => useGoogleSyncStore.getState().calendarSyncEnabled,
+        write: (v) => {
+          if (typeof v === "boolean") {
+            useGoogleSyncStore.setState({ calendarSyncEnabled: v });
+          }
+        },
+      },
+      {
+        field: "contactsSyncEnabled",
+        read: () => useGoogleSyncStore.getState().contactsSyncEnabled,
+        write: (v) => {
+          if (typeof v === "boolean") {
+            useGoogleSyncStore.setState({ contactsSyncEnabled: v });
+          }
+        },
+      },
+      {
+        field: "calendarInitialSyncCompleted",
+        read: () => useGoogleSyncStore.getState().calendarInitialSyncCompleted,
+        write: (v) => {
+          if (typeof v === "boolean") {
+            useGoogleSyncStore.setState({ calendarInitialSyncCompleted: v });
+          }
+        },
+      },
+      {
+        field: "contactsInitialSyncCompleted",
+        read: () => useGoogleSyncStore.getState().contactsInitialSyncCompleted,
+        write: (v) => {
+          if (typeof v === "boolean") {
+            useGoogleSyncStore.setState({ contactsInitialSyncCompleted: v });
+          }
+        },
+      },
+    ],
+  },
 ];
 
 const SETTINGS_SECTIONS_BY_NAME = new Map(
@@ -900,6 +945,16 @@ const settingsCodec: SyncCodec = {
           state.greetOnSummon !== prev.greetOnSummon ||
           state.responseStyle !== prev.responseStyle ||
           state.customInstructions !== prev.customInstructions
+        ) {
+          onChange();
+        }
+      }),
+      useGoogleSyncStore.subscribe((state, prev) => {
+        if (
+          state.calendarSyncEnabled !== prev.calendarSyncEnabled ||
+          state.contactsSyncEnabled !== prev.contactsSyncEnabled ||
+          state.calendarInitialSyncCompleted !== prev.calendarInitialSyncCompleted ||
+          state.contactsInitialSyncCompleted !== prev.contactsInitialSyncCompleted
         ) {
           onChange();
         }

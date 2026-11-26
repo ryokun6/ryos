@@ -27,6 +27,27 @@ const log = createClientLogger("GoogleSync");
 
 const MAX_UPDATES_PER_BATCH = 200;
 
+let googleStatusRequestSeq = 0;
+
+function googleAuthFailureKind(
+  err: unknown
+): "reauth" | "scope" | "unlinked" | null {
+  if (!(err instanceof ApiRequestError)) return null;
+  switch (err.code) {
+    case "reauth_required":
+    case "GOOGLE_REAUTH_REQUIRED":
+      return "reauth";
+    case "missing_scope":
+    case "GOOGLE_SCOPE_REQUIRED":
+      return "scope";
+    case "not_linked":
+    case "GOOGLE_NOT_LINKED":
+      return "unlinked";
+    default:
+      return null;
+  }
+}
+
 let inFlightCalendarSync: Promise<GoogleCalendarSyncResponse | null> | null = null;
 let inFlightContactsSync: Promise<GoogleContactsSyncResponse | null> | null = null;
 
@@ -65,21 +86,24 @@ function toSyncedCalendarEvent(event: CalendarEvent): GoogleSyncedCalendarEvent 
 }
 
 export async function refreshGoogleStatus(): Promise<GoogleStatusResponse | null> {
-  const { isAuthenticated, username } = useChatsStore.getState();
+  const requestSeq = ++googleStatusRequestSeq;
+  const { username } = useChatsStore.getState();
   const googleStore = useGoogleSyncStore.getState();
   googleStore.ensureOwner(username);
 
   googleStore.setStatusLoading(true);
   try {
     const status = await getGoogleStatus();
-    if (!isAuthenticated) {
-      googleStore.setServerStatus({
-        configured: status.configured,
-        linked: false,
-        account: null,
-      });
+    if (requestSeq !== googleStatusRequestSeq) {
+      return status;
+    }
+    const stillAuthenticated = useChatsStore.getState().isAuthenticated;
+    if (!stillAuthenticated) {
+      // Session restore is still in flight on reload. Applying "not linked"
+      // here used to wipe the saved sync preference before auth came back.
+      useGoogleSyncStore.setState({ configured: status.configured });
     } else {
-      googleStore.setServerStatus({
+      useGoogleSyncStore.getState().setServerStatus({
         configured: status.configured,
         linked: status.linked,
         hasPassword: status.hasPassword,
@@ -91,7 +115,9 @@ export async function refreshGoogleStatus(): Promise<GoogleStatusResponse | null
     log.warn("Failed to fetch Google status", err);
     return null;
   } finally {
-    useGoogleSyncStore.getState().setStatusLoading(false);
+    if (requestSeq === googleStatusRequestSeq) {
+      useGoogleSyncStore.getState().setStatusLoading(false);
+    }
   }
 }
 
@@ -188,7 +214,7 @@ export async function runGoogleCalendarSync(options?: {
 
       useCalendarStore.getState().applyGoogleCalendarSyncResult(response);
       useGoogleSyncStore.getState().setSyncingCalendar(false, null);
-      void refreshGoogleStatus();
+      await refreshGoogleStatus();
       return response;
     } catch (err) {
       const message =
@@ -198,13 +224,16 @@ export async function runGoogleCalendarSync(options?: {
             ? err.message
             : "Google Calendar sync failed";
       log.warn("Google Calendar sync error", err);
-      if (
-        err instanceof ApiRequestError &&
-        (err.code === "GOOGLE_REAUTH_REQUIRED" ||
-          err.code === "GOOGLE_SCOPE_REQUIRED" ||
-          err.code === "GOOGLE_NOT_LINKED")
-      ) {
-        useGoogleSyncStore.getState().setCalendarSyncEnabled(false);
+      // Keep the user's toggle on. The server codes are reauth_required /
+      // missing_scope / not_linked; clearing the preference here used to
+      // look like the switch had been turned off with no explanation.
+      // The message is shown on the account sheet until the next success.
+      if (googleAuthFailureKind(err) === "unlinked") {
+        useGoogleSyncStore.getState().setServerStatus({
+          configured: useGoogleSyncStore.getState().configured,
+          linked: false,
+          account: null,
+        });
       }
       useGoogleSyncStore.getState().setSyncingCalendar(false, message);
       throw err;
@@ -250,7 +279,7 @@ export async function runGoogleContactsSync(options?: {
 
       useContactsStore.getState().applyGoogleContactsSyncResult(response);
       useGoogleSyncStore.getState().setSyncingContacts(false, null);
-      void refreshGoogleStatus();
+      await refreshGoogleStatus();
       return response;
     } catch (err) {
       const message =
@@ -260,13 +289,12 @@ export async function runGoogleContactsSync(options?: {
             ? err.message
             : "Google Contacts sync failed";
       log.warn("Google Contacts sync error", err);
-      if (
-        err instanceof ApiRequestError &&
-        (err.code === "GOOGLE_REAUTH_REQUIRED" ||
-          err.code === "GOOGLE_SCOPE_REQUIRED" ||
-          err.code === "GOOGLE_NOT_LINKED")
-      ) {
-        useGoogleSyncStore.getState().setContactsSyncEnabled(false);
+      if (googleAuthFailureKind(err) === "unlinked") {
+        useGoogleSyncStore.getState().setServerStatus({
+          configured: useGoogleSyncStore.getState().configured,
+          linked: false,
+          account: null,
+        });
       }
       useGoogleSyncStore.getState().setSyncingContacts(false, message);
       throw err;
