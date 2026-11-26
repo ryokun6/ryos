@@ -124,7 +124,7 @@
   --os-metrics-radius: 0px; /* System 7 has square corners */
   --os-metrics-titlebar-height: 1.5rem;
   --os-metrics-menubar-height: 30px;
-  --os-window-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.5);
+  --os-window-shadow: 2px 2px 0px 0px #000000; /* solid black, as System 7 draws it, at the 2px frame weight */
 }
 
 /* Geneva is System 7's antialiased content font; Chicago chrome stays pixel-sharp. */
