@@ -142,6 +142,12 @@
   --os-color-selection-text: #000000;
 }
 
+/* System 7 menus (menu bar, dropdown, context, submenus): a hard 1px black
+   drop shadow, as System 7 draws it, instead of the soft shadow-md/shadow-lg */
+:root[data-os-theme="system7"] [data-radix-menu-content] {
+  box-shadow: 1px 1px 0 0 #000000;
+}
+
 /* System 7 title bar: grid/back button icon black */
 :root[data-os-theme="system7"] .h-os-titlebar > span.mr-2 > button {
   color: #000;
