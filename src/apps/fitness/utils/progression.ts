@@ -7,14 +7,24 @@ export function estimateOneRepMax(weightKg: number, reps: number): number {
   return weightKg * (1 + Math.min(reps, 12) / 30);
 }
 
+/** Planned template sets are `completed: false`. Older logs omit the field and count. */
+export function isLoggedSet(set: WorkoutSet): boolean {
+  return set.completed !== false;
+}
+
+export function loggedSets(sets: readonly WorkoutSet[]): WorkoutSet[] {
+  return sets.filter(isLoggedSet);
+}
+
 export function setVolume(set: WorkoutSet): number {
+  if (!isLoggedSet(set)) return 0;
   return Math.max(0, set.reps) * Math.max(0, set.weightKg);
 }
 
 export function bestSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
   let best: WorkoutSet | null = null;
   let bestScore = -1;
-  for (const set of sets) {
+  for (const set of loggedSets(sets)) {
     const score = estimateOneRepMax(set.weightKg, set.reps);
     if (score > bestScore || (score === bestScore && best && set.reps > best.reps)) {
       best = set;
@@ -43,7 +53,9 @@ export function exerciseProgress(
   const byDate = new Map<string, ExerciseProgressPoint>();
   for (const workout of workouts) {
     for (const entry of workout.entries) {
-      if (entry.exerciseId !== exerciseId || entry.sets.length === 0) continue;
+      if (entry.exerciseId !== exerciseId) continue;
+      const sets = loggedSets(entry.sets);
+      if (sets.length === 0) continue;
       const point = byDate.get(workout.date) ?? {
         date: workout.date,
         topWeightKg: 0,
@@ -51,7 +63,7 @@ export function exerciseProgress(
         volumeKg: 0,
         totalReps: 0,
       };
-      for (const set of entry.sets) {
+      for (const set of sets) {
         point.topWeightKg = Math.max(point.topWeightKg, set.weightKg);
         point.e1rmKg = Math.max(point.e1rmKg, estimateOneRepMax(set.weightKg, set.reps));
         point.volumeKg += setVolume(set);
@@ -122,7 +134,7 @@ export function loggedExerciseIds(workouts: readonly Workout[]): { id: string; n
   const seen = new Map<string, string>();
   for (const workout of sorted) {
     for (const entry of workout.entries) {
-      if (entry.sets.length > 0 && !seen.has(entry.exerciseId)) {
+      if (entry.sets.some(isLoggedSet) && !seen.has(entry.exerciseId)) {
         seen.set(entry.exerciseId, entry.name);
       }
     }
@@ -141,8 +153,10 @@ export function lastSetsFor(
   );
   for (const workout of sorted) {
     if (beforeDate && workout.date >= beforeDate) continue;
-    const entry = workout.entries.find((e) => e.exerciseId === exerciseId && e.sets.length > 0);
-    if (entry) return entry.sets;
+    const entry = workout.entries.find(
+      (e) => e.exerciseId === exerciseId && e.sets.some(isLoggedSet)
+    );
+    if (entry) return loggedSets(entry.sets);
   }
   return null;
 }

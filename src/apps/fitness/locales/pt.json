@@ -854,6 +854,15 @@
       "Depois de afastar as barras o máximo que puder, retorne à posição inicial puxando-as de volta. Expire ao realizar este movimento."
     ]
   },
+  "Bodyweight_Glute_Bridge": {
+    "name": "Ponte de glúteos com o peso do corpo",
+    "instructions": [
+      "Deite-se de costas, joelhos flexionados e pés apoiados na largura do quadril.",
+      "Estabilize o tronco e empurre pelos calcanhares para elevar o quadril.",
+      "Pare quando o corpo formar uma linha reta dos ombros aos joelhos. Não arqueie demais a lombar.",
+      "Faça uma pausa apertando os glúteos e desça o quadril com controle."
+    ]
+  },
   "Bodyweight_Mid_Row": {
     "name": "Remada média com peso corporal",
     "instructions": [
@@ -2250,6 +2259,15 @@
       "Dê um passo para trás com a perna direita, a cerca de dois pés (cerca de 60 cm) do pé esquerdo, e abaixe a parte superior do corpo, mantendo o tronco ereto e o equilíbrio. Inspire ao descer. Dica: Assim como em outros exercícios, não permita que o joelho avance além dos dedos dos pés ao descer, pois isso colocará estresse indevido na articulação do joelho. Certifique-se de manter a canela da frente perpendicular ao chão. Mantenha o tronco ereto durante o afundo; flexores do quadril flexíveis são importantes. Um afundo longo enfatiza o Glúteo Máximo; um afundo curto enfatiza os Quadríceps.",
       "Empurre para cima e retorne à posição inicial enquanto expira. Dica: Use a parte da frente dos pés para empurrar a fim de acentuar os quadríceps. Para focar nos glúteos, pressione com os calcanhares.",
       "Agora repita com a perna oposta."
+    ]
+  },
+  "Dumbbell_Romanian_Deadlift": {
+    "name": "Levantamento terra romeno com halteres",
+    "instructions": [
+      "Fique em pé segurando um haltere em cada mão à frente das coxas, com as palmas voltadas para você.",
+      "Flexione um pouco os joelhos e não deixe que avancem.",
+      "Dobre no quadril, levando-o para trás, e desça os halteres junto às pernas até sentir o alongamento dos posteriores. Mantenha a coluna neutra.",
+      "Empurre o quadril para a frente para ficar em pé e contraia os glúteos."
     ]
   },
   "Dumbbell_Scaption": {
@@ -4248,6 +4266,15 @@
       "Evite retornar o peso completamente aos batentes até que a série esteja completa para manter a tensão nos músculos trabalhados."
     ]
   },
+  "Machine_Hip_Thrust": {
+    "name": "Hip thrust na máquina",
+    "instructions": [
+      "Sente-se na máquina com a parte superior das costas no apoio e os pés apoiados na largura do quadril.",
+      "Ajuste o cinto ou a almofada sobre o quadril.",
+      "Empurre pelos calcanhares e estenda o quadril até o tronco e as coxas ficarem alinhados, sem arquear demais a lombar.",
+      "Faça uma pausa apertando os glúteos e desça com controle."
+    ]
+  },
   "Machine_Preacher_Curls": {
     "name": "Rosca Scott na Máquina",
     "instructions": [
@@ -5324,6 +5351,15 @@
     "instructions": [
       "Deite-se de bruços no chão com o peso apoiado nas mãos ou antebraços. Coloque um rolo de espuma debaixo de uma perna, no quadríceps, e mantenha o pé fora do chão. Relaxe a perna o máximo possível. Esta será a sua posição inicial.",
       "Transferindo o máximo de peso tolerável para a perna a ser alongada, role sobre o rolo de espuma de cima do joelho até abaixo do quadril, mantendo os pontos de tensão por 10-30 segundos. Troque de lado."
+    ]
+  },
+  "Quadruped_Thoracic_Rotation": {
+    "name": "Rotação torácica em quatro apoios",
+    "instructions": [
+      "Fique de quatro, com os punhos sob os ombros e os joelhos sob o quadril.",
+      "Leve uma mão atrás da cabeça.",
+      "Gire esse cotovelo em direção ao braço oposto e depois abra o peito, girando o cotovelo para cima.",
+      "O movimento vem da parte superior das costas e o quadril fica estável. Troque de lado."
     ]
   },
   "Quick_Leap": {
@@ -7466,6 +7502,15 @@
       "Repita o número de repetições recomendado em seu programa."
     ]
   },
+  "Supine_Adductor_Ball_Squeeze": {
+    "name": "Aperto de adutores deitado com bola",
+    "instructions": [
+      "Deite-se de costas com os joelhos flexionados e os pés apoiados no chão.",
+      "Coloque uma bola ou um travesseiro entre os joelhos.",
+      "Aperte os joelhos contra a bola para ativar os adutores, sem levantar o quadril.",
+      "Segure a contração, afrouxe um pouco e repita. Mantenha a lombar estável."
+    ]
+  },
   "Supine_Chest_Throw": {
     "name": "Arremesso de Peito Supino",
     "instructions": [
@@ -7834,6 +7879,15 @@
     "instructions": [
       "Para começar, suba na esteira e selecione a opção desejada no menu. A maioria das esteiras tem uma configuração manual, ou você pode selecionar um programa para executar. Normalmente, você pode inserir sua idade e peso para estimar a quantidade de calorias queimadas durante o exercício. A elevação pode ser ajustada para alterar a intensidade do treino.",
       "As esteiras oferecem conveniência, benefícios cardiovasculares e geralmente têm menos impacto do que caminhar ao ar livre. Ao caminhar, você deve se mover em um ritmo moderado a rápido, não em um ritmo tranquilo. Sendo uma atividade de menor intensidade, a caminhada não queima tantas calorias quanto outras atividades, mas ainda oferece grandes benefícios. Uma pessoa de 150 lb queimará cerca de 175 calorias caminhando 4 milhas por hora por 30 minutos, em comparação com 450 calorias correndo o dobro da velocidade. Mantenha a postura correta ao caminhar e segure nos apoios apenas quando necessário, como ao descer ou verificar sua frequência cardíaca."
+    ]
+  },
+  "Wall_Slide": {
+    "name": "Deslize na parede",
+    "instructions": [
+      "Fique com as costas, o quadril e a nuca na parede, com os pés um pouco à frente.",
+      "Apoie o dorso das mãos e os cotovelos na parede, com os cotovelos flexionados a cerca de 90 graus.",
+      "Deslize os braços para cima sem tirar da parede a lombar, as costelas ou os cotovelos.",
+      "Volte ao início e repita."
     ]
   },
   "Weighted_Ball_Hyperextension": {
