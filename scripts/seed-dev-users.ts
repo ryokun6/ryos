@@ -157,7 +157,7 @@ async function createUser(
 
 async function seedUser(
   user: DevUser,
-  redis: Redis | null
+  redis: RedisLike | null
 ): Promise<{ success: boolean; message: string }> {
   // Step 1: Try to authenticate with the expected password
   const authResult = await tryAuthenticate(user.username, user.password);
