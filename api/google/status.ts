@@ -14,6 +14,9 @@ export default apiHandler(
   },
   async ({ res, redis, logger, startTime, user }) => {
     const configured = isGoogleOAuthConfigured();
+    // Per-user link state. Without this, browsers (Safari in particular)
+    // heuristically cache the GET and keep serving the pre-consent payload.
+    res.setHeader("Cache-Control", "private, no-store");
     if (!user?.username) {
       logger.response(200, Date.now() - startTime);
       res.status(200).json({

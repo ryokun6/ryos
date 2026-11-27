@@ -35,6 +35,8 @@ export interface ApiRequestOptions<TBody = unknown> {
   headers?: HeadersInit;
   signal?: AbortSignal;
   timeout?: number;
+  /** Passed through to fetch. Use `no-store` for per-user GET status. */
+  cache?: RequestCache;
   retry?: AbortableFetchOptions["retry"];
 }
 
@@ -110,6 +112,7 @@ async function performApiRequest<TBody = unknown>(
     headers,
     signal,
     timeout = 15000,
+    cache,
     retry,
   } = options;
 
@@ -129,6 +132,7 @@ async function performApiRequest<TBody = unknown>(
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,
       timeout,
+      ...(cache ? { cache } : {}),
       throwOnHttpError: false,
       retry: retryConfig,
     },

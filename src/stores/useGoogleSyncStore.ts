@@ -103,27 +103,20 @@ export const useGoogleSyncStore = create<GoogleSyncStoreState>()(
       },
 
       setServerStatus: ({ configured, linked, hasPassword, account }) => {
+        // Link state and granted scopes describe the Google account.
+        // calendarSyncEnabled / contactsSyncEnabled are the user's preference
+        // and are persisted locally and via Cloud Sync. A status payload must
+        // not clear them: reloads call this before the session is restored,
+        // and a cached or in-flight status from before consent has
+        // hasCalendarScope/hasContactsScope false even after a successful sync.
+        // Disconnect (resetOnDisconnect) and an account switch (ensureOwner)
+        // are the paths that turn the preference off.
         set((state) => ({
           configured,
           linked,
           hasPassword:
             typeof hasPassword === "boolean" ? hasPassword : state.hasPassword,
           account,
-          ...(!linked
-            ? {
-                calendarSyncEnabled: false,
-                contactsSyncEnabled: false,
-                calendarInitialSyncCompleted: false,
-                contactsInitialSyncCompleted: false,
-              }
-            : {
-                ...(account && !account.hasCalendarScope
-                  ? { calendarSyncEnabled: false }
-                  : {}),
-                ...(account && !account.hasContactsScope
-                  ? { contactsSyncEnabled: false }
-                  : {}),
-              }),
         }));
       },
 

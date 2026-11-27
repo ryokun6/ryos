@@ -61,6 +61,10 @@ export async function getGoogleStatus(): Promise<GoogleStatusResponse> {
   return apiRequest<GoogleStatusResponse>({
     path: "/api/google/status",
     method: "GET",
+    // The linked-account payload changes as soon as scopes are granted.
+    // A heuristic browser cache of the pre-consent GET would report the
+    // account as linked without calendar/contacts permission.
+    cache: "no-store",
   });
 }
 

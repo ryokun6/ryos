@@ -3,7 +3,7 @@ import {
   GoogleApiError,
   getGoogleApiUrls,
   getValidGoogleAccessToken,
-  saveLinkedGoogleAccount,
+  patchLinkedGoogleAccount,
 } from "./google-oauth.js";
 import {
   createContactFromDraft,
@@ -665,11 +665,12 @@ export async function syncGoogleContactsForUser(
   }
 
   const syncedAt = Date.now();
-  await saveLinkedGoogleAccount(redis, {
-    ...account,
-    contactsSyncToken: pulled.nextSyncToken ?? account.contactsSyncToken ?? null,
+  await patchLinkedGoogleAccount(redis, username, {
+    scopes: account.scopes,
+    ...(pulled.nextSyncToken
+      ? { contactsSyncToken: pulled.nextSyncToken }
+      : {}),
     contactsLastSyncedAt: syncedAt,
-    updatedAt: syncedAt,
   });
 
   return {

@@ -3,7 +3,7 @@ import {
   GoogleApiError,
   getGoogleApiUrls,
   getValidGoogleAccessToken,
-  saveLinkedGoogleAccount,
+  patchLinkedGoogleAccount,
 } from "./google-oauth.js";
 import { normalizeUserTimeZone } from "./auth/_user-record.js";
 import {
@@ -597,11 +597,12 @@ export async function syncGoogleCalendarForUser(
   }
 
   const syncedAt = Date.now();
-  await saveLinkedGoogleAccount(redis, {
-    ...account,
-    calendarSyncToken: pulled.nextSyncToken ?? account.calendarSyncToken ?? null,
+  await patchLinkedGoogleAccount(redis, username, {
+    scopes: account.scopes,
+    ...(pulled.nextSyncToken
+      ? { calendarSyncToken: pulled.nextSyncToken }
+      : {}),
     calendarLastSyncedAt: syncedAt,
-    updatedAt: syncedAt,
   });
 
   return {
