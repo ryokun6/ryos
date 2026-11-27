@@ -294,6 +294,7 @@
         "noMessages": "Keine Nachrichten"
       },
       "search": {
+        "clear": "Suche löschen",
         "noResults": "Keine Benutzer gefunden",
         "placeholder": "Benutzer suchen…",
         "songsPlaceholder": "Lieder suchen…"
@@ -407,19 +408,19 @@
       "statusBar": {
         "auditLogCount_one": "{{count}} Eintrag",
         "auditLogCount_other": "{{count}} Einträge",
-        "cursorAgentsCount": "{{count}} Cursor-Agent",
-        "cursorAgentsCount_plural": "{{count}} Cursor-Agenten",
+        "cursorAgentsCount_one": "{{count}} Cursor-Agent",
+        "cursorAgentsCount_other": "{{count}} Cursor-Agenten",
         "loggedInAs": "Angemeldet als {{username}}",
-        "messagesCount": "{{count}} Nachricht",
-        "messagesCount_plural": "{{count}} Nachrichten",
+        "messagesCount_one": "{{count}} Nachricht",
+        "messagesCount_other": "{{count}} Nachrichten",
         "redis": "Redis-Browser",
         "redisKeysCount_one": "{{count}} Schlüssel",
         "redisKeysCount_other": "{{count}} Schlüssel",
-        "roomsCount": "{{count}} Raum",
-        "roomsCount_plural": "{{count}} Räume",
+        "roomsCount_one": "{{count}} Raum",
+        "roomsCount_other": "{{count}} Räume",
         "songsCount": "{{count}} Lieder",
-        "usersCount": "{{count}} Benutzer",
-        "usersCount_plural": "{{count}} Benutzer"
+        "usersCount_one": "{{count}} Benutzer",
+        "usersCount_other": "{{count}} Benutzer"
       },
       "tableHeaders": {
         "added": "Hinzugefügt",
@@ -1163,6 +1164,7 @@
         "nudgeSent": "👋 *Stupser gesendet*",
         "pleaseLoginToDeleteRooms": "Bitte melden Sie sich an, um Räume zu löschen.",
         "pleaseLoginToSendMessages": "Bitte melden Sie sich an, um Nachrichten zu senden.",
+        "processingImage": "Bild wird verarbeitet …",
         "recording": "Aufnahme…",
         "retry": "Wiederholen",
         "ryo": "@ryo",
@@ -2708,6 +2710,7 @@
         "quicktimeMovie": "QuickTime-Film",
         "svgImage": "SVG-Bild",
         "unknown": "Unbekannt",
+        "volume": "Volume",
         "webpImage": "WebP-Bild"
       },
       "folders": {
@@ -4068,6 +4071,7 @@
       },
       "locateMe": "Meinen Standort bestimmen",
       "mapAriaLabel": "Karte",
+      "mapToolbar": "Kartensteuerung",
       "menu": {
         "about": "Über Karten",
         "help": "Karten-Hilfe",
@@ -4232,7 +4236,9 @@
         "thenStepAria": "Dann {{label}}",
         "warningNoBikes": "An der nächsten Startstation gibt es derzeit eventuell keine Fahrräder.",
         "warningNoDocks": "An der nächsten Endstation gibt es derzeit eventuell keine freien Stellplätze."
-      }
+      },
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern"
     },
     "minesweeper": {
       "description": "Klassisches Puzzlespiel",
@@ -4784,7 +4790,17 @@
       },
       "name": "Soundboard",
       "newSoundboardDefault": "Neues Soundboard",
-      "soundboards": "Soundboards"
+      "slot": {
+        "addTitle": "Titel hinzufügen",
+        "editTitle": "Titel bearbeiten",
+        "record": "Aufnehmen",
+        "recording": "Aufnahme…"
+      },
+      "soundboards": "Soundboards",
+      "waveform": {
+        "errorLoading": "Fehler beim Laden der Wellenform",
+        "label": "Wellenform"
+      }
     },
     "stickies": {
       "colors": {
@@ -5986,6 +6002,8 @@
       "appRequiresInternet": "{{appName}} erfordert eine Internetverbindung.",
       "title": "Du bist offline"
     },
+    "retry": "Wiederholen",
+    "search": "Suchen",
     "startMenu": {
       "aboutThisComputer": "Über diesen Computer",
       "run": "Ausführen…",
